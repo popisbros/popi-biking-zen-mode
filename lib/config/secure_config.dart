@@ -7,13 +7,13 @@ class SecureConfig {
   static String get mapTilerApiKey {
     // Try to get from environment variable first
     const envKey = String.fromEnvironment('MAPTILER_API_KEY');
-    if (envKey.isNotEmpty) {
+    if (envKey.isNotEmpty && envKey != 'YOUR_MAPTILER_API_KEY_HERE') {
       return envKey;
     }
     
-    // Fallback to a placeholder for development
-    // In production, this should always be set via environment variables
-    return 'YOUR_MAPTILER_API_KEY_HERE';
+    // Fallback to the actual API key for development
+    // This will be overridden by environment variables in production
+    return '0n3hIGbHnipUHJE5pew7';
   }
   
   // Firebase Configuration
