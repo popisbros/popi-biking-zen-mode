@@ -17,18 +17,21 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.0'
+        flutter-version: '3.27.0'
         channel: 'stable'
         
     - name: Install dependencies
       run: flutter pub get
+      
+    - name: Flutter doctor
+      run: flutter doctor -v
       
     - name: Run tests
       run: flutter test
       continue-on-error: true
       
     - name: Build Flutter Web
-      run: flutter build web --release --dart-define=MAPTILER_API_KEY=${{ secrets.MAPTILER_API_KEY || '0n3hIGbHnipUHJE5pew7' }} --base-href "/popi-biking-zen-mode/"
+      run: flutter build web --release --dart-define=MAPTILER_API_KEY=${{ secrets.MAPTILER_API_KEY || '0n3hIGbHnipUHJE5pew7' }} --base-href "/popi-biking-zen-mode/" --no-wasm-dry-run
       
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
