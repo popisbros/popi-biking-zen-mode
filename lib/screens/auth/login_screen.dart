@@ -32,7 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // final authNotifier = ref.read(// authNotifierProvider.notifier);
+        // final authNotifier = ref.read(authNotifierProvider.notifier);
       // await authNotifier.signInWithEmail(
       //   email: _emailController.text.trim(),
       //   password: _passwordController.text,
@@ -62,7 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      final authNotifier = ref.read(// authNotifierProvider.notifier);
+        // final authNotifier = ref.read(authNotifierProvider.notifier);
       await authNotifier.signInWithGoogle();
     } catch (e) {
       if (mounted) {
@@ -81,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signInWithApple() async {
     setState(() => _isLoading = true);
     try {
-      final authNotifier = ref.read(// authNotifierProvider.notifier);
+        // final authNotifier = ref.read(authNotifierProvider.notifier);
       await authNotifier.signInWithApple();
     } catch (e) {
       if (mounted) {
@@ -100,7 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signInWithFacebook() async {
     setState(() => _isLoading = true);
     try {
-      final authNotifier = ref.read(// authNotifierProvider.notifier);
+        // final authNotifier = ref.read(authNotifierProvider.notifier);
       await authNotifier.signInWithFacebook();
     } catch (e) {
       if (mounted) {
