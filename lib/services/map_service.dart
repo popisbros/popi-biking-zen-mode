@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
+// import 'package:maplibre_gl/maplibre_gl.dart';  // Temporarily disabled for web compatibility
 import '../config/api_keys.dart';
 
 /// Service for managing MapLibre GL map configuration and styles

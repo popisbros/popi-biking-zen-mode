@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
+// import 'package:maplibre_gl/maplibre_gl.dart';  // Temporarily disabled for web compatibility
 import '../constants/app_colors.dart';
 import '../providers/location_provider.dart';
 import '../services/map_service.dart';
@@ -14,7 +14,7 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
-  MapLibreMapController? _mapController;
+  // MapLibreMapController? _mapController;  // Temporarily disabled
   final MapService _mapService = MapService();
   bool _isMapReady = false;
 
@@ -31,8 +31,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     await locationNotifier.startTracking();
   }
 
-  void _onMapCreated(MapLibreMapController controller) {
-    _mapController = controller;
+  void _onMapReady() {
     setState(() {
       _isMapReady = true;
     });
@@ -44,17 +43,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _centerOnUserLocation() async {
     final locationAsync = ref.read(locationNotifierProvider);
     locationAsync.whenData((location) {
-      if (location != null && _mapController != null) {
-        _mapController!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(location.latitude, location.longitude),
-              zoom: 15.0,
-              bearing: location.heading ?? 0.0,
-              tilt: 60.0,
-            ),
-          ),
-        );
+      if (location != null) {
+        // TODO: Implement map centering when MapLibre GL is properly configured
+        print('Centering map on location: ${location.latitude}, ${location.longitude}');
       }
     });
   }
@@ -75,25 +66,56 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // MapLibre GL Map
-          MapLibreMap(
-            onMapCreated: _onMapCreated,
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(37.7749, -122.4194), // San Francisco default
-              zoom: 15.0,
-              bearing: 0.0,
-              tilt: 60.0,
+          // Placeholder Map (will be replaced with MapLibre GL when web compatibility is fixed)
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.urbanBlue.withOpacity(0.8),
+                  AppColors.mossGreen.withOpacity(0.6),
+                ],
+              ),
             ),
-            styleString: _mapService.getDefaultStyle(),
-            compassEnabled: true,
-            rotateGesturesEnabled: true,
-            scrollGesturesEnabled: true,
-            tiltGesturesEnabled: true,
-            zoomGesturesEnabled: true,
-            doubleClickZoomEnabled: true,
-            onStyleLoadedCallback: () {
-              _addCyclingLayers();
-            },
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.map,
+                    size: 80,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Popi Is Biking Zen Mode',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Interactive maps coming soon...',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _onMapReady,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.signalYellow,
+                      foregroundColor: AppColors.urbanBlue,
+                    ),
+                    child: const Text('Initialize Map'),
+                  ),
+                ],
+              ),
+            ),
           ),
 
           // Profile button
@@ -239,9 +261,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     backgroundColor: AppColors.surface,
                     foregroundColor: AppColors.urbanBlue,
                     onPressed: () {
-                      _mapController?.animateCamera(
-                        CameraUpdate.zoomTo((_mapController?.cameraPosition?.zoom ?? 15) + 1),
-                      );
+                      // TODO: Implement zoom in when MapLibre GL is configured
+                      print('Zoom in');
                     },
                     child: const Icon(Icons.add),
                   ),
@@ -251,9 +272,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     backgroundColor: AppColors.surface,
                     foregroundColor: AppColors.urbanBlue,
                     onPressed: () {
-                      _mapController?.animateCamera(
-                        CameraUpdate.zoomTo((_mapController?.cameraPosition?.zoom ?? 15) - 1),
-                      );
+                      // TODO: Implement zoom out when MapLibre GL is configured
+                      print('Zoom out');
                     },
                     child: const Icon(Icons.remove),
                   ),
@@ -273,24 +293,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _addCyclingLayers() {
-    if (_mapController == null) return;
-
-    // Add cycling-specific layers to highlight bike infrastructure
-    // This is a simplified version - in production, you'd load a proper cycling style
-    
-    // Add bike lane layer
-    _mapController!.addSymbol(
-      const SymbolOptions(
-        geometry: LatLng(0, 0), // This would be populated with actual bike lane data
-        iconImage: 'bike-lane',
-        iconSize: 1.0,
-      ),
-    );
+    // TODO: Implement cycling layers when MapLibre GL is properly configured
+    print('Adding cycling layers...');
   }
 
   @override
   void dispose() {
-    _mapController?.dispose();
+    // _mapController?.dispose(); // Temporarily disabled
     super.dispose();
   }
 }
