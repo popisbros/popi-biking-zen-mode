@@ -27,7 +27,7 @@ jobs:
       run: flutter test
       
     - name: Build Flutter Web
-      run: flutter build web --release --base-href "/PopiIsBikingZenMode/"
+      run: flutter build web --release --dart-define=MAPTILER_API_KEY=${{ secrets.MAPTILER_API_KEY }} --base-href "/popi-biking-zen-mode/"
       
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'

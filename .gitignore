@@ -91,7 +91,7 @@ coverage/
 .env.production
 
 # API Keys (keep these secure!)
-**/lib/config/api_keys.dart
+# **/lib/config/api_keys.dart  # Commented out - we'll use environment variables instead
 
 # Build outputs
 build/

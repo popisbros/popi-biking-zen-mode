@@ -44,38 +44,38 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBvOkBwXqH8K9L2M3N4O5P6Q7R8S9T0U1V',
-    appId: '1:123456789012:web:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
+    apiKey: 'AIzaSyD1atb61TBjZV-IVdTagh7J2nGKMUn4QM4',
+    appId: '1:762853433576:web:5cb93bb60f2915e2e4a95d',
+    messagingSenderId: '762853433576',
     projectId: 'popi-biking-zen-mode',
     authDomain: 'popi-biking-zen-mode.firebaseapp.com',
-    storageBucket: 'popi-biking-zen-mode.appspot.com',
-    measurementId: 'G-ABCDEFGHIJ',
+    storageBucket: 'popi-biking-zen-mode.firebasestorage.app',
+    measurementId: 'G-7Q9GQ55CKT',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBvOkBwXqH8K9L2M3N4O5P6Q7R8S9T0U1V',
-    appId: '1:123456789012:android:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
+    apiKey: 'AIzaSyD1atb61TBjZV-IVdTagh7J2nGKMUn4QM4',
+    appId: '1:762853433576:web:5cb93bb60f2915e2e4a95d',
+    messagingSenderId: '762853433576',
     projectId: 'popi-biking-zen-mode',
-    storageBucket: 'popi-biking-zen-mode.appspot.com',
+    storageBucket: 'popi-biking-zen-mode.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBvOkBwXqH8K9L2M3N4O5P6Q7R8S9T0U1V',
-    appId: '1:123456789012:ios:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
+    apiKey: 'AIzaSyD1atb61TBjZV-IVdTagh7J2nGKMUn4QM4',
+    appId: '1:762853433576:web:5cb93bb60f2915e2e4a95d',
+    messagingSenderId: '762853433576',
     projectId: 'popi-biking-zen-mode',
-    storageBucket: 'popi-biking-zen-mode.appspot.com',
+    storageBucket: 'popi-biking-zen-mode.firebasestorage.app',
     iosBundleId: 'com.popibiking.zenmode',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBvOkBwXqH8K9L2M3N4O5P6Q7R8S9T0U1V',
-    appId: '1:123456789012:ios:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
+    apiKey: 'AIzaSyD1atb61TBjZV-IVdTagh7J2nGKMUn4QM4',
+    appId: '1:762853433576:web:5cb93bb60f2915e2e4a95d',
+    messagingSenderId: '762853433576',
     projectId: 'popi-biking-zen-mode',
-    storageBucket: 'popi-biking-zen-mode.appspot.com',
+    storageBucket: 'popi-biking-zen-mode.firebasestorage.app',
     iosBundleId: 'com.popibiking.zenmode',
   );
 }
