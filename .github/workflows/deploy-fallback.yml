@@ -2,10 +2,10 @@ name: 🚴‍♂️ Deploy Fallback (Official GitHub Pages)
 
 on:
   workflow_dispatch: # Manual trigger only
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - '.github/workflows/deploy.yml' # Only run if main deploy fails
+  # push:
+  #   branches: [ main ]
+  #   paths-ignore:
+  #     - '.github/workflows/deploy.yml' # Only run if main deploy fails
 
 permissions:
   contents: read
