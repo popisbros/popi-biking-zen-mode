@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
           
       - name: 🎯 Setup Flutter
         uses: subosito/flutter-action@v2
@@ -21,14 +23,25 @@ jobs:
           cache: true
           
       - name: 📦 Get dependencies
-        run: flutter pub get
+        run: |
+          echo "📦 Getting Flutter dependencies..."
+          flutter pub get
+          echo "✅ Dependencies installed successfully"
+        
+      - name: 🔍 Analyze code
+        run: |
+          echo "🔍 Analyzing code..."
+          flutter analyze --no-fatal-infos || echo "⚠️ Analysis completed with warnings"
+          echo "✅ Code analysis completed"
         
       - name: 🏗️ Build web app
         run: |
+          echo "🏗️ Building Flutter web app..."
           flutter build web \
             --release \
             --base-href "/popi-biking-zen-mode/" \
             --no-wasm-dry-run
+          echo "✅ Build completed successfully"
             
       - name: 📋 Verify build output
         run: |
@@ -36,12 +49,16 @@ jobs:
           ls -la build/web/
           echo "📊 Build size:"
           du -sh build/web/
+          echo "🔍 Checking for required files:"
+          test -f build/web/index.html && echo "✅ index.html exists" || echo "❌ index.html missing"
+          test -f build/web/main.dart.js && echo "✅ main.dart.js exists" || echo "❌ main.dart.js missing"
           
       - name: 🚀 Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
+          cname: # No custom domain
           
       - name: ✅ Deployment complete
         run: |

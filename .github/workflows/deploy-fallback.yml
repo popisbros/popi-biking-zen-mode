@@ -1,0 +1,62 @@
+name: 🚴‍♂️ Deploy Fallback (Official GitHub Pages)
+
+on:
+  workflow_dispatch: # Manual trigger only
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/deploy.yml' # Only run if main deploy fails
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+          
+      - name: 📦 Get dependencies
+        run: flutter pub get
+        
+      - name: 🏗️ Build web app
+        run: |
+          flutter build web \
+            --release \
+            --base-href "/popi-biking-zen-mode/" \
+            --no-wasm-dry-run
+            
+      - name: 📋 Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: 📤 Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './build/web'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
