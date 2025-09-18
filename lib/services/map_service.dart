@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
-// import 'package:maplibre_gl/maplibre_gl.dart';  // Temporarily disabled for web compatibility
 import '../config/api_keys.dart';
 
-/// Service for managing MapLibre GL map configuration and styles
+/// Service for managing map configuration and styles
 class MapService {
   static final MapService _instance = MapService._internal();
   factory MapService() => _instance;
@@ -37,6 +36,12 @@ class MapService {
   String getDefaultStyle() {
     return _defaultStyleUrl;
   }
+
+  /// Get OpenStreetMap tile URL
+  String get openStreetMapTiles => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  
+  /// Get cycling-specific tile URL (requires API key)
+  String get cyclingTiles => 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=YOUR_API_KEY';
 
   /// Create cycling-optimized map style configuration
   Map<String, dynamic> createCyclingStyleConfig() {
