@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
-import '../../providers/auth_provider.dart';
+// import '../../providers/auth_provider.dart'; // Temporarily disabled
 import '../../widgets/auth/social_auth_button.dart';
 import 'signup_screen.dart';
 
@@ -32,11 +32,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final authNotifier = ref.read(authNotifierProvider.notifier);
-      await authNotifier.signInWithEmail(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      // final authNotifier = ref.read(// authNotifierProvider.notifier);
+      // await authNotifier.signInWithEmail(
+      //   email: _emailController.text.trim(),
+      //   password: _passwordController.text,
+      // );
+      
+      // Temporary placeholder - simulate sign in
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in feature coming soon')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -54,7 +62,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      final authNotifier = ref.read(authNotifierProvider.notifier);
+      final authNotifier = ref.read(// authNotifierProvider.notifier);
       await authNotifier.signInWithGoogle();
     } catch (e) {
       if (mounted) {
@@ -73,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signInWithApple() async {
     setState(() => _isLoading = true);
     try {
-      final authNotifier = ref.read(authNotifierProvider.notifier);
+      final authNotifier = ref.read(// authNotifierProvider.notifier);
       await authNotifier.signInWithApple();
     } catch (e) {
       if (mounted) {
@@ -92,7 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signInWithFacebook() async {
     setState(() => _isLoading = true);
     try {
-      final authNotifier = ref.read(authNotifierProvider.notifier);
+      final authNotifier = ref.read(// authNotifierProvider.notifier);
       await authNotifier.signInWithFacebook();
     } catch (e) {
       if (mounted) {

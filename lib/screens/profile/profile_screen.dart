@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../constants/app_colors.dart';
-import '../../providers/auth_provider.dart';
+// import '../../providers/auth_provider.dart'; // Temporarily disabled
 import '../../screens/auth/login_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -10,7 +10,9 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authAsync = ref.watch(authNotifierProvider);
+    // final authAsync = ref.watch(authNotifierProvider);
+    // Temporary placeholder - simulate authenticated user
+    final authAsync = AsyncValue.data(FirebaseAuth.instance.currentUser);
 
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +55,11 @@ class ProfileScreen extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: const AppColors.primaryGradient,
+              gradient: const LinearGradient(
+                colors: [AppColors.urbanBlue, AppColors.mossGreen],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -344,7 +350,7 @@ class ProfileScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              final authNotifier = ref.read(authNotifierProvider.notifier);
+              final authNotifier = ref.read(// authNotifierProvider.notifier);
               await authNotifier.signOut();
               if (context.mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
