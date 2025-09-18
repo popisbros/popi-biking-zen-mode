@@ -36,12 +36,16 @@ class MapService {
       case MapLayerType.openStreetMap:
         return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
       case MapLayerType.cycling:
-        return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${ApiKeys.mapTilerApiKey}';
+        // Use OpenCycleMap which is free and doesn't require API key
+        return 'https://tile.opencyclemap.org/cycle/{z}/{x}/{y}.png';
       case MapLayerType.satellite:
+        // Use MapTiler satellite with proper API key
         return 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${ApiKeys.mapTilerApiKey}';
       case MapLayerType.terrain:
+        // Use MapTiler terrain with proper API key
         return 'https://api.maptiler.com/maps/terrain-v2/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}';
       case MapLayerType.dark:
+        // Use MapTiler dark with proper API key
         return 'https://api.maptiler.com/maps/dark-v2/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}';
     }
   }
@@ -55,7 +59,7 @@ class MapService {
       case MapLayerType.openStreetMap:
         return '© OpenStreetMap contributors';
       case MapLayerType.cycling:
-        return '© Thunderforest, © OpenStreetMap contributors';
+        return '© OpenCycleMap, © OpenStreetMap contributors';
       case MapLayerType.satellite:
       case MapLayerType.terrain:
       case MapLayerType.dark:
