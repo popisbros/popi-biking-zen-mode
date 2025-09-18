@@ -5,6 +5,11 @@ on:
     branches: [ main ]
   workflow_dispatch: # Allow manual triggering
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -53,12 +58,20 @@ jobs:
           test -f build/web/index.html && echo "✅ index.html exists" || echo "❌ index.html missing"
           test -f build/web/main.dart.js && echo "✅ main.dart.js exists" || echo "❌ main.dart.js missing"
           
-      - name: 🚀 Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: 📋 Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: 📤 Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
-          cname: # No custom domain
+          path: './build/web'
+          
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
           
       - name: ✅ Deployment complete
         run: |
