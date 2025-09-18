@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../constants/app_colors.dart';
 import '../providers/location_provider.dart';
+import '../providers/map_provider.dart';
 import '../services/map_service.dart';
 import '../widgets/warning_report_modal.dart';
 
@@ -23,6 +24,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void initState() {
     super.initState();
     _initializeLocation();
+    _initializeMap();
   }
 
   Future<void> _initializeLocation() async {
@@ -30,6 +32,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final locationNotifier = ref.read(locationNotifierProvider.notifier);
     await locationNotifier.requestPermission();
     await locationNotifier.startTracking();
+  }
+
+  void _initializeMap() {
+    // Load cycling data and initialize map state
+    final mapNotifier = ref.read(mapProvider.notifier);
+    mapNotifier.loadCyclingData();
   }
 
   void _onMapReady() {
@@ -65,29 +73,54 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final locationAsync = ref.watch(locationNotifierProvider);
+    final mapState = ref.watch(mapProvider);
 
     return Scaffold(
       body: Stack(
         children: [
-          // Flutter Map (works on web and mobile)
+          // Enhanced Flutter Map with cycling features
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: const LatLng(37.7749, -122.4194), // San Francisco default
-              initialZoom: 15.0,
+              initialCenter: mapState.center,
+              initialZoom: mapState.zoom,
+              minZoom: 10.0,
+              maxZoom: 20.0,
               onMapReady: () => _onMapReady(),
+              onTap: (tapPosition, point) => _onMapTap(point),
             ),
             children: [
-              // OpenStreetMap tiles
+              // Dynamic tile layer based on current selection
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.popibiking.zenmode',
+                urlTemplate: mapState.tileUrl,
+                userAgentPackageName: _mapService.userAgent,
+                maxZoom: 20,
+                subdomains: const ['a', 'b', 'c'],
               ),
-              // Cycling-specific overlay (you can add custom tiles here)
-              // Note: Thunderforest requires API key, using OpenStreetMap for now
-              // TileLayer(
-              //   urlTemplate: 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=YOUR_API_KEY',
-              //   userAgentPackageName: 'com.popibiking.zenmode',
+              
+              // Cycling routes
+              if (mapState.showRoutes)
+                PolylineLayer(
+                  polylines: _buildRoutePolylines(mapState.routes),
+                ),
+              
+              // POI markers
+              if (mapState.showPOIs)
+                MarkerLayer(
+                  markers: _buildPOIMarkers(mapState.pois),
+                ),
+              
+              // Warning markers
+              if (mapState.showWarnings)
+                MarkerLayer(
+                  markers: _buildWarningMarkers(mapState.warnings),
+                ),
+              
+              // Attribution (simplified for now)
+              // RichAttributionWidget(
+              //   attributions: [
+              //     TextSource('© OpenStreetMap contributors'),
+              //   ],
               // ),
             ],
           ),
@@ -192,7 +225,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Map controls
           if (_isMapReady) ...[
-            // POI List button
+            // Layer switching button
             Positioned(
               top: MediaQuery.of(context).padding.top + 80,
               right: 16,
@@ -200,20 +233,59 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 mini: true,
                 backgroundColor: AppColors.surface,
                 foregroundColor: AppColors.urbanBlue,
+                onPressed: _showLayerSelector,
+                child: const Icon(Icons.layers),
+              ),
+            ),
+
+            // POI toggle button
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 140,
+              right: 16,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: mapState.showPOIs ? AppColors.mossGreen : AppColors.surface,
+                foregroundColor: mapState.showPOIs ? AppColors.surface : AppColors.urbanBlue,
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('POI list feature coming soon'),
-                    ),
-                  );
+                  ref.read(mapProvider.notifier).togglePOIs();
                 },
                 child: const Icon(Icons.place),
               ),
             ),
 
+            // Route toggle button
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 200,
+              right: 16,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: mapState.showRoutes ? AppColors.signalYellow : AppColors.surface,
+                foregroundColor: mapState.showRoutes ? AppColors.urbanBlue : AppColors.urbanBlue,
+                onPressed: () {
+                  ref.read(mapProvider.notifier).toggleRoutes();
+                },
+                child: const Icon(Icons.route),
+              ),
+            ),
+
+            // Warning toggle button
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 260,
+              right: 16,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: mapState.showWarnings ? AppColors.dangerRed : AppColors.surface,
+                foregroundColor: mapState.showWarnings ? AppColors.surface : AppColors.urbanBlue,
+                onPressed: () {
+                  ref.read(mapProvider.notifier).toggleWarnings();
+                },
+                child: const Icon(Icons.warning),
+              ),
+            ),
+
             // Center on location button
             Positioned(
-              top: MediaQuery.of(context).padding.top + 140,
+              top: MediaQuery.of(context).padding.top + 320,
               right: 16,
               child: FloatingActionButton(
                 mini: true,
@@ -226,7 +298,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
             // Zoom controls
             Positioned(
-              top: MediaQuery.of(context).padding.top + 200,
+              top: MediaQuery.of(context).padding.top + 380,
               right: 16,
               child: Column(
                 children: [
@@ -270,10 +342,232 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  void _addCyclingLayers() {
-    // Add cycling-specific layers using flutter_map
-    // This can be enhanced with custom markers, polylines, etc.
-    print('Adding cycling layers...');
+  void _onMapTap(LatLng point) {
+    // Handle map tap events
+    print('Map tapped at: ${point.latitude}, ${point.longitude}');
+  }
+
+  void _showLayerSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.lightGrey,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Select Map Layer',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.urbanBlue,
+                ),
+              ),
+            ),
+            ...MapLayerType.values.map((layer) => ListTile(
+              leading: Icon(_getLayerIcon(layer)),
+              title: Text(_getLayerName(layer)),
+              onTap: () {
+                ref.read(mapProvider.notifier).changeLayer(layer);
+                Navigator.pop(context);
+              },
+            )),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getLayerIcon(MapLayerType layer) {
+    switch (layer) {
+      case MapLayerType.openStreetMap:
+        return Icons.map;
+      case MapLayerType.cycling:
+        return Icons.directions_bike;
+      case MapLayerType.satellite:
+        return Icons.satellite;
+      case MapLayerType.terrain:
+        return Icons.terrain;
+      case MapLayerType.dark:
+        return Icons.dark_mode;
+    }
+  }
+
+  String _getLayerName(MapLayerType layer) {
+    switch (layer) {
+      case MapLayerType.openStreetMap:
+        return 'OpenStreetMap';
+      case MapLayerType.cycling:
+        return 'Cycling';
+      case MapLayerType.satellite:
+        return 'Satellite';
+      case MapLayerType.terrain:
+        return 'Terrain';
+      case MapLayerType.dark:
+        return 'Dark';
+    }
+  }
+
+  List<Polyline> _buildRoutePolylines(List<Map<String, dynamic>> routes) {
+    return routes.map((route) {
+      final waypoints = route['waypoints'] as List<LatLng>;
+      return Polyline(
+        points: waypoints,
+        color: Color(route['color'] as int),
+        strokeWidth: 4.0,
+        // Note: Pattern support varies by flutter_map version
+        // pattern: route['type'] == 'commute' ? [10, 5] : null,
+      );
+    }).toList();
+  }
+
+  List<Marker> _buildPOIMarkers(List<Map<String, dynamic>> pois) {
+    return pois.map((poi) {
+      final position = poi['position'] as LatLng;
+      return Marker(
+        point: position,
+        width: 40,
+        height: 40,
+        child: GestureDetector(
+          onTap: () => _showPOIDetails(poi),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.mossGreen,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.surface, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                poi['icon'] as String,
+                style: const TextStyle(fontSize: 20),
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  List<Marker> _buildWarningMarkers(List<Map<String, dynamic>> warnings) {
+    return warnings.map((warning) {
+      final position = warning['position'] as LatLng;
+      final severity = warning['severity'] as String;
+      Color color = AppColors.dangerRed;
+      if (severity == 'medium') color = AppColors.signalYellow;
+      if (severity == 'low') color = AppColors.mossGreen;
+
+      return Marker(
+        point: position,
+        width: 30,
+        height: 30,
+        child: GestureDetector(
+          onTap: () => _showWarningDetails(warning),
+          child: Container(
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.surface, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                warning['icon'] as String,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  void _showPOIDetails(Map<String, dynamic> poi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(poi['name'] as String),
+        content: Text(poi['description'] as String),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWarningDetails(Map<String, dynamic> warning) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${warning['icon']} ${warning['type']}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(warning['description'] as String),
+            const SizedBox(height: 8),
+            Text(
+              'Severity: ${warning['severity']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'Reported: ${_formatDateTime(warning['reportedAt'] as DateTime)}',
+              style: const TextStyle(fontSize: 12, color: AppColors.lightGrey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inHours < 1) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
   }
 
   @override
