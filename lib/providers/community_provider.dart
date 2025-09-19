@@ -13,13 +13,23 @@ final firebaseServiceProvider = Provider<FirebaseService>((ref) {
 final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
   
-  // For now, we'll get all warnings. In production, you'd filter by location
-  return firebaseService.getNearbyWarnings(37.7749, -122.4194, 50.0)
+  // Get all warnings (no location filtering for debugging)
+  return firebaseService.getNearbyWarnings(0, 0, 999999) // Large radius to get all warnings
       .map((snapshot) => snapshot.docs
-          .map((doc) => CommunityWarning.fromMap({
-            'id': doc.id,
-            ...doc.data() as Map<String, dynamic>,
-          }))
+          .map((doc) {
+            try {
+              return CommunityWarning.fromMap({
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              });
+            } catch (e) {
+              print('Error parsing warning document ${doc.id}: $e');
+              print('Document data: ${doc.data()}');
+              return null;
+            }
+          })
+          .where((warning) => warning != null)
+          .cast<CommunityWarning>()
           .toList());
 });
 
@@ -29,10 +39,20 @@ final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
   
   return firebaseService.getCyclingPOIs()
       .map((snapshot) => snapshot.docs
-          .map((doc) => CyclingPOI.fromMap({
-            'id': doc.id,
-            ...doc.data() as Map<String, dynamic>,
-          }))
+          .map((doc) {
+            try {
+              return CyclingPOI.fromMap({
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              });
+            } catch (e) {
+              print('Error parsing POI document ${doc.id}: $e');
+              print('Document data: ${doc.data()}');
+              return null;
+            }
+          })
+          .where((poi) => poi != null)
+          .cast<CyclingPOI>()
           .toList());
 });
 

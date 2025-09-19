@@ -9,6 +9,7 @@ import '../providers/community_provider.dart';
 import '../services/map_service.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
+import 'debug_screen.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -155,6 +156,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           );
                         },
                         child: const Icon(Icons.person),
+                      ),
+                    ),
+                  ),
+
+                  // Debug button (temporary)
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 16,
+                    child: Semantics(
+                      label: 'Open debug screen',
+                      button: true,
+                      child: FloatingActionButton(
+                        mini: true,
+                        backgroundColor: AppColors.warningOrange,
+                        foregroundColor: AppColors.surface,
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const DebugScreen(),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.bug_report),
                       ),
                     ),
                   ),
