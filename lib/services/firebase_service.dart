@@ -233,11 +233,11 @@ class FirebaseService {
           .orderBy('createdAt', descending: true)
           .limit(50)
           .snapshots();
-            } catch (e) {
-              print('FirebaseService.getNearbyWarnings: Error: $e');
-              // Return an empty stream on error
-              return Stream.value(QuerySnapshot<Map<String, dynamic>>.empty());
-            }
+    } catch (e) {
+      print('FirebaseService.getNearbyWarnings: Error: $e');
+      // Return an empty stream on error
+      return Stream.empty();
+    }
   }
 
   /// Get cycling POIs
@@ -247,11 +247,11 @@ class FirebaseService {
           .collection(_poisCollection)
           .where('isActive', isEqualTo: true)
           .snapshots();
-            } catch (e) {
-              print('FirebaseService.getCyclingPOIs: Error: $e');
-              // Return an empty stream on error
-              return Stream.value(QuerySnapshot<Map<String, dynamic>>.empty());
-            }
+    } catch (e) {
+      print('FirebaseService.getCyclingPOIs: Error: $e');
+      // Return an empty stream on error
+      return Stream.empty();
+    }
   }
 
   /// Force create the pois collection with a sample document
