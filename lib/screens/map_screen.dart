@@ -465,48 +465,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       _debugService.logButtonClick('POI Toggle', screen: 'MapScreen');
                       ref.read(mapProvider.notifier).togglePOIs();
                     },
-                    child: Stack(
-                      children: [
-                        const Icon(Icons.location_on),
-                        poisAsync.when(
-                          data: (pois) {
-                            print('POI count: ${pois.length}'); // Debug log
-                            return pois.isNotEmpty
-                                ? Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.dangerRed,
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: AppColors.surface,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 18,
-                                        minHeight: 18,
-                                      ),
-                                      child: Text(
-                                        '${pois.length}',
-                                        style: const TextStyle(
-                                          color: AppColors.surface,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox.shrink();
-                          },
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                        ),
-                      ],
-                    ),
+                    child: const Icon(Icons.location_on),
                   ),
                 ),
               ),
@@ -529,48 +488,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       _debugService.logButtonClick('Warning Toggle', screen: 'MapScreen');
                       ref.read(mapProvider.notifier).toggleWarnings();
                     },
-                    child: Stack(
-                      children: [
-                        const Icon(Icons.warning),
-                        warningsAsync.when(
-                          data: (warnings) {
-                            print('Warning count: ${warnings.length}'); // Debug log
-                            return warnings.isNotEmpty
-                                ? Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.dangerRed,
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: AppColors.surface,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 18,
-                                        minHeight: 18,
-                                      ),
-                                      child: Text(
-                                        '${warnings.length}',
-                                        style: const TextStyle(
-                                          color: AppColors.surface,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox.shrink();
-                          },
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                        ),
-                      ],
-                    ),
+                    child: const Icon(Icons.warning),
                   ),
                 ),
               ),
@@ -741,6 +659,172 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       const SizedBox(width: 4),
                       Text(
                         'GPS Error',
+                        style: TextStyle(
+                          color: AppColors.dangerRed,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // POI Status indicator
+          if (_isMapReady)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 60,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: poisAsync.when(
+                  data: (pois) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        color: AppColors.mossGreen,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'POIs: ${pois.length}',
+                        style: TextStyle(
+                          color: AppColors.mossGreen,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  loading: () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.mossGreen),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'POIs Loading...',
+                        style: TextStyle(
+                          color: AppColors.mossGreen,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  error: (_, __) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_off,
+                        color: AppColors.dangerRed,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'POIs Error',
+                        style: TextStyle(
+                          color: AppColors.dangerRed,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Hazard Status indicator
+          if (_isMapReady)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 104,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: warningsAsync.when(
+                  data: (warnings) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.warning,
+                        color: AppColors.warningOrange,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Hazards: ${warnings.length}',
+                        style: TextStyle(
+                          color: AppColors.warningOrange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  loading: () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.warningOrange),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Hazards Loading...',
+                        style: TextStyle(
+                          color: AppColors.warningOrange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  error: (_, __) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.warning,
+                        color: AppColors.dangerRed,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Hazards Error',
                         style: TextStyle(
                           color: AppColors.dangerRed,
                           fontSize: 12,

@@ -195,6 +195,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
             ),
             Expanded(
               child: ListView.builder(
+                shrinkWrap: true,
                 itemCount: actions.length,
                 itemBuilder: (context, index) {
                   final action = actions[index];
@@ -301,78 +302,75 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
   }
 
   Widget _buildDataTab(AsyncValue warningsAsync, AsyncValue poisAsync) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Force Reload Buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _debugService.logButtonClick('Force Reload Warnings', screen: 'DebugPanel');
-                      // Force refresh the provider
-                      ref.refresh(communityWarningsProvider);
-                      // Also invalidate to force a complete reload
-                      ref.invalidate(communityWarningsProvider);
-                    },
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('Reload Warnings'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.dangerRed,
-                      foregroundColor: AppColors.surface,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Force Reload Buttons
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _debugService.logButtonClick('Force Reload Warnings', screen: 'DebugPanel');
+                  // Force refresh the provider
+                  ref.refresh(communityWarningsProvider);
+                  // Also invalidate to force a complete reload
+                  ref.invalidate(communityWarningsProvider);
+                },
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Reload Warnings'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.dangerRed,
+                  foregroundColor: AppColors.surface,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _debugService.logButtonClick('Force Reload POIs', screen: 'DebugPanel');
-                      // Force refresh the provider
-                      ref.refresh(cyclingPOIsProvider);
-                      // Also invalidate to force a complete reload
-                      ref.invalidate(cyclingPOIsProvider);
-                    },
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('Reload POIs'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.mossGreen,
-                      foregroundColor: AppColors.surface,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          
-          const SizedBox(height: 8),
-          
-          // Warnings Section
-          _buildDataSection<dynamic>(
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _debugService.logButtonClick('Force Reload POIs', screen: 'DebugPanel');
+                  // Force refresh the provider
+                  ref.refresh(cyclingPOIsProvider);
+                  // Also invalidate to force a complete reload
+                  ref.invalidate(cyclingPOIsProvider);
+                },
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Reload POIs'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.mossGreen,
+                  foregroundColor: AppColors.surface,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // Warnings Section
+        Expanded(
+          child: _buildDataSection<dynamic>(
             'Community Warnings',
             warningsAsync as AsyncValue<List<dynamic>>,
             (warnings) => warnings.length,
             (warnings) => warnings.map((w) => '${w.title} (${w.severity})').toList(),
           ),
-          
-          const SizedBox(height: 16),
-          
-          // POIs Section
-          _buildDataSection<dynamic>(
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // POIs Section
+        Expanded(
+          child: _buildDataSection<dynamic>(
             'Cycling POIs',
             poisAsync as AsyncValue<List<dynamic>>,
             (pois) => pois.length,
             (pois) => pois.map((p) => '${p.name} (${p.type})').toList(),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
