@@ -42,8 +42,8 @@ class MapService {
         // Use MapTiler satellite with proper API key
         return 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${ApiKeys.mapTilerApiKey}';
       case MapLayerType.terrain:
-        // Use MapTiler terrain with proper API key
-        return 'https://api.maptiler.com/maps/terrain-v2/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}';
+        // Use OpenTopoMap which is free and shows terrain features
+        return 'https://tile.opentopomap.org/{z}/{x}/{y}.png';
       case MapLayerType.dark:
         // Use MapTiler dark with proper API key
         return 'https://api.maptiler.com/maps/dark-v2/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}';
@@ -61,9 +61,10 @@ class MapService {
       case MapLayerType.cycling:
         return '© OpenCycleMap, © OpenStreetMap contributors';
       case MapLayerType.satellite:
-      case MapLayerType.terrain:
       case MapLayerType.dark:
         return '© MapTiler, © OpenStreetMap contributors';
+      case MapLayerType.terrain:
+        return '© OpenTopoMap, © OpenStreetMap contributors';
     }
   }
 
