@@ -284,65 +284,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
 
 
-          // Mobile hint for long press
-          if (_showMobileHint)
-            Positioned(
-              bottom: 200, // Above the floating action buttons
-              left: 16,
-              right: 16,
-              child: AnimatedOpacity(
-                opacity: _showMobileHint ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.urbanBlue.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.touch_app,
-                        color: AppColors.surface,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Long press anywhere on the map to add POIs or report hazards',
-                          style: TextStyle(
-                            color: AppColors.surface,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _showMobileHint = false;
-                          });
-                        },
-                        child: const Icon(
-                          Icons.close,
-                          color: AppColors.surface,
-                          size: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
           // Location status indicator
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
@@ -628,6 +569,64 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ),
                     ),
           ],
+
+          // Mobile hint for long press
+          if (_showMobileHint)
+            Positioned(
+              bottom: 200, // Above the floating action buttons
+              left: 16,
+              right: 16,
+              child: AnimatedOpacity(
+                opacity: _showMobileHint ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.urbanBlue.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.touch_app,
+                        color: AppColors.surface,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Long press anywhere on the map to add POIs or report hazards',
+                          style: TextStyle(
+                            color: AppColors.surface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _showMobileHint = false;
+                          });
+                        },
+                        icon: Icon(
+                          Icons.close,
+                          color: AppColors.surface,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       floatingActionButton: Column(
