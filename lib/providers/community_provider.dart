@@ -264,6 +264,96 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
       rethrow; // Re-throw so the UI can handle the error
     }
   }
+
+  /// Update an existing POI
+  Future<void> updatePOI(CyclingPOI poi) async {
+    final debugService = DebugService();
+    
+    try {
+      state = const AsyncValue.loading();
+      
+      debugService.logAction(
+        action: 'POI: Starting Firebase updatePOI call',
+        screen: 'CyclingPOIsNotifier',
+        parameters: {
+          'poiId': poi.id,
+          'poiName': poi.name,
+          'poiType': poi.type,
+        },
+      );
+      
+      // Call Firebase to update the POI
+      await _firebaseService.updatePOI(poi.id, poi.toMap());
+      
+      debugService.logAction(
+        action: 'POI: Successfully updated in Firebase',
+        screen: 'CyclingPOIsNotifier',
+        result: 'POI updated in Firestore',
+      );
+      
+      // Reload POIs after successful update
+      final pois = await _getPOIsFromFirestore();
+      state = AsyncValue.data(pois);
+      
+      debugService.logAction(
+        action: 'POI: Reloaded POIs after update',
+        screen: 'CyclingPOIsNotifier',
+        parameters: {'poiCount': pois.length},
+      );
+    } catch (error, stackTrace) {
+      debugService.logAction(
+        action: 'POI: Failed to update in Firebase',
+        screen: 'CyclingPOIsNotifier',
+        error: error.toString(),
+      );
+      
+      state = AsyncValue.error(error, stackTrace);
+      rethrow; // Re-throw so the UI can handle the error
+    }
+  }
+
+  /// Delete a POI
+  Future<void> deletePOI(String poiId) async {
+    final debugService = DebugService();
+    
+    try {
+      state = const AsyncValue.loading();
+      
+      debugService.logAction(
+        action: 'POI: Starting Firebase deletePOI call',
+        screen: 'CyclingPOIsNotifier',
+        parameters: {'poiId': poiId},
+      );
+      
+      // Call Firebase to delete the POI
+      await _firebaseService.deletePOI(poiId);
+      
+      debugService.logAction(
+        action: 'POI: Successfully deleted from Firebase',
+        screen: 'CyclingPOIsNotifier',
+        result: 'POI deleted from Firestore',
+      );
+      
+      // Reload POIs after successful deletion
+      final pois = await _getPOIsFromFirestore();
+      state = AsyncValue.data(pois);
+      
+      debugService.logAction(
+        action: 'POI: Reloaded POIs after deletion',
+        screen: 'CyclingPOIsNotifier',
+        parameters: {'poiCount': pois.length},
+      );
+    } catch (error, stackTrace) {
+      debugService.logAction(
+        action: 'POI: Failed to delete from Firebase',
+        screen: 'CyclingPOIsNotifier',
+        error: error.toString(),
+      );
+      
+      state = AsyncValue.error(error, stackTrace);
+      rethrow; // Re-throw so the UI can handle the error
+    }
+  }
   
   /// Refresh POIs
   Future<void> refreshPOIs() async {
