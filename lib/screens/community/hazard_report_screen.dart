@@ -338,9 +338,264 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
               ),
               
               const SizedBox(height: 20),
+              
+              // Existing Warnings List
+              Text(
+                'Existing Warnings',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.urbanBlue,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Watch for warnings data
+              Consumer(
+                builder: (context, ref, child) {
+                  final warningsAsync = ref.watch(communityWarningsProvider);
+                  
+                  return warningsAsync.when(
+                    data: (warnings) => ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: warnings.length,
+                      itemBuilder: (context, index) {
+                        final warning = warnings[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: Text(
+                              _getWarningIcon(warning.type),
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                            title: Text(
+                              warning.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (warning.description != null)
+                                  Text(
+                                    warning.description!,
+                                    style: const TextStyle(fontSize: 12),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getSeverityColor(warning.severity),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        warning.severity.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatDateTime(warning.reportedAt),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.lightGrey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            trailing: Icon(
+                              Icons.location_on,
+                              color: AppColors.mossGreen,
+                              size: 16,
+                            ),
+                            onTap: () {
+                              // Show warning details
+                              _showWarningDetails(warning);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    error: (error, stack) => Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red.shade600,
+                            size: 32,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Failed to load warnings',
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            error.toString(),
+                            style: TextStyle(
+                              color: Colors.red.shade600,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  String _getWarningIcon(String type) {
+    switch (type) {
+      case 'hazard':
+        return '⚠️';
+      case 'construction':
+        return '🚧';
+      case 'road_closure':
+        return '🚫';
+      case 'poor_condition':
+        return '🕳️';
+      case 'traffic':
+        return '🚗';
+      case 'weather':
+        return '🌧️';
+      default:
+        return '⚠️';
+    }
+  }
+
+  Color _getSeverityColor(String severity) {
+    switch (severity) {
+      case 'high':
+        return AppColors.dangerRed;
+      case 'medium':
+        return AppColors.signalYellow;
+      case 'low':
+        return AppColors.mossGreen;
+      default:
+        return AppColors.lightGrey;
+    }
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    }
+  }
+
+  void _showWarningDetails(CommunityWarning warning) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Text(_getWarningIcon(warning.type)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(warning.title)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (warning.description != null) ...[
+              Text(warning.description!),
+              const SizedBox(height: 12),
+            ],
+            Row(
+              children: [
+                Text(
+                  'Severity: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getSeverityColor(warning.severity),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    warning.severity.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Reported: ${_formatDateTime(warning.reportedAt)}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.lightGrey,
+              ),
+            ),
+            if (warning.reportedBy != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'By: ${warning.reportedBy}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.lightGrey,
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
