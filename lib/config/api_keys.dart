@@ -9,6 +9,10 @@ class ApiKeys {
   // Now loaded securely from environment variables
   static String get mapTilerApiKey => SecureConfig.mapTilerApiKey;
   
+  // Thunderforest API Key for cycling maps
+  // Now loaded securely from environment variables
+  static String get thunderforestApiKey => SecureConfig.thunderforestApiKey;
+  
   // OpenStreetMap Nominatim API (free, no key required)
   static const String nominatimBaseUrl = 'https://nominatim.openstreetmap.org';
   

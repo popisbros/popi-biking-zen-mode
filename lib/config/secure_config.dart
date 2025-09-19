@@ -16,6 +16,18 @@ class SecureConfig {
     return '0n3hIGbHnipUHJE5pew7';
   }
   
+  // Thunderforest API Key
+  static String get thunderforestApiKey {
+    // Try to get from environment variable first
+    const envKey = String.fromEnvironment('THUNDERFOREST_API_KEY');
+    if (envKey.isNotEmpty && envKey != 'YOUR_THUNDERFOREST_API_KEY_HERE') {
+      return envKey;
+    }
+    
+    // Fallback - you'll need to provide your actual Thunderforest API key here
+    return 'YOUR_THUNDERFOREST_API_KEY_HERE';
+  }
+  
   // Firebase Configuration
   static String get firebaseApiKey {
     const envKey = String.fromEnvironment('FIREBASE_API_KEY');

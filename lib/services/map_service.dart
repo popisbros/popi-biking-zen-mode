@@ -10,7 +10,6 @@ enum MapLayerType {
   cycling,
   satellite,
   terrain,
-  dark,
 }
 
 /// Service for managing map configuration and styles for flutter_map
@@ -36,17 +35,14 @@ class MapService {
       case MapLayerType.openStreetMap:
         return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
       case MapLayerType.cycling:
-        // Use OpenCycleMap which is free and doesn't require API key
-        return 'https://tile.opencyclemap.org/cycle/{z}/{x}/{y}.png';
+        // Use Thunderforest cycling layer with API key
+        return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
       case MapLayerType.satellite:
         // Use MapTiler satellite with proper API key
         return 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${ApiKeys.mapTilerApiKey}';
       case MapLayerType.terrain:
         // Use OpenTopoMap which is free and shows terrain features
         return 'https://tile.opentopomap.org/{z}/{x}/{y}.png';
-      case MapLayerType.dark:
-        // Use MapTiler dark with proper API key
-        return 'https://api.maptiler.com/maps/dark-v2/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}';
     }
   }
 
@@ -59,9 +55,8 @@ class MapService {
       case MapLayerType.openStreetMap:
         return '© OpenStreetMap contributors';
       case MapLayerType.cycling:
-        return '© OpenCycleMap, © OpenStreetMap contributors';
+        return '© Thunderforest, © OpenStreetMap contributors';
       case MapLayerType.satellite:
-      case MapLayerType.dark:
         return '© MapTiler, © OpenStreetMap contributors';
       case MapLayerType.terrain:
         return '© OpenTopoMap, © OpenStreetMap contributors';

@@ -404,8 +404,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return Icons.satellite;
       case MapLayerType.terrain:
         return Icons.terrain;
-      case MapLayerType.dark:
-        return Icons.dark_mode;
     }
   }
 
@@ -419,8 +417,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return 'Satellite';
       case MapLayerType.terrain:
         return 'Terrain';
-      case MapLayerType.dark:
-        return 'Dark';
     }
   }
 
