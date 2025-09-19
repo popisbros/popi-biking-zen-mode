@@ -261,30 +261,34 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
                       ),
                       const SizedBox(height: 24),
                       
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _addPOI,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.urbanBlue,
-                            foregroundColor: AppColors.surface,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: Semantics(
+                            label: 'Add new point of interest to the map',
+                            button: true,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _addPOI,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.urbanBlue,
+                                foregroundColor: AppColors.surface,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                                    )
+                                  : const Text(
+                                      'Add POI',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
-                          child: _isLoading
-                              ? const CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
-                                )
-                              : const Text(
-                                  'Add POI',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -319,16 +323,20 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
                       ),
                       title: Text(poi.name),
                       subtitle: Text('${poi.type} • ${poi.latitude.toStringAsFixed(4)}, ${poi.longitude.toStringAsFixed(4)}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: AppColors.dangerRed),
-                        onPressed: () {
-                          // TODO: Implement delete functionality
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Delete functionality coming soon'),
-                            ),
-                          );
-                        },
+                      trailing: Semantics(
+                        label: 'Delete point of interest: ${poi.name}',
+                        button: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.delete, color: AppColors.dangerRed),
+                          onPressed: () {
+                            // TODO: Implement delete functionality
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Delete functionality coming soon'),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   );

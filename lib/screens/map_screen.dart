@@ -141,18 +141,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 16,
                     right: 16,
-                    child: FloatingActionButton(
-                      mini: true,
-                      backgroundColor: AppColors.surface,
-                      foregroundColor: AppColors.urbanBlue,
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Profile feature coming soon'),
-                          ),
-                        );
-                      },
-                      child: const Icon(Icons.person),
+                    child: Semantics(
+                      label: 'Open user profile',
+                      button: true,
+                      child: FloatingActionButton(
+                        mini: true,
+                        backgroundColor: AppColors.surface,
+                        foregroundColor: AppColors.urbanBlue,
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Profile feature coming soon'),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.person),
+                      ),
                     ),
                   ),
 
@@ -160,18 +164,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 80,
                     left: 16,
-                    child: FloatingActionButton(
-                      mini: true,
-                      backgroundColor: AppColors.mossGreen,
-                      foregroundColor: AppColors.surface,
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const POIManagementScreen(),
-                          ),
-                        );
-                      },
-                      child: const Icon(Icons.add_location),
+                    child: Semantics(
+                      label: 'Add new point of interest',
+                      button: true,
+                      child: FloatingActionButton(
+                        mini: true,
+                        backgroundColor: AppColors.mossGreen,
+                        foregroundColor: AppColors.surface,
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const POIManagementScreen(),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.add_location),
+                      ),
                     ),
                   ),
 
@@ -256,119 +264,151 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Map controls
           if (_isMapReady) ...[
-            // Layer switching button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 80,
-              right: 16,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.urbanBlue,
-                onPressed: _showLayerSelector,
-                child: const Icon(Icons.layers),
-              ),
-            ),
+                    // Layer switching button
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 80,
+                      right: 16,
+                      child: Semantics(
+                        label: 'Switch map layer',
+                        button: true,
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: AppColors.surface,
+                          foregroundColor: AppColors.urbanBlue,
+                          onPressed: _showLayerSelector,
+                          child: const Icon(Icons.layers),
+                        ),
+                      ),
+                    ),
 
-            // POI toggle button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 140,
-              right: 16,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: mapState.showPOIs ? AppColors.mossGreen : AppColors.surface,
-                foregroundColor: mapState.showPOIs ? AppColors.surface : AppColors.urbanBlue,
-                onPressed: () {
-                  ref.read(mapProvider.notifier).togglePOIs();
-                },
-                child: const Icon(Icons.place),
-              ),
-            ),
+                    // POI toggle button
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 140,
+                      right: 16,
+                      child: Semantics(
+                        label: mapState.showPOIs ? 'Hide points of interest' : 'Show points of interest',
+                        button: true,
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: mapState.showPOIs ? AppColors.mossGreen : AppColors.surface,
+                          foregroundColor: mapState.showPOIs ? AppColors.surface : AppColors.urbanBlue,
+                          onPressed: () {
+                            ref.read(mapProvider.notifier).togglePOIs();
+                          },
+                          child: const Icon(Icons.place),
+                        ),
+                      ),
+                    ),
 
-            // Route toggle button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 200,
-              right: 16,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: mapState.showRoutes ? AppColors.signalYellow : AppColors.surface,
-                foregroundColor: mapState.showRoutes ? AppColors.urbanBlue : AppColors.urbanBlue,
-                onPressed: () {
-                  ref.read(mapProvider.notifier).toggleRoutes();
-                },
-                child: const Icon(Icons.route),
-              ),
-            ),
+                    // Route toggle button
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 200,
+                      right: 16,
+                      child: Semantics(
+                        label: mapState.showRoutes ? 'Hide cycling routes' : 'Show cycling routes',
+                        button: true,
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: mapState.showRoutes ? AppColors.signalYellow : AppColors.surface,
+                          foregroundColor: mapState.showRoutes ? AppColors.urbanBlue : AppColors.urbanBlue,
+                          onPressed: () {
+                            ref.read(mapProvider.notifier).toggleRoutes();
+                          },
+                          child: const Icon(Icons.route),
+                        ),
+                      ),
+                    ),
 
-            // Warning toggle button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 260,
-              right: 16,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: mapState.showWarnings ? AppColors.dangerRed : AppColors.surface,
-                foregroundColor: mapState.showWarnings ? AppColors.surface : AppColors.urbanBlue,
-                onPressed: () {
-                  ref.read(mapProvider.notifier).toggleWarnings();
-                },
-                child: const Icon(Icons.warning),
-              ),
-            ),
+                    // Warning toggle button
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 260,
+                      right: 16,
+                      child: Semantics(
+                        label: mapState.showWarnings ? 'Hide community warnings' : 'Show community warnings',
+                        button: true,
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: mapState.showWarnings ? AppColors.dangerRed : AppColors.surface,
+                          foregroundColor: mapState.showWarnings ? AppColors.surface : AppColors.urbanBlue,
+                          onPressed: () {
+                            ref.read(mapProvider.notifier).toggleWarnings();
+                          },
+                          child: const Icon(Icons.warning),
+                        ),
+                      ),
+                    ),
 
-            // Center on location button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 320,
-              right: 16,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.urbanBlue,
-                onPressed: _centerOnUserLocation,
-                child: const Icon(Icons.my_location),
-              ),
-            ),
+                    // Center on location button
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 320,
+                      right: 16,
+                      child: Semantics(
+                        label: 'Center map on current location',
+                        button: true,
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: AppColors.surface,
+                          foregroundColor: AppColors.urbanBlue,
+                          onPressed: _centerOnUserLocation,
+                          child: const Icon(Icons.my_location),
+                        ),
+                      ),
+                    ),
 
-            // Zoom controls
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 380,
-              right: 16,
-              child: Column(
-                children: [
-                  FloatingActionButton(
-                    mini: true,
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.urbanBlue,
-                    onPressed: () {
-                      _mapController.move(
-                        _mapController.camera.center,
-                        _mapController.camera.zoom + 1,
-                      );
-                    },
-                    child: const Icon(Icons.add),
-                  ),
-                  const SizedBox(height: 8),
-                  FloatingActionButton(
-                    mini: true,
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.urbanBlue,
-                    onPressed: () {
-                      _mapController.move(
-                        _mapController.camera.center,
-                        _mapController.camera.zoom - 1,
-                      );
-                    },
-                    child: const Icon(Icons.remove),
-                  ),
-                ],
-              ),
-            ),
+                    // Zoom controls
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 380,
+                      right: 16,
+                      child: Column(
+                        children: [
+                          Semantics(
+                            label: 'Zoom in',
+                            button: true,
+                            child: FloatingActionButton(
+                              mini: true,
+                              backgroundColor: AppColors.surface,
+                              foregroundColor: AppColors.urbanBlue,
+                              onPressed: () {
+                                _mapController.move(
+                                  _mapController.camera.center,
+                                  _mapController.camera.zoom + 1,
+                                );
+                              },
+                              child: const Icon(Icons.add),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Semantics(
+                            label: 'Zoom out',
+                            button: true,
+                            child: FloatingActionButton(
+                              mini: true,
+                              backgroundColor: AppColors.surface,
+                              foregroundColor: AppColors.urbanBlue,
+                              onPressed: () {
+                                _mapController.move(
+                                  _mapController.camera.center,
+                                  _mapController.camera.zoom - 1,
+                                );
+                              },
+                              child: const Icon(Icons.remove),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
           ],
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onReportWarning,
-        backgroundColor: AppColors.signalYellow,
-        foregroundColor: AppColors.urbanBlue,
-        child: const Icon(Icons.warning),
+      floatingActionButton: Semantics(
+        label: 'Report a community warning',
+        button: true,
+        child: FloatingActionButton(
+          onPressed: _onReportWarning,
+          backgroundColor: AppColors.signalYellow,
+          foregroundColor: AppColors.urbanBlue,
+          child: const Icon(Icons.warning),
+        ),
       ),
     );
   }
@@ -501,25 +541,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         point: position,
         width: 40,
         height: 40,
-        child: GestureDetector(
-          onTap: () => _showPOIDetailsFromFirestore(poi),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.mossGreen,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.surface, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+        child: Semantics(
+          label: 'Point of interest: ${poi.name}',
+          button: true,
+          child: GestureDetector(
+            onTap: () => _showPOIDetailsFromFirestore(poi),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.mossGreen,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.surface, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  _getPOIIcon(poi.type),
+                  style: const TextStyle(fontSize: 20),
                 ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                _getPOIIcon(poi.type),
-                style: const TextStyle(fontSize: 20),
               ),
             ),
           ),
@@ -579,25 +623,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         point: position,
         width: 30,
         height: 30,
-        child: GestureDetector(
-          onTap: () => _showWarningDetailsFromFirestore(warning),
-          child: Container(
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.surface, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+        child: Semantics(
+          label: 'Community warning: ${warning.title} (${warning.severity} severity)',
+          button: true,
+          child: GestureDetector(
+            onTap: () => _showWarningDetailsFromFirestore(warning),
+            child: Container(
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.surface, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  _getWarningIcon(warning.type),
+                  style: const TextStyle(fontSize: 16),
                 ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                _getWarningIcon(warning.type),
-                style: const TextStyle(fontSize: 16),
               ),
             ),
           ),

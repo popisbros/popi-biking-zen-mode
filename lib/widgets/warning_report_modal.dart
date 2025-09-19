@@ -228,9 +228,13 @@ class _WarningReportModalState extends ConsumerState<WarningReportModal> {
                       runSpacing: 8,
                       children: _warningTypes.map((type) {
                         final isSelected = _selectedType == type['value'];
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedType = type['value']!),
-                          child: Container(
+                        return Semantics(
+                          label: 'Select warning type: ${type['label']}',
+                          button: true,
+                          selected: isSelected,
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedType = type['value']!),
+                            child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
@@ -277,9 +281,13 @@ class _WarningReportModalState extends ConsumerState<WarningReportModal> {
                       children: _severityLevels.map((severity) {
                         final isSelected = _selectedSeverity == severity['value'];
                         final color = severity['color'] as Color;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedSeverity = severity['value']!),
-                          child: Container(
+                        return Semantics(
+                          label: 'Select severity level: ${severity['label']}',
+                          button: true,
+                          selected: isSelected,
+                          child: GestureDetector(
+                            onTap: () => setState(() => _selectedSeverity = severity['value']!),
+                            child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: isSelected ? color : color.withOpacity(0.1),
@@ -334,11 +342,14 @@ class _WarningReportModalState extends ConsumerState<WarningReportModal> {
                     // Submit button
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _submitWarning,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.urbanBlue,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Semantics(
+                        label: 'Submit community warning report',
+                        button: true,
+                        child: ElevatedButton(
+                          onPressed: _submitWarning,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.urbanBlue,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: const Text(
                           'Submit Warning',
