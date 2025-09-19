@@ -242,6 +242,31 @@ class FirebaseService {
         .snapshots();
   }
 
+  /// Force create the pois collection with a sample document
+  Future<void> forceCreatePOIsCollection() async {
+    try {
+      // Create a sample POI to force collection creation
+      await _firestore.collection(_poisCollection).doc('sample').set({
+        'name': 'Sample POI',
+        'type': 'bike_shop',
+        'latitude': 37.7749,
+        'longitude': -122.4194,
+        'description': 'This is a sample POI to force collection creation',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'isActive': true,
+      });
+      
+      // Delete the sample document immediately
+      await _firestore.collection(_poisCollection).doc('sample').delete();
+      
+      print('FirebaseService.forceCreatePOIsCollection: Collection created successfully');
+    } catch (e) {
+      print('FirebaseService.forceCreatePOIsCollection: Error: $e');
+      rethrow;
+    }
+  }
+
   /// Add a new cycling POI
   Future<void> addPOI(Map<String, dynamic> poiData) async {
     try {

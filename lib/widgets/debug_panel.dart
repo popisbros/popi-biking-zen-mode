@@ -80,8 +80,8 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.lightGrey.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
@@ -112,26 +112,26 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
       child: GestureDetector(
         onTap: () => setState(() => _selectedTab = index),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.urbanBlue : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: isSelected ? Colors.blue : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 18,
-                color: isSelected ? AppColors.surface : AppColors.urbanBlue,
+                size: 16,
+                color: isSelected ? Colors.white : Colors.black87,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? AppColors.surface : AppColors.urbanBlue,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected ? Colors.white : Colors.black87,
                 ),
               ),
             ],
@@ -198,19 +198,12 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 itemBuilder: (context, index) {
                   final action = actions[index];
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.lightGrey.withOpacity(0.3)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,62 +217,61 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
+                              child: SelectableText(
                                 action.action,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: AppColors.urbanBlue,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                  color: Colors.black87,
                                 ),
                               ),
                             ),
-                            Text(
+                            SelectableText(
                               _formatTime(action.timestamp),
                               style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.lightGrey,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                                color: Colors.grey,
                               ),
                             ),
                           ],
                         ),
                         if (action.screen != null) ...[
                           const SizedBox(height: 4),
-                          Text(
+                          SelectableText(
                             'Screen: ${action.screen}',
                             style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.lightGrey,
+                              fontSize: 13,
+                              color: Colors.grey,
                             ),
                           ),
                         ],
                         if (action.parameters != null && action.parameters!.isNotEmpty) ...[
                           const SizedBox(height: 4),
-                          Text(
+                          SelectableText(
                             'Params: ${action.parameters}',
                             style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.lightGrey,
+                              fontSize: 13,
+                              color: Colors.grey,
                             ),
                           ),
                         ],
                         if (action.result != null) ...[
                           const SizedBox(height: 4),
-                          Text(
+                          SelectableText(
                             'Result: ${action.result}',
                             style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.mossGreen,
+                              fontSize: 13,
+                              color: Colors.green,
                             ),
                           ),
                         ],
                         if (action.error != null) ...[
                           const SizedBox(height: 4),
-                          Text(
+                          SelectableText(
                             'Error: ${action.error}',
                             style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.dangerRed,
+                              fontSize: 13,
+                              color: Colors.red,
                             ),
                           ),
                         ],
@@ -343,6 +335,50 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            // Force create collection button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  _debugService.logButtonClick('Force Create POIs Collection', screen: 'DebugPanel');
+                  try {
+                    final firebaseService = ref.read(firebaseServiceProvider);
+                    await firebaseService.forceCreatePOIsCollection();
+                    _debugService.logAction(
+                      action: 'Firebase: Successfully created pois collection',
+                      screen: 'DebugPanel',
+                      result: 'Collection created',
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('POIs collection created successfully!'),
+                        backgroundColor: AppColors.mossGreen,
+                      ),
+                    );
+                  } catch (e) {
+                    _debugService.logAction(
+                      action: 'Firebase: Failed to create pois collection',
+                      screen: 'DebugPanel',
+                      error: e.toString(),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to create collection: $e'),
+                        backgroundColor: AppColors.dangerRed,
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.create_new_folder, size: 16),
+                label: const Text('Force Create POIs Collection'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.urbanBlue,
+                  foregroundColor: AppColors.surface,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
             ),
           ),
           
