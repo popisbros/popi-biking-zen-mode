@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
 import '../../providers/community_provider.dart';
 import '../../models/cycling_poi.dart';
+import '../../services/debug_service.dart';
 
 class POIManagementScreen extends ConsumerStatefulWidget {
   const POIManagementScreen({super.key});
@@ -18,6 +19,7 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   final _websiteController = TextEditingController();
+  final _debugService = DebugService();
   
   String _selectedType = 'bike_shop';
   double _latitude = 37.7749;
@@ -70,8 +72,25 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
         updatedAt: DateTime.now(),
       );
 
+      _debugService.logAction(
+        action: 'POI: Creating new POI',
+        screen: 'POIManagementScreen',
+        parameters: {
+          'name': poi.name,
+          'type': poi.type,
+          'latitude': poi.latitude,
+          'longitude': poi.longitude,
+        },
+      );
+
       final communityNotifier = ref.read(cyclingPOIsNotifierProvider.notifier);
       await communityNotifier.addPOI(poi);
+
+      _debugService.logAction(
+        action: 'POI: Successfully created POI',
+        screen: 'POIManagementScreen',
+        result: 'POI added to Firebase',
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -90,6 +109,12 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
         _websiteController.clear();
       }
     } catch (e) {
+      _debugService.logAction(
+        action: 'POI: Failed to create POI',
+        screen: 'POIManagementScreen',
+        error: e.toString(),
+      );
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

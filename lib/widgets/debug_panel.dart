@@ -80,8 +80,8 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.lightGrey.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.lightGrey.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
@@ -112,25 +112,25 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
       child: GestureDetector(
         onTap: () => setState(() => _selectedTab = index),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.urbanBlue : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 16,
+                size: 18,
                 color: isSelected ? AppColors.surface : AppColors.urbanBlue,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                   color: isSelected ? AppColors.surface : AppColors.urbanBlue,
                 ),
               ),
@@ -198,12 +198,19 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 itemBuilder: (context, index) {
                   final action = actions[index];
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.lightGrey),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.lightGrey.withOpacity(0.3)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,16 +227,18 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                               child: Text(
                                 action.action,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: AppColors.urbanBlue,
                                 ),
                               ),
                             ),
                             Text(
                               _formatTime(action.timestamp),
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 color: AppColors.lightGrey,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -300,6 +309,9 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       _debugService.logButtonClick('Force Reload Warnings', screen: 'DebugPanel');
+                      // Force refresh the provider
+                      ref.refresh(communityWarningsProvider);
+                      // Also invalidate to force a complete reload
                       ref.invalidate(communityWarningsProvider);
                     },
                     icon: const Icon(Icons.refresh, size: 16),
@@ -316,6 +328,9 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                   child: ElevatedButton.icon(
                     onPressed: () {
                       _debugService.logButtonClick('Force Reload POIs', screen: 'DebugPanel');
+                      // Force refresh the provider
+                      ref.refresh(cyclingPOIsProvider);
+                      // Also invalidate to force a complete reload
                       ref.invalidate(cyclingPOIsProvider);
                     },
                     icon: const Icon(Icons.refresh, size: 16),

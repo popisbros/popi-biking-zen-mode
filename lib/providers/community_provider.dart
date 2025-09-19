@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/community_warning.dart';
 import '../models/cycling_poi.dart';
 import '../services/firebase_service.dart';
+import '../services/debug_service.dart';
 
 /// Provider for Firebase service
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -12,29 +13,60 @@ final firebaseServiceProvider = Provider<FirebaseService>((ref) {
 /// Provider for community warnings stream
 final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
+  final debugService = DebugService();
+  
+  // Log the start of warnings loading
+  debugService.logAction(
+    action: 'Firebase: Starting to load community warnings',
+    screen: 'CommunityProvider',
+  );
   
   // Get all warnings (no location filtering for debugging)
   return firebaseService.getNearbyWarnings(0, 0, 999999) // Large radius to get all warnings
-      .map((snapshot) => snapshot.docs
-          .map((doc) {
-            try {
-              return CommunityWarning.fromMap({
-                'id': doc.id,
-                ...doc.data() as Map<String, dynamic>,
-              });
-            } catch (e) {
-              print('Error parsing warning document ${doc.id}: $e');
-              print('Document data: ${doc.data()}');
-              return null;
-            }
-          })
-          .where((warning) => warning != null)
-          .cast<CommunityWarning>()
-          .toList())
+      .map((snapshot) {
+        debugService.logAction(
+          action: 'Firebase: Received warnings snapshot',
+          screen: 'CommunityProvider',
+          parameters: {'docCount': snapshot.docs.length},
+        );
+        
+        return snapshot.docs
+            .map((doc) {
+              try {
+                return CommunityWarning.fromMap({
+                  'id': doc.id,
+                  ...doc.data() as Map<String, dynamic>,
+                });
+              } catch (e) {
+                print('Error parsing warning document ${doc.id}: $e');
+                print('Document data: ${doc.data()}');
+                debugService.logAction(
+                  action: 'Firebase: Error parsing warning document',
+                  screen: 'CommunityProvider',
+                  parameters: {'docId': doc.id, 'error': e.toString()},
+                  error: e.toString(),
+                );
+                return null;
+              }
+            })
+            .where((warning) => warning != null)
+            .cast<CommunityWarning>()
+            .toList();
+      })
       .handleError((error) {
         print('Firestore stream error: $error');
+        debugService.logAction(
+          action: 'Firebase: Stream error loading warnings',
+          screen: 'CommunityProvider',
+          error: error.toString(),
+        );
         if (error.toString().contains('CORS') || error.toString().contains('access control')) {
           print('CORS error detected - Firebase Firestore access blocked');
+          debugService.logAction(
+            action: 'Firebase: CORS error detected',
+            screen: 'CommunityProvider',
+            error: 'CORS error - Firebase Firestore access blocked',
+          );
         }
         // Return empty list on error to prevent app crash
         return <CommunityWarning>[];
@@ -44,32 +76,63 @@ final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
 /// Provider for cycling POIs stream
 final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
+  final debugService = DebugService();
+  
+  // Log the start of POIs loading
+  debugService.logAction(
+    action: 'Firebase: Starting to load cycling POIs',
+    screen: 'CommunityProvider',
+  );
   
   return firebaseService.getCyclingPOIs()
-      .map((snapshot) => snapshot.docs
-          .map((doc) {
-            try {
-              return CyclingPOI.fromMap({
-                'id': doc.id,
-                ...doc.data() as Map<String, dynamic>,
-              });
-            } catch (e) {
-              print('Error parsing POI document ${doc.id}: $e');
-              print('Document data: ${doc.data()}');
-              return null;
-            }
-          })
-          .where((poi) => poi != null)
-          .cast<CyclingPOI>()
-          .toList())
-              .handleError((error) {
-                print('Firestore POI stream error: $error');
-                if (error.toString().contains('CORS') || error.toString().contains('access control')) {
-                  print('CORS error detected - Firebase Firestore access blocked');
-                }
-                // Return empty list on error to prevent app crash
-                return <CyclingPOI>[];
-              });
+      .map((snapshot) {
+        debugService.logAction(
+          action: 'Firebase: Received POIs snapshot',
+          screen: 'CommunityProvider',
+          parameters: {'docCount': snapshot.docs.length},
+        );
+        
+        return snapshot.docs
+            .map((doc) {
+              try {
+                return CyclingPOI.fromMap({
+                  'id': doc.id,
+                  ...doc.data() as Map<String, dynamic>,
+                });
+              } catch (e) {
+                print('Error parsing POI document ${doc.id}: $e');
+                print('Document data: ${doc.data()}');
+                debugService.logAction(
+                  action: 'Firebase: Error parsing POI document',
+                  screen: 'CommunityProvider',
+                  parameters: {'docId': doc.id, 'error': e.toString()},
+                  error: e.toString(),
+                );
+                return null;
+              }
+            })
+            .where((poi) => poi != null)
+            .cast<CyclingPOI>()
+            .toList();
+      })
+      .handleError((error) {
+        print('Firestore POI stream error: $error');
+        debugService.logAction(
+          action: 'Firebase: Stream error loading POIs',
+          screen: 'CommunityProvider',
+          error: error.toString(),
+        );
+        if (error.toString().contains('CORS') || error.toString().contains('access control')) {
+          print('CORS error detected - Firebase Firestore access blocked');
+          debugService.logAction(
+            action: 'Firebase: CORS error detected',
+            screen: 'CommunityProvider',
+            error: 'CORS error - Firebase Firestore access blocked',
+          );
+        }
+        // Return empty list on error to prevent app crash
+        return <CyclingPOI>[];
+      });
 });
 
 /// Notifier for community warnings management
