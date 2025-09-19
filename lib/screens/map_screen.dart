@@ -160,28 +160,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                   ),
 
-                  // POI Management button
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 80,
-                    left: 16,
-                    child: Semantics(
-                      label: 'Add new point of interest',
-                      button: true,
-                      child: FloatingActionButton(
-                        mini: true,
-                        backgroundColor: AppColors.mossGreen,
-                        foregroundColor: AppColors.surface,
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const POIManagementScreen(),
-                            ),
-                          );
-                        },
-                        child: const Icon(Icons.add_location),
-                      ),
-                    ),
-                  ),
 
           // Location status indicator
           Positioned(
@@ -400,15 +378,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ],
         ],
       ),
-      floatingActionButton: Semantics(
-        label: 'Report a community warning',
-        button: true,
-        child: FloatingActionButton(
-          onPressed: _onReportWarning,
-          backgroundColor: AppColors.signalYellow,
-          foregroundColor: AppColors.urbanBlue,
-          child: const Icon(Icons.warning),
-        ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // POI Creation Button
+          Semantics(
+            label: 'Add new point of interest',
+            button: true,
+            child: FloatingActionButton(
+              mini: true,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const POIManagementScreen(),
+                  ),
+                );
+              },
+              backgroundColor: AppColors.mossGreen,
+              foregroundColor: AppColors.surface,
+              child: const Icon(Icons.add_location),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Warning Report Button
+          Semantics(
+            label: 'Report a community warning',
+            button: true,
+            child: FloatingActionButton(
+              onPressed: _onReportWarning,
+              backgroundColor: AppColors.signalYellow,
+              foregroundColor: AppColors.urbanBlue,
+              child: const Icon(Icons.warning),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -465,27 +468,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  IconData _getLayerIcon(MapLayerType layer) {
-    switch (layer) {
-      case MapLayerType.openStreetMap:
-        return Icons.map;
-      case MapLayerType.cycling:
-        return Icons.directions_bike;
-      case MapLayerType.satellite:
-        return Icons.satellite;
-    }
-  }
+          IconData _getLayerIcon(MapLayerType layer) {
+            switch (layer) {
+              case MapLayerType.cycling:
+                return Icons.directions_bike;
+              case MapLayerType.openStreetMap:
+                return Icons.map;
+              case MapLayerType.satellite:
+                return Icons.satellite;
+            }
+          }
 
-  String _getLayerName(MapLayerType layer) {
-    switch (layer) {
-      case MapLayerType.openStreetMap:
-        return 'OpenStreetMap';
-      case MapLayerType.cycling:
-        return 'Cycling';
-      case MapLayerType.satellite:
-        return 'Satellite';
-    }
-  }
+          String _getLayerName(MapLayerType layer) {
+            switch (layer) {
+              case MapLayerType.cycling:
+                return 'Cycling';
+              case MapLayerType.openStreetMap:
+                return 'OpenStreetMap';
+              case MapLayerType.satellite:
+                return 'Satellite';
+            }
+          }
 
   List<Polyline> _buildRoutePolylines(List<Map<String, dynamic>> routes) {
     return routes.map((route) {

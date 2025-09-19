@@ -6,8 +6,8 @@ import '../config/api_keys.dart';
 
 /// Map layer types
 enum MapLayerType {
-  openStreetMap,
   cycling,
+  openStreetMap,
   satellite,
 }
 
