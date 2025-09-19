@@ -30,7 +30,12 @@ final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
           })
           .where((warning) => warning != null)
           .cast<CommunityWarning>()
-          .toList());
+          .toList())
+      .handleError((error) {
+        print('Firestore stream error: $error');
+        // Return empty list on error to prevent app crash
+        return <CommunityWarning>[];
+      });
 });
 
 /// Provider for cycling POIs stream
@@ -53,7 +58,12 @@ final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
           })
           .where((poi) => poi != null)
           .cast<CyclingPOI>()
-          .toList());
+          .toList())
+      .handleError((error) {
+        print('Firestore POI stream error: $error');
+        // Return empty list on error to prevent app crash
+        return <CyclingPOI>[];
+      });
 });
 
 /// Notifier for community warnings management
