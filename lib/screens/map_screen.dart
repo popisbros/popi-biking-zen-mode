@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 import '../constants/app_colors.dart';
 import '../providers/location_provider.dart';
 import '../providers/map_provider.dart';
@@ -39,6 +40,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final locationNotifier = ref.read(locationNotifierProvider.notifier);
     await locationNotifier.requestPermission();
     await locationNotifier.startTracking();
+    
+    // Force get current position and center map
+    _debugService.logAction(action: 'GPS: Forcing current position');
+    await _centerOnUserLocation();
   }
 
   void _initializeMap() {
@@ -60,10 +65,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final locationAsync = ref.read(locationNotifierProvider);
     locationAsync.whenData((location) {
       if (location != null) {
+        _debugService.logAction(
+          action: 'Map: Centering on GPS location',
+          parameters: {
+            'latitude': location.latitude,
+            'longitude': location.longitude,
+          },
+        );
         _mapController.move(
           LatLng(location.latitude, location.longitude),
           15.0,
         );
+      } else {
+        _debugService.logAction(action: 'Map: GPS location not available');
       }
     });
   }
@@ -83,11 +97,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _isDebugPanelOpen = true;
     });
     
-    showModalBottomSheet(
+    showGeneralDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const DebugPanel(),
+      barrierDismissible: true,
+      barrierLabel: '',
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) => const DebugPanel(),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, -1),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        );
+      },
     ).then((_) {
       setState(() {
         _isDebugPanelOpen = false;
@@ -154,6 +178,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           loading: () => const MarkerLayer(markers: []),
                           error: (error, stack) => const MarkerLayer(markers: []),
                         ),
+                      
+                      // GPS Location marker
+                      locationAsync.when(
+                        data: (location) => location != null 
+                            ? MarkerLayer(
+                                markers: [_buildGPSLocationMarker(location)],
+                              )
+                            : const MarkerLayer(markers: []),
+                        loading: () => const MarkerLayer(markers: []),
+                        error: (error, stack) => const MarkerLayer(markers: []),
+                      ),
               
               // Attribution (simplified for now)
               // RichAttributionWidget(
@@ -188,10 +223,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                   ),
 
-                  // Debug button (temporary)
+                  // Debug button (bottom left)
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 16,
-                    left: 80, // Moved to the right to avoid overlap with location indicator
+                    bottom: 120, // Above the floating action buttons
+                    left: 16,
                     child: Semantics(
                       label: 'Open debug screen',
                       button: true,
@@ -885,6 +920,35 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       default:
         return '⚠️';
     }
+  }
+
+  Marker _buildGPSLocationMarker(Position location) {
+    return Marker(
+      point: LatLng(location.latitude, location.longitude),
+      width: 50,
+      height: 50,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.urbanBlue,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.surface, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.urbanBlue.withOpacity(0.3),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.directions_bike,
+            color: AppColors.surface,
+            size: 24,
+          ),
+        ),
+      ),
+    );
   }
 
   @override

@@ -21,15 +21,16 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     final poisAsync = ref.watch(cyclingPOIsProvider);
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.3,
+      height: MediaQuery.of(context).size.height * 0.4,
+      width: MediaQuery.of(context).size.width,
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 10,
-            offset: Offset(0, -2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -39,7 +40,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           Container(
             width: 40,
             height: 4,
-            margin: const EdgeInsets.symmetric(vertical: 12),
+            margin: const EdgeInsets.only(top: 8, bottom: 12),
             decoration: BoxDecoration(
               color: AppColors.lightGrey,
               borderRadius: BorderRadius.circular(2),
@@ -290,6 +291,48 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Force Reload Buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _debugService.logButtonClick('Force Reload Warnings', screen: 'DebugPanel');
+                      ref.invalidate(communityWarningsProvider);
+                    },
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Reload Warnings'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.dangerRed,
+                      foregroundColor: AppColors.surface,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _debugService.logButtonClick('Force Reload POIs', screen: 'DebugPanel');
+                      ref.invalidate(cyclingPOIsProvider);
+                    },
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Reload POIs'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.mossGreen,
+                      foregroundColor: AppColors.surface,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+          
           // Warnings Section
           _buildDataSection<dynamic>(
             'Community Warnings',
