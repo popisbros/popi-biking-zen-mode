@@ -9,7 +9,8 @@ import '../providers/community_provider.dart';
 import '../services/map_service.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
-import 'debug_screen.dart';
+import '../widgets/debug_panel.dart';
+import '../services/debug_service.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -21,13 +22,16 @@ class MapScreen extends ConsumerStatefulWidget {
 class _MapScreenState extends ConsumerState<MapScreen> {
   final MapController _mapController = MapController();
   final MapService _mapService = MapService();
+  final DebugService _debugService = DebugService();
   bool _isMapReady = false;
+  bool _isDebugPanelOpen = false;
 
   @override
   void initState() {
     super.initState();
     _initializeLocation();
     _initializeMap();
+    _debugService.logAction(action: 'Map Screen: Initialized');
   }
 
   Future<void> _initializeLocation() async {
@@ -65,11 +69,30 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _onReportWarning() {
+    _debugService.logButtonClick('Report Warning', screen: 'MapScreen');
+    _debugService.logNavigation('MapScreen', 'HazardReportScreen');
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const HazardReportScreen(),
       ),
     );
+  }
+
+  void _showDebugPanel() {
+    setState(() {
+      _isDebugPanelOpen = true;
+    });
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const DebugPanel(),
+    ).then((_) {
+      setState(() {
+        _isDebugPanelOpen = false;
+      });
+    });
   }
 
   @override
@@ -83,7 +106,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       body: Stack(
         children: [
           // Enhanced Flutter Map with cycling features
-          FlutterMap(
+          Container(
+            height: _isDebugPanelOpen 
+                ? MediaQuery.of(context).size.height * 0.7 
+                : MediaQuery.of(context).size.height,
+            child: FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               initialCenter: mapState.center,
@@ -136,6 +163,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               // ),
             ],
           ),
+          ),
 
                   // Profile button
                   Positioned(
@@ -172,11 +200,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         backgroundColor: AppColors.warningOrange,
                         foregroundColor: AppColors.surface,
                         onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const DebugScreen(),
-                            ),
-                          );
+                          _debugService.logButtonClick('Debug Panel', screen: 'MapScreen');
+                          _showDebugPanel();
                         },
                         child: const Icon(Icons.bug_report),
                       ),
@@ -297,6 +322,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           backgroundColor: mapState.showPOIs ? AppColors.mossGreen : AppColors.surface,
                           foregroundColor: mapState.showPOIs ? AppColors.surface : AppColors.urbanBlue,
                           onPressed: () {
+                            _debugService.logButtonClick('Toggle POIs', screen: 'MapScreen', parameters: {'currentState': mapState.showPOIs});
                             ref.read(mapProvider.notifier).togglePOIs();
                           },
                           child: const Icon(Icons.place),
@@ -335,6 +361,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           backgroundColor: mapState.showWarnings ? AppColors.dangerRed : AppColors.surface,
                           foregroundColor: mapState.showWarnings ? AppColors.surface : AppColors.urbanBlue,
                           onPressed: () {
+                            _debugService.logButtonClick('Toggle Warnings', screen: 'MapScreen', parameters: {'currentState': mapState.showWarnings});
                             ref.read(mapProvider.notifier).toggleWarnings();
                           },
                           child: const Icon(Icons.warning),
@@ -415,13 +442,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               message: 'Add new point of interest',
               child: FloatingActionButton(
                 mini: true,
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const POIManagementScreen(),
-                    ),
-                  );
-                },
+                        onPressed: () {
+                          _debugService.logButtonClick('Add POI', screen: 'MapScreen');
+                          _debugService.logNavigation('MapScreen', 'POIManagementScreen');
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const POIManagementScreen(),
+                            ),
+                          );
+                        },
                 backgroundColor: AppColors.mossGreen,
                 foregroundColor: AppColors.surface,
                 child: const Icon(Icons.add_location),
@@ -451,10 +480,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _onMapTap(LatLng point) {
     // Handle map tap events
+    _debugService.logAction(
+      action: 'Map Tap',
+      screen: 'MapScreen',
+      parameters: {
+        'latitude': point.latitude,
+        'longitude': point.longitude,
+      },
+    );
     print('Map tapped at: ${point.latitude}, ${point.longitude}');
   }
 
   void _showLayerSelector() {
+    _debugService.logButtonClick('Layer Selector', screen: 'MapScreen');
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -489,10 +527,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ...MapLayerType.values.map((layer) => ListTile(
               leading: Icon(_getLayerIcon(layer)),
               title: Text(_getLayerName(layer)),
-              onTap: () {
-                ref.read(mapProvider.notifier).changeLayer(layer);
-                Navigator.pop(context);
-              },
+                      onTap: () {
+                        _debugService.logButtonClick('Select Layer: ${_getLayerName(layer)}', screen: 'MapScreen');
+                        ref.read(mapProvider.notifier).changeLayer(layer);
+                        Navigator.pop(context);
+                      },
             )),
             const SizedBox(height: 16),
           ],
