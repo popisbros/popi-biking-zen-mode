@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -716,7 +717,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (renderBox == null) return;
     
     final localPosition = renderBox.globalToLocal(globalPosition);
-    final point = _mapController.camera.pointToLatLng(localPosition);
+    final point = _mapController.camera.pointToLatLng(Point(localPosition.dx, localPosition.dy));
     
     _debugService.logAction(
       action: 'Map Long Press',
@@ -1328,8 +1329,8 @@ class TeardropPinPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
-    // Create teardrop path
-    final path = Path();
+    // Create teardrop path using dart:ui Path
+    final path = ui.Path();
     
     // Start from the top center
     path.moveTo(size.width / 2, 0);
@@ -1337,7 +1338,7 @@ class TeardropPinPainter extends CustomPainter {
     // Create the rounded top (semicircle)
     path.arcToPoint(
       Offset(size.width, size.height * 0.3),
-      radius: const Radius.circular(size.width / 2),
+      radius: Radius.circular(size.width / 2),
       clockwise: true,
     );
     
@@ -1352,14 +1353,14 @@ class TeardropPinPainter extends CustomPainter {
     path.lineTo(0, size.height * 0.3);
     path.arcToPoint(
       Offset(size.width / 2, 0),
-      radius: const Radius.circular(size.width / 2),
+      radius: Radius.circular(size.width / 2),
       clockwise: true,
     );
     
     path.close();
 
     // Draw shadow first (slightly offset)
-    final shadowPath = Path.from(path);
+    final shadowPath = ui.Path.from(path);
     shadowPath.shift(const Offset(1, 2));
     canvas.drawPath(shadowPath, shadowPaint);
 
