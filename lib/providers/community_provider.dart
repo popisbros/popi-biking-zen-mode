@@ -182,6 +182,36 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       rethrow; // Re-throw so the UI can handle the error
     }
   }
+
+  /// Update an existing warning
+  Future<void> updateWarning(String documentId, CommunityWarning warning) async {
+    try {
+      state = const AsyncValue.loading();
+      await _firebaseService.updateWarning(documentId, warning.toMap());
+      
+      // Reload warnings
+      final warnings = await _getWarningsFromFirestore();
+      state = AsyncValue.data(warnings);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow; // Re-throw so the UI can handle the error
+    }
+  }
+
+  /// Delete a warning
+  Future<void> deleteWarning(String warningId) async {
+    try {
+      state = const AsyncValue.loading();
+      await _firebaseService.deleteWarning(warningId);
+      
+      // Reload warnings
+      final warnings = await _getWarningsFromFirestore();
+      state = AsyncValue.data(warnings);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow; // Re-throw so the UI can handle the error
+    }
+  }
   
   /// Refresh warnings
   Future<void> refreshWarnings() async {

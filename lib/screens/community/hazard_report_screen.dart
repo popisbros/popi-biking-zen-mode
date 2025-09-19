@@ -155,14 +155,14 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
         if (location != null) {
           // Create warning data
           final warningData = {
-            'id': _isEditing ? _editingWarningId : null, // Use existing ID if editing, null for new warnings
+            'id': _isEditing ? _editingWarningId : null,
             'type': _selectedType,
             'severity': _selectedSeverity,
             'title': _titleController.text.trim(),
             'description': _descriptionController.text.trim(),
             'latitude': location.latitude,
             'longitude': location.longitude,
-            'reportedBy': 'anonymous', // TODO: Get from auth
+            'reportedBy': 'anonymous',
             'reportedAt': DateTime.now().millisecondsSinceEpoch,
             'isActive': true,
             'tags': [_selectedType, _selectedSeverity],
@@ -190,7 +190,7 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
             // Clear form and exit edit mode
             _cancelEditing();
             
-            // Only pop if we're not editing (to stay on the screen for editing)
+            // Only pop if we're not editing
             if (!_isEditing) {
               Navigator.of(context).pop();
             }
@@ -256,7 +256,7 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-              
+                      
                       // Current location display
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -305,7 +305,7 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
                       ),
                       
                       const SizedBox(height: 16),
-              
+                      
                       // Warning type
                       Text(
                         'Warning Type *',
@@ -359,7 +359,7 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
                       ),
                       
                       const SizedBox(height: 16),
-              
+                      
                       // Severity level
                       Text(
                         'Severity Level *',
@@ -369,303 +369,315 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _severityLevels.map((severity) {
-                  final isSelected = _selectedSeverity == severity['value'];
-                  final color = severity['color'] as Color;
-                  return Semantics(
-                    label: 'Select severity level: ${severity['label']}',
-                    button: true,
-                    selected: isSelected,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedSeverity = severity['value']!),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected ? color : color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: color),
-                        ),
-                        child: Text(
-                          severity['label']!,
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : color,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Title field
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  hintText: 'Brief description of the warning',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Description field
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description (Optional)',
-                  hintText: 'Additional details about the warning',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              
-              const SizedBox(height: 32),
-              
-              // Action buttons
-              Row(
-                children: [
-                  if (_isEditing) ...[
-                    // Cancel button when editing
-                    Expanded(
-                      child: Semantics(
-                        label: 'Cancel editing warning',
-                        button: true,
-                        child: OutlinedButton(
-                          onPressed: _isLoading ? null : _cancelEditing,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.urbanBlue,
-                            side: const BorderSide(color: AppColors.urbanBlue),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Delete button when editing
-                    Expanded(
-                      child: Semantics(
-                        label: 'Delete warning',
-                        button: true,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : () => _deleteWarning(_editingWarningId),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.dangerRed,
-                            foregroundColor: AppColors.surface,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text(
-                            'Delete',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-                  // Save/Submit button
-                  Expanded(
-                    flex: _isEditing ? 2 : 1,
-                    child: Semantics(
-                      label: _isEditing ? 'Save warning changes' : 'Submit community warning report',
-                      button: true,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitWarning,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.urbanBlue,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
-                              )
-                            : Text(
-                                _isEditing ? 'Save Warning' : 'Submit Warning',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _severityLevels.map((severity) {
+                          final isSelected = _selectedSeverity == severity['value'];
+                          final color = severity['color'] as Color;
+                          return Semantics(
+                            label: 'Select severity level: ${severity['label']}',
+                            button: true,
+                            selected: isSelected,
+                            child: GestureDetector(
+                              onTap: () => setState(() => _selectedSeverity = severity['value']!),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? color : color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: color),
+                                ),
+                                child: Text(
+                                  severity['label']!,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : color,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Existing Warnings List
-              Text(
-                'Existing Warnings',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.urbanBlue,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Watch for warnings data
-              Consumer(
-                builder: (context, ref, child) {
-                  final warningsAsync = ref.watch(communityWarningsProvider);
-                  
-                  return warningsAsync.when(
-                    data: (warnings) => ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: warnings.length,
-                      itemBuilder: (context, index) {
-                        final warning = warnings[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: Text(
-                              _getWarningIcon(warning.type),
-                              style: const TextStyle(fontSize: 24),
                             ),
-                            title: Text(
-                              warning.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                          );
+                        }).toList(),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Title field
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: InputDecoration(
+                          labelText: 'Title *',
+                          hintText: 'Brief description of the warning',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a title';
+                          }
+                          return null;
+                        },
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Description field
+                      TextFormField(
+                        controller: _descriptionController,
+                        decoration: InputDecoration(
+                          labelText: 'Description (Optional)',
+                          hintText: 'Additional details about the warning',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        maxLines: 3,
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Action buttons
+                      Row(
+                        children: [
+                          if (_isEditing) ...[
+                            // Cancel button when editing
+                            Expanded(
+                              child: Semantics(
+                                label: 'Cancel editing warning',
+                                button: true,
+                                child: OutlinedButton(
+                                  onPressed: _isLoading ? null : _cancelEditing,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.urbanBlue,
+                                    side: const BorderSide(color: AppColors.urbanBlue),
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (warning.description != null)
-                                  Text(
-                                    warning.description!,
-                                    style: const TextStyle(fontSize: 12),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                            const SizedBox(width: 12),
+                            // Delete button when editing
+                            Expanded(
+                              child: Semantics(
+                                label: 'Delete warning',
+                                button: true,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : () => _deleteWarning(_editingWarningId),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.dangerRed,
+                                    foregroundColor: AppColors.surface,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _getSeverityColor(warning.severity),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        warning.severity.toUpperCase(),
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          // Save/Submit button
+                          Expanded(
+                            flex: _isEditing ? 2 : 1,
+                            child: Semantics(
+                              label: _isEditing ? 'Save warning changes' : 'Submit community warning report',
+                              button: true,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _submitWarning,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.urbanBlue,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: _isLoading
+                                    ? const CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                                      )
+                                    : Text(
+                                        _isEditing ? 'Save Warning' : 'Submit Warning',
                                         style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Existing Warnings List
+            Text(
+              'Existing Warnings',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.urbanBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Watch for warnings data
+            Consumer(
+              builder: (context, ref, child) {
+                final warningsAsync = ref.watch(communityWarningsProvider);
+                
+                return warningsAsync.when(
+                  data: (warnings) => ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: warnings.length,
+                    itemBuilder: (context, index) {
+                      final warning = warnings[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: Text(
+                            _getWarningIcon(warning.type),
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                          title: Text(
+                            warning.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (warning.description != null)
+                                Text(
+                                  warning.description!,
+                                  style: const TextStyle(fontSize: 12),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatDateTime(warning.reportedAt),
+                                    decoration: BoxDecoration(
+                                      color: _getSeverityColor(warning.severity),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      warning.severity.toUpperCase(),
                                       style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.lightGrey,
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Edit button
-                                Semantics(
-                                  label: 'Edit warning: ${warning.title}',
-                                  button: true,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.edit, color: AppColors.urbanBlue),
-                                    onPressed: () => _startEditingWarning(warning),
                                   ),
-                                ),
-                                // Delete button
-                                Semantics(
-                                  label: 'Delete warning: ${warning.title}',
-                                  button: true,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.delete, color: AppColors.dangerRed),
-                                    onPressed: () => _deleteWarning(warning.id),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _formatDateTime(warning.reportedAt),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.lightGrey,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            onTap: () => _startEditingWarning(warning),
+                                ],
+                              ),
+                            ],
                           ),
-                        );
-                      },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Edit button
+                              Semantics(
+                                label: 'Edit warning: ${warning.title}',
+                                button: true,
+                                child: IconButton(
+                                  icon: const Icon(Icons.edit, color: AppColors.urbanBlue),
+                                  onPressed: () => _startEditingWarning(warning),
+                                ),
+                              ),
+                              // Delete button
+                              Semantics(
+                                label: 'Delete warning: ${warning.title}',
+                                button: true,
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete, color: AppColors.dangerRed),
+                                  onPressed: () => _deleteWarning(warning.id),
+                                ),
+                              ),
+                            ],
+                          ),
+                          onTap: () => _startEditingWarning(warning),
+                        ),
+                      );
+                    },
+                  ),
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(),
                     ),
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    error: (error, stack) => Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
+                  ),
+                  error: (error, stack) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
                       child: Column(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.error_outline,
-                            color: Colors.red.shade600,
-                            size: 32,
+                            size: 48,
+                            color: AppColors.dangerRed,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Failed to load warnings',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: AppColors.dangerRed,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Failed to load warnings',
-                            style: TextStyle(
-                              color: Colors.red.shade700,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
                             error.toString(),
-                            style: TextStyle(
-                              color: Colors.red.shade600,
-                              fontSize: 12,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.lightGrey,
                             ),
                             textAlign: TextAlign.center,
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
-              ),
-            ],
-          ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -716,77 +728,5 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
     } else {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
-  }
-
-  void _showWarningDetails(CommunityWarning warning) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Text(_getWarningIcon(warning.type)),
-            const SizedBox(width: 8),
-            Expanded(child: Text(warning.title)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (warning.description != null) ...[
-              Text(warning.description!),
-              const SizedBox(height: 12),
-            ],
-            Row(
-              children: [
-                Text(
-                  'Severity: ',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _getSeverityColor(warning.severity),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    warning.severity.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Reported: ${_formatDateTime(warning.reportedAt)}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.lightGrey,
-              ),
-            ),
-            if (warning.reportedBy != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'By: ${warning.reportedBy}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.lightGrey,
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
   }
 }
