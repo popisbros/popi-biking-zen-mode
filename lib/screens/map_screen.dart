@@ -448,7 +448,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               ),
             ),
 
-            // POI toggle button
+            // POI toggle button with count
             Positioned(
               top: MediaQuery.of(context).padding.top + 140,
               right: 16,
@@ -465,13 +465,47 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       _debugService.logButtonClick('POI Toggle', screen: 'MapScreen');
                       ref.read(mapProvider.notifier).togglePOIs();
                     },
-                    child: const Icon(Icons.location_on),
+                    child: Stack(
+                      children: [
+                        const Icon(Icons.location_on),
+                        poisAsync.when(
+                          data: (pois) => pois.isNotEmpty
+                              ? Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.dangerRed,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    child: Text(
+                                      '${pois.length}',
+                                      style: const TextStyle(
+                                        color: AppColors.surface,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // Warning toggle button
+            // Warning toggle button with count
             Positioned(
               top: MediaQuery.of(context).padding.top + 200,
               right: 16,
@@ -488,7 +522,41 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       _debugService.logButtonClick('Warning Toggle', screen: 'MapScreen');
                       ref.read(mapProvider.notifier).toggleWarnings();
                     },
-                    child: const Icon(Icons.warning),
+                    child: Stack(
+                      children: [
+                        const Icon(Icons.warning),
+                        warningsAsync.when(
+                          data: (warnings) => warnings.isNotEmpty
+                              ? Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.dangerRed,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    child: Text(
+                                      '${warnings.length}',
+                                      style: const TextStyle(
+                                        color: AppColors.surface,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
