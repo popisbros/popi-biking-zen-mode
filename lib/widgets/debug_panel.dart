@@ -235,7 +235,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                             ),
                             SelectableText(
                               _formatTime(action.timestamp),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey.shade600,
                                 fontWeight: FontWeight.w500,
@@ -247,7 +247,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           const SizedBox(height: 4),
                           SelectableText(
                             'Screen: ${action.screen}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.w500,
@@ -258,7 +258,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           const SizedBox(height: 4),
                           SelectableText(
                             'Params: ${action.parameters}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.w500,
@@ -269,7 +269,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           const SizedBox(height: 4),
                           SelectableText(
                             'Result: ${action.result}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: Colors.green.shade700,
                               fontWeight: FontWeight.w600,
@@ -280,7 +280,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           const SizedBox(height: 4),
                           SelectableText(
                             'Error: ${action.error}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: Colors.red.shade700,
                               fontWeight: FontWeight.w600,
@@ -476,7 +476,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: SelectableText(
                         '• $item',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade700,
                         ),
@@ -485,7 +485,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                     if (items.length > 5)
                       Text(
                         '... and ${items.length - 5} more',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
                           fontStyle: FontStyle.italic,
@@ -494,7 +494,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                   ] else ...[
                     Text(
                       'No items found',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
                         fontStyle: FontStyle.italic,
@@ -517,7 +517,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 const SizedBox(width: 8),
                 Text(
                   'Loading...',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade700,
                   ),
@@ -529,7 +529,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
               children: [
                 Text(
                   'Error: $error',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.red.shade700,
                     fontWeight: FontWeight.w600,
@@ -538,7 +538,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 const SizedBox(height: 4),
                 Text(
                   'Check Firebase connection and CORS settings',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey.shade600,
                     fontStyle: FontStyle.italic,
