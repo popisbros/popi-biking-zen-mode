@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
 import '../constants/app_colors.dart';
+import '../models/location_data.dart';
 import '../providers/location_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/community_provider.dart';
@@ -922,7 +922,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  Marker _buildGPSLocationMarker(Position location) {
+  Marker _buildGPSLocationMarker(LocationData location) {
     return Marker(
       point: LatLng(location.latitude, location.longitude),
       width: 50,
