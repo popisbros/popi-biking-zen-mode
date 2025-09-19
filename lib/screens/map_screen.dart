@@ -712,9 +712,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     HapticFeedback.mediumImpact();
     
     // Convert global position to map coordinates
-    final point = _mapController.camera.pointToLatLng(
-      _mapController.camera.globalToLocal(globalPosition),
-    );
+    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    
+    final localPosition = renderBox.globalToLocal(globalPosition);
+    final point = _mapController.camera.pointToLatLng(localPosition);
     
     _debugService.logAction(
       action: 'Map Long Press',
@@ -729,8 +731,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     
     // Create a TapPosition from the global position
     final tapPosition = TapPosition(
-      globalPosition: globalPosition,
-      localPosition: _mapController.camera.globalToLocal(globalPosition),
+      globalPosition,
+      localPosition,
     );
     
     _showContextMenu(tapPosition, point);
@@ -1292,26 +1294,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Marker _buildGPSLocationMarker(LocationData location) {
     return Marker(
       point: LatLng(location.latitude, location.longitude),
-      width: 50,
-      height: 50,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.urbanBlue,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.surface, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.urbanBlue.withOpacity(0.3),
-              blurRadius: 8,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
+      width: 30,
+      height: 40,
+      child: CustomPaint(
+        painter: TeardropPinPainter(),
         child: const Center(
           child: Icon(
             Icons.directions_bike,
-            color: AppColors.surface,
-            size: 24,
+            color: Colors.white,
+            size: 16,
           ),
         ),
       ),
@@ -1323,4 +1314,59 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // flutter_map MapController doesn't need explicit disposal
     super.dispose();
   }
+}
+
+class TeardropPinPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF4A90E2) // Light blue color
+      ..style = PaintingStyle.fill;
+
+    final shadowPaint = Paint()
+      ..color = const Color(0xFF4A90E2).withOpacity(0.3)
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
+    // Create teardrop path
+    final path = Path();
+    
+    // Start from the top center
+    path.moveTo(size.width / 2, 0);
+    
+    // Create the rounded top (semicircle)
+    path.arcToPoint(
+      Offset(size.width, size.height * 0.3),
+      radius: const Radius.circular(size.width / 2),
+      clockwise: true,
+    );
+    
+    // Create the sides of the teardrop
+    path.lineTo(size.width * 0.7, size.height * 0.8);
+    
+    // Create the pointed bottom
+    path.lineTo(size.width / 2, size.height);
+    path.lineTo(size.width * 0.3, size.height * 0.8);
+    
+    // Complete the teardrop shape
+    path.lineTo(0, size.height * 0.3);
+    path.arcToPoint(
+      Offset(size.width / 2, 0),
+      radius: const Radius.circular(size.width / 2),
+      clockwise: true,
+    );
+    
+    path.close();
+
+    // Draw shadow first (slightly offset)
+    final shadowPath = Path.from(path);
+    shadowPath.shift(const Offset(1, 2));
+    canvas.drawPath(shadowPath, shadowPaint);
+
+    // Draw the main teardrop
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
