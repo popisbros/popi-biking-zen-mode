@@ -83,6 +83,6 @@ jobs:
                   firebase deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }}
                   
               - name: ✅ Deployment complete
-        run: |
-          echo "🎉 Deployment completed successfully!"
-          echo "🌐 Your app is available at: https://popisbros.github.io/popi-biking-zen-mode/"
+                run: |
+                  echo "🎉 Deployment completed successfully!"
+                  echo "🌐 Your app is available at: https://popisbros.github.io/popi-biking-zen-mode/"
