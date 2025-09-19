@@ -291,7 +291,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Warnings Section
-          _buildDataSection(
+          _buildDataSection<dynamic>(
             'Community Warnings',
             warningsAsync,
             (warnings) => warnings.length,
@@ -301,7 +301,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           const SizedBox(height: 16),
           
           // POIs Section
-          _buildDataSection(
+          _buildDataSection<dynamic>(
             'Cycling POIs',
             poisAsync,
             (pois) => pois.length,
