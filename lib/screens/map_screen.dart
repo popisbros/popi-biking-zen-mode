@@ -7,8 +7,8 @@ import '../providers/location_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/community_provider.dart';
 import '../services/map_service.dart';
-import '../widgets/warning_report_modal.dart';
 import 'community/poi_management_screen.dart';
+import 'community/hazard_report_screen.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -64,11 +64,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _onReportWarning() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const WarningReportModal(),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const HazardReportScreen(),
+      ),
     );
   }
 
@@ -249,12 +248,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       child: Semantics(
                         label: 'Switch map layer',
                         button: true,
-                        child: FloatingActionButton(
-                          mini: true,
-                          backgroundColor: AppColors.surface,
-                          foregroundColor: AppColors.urbanBlue,
-                          onPressed: _showLayerSelector,
-                          child: const Icon(Icons.layers),
+                        child: Tooltip(
+                          message: 'Switch map layer',
+                          child: FloatingActionButton(
+                            mini: true,
+                            backgroundColor: AppColors.surface,
+                            foregroundColor: AppColors.urbanBlue,
+                            onPressed: _showLayerSelector,
+                            child: const Icon(Icons.layers),
+                          ),
                         ),
                       ),
                     ),
@@ -385,18 +387,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Semantics(
             label: 'Add new point of interest',
             button: true,
-            child: FloatingActionButton(
-              mini: true,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const POIManagementScreen(),
-                  ),
-                );
-              },
-              backgroundColor: AppColors.mossGreen,
-              foregroundColor: AppColors.surface,
-              child: const Icon(Icons.add_location),
+            child: Tooltip(
+              message: 'Add new point of interest',
+              child: FloatingActionButton(
+                mini: true,
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const POIManagementScreen(),
+                    ),
+                  );
+                },
+                backgroundColor: AppColors.mossGreen,
+                foregroundColor: AppColors.surface,
+                child: const Icon(Icons.add_location),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -404,11 +409,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Semantics(
             label: 'Report a community warning',
             button: true,
-            child: FloatingActionButton(
-              onPressed: _onReportWarning,
-              backgroundColor: AppColors.signalYellow,
-              foregroundColor: AppColors.urbanBlue,
-              child: const Icon(Icons.warning),
+            child: Tooltip(
+              message: 'Report a community warning',
+              child: FloatingActionButton(
+                mini: true,
+                onPressed: _onReportWarning,
+                backgroundColor: AppColors.signalYellow,
+                foregroundColor: AppColors.urbanBlue,
+                child: const Icon(Icons.warning),
+              ),
             ),
           ),
         ],
