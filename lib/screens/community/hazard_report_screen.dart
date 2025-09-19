@@ -20,6 +20,10 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
   String _selectedType = 'hazard';
   String _selectedSeverity = 'medium';
   bool _isLoading = false;
+  
+  // Editing state
+  String? _editingWarningId;
+  bool get _isEditing => _editingWarningId != null;
 
   final List<Map<String, String>> _warningTypes = [
     {'value': 'hazard', 'label': 'Hazard', 'icon': '⚠️'},
@@ -44,6 +48,99 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
     super.dispose();
   }
 
+  void _startEditingWarning(CommunityWarning warning) {
+    setState(() {
+      _editingWarningId = warning.id;
+      _titleController.text = warning.title;
+      _selectedType = warning.type;
+      _selectedSeverity = warning.severity;
+      _descriptionController.text = warning.description;
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _editingWarningId = null;
+      _clearForm();
+    });
+  }
+
+  void _clearForm() {
+    _titleController.clear();
+    _descriptionController.clear();
+    _selectedType = 'hazard';
+    _selectedSeverity = 'medium';
+  }
+
+  Future<void> _deleteWarning(String? warningId) async {
+    if (warningId == null || warningId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete warning: Invalid ID'),
+          backgroundColor: AppColors.dangerRed,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Warning'),
+        content: const Text('Are you sure you want to delete this warning? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final communityNotifier = ref.read(communityWarningsNotifierProvider.notifier);
+        await communityNotifier.deleteWarning(warningId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Warning deleted successfully!'),
+              backgroundColor: AppColors.mossGreen,
+            ),
+          );
+          
+          // Clear form and exit edit mode
+          _cancelEditing();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete warning: ${e.toString()}'),
+              backgroundColor: AppColors.dangerRed,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
   Future<void> _submitWarning() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -58,6 +155,7 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
         if (location != null) {
           // Create warning data
           final warningData = {
+            'id': _isEditing ? _editingWarningId : null, // Use existing ID if editing, null for new warnings
             'type': _selectedType,
             'severity': _selectedSeverity,
             'title': _titleController.text.trim(),
@@ -73,18 +171,29 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
           // Submit to Firebase using the community provider
           final communityNotifier = ref.read(communityWarningsNotifierProvider.notifier);
           final warning = CommunityWarning.fromMap(warningData);
-          await communityNotifier.submitWarning(warning);
+          
+          if (_isEditing) {
+            await communityNotifier.updateWarning(_editingWarningId!, warning);
+          } else {
+            await communityNotifier.submitWarning(warning);
+          }
           
           // Show success message
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Warning reported successfully!'),
+                content: Text(_isEditing ? 'Warning updated successfully!' : 'Warning reported successfully!'),
                 backgroundColor: AppColors.mossGreen,
               ),
             );
             
-            Navigator.of(context).pop();
+            // Clear form and exit edit mode
+            _cancelEditing();
+            
+            // Only pop if we're not editing (to stay on the screen for editing)
+            if (!_isEditing) {
+              Navigator.of(context).pop();
+            }
           }
         } else {
           if (mounted) {
@@ -101,7 +210,7 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to submit warning: ${e.toString()}'),
+            content: Text(_isEditing ? 'Failed to update warning: ${e.toString()}' : 'Failed to submit warning: ${e.toString()}'),
             backgroundColor: AppColors.dangerRed,
           ),
         );
@@ -119,7 +228,7 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Report Hazard'),
+        title: Text(_isEditing ? 'Edit Warning' : 'Report Hazard'),
         backgroundColor: AppColors.urbanBlue,
         foregroundColor: AppColors.surface,
       ),
@@ -310,31 +419,82 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
               
               const SizedBox(height: 32),
               
-              // Submit button
-              SizedBox(
-                width: double.infinity,
-                child: Semantics(
-                  label: 'Submit community warning report',
-                  button: true,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submitWarning,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.urbanBlue,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
-                          )
-                        : const Text(
-                            'Submit Warning',
+              // Action buttons
+              Row(
+                children: [
+                  if (_isEditing) ...[
+                    // Cancel button when editing
+                    Expanded(
+                      child: Semantics(
+                        label: 'Cancel editing warning',
+                        button: true,
+                        child: OutlinedButton(
+                          onPressed: _isLoading ? null : _cancelEditing,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.urbanBlue,
+                            side: const BorderSide(color: AppColors.urbanBlue),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text(
+                            'Cancel',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Delete button when editing
+                    Expanded(
+                      child: Semantics(
+                        label: 'Delete warning',
+                        button: true,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : () => _deleteWarning(_editingWarningId),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.dangerRed,
+                            foregroundColor: AppColors.surface,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  // Save/Submit button
+                  Expanded(
+                    flex: _isEditing ? 2 : 1,
+                    child: Semantics(
+                      label: _isEditing ? 'Save warning changes' : 'Submit community warning report',
+                      button: true,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitWarning,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.urbanBlue,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.surface),
+                              )
+                            : Text(
+                                _isEditing ? 'Save Warning' : 'Submit Warning',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
               
               const SizedBox(height: 20),
@@ -418,15 +578,30 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
                                 ),
                               ],
                             ),
-                            trailing: Icon(
-                              Icons.location_on,
-                              color: AppColors.mossGreen,
-                              size: 16,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Edit button
+                                Semantics(
+                                  label: 'Edit warning: ${warning.title}',
+                                  button: true,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.edit, color: AppColors.urbanBlue),
+                                    onPressed: () => _startEditingWarning(warning),
+                                  ),
+                                ),
+                                // Delete button
+                                Semantics(
+                                  label: 'Delete warning: ${warning.title}',
+                                  button: true,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.delete, color: AppColors.dangerRed),
+                                    onPressed: () => _deleteWarning(warning.id),
+                                  ),
+                                ),
+                              ],
                             ),
-                            onTap: () {
-                              // Show warning details
-                              _showWarningDetails(warning);
-                            },
+                            onTap: () => _startEditingWarning(warning),
                           ),
                         );
                       },

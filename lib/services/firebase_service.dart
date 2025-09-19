@@ -223,6 +223,36 @@ class FirebaseService {
     }
   }
 
+  /// Update an existing warning
+  Future<void> updateWarning(String warningId, Map<String, dynamic> updateData) async {
+    try {
+      // Remove the ID from updateData since it's not a field in the document
+      final dataToUpdate = Map<String, dynamic>.from(updateData);
+      dataToUpdate.remove('id');
+      
+      await _firestore.collection(_warningsCollection).doc(warningId).update({
+        ...dataToUpdate,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('FirebaseService.updateWarning: Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a warning (soft delete)
+  Future<void> deleteWarning(String warningId) async {
+    try {
+      await _firestore.collection(_warningsCollection).doc(warningId).update({
+        'isActive': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('FirebaseService.deleteWarning: Error: $e');
+      rethrow;
+    }
+  }
+
   /// Get nearby warnings
   Stream<QuerySnapshot> getNearbyWarnings(double latitude, double longitude, double radiusKm) {
     try {

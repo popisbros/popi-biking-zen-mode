@@ -142,6 +142,9 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
               backgroundColor: AppColors.mossGreen,
             ),
           );
+          
+          // Clear form and exit edit mode
+          _cancelEditing();
         }
       } catch (e) {
         _debugService.logAction(
