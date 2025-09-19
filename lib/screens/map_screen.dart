@@ -51,15 +51,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       curve: Curves.easeInOut,
     ));
 
-    // Show mobile hint on mobile platforms
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Theme.of(context).platform == TargetPlatform.iOS || 
-          Theme.of(context).platform == TargetPlatform.android) {
-        setState(() {
-          _showMobileHint = true;
-        });
-      }
-    });
+    _initializeLocation();
+    _initializeMap();
+    _debugService.logAction(action: 'Map Screen: Initialized');
   }
 
   @override
@@ -68,16 +62,66 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     super.dispose();
   }
 
+  Future<void> _initializeLocation() async {
+    // Request location permission and start tracking
+    final locationNotifier = ref.read(locationNotifierProvider.notifier);
+    await locationNotifier.requestPermission();
+    await locationNotifier.startTracking();
+    
+    // Force get current position and center map
+    _debugService.logAction(action: 'GPS: Forcing current position');
+    await _centerOnUserLocation();
+  }
+
+  void _initializeMap() {
+    // Load cycling data and initialize map state
+    final mapNotifier = ref.read(mapProvider.notifier);
+    mapNotifier.loadCyclingData();
+  }
+
   void _onMapReady() {
     setState(() {
       _isMapReady = true;
     });
     
-    // Center map on user's location
+    // Center map on user location when available
+    _centerOnUserLocation();
+    
+    // Show mobile hint for touchscreen users
+    final isMobile = Theme.of(context).platform == TargetPlatform.iOS || 
+                     Theme.of(context).platform == TargetPlatform.android;
+    if (isMobile) {
+      setState(() {
+        _showMobileHint = true;
+      });
+      // Hide hint after 4 seconds
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted) {
+          setState(() {
+            _showMobileHint = false;
+          });
+        }
+      });
+    }
+  }
+
+  Future<void> _centerOnUserLocation() async {
     final locationAsync = ref.read(locationNotifierProvider);
     locationAsync.whenData((location) {
       if (location != null) {
-        _mapController.move(LatLng(location.latitude, location.longitude), 15.0);
+        _debugService.logAction(
+          action: 'Map: Centering on GPS location',
+          parameters: {
+            'latitude': location.latitude,
+            'longitude': location.longitude,
+          },
+        );
+        _mapController.move(
+          LatLng(location.latitude, location.longitude),
+          15.0,
+        );
+      } else {
+        _debugService.logAction(action: 'Map: GPS location not available');
       }
     });
   }
@@ -265,6 +309,27 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             ),
           ),
 
+          // Profile button
+          if (_isMapReady)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 16,
+              child: Semantics(
+                label: 'Open user profile',
+                button: true,
+                child: FloatingActionButton(
+                  mini: true,
+                  backgroundColor: AppColors.surface,
+                  foregroundColor: AppColors.urbanBlue,
+                  onPressed: () {
+                    _debugService.logButtonClick('Profile', screen: 'MapScreen');
+                    // TODO: Navigate to profile screen
+                  },
+                  child: const Icon(Icons.person),
+                ),
+              ),
+            ),
+
           // Debug button
           Positioned(
             bottom: 16,
@@ -314,7 +379,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               top: MediaQuery.of(context).padding.top + 140,
               right: 16,
               child: Semantics(
-                label: 'Toggle POI visibility',
+                label: mapState.showPOIs ? 'Hide points of interest' : 'Show points of interest',
                 button: true,
                 child: Tooltip(
                   message: 'Toggle POI visibility',
@@ -337,7 +402,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               top: MediaQuery.of(context).padding.top + 200,
               right: 16,
               child: Semantics(
-                label: 'Toggle warning visibility',
+                label: mapState.showWarnings ? 'Hide community warnings' : 'Show community warnings',
                 button: true,
                 child: Tooltip(
                   message: 'Toggle warning visibility',
@@ -360,23 +425,177 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               top: MediaQuery.of(context).padding.top + 260,
               right: 16,
               child: Semantics(
-                label: 'Toggle route visibility',
+                label: mapState.showRoutes ? 'Hide cycling routes' : 'Show cycling routes',
                 button: true,
                 child: Tooltip(
                   message: 'Toggle route visibility',
                   child: FloatingActionButton(
                     mini: true,
-                    backgroundColor: AppColors.lightGrey,
+                    backgroundColor: mapState.showRoutes ? AppColors.signalYellow : AppColors.lightGrey,
                     foregroundColor: AppColors.surface,
                     onPressed: () {
                       _debugService.logButtonClick('Route Toggle', screen: 'MapScreen');
+                      ref.read(mapProvider.notifier).toggleRoutes();
                     },
                     child: const Icon(Icons.route),
                   ),
                 ),
               ),
             ),
+
+            // GPS current location button
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 320,
+              right: 16,
+              child: Semantics(
+                label: 'Center map on current location',
+                button: true,
+                child: Tooltip(
+                  message: 'Center map on current location',
+                  child: FloatingActionButton(
+                    mini: true,
+                    backgroundColor: AppColors.surface,
+                    foregroundColor: AppColors.urbanBlue,
+                    onPressed: () {
+                      _debugService.logButtonClick('GPS Center', screen: 'MapScreen');
+                      _centerOnUserLocation();
+                    },
+                    child: const Icon(Icons.my_location),
+                  ),
+                ),
+              ),
+            ),
+
+            // Zoom controls
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 380,
+              right: 16,
+              child: Column(
+                children: [
+                  // Zoom in button
+                  Semantics(
+                    label: 'Zoom in',
+                    button: true,
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.urbanBlue,
+                      onPressed: () {
+                        _debugService.logButtonClick('Zoom In', screen: 'MapScreen');
+                        _mapController.move(
+                          _mapController.camera.center,
+                          _mapController.camera.zoom + 1,
+                        );
+                      },
+                      child: const Icon(Icons.add),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Zoom out button
+                  Semantics(
+                    label: 'Zoom out',
+                    button: true,
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.urbanBlue,
+                      onPressed: () {
+                        _debugService.logButtonClick('Zoom Out', screen: 'MapScreen');
+                        _mapController.move(
+                          _mapController.camera.center,
+                          _mapController.camera.zoom - 1,
+                        );
+                      },
+                      child: const Icon(Icons.remove),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
+
+          // GPS Status indicator
+          if (_isMapReady)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: locationAsync.when(
+                  data: (location) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        location != null ? Icons.gps_fixed : Icons.gps_off,
+                        color: location != null ? AppColors.mossGreen : AppColors.dangerRed,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        location != null ? 'GPS Active' : 'GPS Offline',
+                        style: TextStyle(
+                          color: location != null ? AppColors.mossGreen : AppColors.dangerRed,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  loading: () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.urbanBlue),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'GPS Loading...',
+                        style: TextStyle(
+                          color: AppColors.urbanBlue,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  error: (_, __) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.gps_off,
+                        color: AppColors.dangerRed,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'GPS Error',
+                        style: TextStyle(
+                          color: AppColors.dangerRed,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // Mobile hint for long press
           if (_showMobileHint)
@@ -390,11 +609,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.urbanBlue.withOpacity(0.9),
+                    color: AppColors.urbanBlue.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -462,6 +681,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             label: 'Add new point of interest',
             button: true,
             child: FloatingActionButton(
+              mini: true,
               backgroundColor: AppColors.mossGreen,
               foregroundColor: AppColors.surface,
               onPressed: () {
@@ -483,6 +703,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             label: 'Report hazard or warning',
             button: true,
             child: FloatingActionButton(
+              mini: true,
               backgroundColor: AppColors.warningOrange,
               foregroundColor: AppColors.surface,
               onPressed: () {
@@ -560,16 +781,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   }
 }
 
-// POI Teardrop Pin Painter
+// POI Teardrop Pin Painter - using correct mossGreen color
 class POITeardropPinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF4CAF50) // Moss Green color
+      ..color = AppColors.mossGreen // Use the correct mossGreen color
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = const Color(0xFF4CAF50).withOpacity(0.3)
+      ..color = AppColors.mossGreen.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
@@ -616,16 +837,16 @@ class POITeardropPinPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// Warning Teardrop Pin Painter
+// Warning Teardrop Pin Painter - using correct warningOrange color
 class WarningTeardropPinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFFF9800) // Warning Orange color
+      ..color = AppColors.warningOrange // Use the correct warningOrange color
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = const Color(0xFFFF9800).withOpacity(0.3)
+      ..color = AppColors.warningOrange.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
@@ -681,7 +902,7 @@ class TeardropPinPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = const Color(0xFF4A90E2).withOpacity(0.3)
+      ..color = const Color(0xFF4A90E2).withValues(alpha: 0.3)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
