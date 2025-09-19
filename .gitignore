@@ -83,7 +83,7 @@ coverage/
 # Firebase
 **/ios/Runner/GoogleService-Info.plist
 **/android/app/google-services.json
-**/lib/firebase_options.dart
+# **/lib/firebase_options.dart  # Commented out - needed for web deployment
 
 # Environment variables
 .env
