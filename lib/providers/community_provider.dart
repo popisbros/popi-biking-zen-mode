@@ -33,6 +33,9 @@ final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
           .toList())
       .handleError((error) {
         print('Firestore stream error: $error');
+        if (error.toString().contains('CORS') || error.toString().contains('access control')) {
+          print('CORS error detected - Firebase Firestore access blocked');
+        }
         // Return empty list on error to prevent app crash
         return <CommunityWarning>[];
       });
@@ -59,11 +62,14 @@ final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
           .where((poi) => poi != null)
           .cast<CyclingPOI>()
           .toList())
-      .handleError((error) {
-        print('Firestore POI stream error: $error');
-        // Return empty list on error to prevent app crash
-        return <CyclingPOI>[];
-      });
+              .handleError((error) {
+                print('Firestore POI stream error: $error');
+                if (error.toString().contains('CORS') || error.toString().contains('access control')) {
+                  print('CORS error detected - Firebase Firestore access blocked');
+                }
+                // Return empty list on error to prevent app crash
+                return <CyclingPOI>[];
+              });
 });
 
 /// Notifier for community warnings management

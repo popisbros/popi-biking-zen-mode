@@ -105,6 +105,9 @@
     window.addEventListener('load', function(ev) {
       // Download main.dart.js
       _flutter.loader.load({
+        serviceWorkerSettings: {
+          serviceWorkerVersion: null,
+        },
         onEntrypointLoaded: function(engineInitializer) {
           engineInitializer.initializeEngine().then(function(appRunner) {
             // Hide loading screen

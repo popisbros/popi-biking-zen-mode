@@ -1,10 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to all documents (for development)
-    // TODO: Implement proper security rules for production
-    match /{document=**} {
-      allow read, write: if true;
+    // Allow read/write access to warnings collection
+    match /warnings/{document} {
+      allow read, write: if true; // For development - make more restrictive in production
+    }
+    
+    // Allow read/write access to pois collection
+    match /pois/{document} {
+      allow read, write: if true; // For development - make more restrictive in production
+    }
+    
+    // Allow read/write access to users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
