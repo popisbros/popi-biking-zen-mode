@@ -162,21 +162,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       // POI markers (from Firestore)
                       if (mapState.showPOIs)
                         poisAsync.when(
-                          data: (pois) => MarkerLayer(
-                            markers: _buildPOIMarkersFromFirestore(pois),
-                          ),
-                          loading: () => const MarkerLayer(markers: []),
-                          error: (error, stack) => const MarkerLayer(markers: []),
+                          data: (pois) {
+                            print('🗺️ POI Layer: showPOIs=${mapState.showPOIs}, pois.length=${pois.length}');
+                            final markers = _buildPOIMarkersFromFirestore(pois);
+                            print('🗺️ POI Layer: Built ${markers.length} markers');
+                            return MarkerLayer(markers: markers);
+                          },
+                          loading: () {
+                            print('🗺️ POI Layer: Loading...');
+                            return const MarkerLayer(markers: []);
+                          },
+                          error: (error, stack) {
+                            print('🗺️ POI Layer: Error - $error');
+                            return const MarkerLayer(markers: []);
+                          },
                         ),
                       
                       // Warning markers (from Firestore)
                       if (mapState.showWarnings)
                         warningsAsync.when(
-                          data: (warnings) => MarkerLayer(
-                            markers: _buildWarningMarkersFromFirestore(warnings),
-                          ),
-                          loading: () => const MarkerLayer(markers: []),
-                          error: (error, stack) => const MarkerLayer(markers: []),
+                          data: (warnings) {
+                            print('⚠️ Warning Layer: showWarnings=${mapState.showWarnings}, warnings.length=${warnings.length}');
+                            final markers = _buildWarningMarkersFromFirestore(warnings);
+                            print('⚠️ Warning Layer: Built ${markers.length} markers');
+                            return MarkerLayer(markers: markers);
+                          },
+                          loading: () {
+                            print('⚠️ Warning Layer: Loading...');
+                            return const MarkerLayer(markers: []);
+                          },
+                          error: (error, stack) {
+                            print('⚠️ Warning Layer: Error - $error');
+                            return const MarkerLayer(markers: []);
+                          },
                         ),
                       
                       // GPS Location marker
@@ -323,6 +341,111 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
+          // Debug status indicators
+          if (_isMapReady) ...[
+            // POI Status Indicator
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.lightGrey),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.place,
+                      size: 16,
+                      color: mapState.showPOIs ? AppColors.mossGreen : AppColors.lightGrey,
+                    ),
+                    const SizedBox(width: 4),
+                    poisAsync.when(
+                      data: (pois) => Text(
+                        'POIs: ${pois.length}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: mapState.showPOIs ? AppColors.mossGreen : AppColors.lightGrey,
+                        ),
+                      ),
+                      loading: () => const Text(
+                        'POIs: Loading...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.signalYellow,
+                        ),
+                      ),
+                      error: (error, stack) => const Text(
+                        'POIs: Error',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.dangerRed,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Warning Status Indicator
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 40,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.lightGrey),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.warning,
+                      size: 16,
+                      color: mapState.showWarnings ? AppColors.dangerRed : AppColors.lightGrey,
+                    ),
+                    const SizedBox(width: 4),
+                    warningsAsync.when(
+                      data: (warnings) => Text(
+                        'Warnings: ${warnings.length}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: mapState.showWarnings ? AppColors.dangerRed : AppColors.lightGrey,
+                        ),
+                      ),
+                      loading: () => const Text(
+                        'Warnings: Loading...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.signalYellow,
+                        ),
+                      ),
+                      error: (error, stack) => const Text(
+                        'Warnings: Error',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.dangerRed,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
           // Map controls
           if (_isMapReady) ...[
                     // Layer switching button
@@ -365,28 +488,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ),
                     ),
 
-                    // Route toggle button
-                    Positioned(
-                      top: MediaQuery.of(context).padding.top + 200,
-                      right: 16,
-                      child: Semantics(
-                        label: mapState.showRoutes ? 'Hide cycling routes' : 'Show cycling routes',
-                        button: true,
-                        child: FloatingActionButton(
-                          mini: true,
-                          backgroundColor: mapState.showRoutes ? AppColors.signalYellow : AppColors.surface,
-                          foregroundColor: mapState.showRoutes ? AppColors.urbanBlue : AppColors.urbanBlue,
-                          onPressed: () {
-                            ref.read(mapProvider.notifier).toggleRoutes();
-                          },
-                          child: const Icon(Icons.route),
-                        ),
-                      ),
-                    ),
-
                     // Warning toggle button
                     Positioned(
-                      top: MediaQuery.of(context).padding.top + 260,
+                      top: MediaQuery.of(context).padding.top + 200,
                       right: 16,
                       child: Semantics(
                         label: mapState.showWarnings ? 'Hide community warnings' : 'Show community warnings',
@@ -400,6 +504,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             ref.read(mapProvider.notifier).toggleWarnings();
                           },
                           child: const Icon(Icons.warning),
+                        ),
+                      ),
+                    ),
+
+                    // Route toggle button
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 260,
+                      right: 16,
+                      child: Semantics(
+                        label: mapState.showRoutes ? 'Hide cycling routes' : 'Show cycling routes',
+                        button: true,
+                        child: FloatingActionButton(
+                          mini: true,
+                          backgroundColor: mapState.showRoutes ? AppColors.signalYellow : AppColors.surface,
+                          foregroundColor: mapState.showRoutes ? AppColors.urbanBlue : AppColors.urbanBlue,
+                          onPressed: () {
+                            ref.read(mapProvider.notifier).toggleRoutes();
+                          },
+                          child: const Icon(Icons.route),
                         ),
                       ),
                     ),
@@ -645,41 +768,50 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   List<Marker> _buildPOIMarkersFromFirestore(List<dynamic> pois) {
+    print('🗺️ _buildPOIMarkersFromFirestore: Building ${pois.length} POI markers');
+    
     return pois.map((poi) {
-      final position = LatLng(poi.latitude, poi.longitude);
-      return Marker(
-        point: position,
-        width: 40,
-        height: 40,
-        child: Semantics(
-          label: 'Point of interest: ${poi.name}',
-          button: true,
-          child: GestureDetector(
-            onTap: () => _showPOIDetailsFromFirestore(poi),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.mossGreen,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surface, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+      try {
+        final position = LatLng(poi.latitude, poi.longitude);
+        print('📍 POI Marker: ${poi.name} at ${poi.latitude}, ${poi.longitude}');
+        
+        return Marker(
+          point: position,
+          width: 40,
+          height: 40,
+          child: Semantics(
+            label: 'Point of interest: ${poi.name}',
+            button: true,
+            child: GestureDetector(
+              onTap: () => _showPOIDetailsFromFirestore(poi),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.mossGreen,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surface, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    _getPOIIcon(poi.type),
+                    style: const TextStyle(fontSize: 20),
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  _getPOIIcon(poi.type),
-                  style: const TextStyle(fontSize: 20),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    }).toList();
+        );
+      } catch (e) {
+        print('❌ Error building POI marker for ${poi.name}: $e');
+        return null;
+      }
+    }).where((marker) => marker != null).cast<Marker>().toList();
   }
 
   List<Marker> _buildWarningMarkers(List<Map<String, dynamic>> warnings) {
@@ -722,46 +854,55 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   List<Marker> _buildWarningMarkersFromFirestore(List<dynamic> warnings) {
+    print('⚠️ _buildWarningMarkersFromFirestore: Building ${warnings.length} warning markers');
+    
     return warnings.map((warning) {
-      final position = LatLng(warning.latitude, warning.longitude);
-      final severity = warning.severity as String;
-      Color color = AppColors.dangerRed;
-      if (severity == 'medium') color = AppColors.signalYellow;
-      if (severity == 'low') color = AppColors.mossGreen;
+      try {
+        final position = LatLng(warning.latitude, warning.longitude);
+        final severity = warning.severity as String;
+        Color color = AppColors.dangerRed;
+        if (severity == 'medium') color = AppColors.signalYellow;
+        if (severity == 'low') color = AppColors.mossGreen;
 
-      return Marker(
-        point: position,
-        width: 30,
-        height: 30,
-        child: Semantics(
-          label: 'Community warning: ${warning.title} (${warning.severity} severity)',
-          button: true,
-          child: GestureDetector(
-            onTap: () => _showWarningDetailsFromFirestore(warning),
-            child: Container(
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surface, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+        print('⚠️ Warning Marker: ${warning.title} at ${warning.latitude}, ${warning.longitude} (${severity})');
+
+        return Marker(
+          point: position,
+          width: 30,
+          height: 30,
+          child: Semantics(
+            label: 'Community warning: ${warning.title} (${warning.severity} severity)',
+            button: true,
+            child: GestureDetector(
+              onTap: () => _showWarningDetailsFromFirestore(warning),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surface, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    _getWarningIcon(warning.type),
+                    style: const TextStyle(fontSize: 16),
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  _getWarningIcon(warning.type),
-                  style: const TextStyle(fontSize: 16),
                 ),
               ),
             ),
           ),
-        ),
-      );
-    }).toList();
+        );
+      } catch (e) {
+        print('❌ Error building warning marker for ${warning.title}: $e');
+        return null;
+      }
+    }).where((marker) => marker != null).cast<Marker>().toList();
   }
 
   void _showPOIDetails(Map<String, dynamic> poi) {
