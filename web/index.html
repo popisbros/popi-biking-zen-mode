@@ -104,8 +104,8 @@
   <script>
     window.addEventListener('load', function(ev) {
       // Download main.dart.js
-      _flutter.loader.load({
-        serviceWorkerSettings: {
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
           serviceWorkerVersion: null,
         },
         onEntrypointLoaded: function(engineInitializer) {
