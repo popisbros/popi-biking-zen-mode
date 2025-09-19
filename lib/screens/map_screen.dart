@@ -163,7 +163,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   // Debug button (temporary)
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 16,
-                    left: 16,
+                    left: 80, // Moved to the right to avoid overlap with location indicator
                     child: Semantics(
                       label: 'Open debug screen',
                       button: true,
