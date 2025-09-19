@@ -235,30 +235,31 @@ class _WarningReportModalState extends ConsumerState<WarningReportModal> {
                           child: GestureDetector(
                             onTap: () => setState(() => _selectedType = type['value']!),
                             child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
                                 color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
+                                ),
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  type['icon']!,
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  type['label']!,
-                                  style: TextStyle(
-                                    color: isSelected ? Colors.white : AppColors.urbanBlue,
-                                    fontWeight: FontWeight.w500,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    type['icon']!,
+                                    style: const TextStyle(fontSize: 16),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    type['label']!,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : AppColors.urbanBlue,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -288,17 +289,18 @@ class _WarningReportModalState extends ConsumerState<WarningReportModal> {
                           child: GestureDetector(
                             onTap: () => setState(() => _selectedSeverity = severity['value']!),
                             child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: isSelected ? color : color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: color),
-                            ),
-                            child: Text(
-                              severity['label']!,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : color,
-                                fontWeight: FontWeight.w500,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isSelected ? color : color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: color),
+                              ),
+                              child: Text(
+                                severity['label']!,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : color,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ),
@@ -350,12 +352,13 @@ class _WarningReportModalState extends ConsumerState<WarningReportModal> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.urbanBlue,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text(
-                          'Submit Warning',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          ),
+                          child: const Text(
+                            'Submit Warning',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
