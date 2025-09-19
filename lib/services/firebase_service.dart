@@ -225,21 +225,33 @@ class FirebaseService {
 
   /// Get nearby warnings
   Stream<QuerySnapshot> getNearbyWarnings(double latitude, double longitude, double radiusKm) {
-    // This is a simplified version - in production, you'd use GeoFirestore
-    return _firestore
-        .collection(_warningsCollection)
-        .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .limit(50)
-        .snapshots();
+    try {
+      // This is a simplified version - in production, you'd use GeoFirestore
+      return _firestore
+          .collection(_warningsCollection)
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .snapshots();
+    } catch (e) {
+      print('FirebaseService.getNearbyWarnings: Error: $e');
+      // Return an empty stream on error
+      return Stream.value(QuerySnapshot.empty());
+    }
   }
 
   /// Get cycling POIs
   Stream<QuerySnapshot> getCyclingPOIs() {
-    return _firestore
-        .collection(_poisCollection)
-        .where('isActive', isEqualTo: true)
-        .snapshots();
+    try {
+      return _firestore
+          .collection(_poisCollection)
+          .where('isActive', isEqualTo: true)
+          .snapshots();
+    } catch (e) {
+      print('FirebaseService.getCyclingPOIs: Error: $e');
+      // Return an empty stream on error
+      return Stream.value(QuerySnapshot.empty());
+    }
   }
 
   /// Force create the pois collection with a sample document

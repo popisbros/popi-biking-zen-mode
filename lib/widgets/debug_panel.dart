@@ -201,9 +201,16 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: Colors.grey.shade400, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,17 +227,18 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                               child: SelectableText(
                                 action.action,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 13,
-                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Colors.black,
                                 ),
                               ),
                             ),
                             SelectableText(
                               _formatTime(action.timestamp),
                               style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey,
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -240,8 +248,9 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           SelectableText(
                             'Screen: ${action.screen}',
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -250,8 +259,9 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           SelectableText(
                             'Params: ${action.parameters}',
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey,
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -260,8 +270,9 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           SelectableText(
                             'Result: ${action.result}',
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.green,
+                              fontSize: 12,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -270,8 +281,9 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                           SelectableText(
                             'Error: ${action.error}',
                             style: const TextStyle(
-                              fontSize: 13,
-                              color: Colors.red,
+                              fontSize: 12,
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -419,9 +431,16 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.lightGrey),
+        border: Border.all(color: Colors.grey.shade400, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +449,8 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
             title,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: AppColors.urbanBlue,
+              fontSize: 14,
+              color: Colors.black,
             ),
           ),
           const SizedBox(height: 8),
@@ -442,14 +462,24 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Count: $count'),
+                  Text(
+                    'Count: $count',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
                   if (items.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     ...items.take(5).map((item) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
+                      child: SelectableText(
                         '• $item',
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
                     )),
                     if (items.length > 5)
@@ -457,17 +487,64 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                         '... and ${items.length - 5} more',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.lightGrey,
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
+                  ] else ...[
+                    Text(
+                      'No items found',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
                 ],
               );
             },
-            loading: () => const Text('Loading...'),
-            error: (error, stack) => Text(
-              'Error: $error',
-              style: const TextStyle(color: AppColors.dangerRed),
+            loading: () => Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Loading...',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
+            ),
+            error: (error, stack) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Error: $error',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Check Firebase connection and CORS settings',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
