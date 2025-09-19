@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -26,6 +27,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   final DebugService _debugService = DebugService();
   bool _isMapReady = false;
   bool _isDebugPanelOpen = false;
+  bool _showMobileHint = false;
 
   @override
   void initState() {
@@ -59,6 +61,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     
     // Center map on user location when available
     _centerOnUserLocation();
+    
+    // Show mobile hint for touchscreen users
+    final isMobile = Theme.of(context).platform == TargetPlatform.iOS || 
+                     Theme.of(context).platform == TargetPlatform.android;
+    if (isMobile) {
+      _showMobileHint = true;
+      // Hide hint after 4 seconds
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted) {
+          setState(() {
+            _showMobileHint = false;
+          });
+        }
+      });
+    }
   }
 
   Future<void> _centerOnUserLocation() async {
@@ -134,16 +151,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             height: _isDebugPanelOpen 
                 ? MediaQuery.of(context).size.height * 0.7 
                 : MediaQuery.of(context).size.height,
-            child: FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: mapState.center,
-              initialZoom: mapState.zoom,
-              minZoom: 10.0,
-              maxZoom: 20.0,
-              onMapReady: () => _onMapReady(),
-              onTap: (tapPosition, point) => _onMapTap(point),
-            ),
+            child: GestureDetector(
+              onLongPressStart: (details) => _onMapLongPress(details.globalPosition),
+              child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: mapState.center,
+                initialZoom: mapState.zoom,
+                minZoom: 10.0,
+                maxZoom: 20.0,
+                onMapReady: () => _onMapReady(),
+                onTap: (tapPosition, point) => _onMapTap(point),
+                onSecondaryTap: (tapPosition, point) => _onMapRightClick(tapPosition, point),
+              ),
             children: [
               // Dynamic tile layer based on current selection
               TileLayer(
@@ -216,6 +236,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               // ),
             ],
           ),
+            ),
           ),
 
                   // Profile button
@@ -261,6 +282,65 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                   ),
 
+
+          // Mobile hint for long press
+          if (_showMobileHint)
+            Positioned(
+              bottom: 200, // Above the floating action buttons
+              left: 16,
+              right: 16,
+              child: AnimatedOpacity(
+                opacity: _showMobileHint ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.urbanBlue.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.touch_app,
+                        color: AppColors.surface,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Long press anywhere on the map to add POIs or report hazards',
+                          style: TextStyle(
+                            color: AppColors.surface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showMobileHint = false;
+                          });
+                        },
+                        child: const Icon(
+                          Icons.close,
+                          color: AppColors.surface,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           // Location status indicator
           Positioned(
@@ -341,110 +421,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // Debug status indicators
-          if (_isMapReady) ...[
-            // POI Status Indicator
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 10,
-              left: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.lightGrey),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.place,
-                      size: 16,
-                      color: mapState.showPOIs ? AppColors.mossGreen : AppColors.lightGrey,
-                    ),
-                    const SizedBox(width: 4),
-                    poisAsync.when(
-                      data: (pois) => Text(
-                        'POIs: ${pois.length}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: mapState.showPOIs ? AppColors.mossGreen : AppColors.lightGrey,
-                        ),
-                      ),
-                      loading: () => const Text(
-                        'POIs: Loading...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.signalYellow,
-                        ),
-                      ),
-                      error: (error, stack) => const Text(
-                        'POIs: Error',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.dangerRed,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Warning Status Indicator
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 40,
-              left: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.lightGrey),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.warning,
-                      size: 16,
-                      color: mapState.showWarnings ? AppColors.dangerRed : AppColors.lightGrey,
-                    ),
-                    const SizedBox(width: 4),
-                    warningsAsync.when(
-                      data: (warnings) => Text(
-                        'Warnings: ${warnings.length}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: mapState.showWarnings ? AppColors.dangerRed : AppColors.lightGrey,
-                        ),
-                      ),
-                      loading: () => const Text(
-                        'Warnings: Loading...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.signalYellow,
-                        ),
-                      ),
-                      error: (error, stack) => const Text(
-                        'Warnings: Error',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.dangerRed,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
 
           // Map controls
           if (_isMapReady) ...[
@@ -468,7 +444,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ),
                     ),
 
-                    // POI toggle button
+                    // POI toggle button with count
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 140,
                       right: 16,
@@ -483,12 +459,44 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             _debugService.logButtonClick('Toggle POIs', screen: 'MapScreen', parameters: {'currentState': mapState.showPOIs});
                             ref.read(mapProvider.notifier).togglePOIs();
                           },
-                          child: const Icon(Icons.place),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.place, size: 16),
+                              const SizedBox(height: 2),
+                              poisAsync.when(
+                                data: (pois) => Text(
+                                  '${pois.length}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: mapState.showPOIs ? AppColors.surface : AppColors.urbanBlue,
+                                  ),
+                                ),
+                                loading: () => Text(
+                                  '...',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: mapState.showPOIs ? AppColors.surface : AppColors.urbanBlue,
+                                  ),
+                                ),
+                                error: (error, stack) => Text(
+                                  '!',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.dangerRed,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
 
-                    // Warning toggle button
+                    // Warning toggle button with count
                     Positioned(
                       top: MediaQuery.of(context).padding.top + 200,
                       right: 16,
@@ -503,7 +511,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             _debugService.logButtonClick('Toggle Warnings', screen: 'MapScreen', parameters: {'currentState': mapState.showWarnings});
                             ref.read(mapProvider.notifier).toggleWarnings();
                           },
-                          child: const Icon(Icons.warning),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.warning, size: 16),
+                              const SizedBox(height: 2),
+                              warningsAsync.when(
+                                data: (warnings) => Text(
+                                  '${warnings.length}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: mapState.showWarnings ? AppColors.surface : AppColors.urbanBlue,
+                                  ),
+                                ),
+                                loading: () => Text(
+                                  '...',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: mapState.showWarnings ? AppColors.surface : AppColors.urbanBlue,
+                                  ),
+                                ),
+                                error: (error, stack) => Text(
+                                  '!',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.dangerRed,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -647,6 +687,192 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       },
     );
     print('Map tapped at: ${point.latitude}, ${point.longitude}');
+  }
+
+  void _onMapRightClick(TapPosition tapPosition, LatLng point) {
+    // Handle right-click events - show context menu
+    _debugService.logAction(
+      action: 'Map Right Click',
+      screen: 'MapScreen',
+      parameters: {
+        'latitude': point.latitude,
+        'longitude': point.longitude,
+      },
+    );
+    print('Map right-clicked at: ${point.latitude}, ${point.longitude}');
+    
+    _showContextMenu(tapPosition, point);
+  }
+
+  void _onMapLongPress(Offset globalPosition) {
+    // Handle long press events on mobile/touchscreen - show context menu
+    if (!_isMapReady) return;
+    
+    // Provide haptic feedback for mobile users
+    HapticFeedback.mediumImpact();
+    
+    // Convert global position to map coordinates
+    final point = _mapController.camera.pointToLatLng(
+      _mapController.camera.globalToLocal(globalPosition),
+    );
+    
+    _debugService.logAction(
+      action: 'Map Long Press',
+      screen: 'MapScreen',
+      parameters: {
+        'latitude': point.latitude,
+        'longitude': point.longitude,
+        'platform': 'mobile',
+      },
+    );
+    print('Map long-pressed at: ${point.latitude}, ${point.longitude}');
+    
+    // Create a TapPosition from the global position
+    final tapPosition = TapPosition(
+      globalPosition: globalPosition,
+      localPosition: _mapController.camera.globalToLocal(globalPosition),
+    );
+    
+    _showContextMenu(tapPosition, point);
+  }
+
+  void _showContextMenu(TapPosition tapPosition, LatLng point) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    
+    // Detect platform for different menu styling
+    final isMobile = Theme.of(context).platform == TargetPlatform.iOS || 
+                     Theme.of(context).platform == TargetPlatform.android;
+    
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(
+          tapPosition.global,
+          tapPosition.global,
+        ),
+        Offset.zero & overlay.size,
+      ),
+      elevation: isMobile ? 8 : 4, // Higher elevation on mobile for better visibility
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: 'add_poi',
+          child: Row(
+            children: [
+              const Icon(Icons.add_location, color: AppColors.mossGreen),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Add New POI',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    if (isMobile)
+                      const Text(
+                        'Add a point of interest',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'report_hazard',
+          child: Row(
+            children: [
+              const Icon(Icons.warning, color: AppColors.dangerRed),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Report Hazard',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    if (isMobile)
+                      const Text(
+                        'Report a safety issue',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ).then((String? selectedValue) {
+      if (selectedValue != null) {
+        // Provide haptic feedback when selecting an option on mobile
+        if (isMobile) {
+          HapticFeedback.lightImpact();
+        }
+        _handleContextMenuSelection(selectedValue, point);
+      }
+    });
+  }
+
+  void _handleContextMenuSelection(String action, LatLng point) {
+    _debugService.logAction(
+      action: 'Context Menu: $action',
+      screen: 'MapScreen',
+      parameters: {
+        'latitude': point.latitude,
+        'longitude': point.longitude,
+      },
+    );
+
+    switch (action) {
+      case 'add_poi':
+        _openPOIManagementWithLocation(point);
+        break;
+      case 'report_hazard':
+        _openHazardReportWithLocation(point);
+        break;
+    }
+  }
+
+  void _openPOIManagementWithLocation(LatLng point) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => POIManagementScreenWithLocation(
+          initialLatitude: point.latitude,
+          initialLongitude: point.longitude,
+        ),
+      ),
+    );
+  }
+
+  void _openHazardReportWithLocation(LatLng point) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => HazardReportScreenWithLocation(
+          initialLatitude: point.latitude,
+          initialLongitude: point.longitude,
+        ),
+      ),
+    );
   }
 
   void _showLayerSelector() {
