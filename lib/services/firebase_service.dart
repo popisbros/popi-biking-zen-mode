@@ -218,6 +218,8 @@ class FirebaseService {
       });
     } catch (e) {
       print('FirebaseService.submitWarning: Error: $e');
+      // Re-throw the error so it can be handled by the UI
+      rethrow;
     }
   }
 
