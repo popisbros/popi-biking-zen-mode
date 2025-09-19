@@ -469,32 +469,39 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       children: [
                         const Icon(Icons.location_on),
                         poisAsync.when(
-                          data: (pois) => pois.isNotEmpty
-                              ? Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.dangerRed,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 16,
-                                      minHeight: 16,
-                                    ),
-                                    child: Text(
-                                      '${pois.length}',
-                                      style: const TextStyle(
-                                        color: AppColors.surface,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
+                          data: (pois) {
+                            print('POI count: ${pois.length}'); // Debug log
+                            return pois.isNotEmpty
+                                ? Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.dangerRed,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: AppColors.surface,
+                                          width: 1,
+                                        ),
                                       ),
-                                      textAlign: TextAlign.center,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 18,
+                                        minHeight: 18,
+                                      ),
+                                      child: Text(
+                                        '${pois.length}',
+                                        style: const TextStyle(
+                                          color: AppColors.surface,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ),
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
+                                  )
+                                : const SizedBox.shrink();
+                          },
                           loading: () => const SizedBox.shrink(),
                           error: (_, __) => const SizedBox.shrink(),
                         ),
@@ -526,32 +533,39 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       children: [
                         const Icon(Icons.warning),
                         warningsAsync.when(
-                          data: (warnings) => warnings.isNotEmpty
-                              ? Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.dangerRed,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 16,
-                                      minHeight: 16,
-                                    ),
-                                    child: Text(
-                                      '${warnings.length}',
-                                      style: const TextStyle(
-                                        color: AppColors.surface,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
+                          data: (warnings) {
+                            print('Warning count: ${warnings.length}'); // Debug log
+                            return warnings.isNotEmpty
+                                ? Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.dangerRed,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: AppColors.surface,
+                                          width: 1,
+                                        ),
                                       ),
-                                      textAlign: TextAlign.center,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 18,
+                                        minHeight: 18,
+                                      ),
+                                      child: Text(
+                                        '${warnings.length}',
+                                        style: const TextStyle(
+                                          color: AppColors.surface,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ),
-                                  ),
-                                )
-                              : const SizedBox.shrink(),
+                                  )
+                                : const SizedBox.shrink();
+                          },
                           loading: () => const SizedBox.shrink(),
                           error: (_, __) => const SizedBox.shrink(),
                         ),

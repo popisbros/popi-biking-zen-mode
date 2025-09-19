@@ -96,7 +96,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           const SizedBox(height: 16),
           
           // Content
-          Expanded(
+          Flexible(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _buildTabContent(_selectedTab, warningsAsync, poisAsync),
