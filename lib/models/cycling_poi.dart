@@ -1,6 +1,6 @@
 /// Cycling Point of Interest model
 class CyclingPOI {
-  final String id;
+  final String? id; // Optional - will be set by Firestore when created
   final String name;
   final String type; // bike_shop, parking, repair_station, etc.
   final double latitude;
@@ -14,7 +14,7 @@ class CyclingPOI {
   final DateTime updatedAt;
 
   const CyclingPOI({
-    required this.id,
+    this.id,
     required this.name,
     required this.type,
     required this.latitude,
@@ -30,7 +30,7 @@ class CyclingPOI {
 
   factory CyclingPOI.fromMap(Map<String, dynamic> map) {
     return CyclingPOI(
-      id: map['id'] ?? '',
+      id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
       name: map['name'] ?? '',
       type: map['type'] ?? '',
       latitude: map['latitude']?.toDouble() ?? 0.0,
@@ -46,8 +46,7 @@ class CyclingPOI {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'name': name,
       'type': type,
       'latitude': latitude,
@@ -60,6 +59,13 @@ class CyclingPOI {
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
     };
+    
+    // Only include ID if it's not null (for existing POIs)
+    if (id != null && id!.isNotEmpty) {
+      map['id'] = id;
+    }
+    
+    return map;
   }
 
   CyclingPOI copyWith({
@@ -94,7 +100,7 @@ class CyclingPOI {
 
   @override
   String toString() {
-    return 'CyclingPOI(id: $id, name: $name, type: $type, lat: $latitude, lng: $longitude)';
+    return 'CyclingPOI(id: ${id ?? 'new'}, name: $name, type: $type, lat: $latitude, lng: $longitude)';
   }
 }
 

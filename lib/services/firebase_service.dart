@@ -310,8 +310,12 @@ class FirebaseService {
   /// Update an existing POI
   Future<void> updatePOI(String poiId, Map<String, dynamic> updateData) async {
     try {
+      // Remove the ID from updateData since it's not a field in the document
+      final dataToUpdate = Map<String, dynamic>.from(updateData);
+      dataToUpdate.remove('id');
+      
       await _firestore.collection(_poisCollection).doc(poiId).update({
-        ...updateData,
+        ...dataToUpdate,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {

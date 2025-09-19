@@ -91,7 +91,16 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
     _longitude = -122.4194;
   }
 
-  Future<void> _deletePOI(String poiId) async {
+  Future<void> _deletePOI(String? poiId) async {
+    if (poiId == null || poiId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete POI: Invalid ID'),
+          backgroundColor: AppColors.dangerRed,
+        ),
+      );
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -166,7 +175,7 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
 
     try {
       final poi = CyclingPOI(
-        id: _editingPOIId ?? '', // Use existing ID if editing
+        id: _isEditing ? _editingPOIId : null, // Use existing ID if editing, null for new POIs
         name: _nameController.text.trim(),
         type: _selectedType,
         latitude: _latitude,
@@ -200,7 +209,7 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
           },
         );
         
-        await communityNotifier.updatePOI(poi);
+        await communityNotifier.updatePOI(_editingPOIId!, poi);
         
         _debugService.logAction(
           action: 'POI: Successfully updated POI',

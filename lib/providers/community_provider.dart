@@ -271,7 +271,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
   }
 
   /// Update an existing POI
-  Future<void> updatePOI(CyclingPOI poi) async {
+  Future<void> updatePOI(String documentId, CyclingPOI poi) async {
     final debugService = DebugService();
     
     try {
@@ -288,7 +288,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
       );
       
       // Call Firebase to update the POI
-      await _firebaseService.updatePOI(poi.id, poi.toMap());
+      await _firebaseService.updatePOI(documentId, poi.toMap());
       
       debugService.logAction(
         action: 'POI: Successfully updated in Firebase',

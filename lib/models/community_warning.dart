@@ -1,6 +1,6 @@
 /// Community warning/hazard model
 class CommunityWarning {
-  final String id;
+  final String? id; // Optional - will be set by Firestore when created
   final String type; // hazard, alert, construction, etc.
   final String severity; // low, medium, high, critical
   final String title;
@@ -15,7 +15,7 @@ class CommunityWarning {
   final Map<String, dynamic>? metadata;
 
   const CommunityWarning({
-    required this.id,
+    this.id,
     required this.type,
     required this.severity,
     required this.title,
@@ -32,7 +32,7 @@ class CommunityWarning {
 
   factory CommunityWarning.fromMap(Map<String, dynamic> map) {
     return CommunityWarning(
-      id: map['id'] ?? '',
+      id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
       type: map['type'] ?? '',
       severity: map['severity'] ?? 'medium',
       title: map['title'] ?? '',
@@ -51,8 +51,7 @@ class CommunityWarning {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'type': type,
       'severity': severity,
       'title': title,
@@ -66,6 +65,13 @@ class CommunityWarning {
       'tags': tags,
       'metadata': metadata,
     };
+    
+    // Only include ID if it's not null (for existing warnings)
+    if (id != null && id!.isNotEmpty) {
+      map['id'] = id;
+    }
+    
+    return map;
   }
 
   CommunityWarning copyWith({
@@ -102,7 +108,7 @@ class CommunityWarning {
 
   @override
   String toString() {
-    return 'CommunityWarning(id: $id, type: $type, severity: $severity, title: $title)';
+    return 'CommunityWarning(id: ${id ?? 'new'}, type: $type, severity: $severity, title: $title)';
   }
 }
 
