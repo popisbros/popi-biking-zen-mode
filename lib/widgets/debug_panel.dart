@@ -336,7 +336,8 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 8),
             // Force create collection button
             SizedBox(
               width: double.infinity,
@@ -351,24 +352,28 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                       screen: 'DebugPanel',
                       result: 'Collection created',
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('POIs collection created successfully!'),
-                        backgroundColor: AppColors.mossGreen,
-                      ),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('POIs collection created successfully!'),
+                          backgroundColor: AppColors.mossGreen,
+                        ),
+                      );
+                    }
                   } catch (e) {
                     _debugService.logAction(
                       action: 'Firebase: Failed to create pois collection',
                       screen: 'DebugPanel',
                       error: e.toString(),
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to create collection: $e'),
-                        backgroundColor: AppColors.dangerRed,
-                      ),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to create collection: $e'),
+                          backgroundColor: AppColors.dangerRed,
+                        ),
+                      );
+                    }
                   }
                 },
                 icon: const Icon(Icons.create_new_folder, size: 16),
@@ -380,7 +385,6 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 ),
               ),
             ),
-          ),
           
           const SizedBox(height: 8),
           
