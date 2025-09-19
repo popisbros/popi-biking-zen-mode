@@ -350,53 +350,6 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
             ),
           ),
           const SizedBox(height: 8),
-            // Force create collection button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  _debugService.logButtonClick('Force Create POIs Collection', screen: 'DebugPanel');
-                  try {
-                    final firebaseService = ref.read(firebaseServiceProvider);
-                    await firebaseService.forceCreatePOIsCollection();
-                    _debugService.logAction(
-                      action: 'Firebase: Successfully created pois collection',
-                      screen: 'DebugPanel',
-                      result: 'Collection created',
-                    );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('POIs collection created successfully!'),
-                          backgroundColor: AppColors.mossGreen,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    _debugService.logAction(
-                      action: 'Firebase: Failed to create pois collection',
-                      screen: 'DebugPanel',
-                      error: e.toString(),
-                    );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to create collection: $e'),
-                          backgroundColor: AppColors.dangerRed,
-                        ),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.create_new_folder, size: 16),
-                label: const Text('Force Create POIs Collection'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.urbanBlue,
-                  foregroundColor: AppColors.surface,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                ),
-              ),
-            ),
           
           const SizedBox(height: 8),
           

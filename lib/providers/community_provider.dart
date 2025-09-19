@@ -159,7 +159,7 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
   }
   
   Future<List<CommunityWarning>> _getWarningsFromFirestore() async {
-    final snapshot = await _firebaseService.getNearbyWarnings(37.7749, -122.4194, 50.0).first;
+    final snapshot = await _firebaseService.getAllWarnings().first;
     return snapshot.docs
         .map((doc) => CommunityWarning.fromMap({
           'id': doc.id,

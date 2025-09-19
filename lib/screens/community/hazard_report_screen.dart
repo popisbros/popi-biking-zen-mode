@@ -189,11 +189,6 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
             
             // Clear form and exit edit mode
             _cancelEditing();
-            
-            // Only pop if we're not editing
-            if (!_isEditing) {
-              Navigator.of(context).pop();
-            }
           }
         } else {
           if (mounted) {
