@@ -9,7 +9,6 @@ enum MapLayerType {
   openStreetMap,
   cycling,
   satellite,
-  terrain,
 }
 
 /// Service for managing map configuration and styles for flutter_map
@@ -40,9 +39,6 @@ class MapService {
       case MapLayerType.satellite:
         // Use MapTiler satellite with proper API key
         return 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${ApiKeys.mapTilerApiKey}';
-      case MapLayerType.terrain:
-        // Use OpenTopoMap which is free and shows terrain features
-        return 'https://tile.opentopomap.org/{z}/{x}/{y}.png';
     }
   }
 
@@ -58,8 +54,6 @@ class MapService {
         return '© Thunderforest, © OpenStreetMap contributors';
       case MapLayerType.satellite:
         return '© MapTiler, © OpenStreetMap contributors';
-      case MapLayerType.terrain:
-        return '© OpenTopoMap, © OpenStreetMap contributors';
     }
   }
 

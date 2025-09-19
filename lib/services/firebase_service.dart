@@ -240,6 +240,57 @@ class FirebaseService {
         .snapshots();
   }
 
+  /// Add a new cycling POI
+  Future<void> addPOI(Map<String, dynamic> poiData) async {
+    try {
+      await _firestore.collection(_poisCollection).add({
+        ...poiData,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'isActive': true,
+      });
+    } catch (e) {
+      print('FirebaseService.addPOI: Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Update an existing POI
+  Future<void> updatePOI(String poiId, Map<String, dynamic> updateData) async {
+    try {
+      await _firestore.collection(_poisCollection).doc(poiId).update({
+        ...updateData,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('FirebaseService.updatePOI: Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a POI (soft delete)
+  Future<void> deletePOI(String poiId) async {
+    try {
+      await _firestore.collection(_poisCollection).doc(poiId).update({
+        'isActive': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('FirebaseService.deletePOI: Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Get nearby POIs within a radius
+  Stream<QuerySnapshot> getNearbyPOIs(double latitude, double longitude, double radiusKm) {
+    // Note: This is a simplified implementation. For production, you'd want to use
+    // GeoFirestore or implement proper geospatial queries
+    return _firestore
+        .collection(_poisCollection)
+        .where('isActive', isEqualTo: true)
+        .snapshots();
+  }
+
   /// Initialize push notifications
   Future<void> initializeNotifications() async {
     try {

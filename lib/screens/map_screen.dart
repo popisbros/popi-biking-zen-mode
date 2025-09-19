@@ -5,8 +5,10 @@ import 'package:latlong2/latlong.dart';
 import '../constants/app_colors.dart';
 import '../providers/location_provider.dart';
 import '../providers/map_provider.dart';
+import '../providers/community_provider.dart';
 import '../services/map_service.dart';
 import '../widgets/warning_report_modal.dart';
+import 'community/poi_management_screen.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -74,6 +76,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget build(BuildContext context) {
     final locationAsync = ref.watch(locationNotifierProvider);
     final mapState = ref.watch(mapProvider);
+    final warningsAsync = ref.watch(communityWarningsProvider);
+    final poisAsync = ref.watch(cyclingPOIsProvider);
 
     return Scaffold(
       body: Stack(
@@ -98,23 +102,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 subdomains: const ['a', 'b', 'c'],
               ),
               
-              // Cycling routes
-              if (mapState.showRoutes)
-                PolylineLayer(
-                  polylines: _buildRoutePolylines(mapState.routes),
-                ),
-              
-              // POI markers
-              if (mapState.showPOIs)
-                MarkerLayer(
-                  markers: _buildPOIMarkers(mapState.pois),
-                ),
-              
-              // Warning markers
-              if (mapState.showWarnings)
-                MarkerLayer(
-                  markers: _buildWarningMarkers(mapState.warnings),
-                ),
+                      // Cycling routes
+                      if (mapState.showRoutes)
+                        PolylineLayer(
+                          polylines: _buildRoutePolylines(mapState.routes),
+                        ),
+                      
+                      // POI markers (from Firestore)
+                      if (mapState.showPOIs)
+                        poisAsync.when(
+                          data: (pois) => MarkerLayer(
+                            markers: _buildPOIMarkersFromFirestore(pois),
+                          ),
+                          loading: () => const MarkerLayer(markers: []),
+                          error: (error, stack) => const MarkerLayer(markers: []),
+                        ),
+                      
+                      // Warning markers (from Firestore)
+                      if (mapState.showWarnings)
+                        warningsAsync.when(
+                          data: (warnings) => MarkerLayer(
+                            markers: _buildWarningMarkersFromFirestore(warnings),
+                          ),
+                          loading: () => const MarkerLayer(markers: []),
+                          error: (error, stack) => const MarkerLayer(markers: []),
+                        ),
               
               // Attribution (simplified for now)
               // RichAttributionWidget(
@@ -125,24 +137,43 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ],
           ),
 
-          // Profile button
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            right: 16,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.urbanBlue,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Profile feature coming soon'),
+                  // Profile button
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    right: 16,
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.urbanBlue,
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Profile feature coming soon'),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.person),
+                    ),
                   ),
-                );
-              },
-              child: const Icon(Icons.person),
-            ),
-          ),
+
+                  // POI Management button
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 80,
+                    left: 16,
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: AppColors.mossGreen,
+                      foregroundColor: AppColors.surface,
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const POIManagementScreen(),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.add_location),
+                    ),
+                  ),
 
           // Location status indicator
           Positioned(
@@ -402,8 +433,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return Icons.directions_bike;
       case MapLayerType.satellite:
         return Icons.satellite;
-      case MapLayerType.terrain:
-        return Icons.terrain;
     }
   }
 
@@ -415,8 +444,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return 'Cycling';
       case MapLayerType.satellite:
         return 'Satellite';
-      case MapLayerType.terrain:
-        return 'Terrain';
     }
   }
 
@@ -467,6 +494,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }).toList();
   }
 
+  List<Marker> _buildPOIMarkersFromFirestore(List<dynamic> pois) {
+    return pois.map((poi) {
+      final position = LatLng(poi.latitude, poi.longitude);
+      return Marker(
+        point: position,
+        width: 40,
+        height: 40,
+        child: GestureDetector(
+          onTap: () => _showPOIDetailsFromFirestore(poi),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.mossGreen,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.surface, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                _getPOIIcon(poi.type),
+                style: const TextStyle(fontSize: 20),
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
   List<Marker> _buildWarningMarkers(List<Map<String, dynamic>> warnings) {
     return warnings.map((warning) {
       final position = warning['position'] as LatLng;
@@ -497,6 +558,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: Center(
               child: Text(
                 warning['icon'] as String,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  List<Marker> _buildWarningMarkersFromFirestore(List<dynamic> warnings) {
+    return warnings.map((warning) {
+      final position = LatLng(warning.latitude, warning.longitude);
+      final severity = warning.severity as String;
+      Color color = AppColors.dangerRed;
+      if (severity == 'medium') color = AppColors.signalYellow;
+      if (severity == 'low') color = AppColors.mossGreen;
+
+      return Marker(
+        point: position,
+        width: 30,
+        height: 30,
+        child: GestureDetector(
+          onTap: () => _showWarningDetailsFromFirestore(warning),
+          child: Container(
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.surface, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                _getWarningIcon(warning.type),
                 style: const TextStyle(fontSize: 16),
               ),
             ),
@@ -563,6 +663,104 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return '${difference.inHours} hours ago';
     } else {
       return '${difference.inDays} days ago';
+    }
+  }
+
+  void _showPOIDetailsFromFirestore(dynamic poi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(poi.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (poi.description != null) Text(poi.description),
+            const SizedBox(height: 8),
+            Text('Type: ${poi.type}'),
+            if (poi.address != null) Text('Address: ${poi.address}'),
+            if (poi.phone != null) Text('Phone: ${poi.phone}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWarningDetailsFromFirestore(dynamic warning) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${_getWarningIcon(warning.type)} ${warning.title}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(warning.description),
+            const SizedBox(height: 8),
+            Text(
+              'Severity: ${warning.severity}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              'Reported: ${_formatDateTime(warning.reportedAt)}',
+              style: const TextStyle(fontSize: 12, color: AppColors.lightGrey),
+            ),
+            if (warning.reportedBy != null)
+              Text(
+                'By: ${warning.reportedBy}',
+                style: const TextStyle(fontSize: 12, color: AppColors.lightGrey),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getPOIIcon(String type) {
+    switch (type) {
+      case 'bike_shop':
+        return '🏪';
+      case 'parking':
+        return '🚲';
+      case 'repair_station':
+        return '🔧';
+      case 'water_fountain':
+        return '💧';
+      case 'rest_area':
+        return '🪑';
+      default:
+        return '📍';
+    }
+  }
+
+  String _getWarningIcon(String type) {
+    switch (type) {
+      case 'hazard':
+        return '⚠️';
+      case 'construction':
+        return '🚧';
+      case 'road_closure':
+        return '🚫';
+      case 'poor_condition':
+        return '🕳️';
+      case 'traffic':
+        return '🚗';
+      case 'weather':
+        return '🌧️';
+      default:
+        return '⚠️';
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_colors.dart';
 import '../providers/location_provider.dart';
+import '../providers/community_provider.dart';
 import '../services/firebase_service.dart';
 import '../models/community_warning.dart';
 
@@ -63,9 +64,10 @@ class _WarningReportModalState extends ConsumerState<WarningReportModal> {
               'tags': [_selectedType, _selectedSeverity],
             };
 
-            // Submit to Firebase
-            final firebaseService = FirebaseService();
-            await firebaseService.submitWarning(warningData);
+            // Submit to Firebase using the community provider
+            final communityNotifier = ref.read(communityWarningsNotifierProvider.notifier);
+            final warning = CommunityWarning.fromMap(warningData);
+            await communityNotifier.submitWarning(warning);
             
             // Show success message
             if (mounted) {
