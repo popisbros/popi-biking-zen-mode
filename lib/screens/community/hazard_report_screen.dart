@@ -233,127 +233,142 @@ class _HazardReportScreenState extends ConsumerState<HazardReportScreen> {
         foregroundColor: AppColors.surface,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Report a hazard or warning for other cyclists.',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.lightGrey,
-                    ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Current location display
-              Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Add/Edit Warning Form
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.lightGrey),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on, color: AppColors.urbanBlue),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ref.watch(locationNotifierProvider).when(
-                        data: (location) => Text(
-                          location != null
-                              ? 'Location: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}'
-                              : 'Getting location...',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        loading: () => const Row(
-                          children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 8),
-                            Text('Getting location...'),
-                          ],
-                        ),
-                        error: (error, stack) => const Row(
-                          children: [
-                            Icon(Icons.error_outline, color: AppColors.dangerRed, size: 20),
-                            SizedBox(width: 8),
-                            Text('Location error'),
-                          ],
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isEditing ? 'Edit Warning' : 'Add New Warning',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.urbanBlue,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 16),
               
-              const SizedBox(height: 24),
-              
-              // Warning type
-              Text(
-                'Warning Type',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _warningTypes.map((type) {
-                  final isSelected = _selectedType == type['value'];
-                  return Semantics(
-                    label: 'Select warning type: ${type['label']}',
-                    button: true,
-                    selected: isSelected,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedType = type['value']!),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      // Current location display
+                      Container(
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
-                          ),
+                          color: AppColors.surface.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.lightGrey),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              type['icon']!,
-                              style: const TextStyle(fontSize: 16),
-                            ),
+                            const Icon(Icons.location_on, color: AppColors.urbanBlue, size: 20),
                             const SizedBox(width: 8),
-                            Text(
-                              type['label']!,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : AppColors.urbanBlue,
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: ref.watch(locationNotifierProvider).when(
+                                data: (location) => Text(
+                                  location != null
+                                      ? 'Location: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}'
+                                      : 'Getting location...',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.urbanBlue,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                loading: () => const Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Getting location...'),
+                                  ],
+                                ),
+                                error: (error, stack) => const Row(
+                                  children: [
+                                    Icon(Icons.error_outline, color: AppColors.dangerRed, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('Location error'),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                      
+                      const SizedBox(height: 16),
               
-              const SizedBox(height: 24),
+                      // Warning type
+                      Text(
+                        'Warning Type *',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.urbanBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _warningTypes.map((type) {
+                          final isSelected = _selectedType == type['value'];
+                          return Semantics(
+                            label: 'Select warning type: ${type['label']}',
+                            button: true,
+                            selected: isSelected,
+                            child: GestureDetector(
+                              onTap: () => setState(() => _selectedType = type['value']!),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      type['icon']!,
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      type['label']!,
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : AppColors.urbanBlue,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      
+                      const SizedBox(height: 16),
               
-              // Severity level
-              Text(
-                'Severity Level',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
+                      // Severity level
+                      Text(
+                        'Severity Level *',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.urbanBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,

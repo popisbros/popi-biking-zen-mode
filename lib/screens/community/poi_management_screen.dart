@@ -306,6 +306,55 @@ class _POIManagementScreenState extends ConsumerState<POIManagementScreen> {
                       ),
                       const SizedBox(height: 16),
                       
+                      // Current location display
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.lightGrey),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on, color: AppColors.urbanBlue, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ref.watch(locationNotifierProvider).when(
+                                data: (location) => Text(
+                                  location != null
+                                      ? 'Location: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}'
+                                      : 'Getting location...',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.urbanBlue,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                loading: () => const Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Getting location...'),
+                                  ],
+                                ),
+                                error: (error, stack) => const Row(
+                                  children: [
+                                    Icon(Icons.error_outline, color: AppColors.dangerRed, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('Location error'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
                       TextFormField(
                         controller: _nameController,
                         decoration: InputDecoration(
