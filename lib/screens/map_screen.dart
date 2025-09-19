@@ -136,6 +136,79 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     });
   }
 
+  void _hideDebugPanel() {
+    _debugPanelAnimationController.reverse().then((_) {
+      setState(() {
+        _isDebugPanelOpen = false;
+      });
+    });
+  }
+
+  void _showMapStyleSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.lightGrey,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
+              'Select Map Style',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.urbanBlue,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Map style options
+            _buildMapStyleOption('Cycling', MapLayerType.cycling, Icons.directions_bike),
+            _buildMapStyleOption('OpenStreetMap', MapLayerType.openStreetMap, Icons.map),
+            _buildMapStyleOption('Satellite', MapLayerType.satellite, Icons.satellite),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapStyleOption(String title, MapLayerType layerType, IconData icon) {
+    final mapState = ref.watch(mapProvider);
+    final isSelected = mapState.currentLayer == layerType;
+    
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isSelected ? AppColors.mossGreen : AppColors.urbanBlue,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isSelected ? AppColors.mossGreen : AppColors.urbanBlue,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected ? Icon(Icons.check, color: AppColors.mossGreen) : null,
+      onTap: () {
+        ref.read(mapProvider.notifier).changeLayer(layerType);
+        Navigator.pop(context);
+      },
+    );
+  }
+
   void _onMapTap(LatLng point) {
     _debugService.logAction(
       action: 'Map Tap',
@@ -367,6 +440,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     foregroundColor: AppColors.urbanBlue,
                     onPressed: () {
                       _debugService.logButtonClick('Map Layer Switch', screen: 'MapScreen');
+                      _showMapStyleSelector();
                     },
                     child: const Icon(Icons.layers),
                   ),
@@ -655,18 +729,24 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               ),
             ),
 
-          // Debug panel
+          // Debug panel - slides from bottom
           if (_isDebugPanelOpen)
             Positioned(
-              top: 0,
+              bottom: 0,
               left: 0,
               right: 0,
               child: AnimatedBuilder(
                 animation: _debugPanelAnimation,
                 builder: (context, child) {
                   return Transform.translate(
-                    offset: Offset(0, -MediaQuery.of(context).size.height * (1 - _debugPanelAnimation.value)),
-                    child: DebugPanel(),
+                    offset: Offset(0, MediaQuery.of(context).size.height * 0.5 * (1 - _debugPanelAnimation.value)),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.5,
+                      width: MediaQuery.of(context).size.width,
+                      child: DebugPanel(
+                        onClose: _hideDebugPanel,
+                      ),
+                    ),
                   );
                 },
               ),

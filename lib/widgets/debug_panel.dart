@@ -5,7 +5,9 @@ import '../providers/community_provider.dart';
 import '../services/debug_service.dart';
 
 class DebugPanel extends ConsumerStatefulWidget {
-  const DebugPanel({super.key});
+  final VoidCallback? onClose;
+  
+  const DebugPanel({super.key, this.onClose});
 
   @override
   ConsumerState<DebugPanel> createState() => _DebugPanelState();
@@ -21,16 +23,14 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     final poisAsync = ref.watch(cyclingPOIsProvider);
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.4,
-      width: MediaQuery.of(context).size.width,
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 10,
-            offset: Offset(0, 2),
+            offset: Offset(0, -2),
           ),
         ],
       ),
@@ -67,11 +67,12 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                   ),
                 ),
                 const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                  color: AppColors.urbanBlue,
-                ),
+                if (widget.onClose != null)
+                  IconButton(
+                    onPressed: widget.onClose,
+                    icon: const Icon(Icons.close),
+                    color: AppColors.urbanBlue,
+                  ),
               ],
             ),
           ),
