@@ -226,16 +226,29 @@ class FirebaseService {
   /// Get nearby warnings
   Stream<QuerySnapshot> getNearbyWarnings(double latitude, double longitude, double radiusKm) {
     try {
-      // This is a simplified version - in production, you'd use GeoFirestore
+      // Simplified query to avoid composite index requirement
+      // In production, you'd use GeoFirestore for proper geospatial queries
       return _firestore
           .collection(_warningsCollection)
           .where('isActive', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
           .limit(50)
           .snapshots();
     } catch (e) {
       print('FirebaseService.getNearbyWarnings: Error: $e');
       // Return an empty stream on error
+      return Stream.empty();
+    }
+  }
+
+  /// Get all warnings (for debugging/admin purposes)
+  Stream<QuerySnapshot> getAllWarnings() {
+    try {
+      return _firestore
+          .collection(_warningsCollection)
+          .where('isActive', isEqualTo: true)
+          .snapshots();
+    } catch (e) {
+      print('FirebaseService.getAllWarnings: Error: $e');
       return Stream.empty();
     }
   }

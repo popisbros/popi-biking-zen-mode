@@ -30,7 +30,7 @@ final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
           parameters: {'docCount': snapshot.docs.length},
         );
         
-        return snapshot.docs
+        final warnings = snapshot.docs
             .map((doc) {
               try {
                 return CommunityWarning.fromMap({
@@ -52,6 +52,11 @@ final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
             .where((warning) => warning != null)
             .cast<CommunityWarning>()
             .toList();
+        
+        // Sort by creation date (newest first) client-side
+        warnings.sort((a, b) => b.reportedAt.compareTo(a.reportedAt));
+        
+        return warnings;
       })
       .handleError((error) {
         print('Firestore stream error: $error');
