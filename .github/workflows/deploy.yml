@@ -47,7 +47,9 @@ jobs:
           flutter build web \
             --release \
             --base-href "/popi-biking-zen-mode/" \
-            --no-wasm-dry-run
+            --no-wasm-dry-run \
+            --dart-define=MAPTILER_API_KEY=${{ secrets.MAPTILER_API_KEY }} \
+            --dart-define=THUNDERFOREST_API_KEY=${{ secrets.THUNDERFOREST_API_KEY }}
           echo "✅ Build completed successfully"
             
       - name: 📋 Verify build output

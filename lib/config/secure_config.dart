@@ -24,8 +24,9 @@ class SecureConfig {
       return envKey;
     }
     
-    // Fallback - you'll need to provide your actual Thunderforest API key here
-    return 'YOUR_THUNDERFOREST_API_KEY_HERE';
+    // Fallback to the actual API key for development
+    // This will be overridden by environment variables in production
+    return '121a02b0d4754f5ca3d296c2cf0d97bb';
   }
   
   // Firebase Configuration
