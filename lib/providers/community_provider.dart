@@ -174,6 +174,7 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       state = AsyncValue.data(warnings);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+      rethrow; // Re-throw so the UI can handle the error
     }
   }
   
@@ -219,16 +220,48 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
   
   /// Add a new POI
   Future<void> addPOI(CyclingPOI poi) async {
+    final debugService = DebugService();
+    
     try {
       state = const AsyncValue.loading();
-      // TODO: Implement addPOI method in FirebaseService
-      // await _firebaseService.addPOI(poi.toMap());
       
-      // Reload POIs
+      debugService.logAction(
+        action: 'POI: Starting Firebase addPOI call',
+        screen: 'CyclingPOIsNotifier',
+        parameters: {
+          'poiName': poi.name,
+          'poiType': poi.type,
+          'poiData': poi.toMap(),
+        },
+      );
+      
+      // Actually call Firebase to add the POI
+      await _firebaseService.addPOI(poi.toMap());
+      
+      debugService.logAction(
+        action: 'POI: Successfully added to Firebase',
+        screen: 'CyclingPOIsNotifier',
+        result: 'POI created in Firestore',
+      );
+      
+      // Reload POIs after successful creation
       final pois = await _getPOIsFromFirestore();
       state = AsyncValue.data(pois);
+      
+      debugService.logAction(
+        action: 'POI: Reloaded POIs after creation',
+        screen: 'CyclingPOIsNotifier',
+        parameters: {'poiCount': pois.length},
+      );
     } catch (error, stackTrace) {
+      debugService.logAction(
+        action: 'POI: Failed to add to Firebase',
+        screen: 'CyclingPOIsNotifier',
+        error: error.toString(),
+      );
+      
       state = AsyncValue.error(error, stackTrace);
+      rethrow; // Re-throw so the UI can handle the error
     }
   }
   
