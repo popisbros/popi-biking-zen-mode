@@ -293,7 +293,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           // Warnings Section
           _buildDataSection<dynamic>(
             'Community Warnings',
-            warningsAsync,
+            warningsAsync as AsyncValue<List<dynamic>>,
             (warnings) => warnings.length,
             (warnings) => warnings.map((w) => '${w.title} (${w.severity})').toList(),
           ),
@@ -303,7 +303,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           // POIs Section
           _buildDataSection<dynamic>(
             'Cycling POIs',
-            poisAsync,
+            poisAsync as AsyncValue<List<dynamic>>,
             (pois) => pois.length,
             (pois) => pois.map((p) => '${p.name} (${p.type})').toList(),
           ),
