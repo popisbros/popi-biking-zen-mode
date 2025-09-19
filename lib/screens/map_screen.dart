@@ -155,6 +155,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 : MediaQuery.of(context).size.height,
             child: GestureDetector(
               onLongPressStart: (details) => _onMapLongPress(details.globalPosition),
+              behavior: HitTestBehavior.translucent, // Ensure gesture detection works on iPad
               child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
@@ -164,7 +165,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 maxZoom: 20.0,
                 onMapReady: () => _onMapReady(),
                 onTap: (tapPosition, point) => _onMapTap(point),
-                onSecondaryTap: (tapPosition, point) => _onMapRightClick(tapPosition, point),
+                // Remove onSecondaryTap - use long press for all platforms
               ),
             children: [
               // Dynamic tile layer based on current selection
@@ -691,20 +692,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     print('Map tapped at: ${point.latitude}, ${point.longitude}');
   }
 
-  void _onMapRightClick(TapPosition tapPosition, LatLng point) {
-    // Handle right-click events - show context menu
-    _debugService.logAction(
-      action: 'Map Right Click',
-      screen: 'MapScreen',
-      parameters: {
-        'latitude': point.latitude,
-        'longitude': point.longitude,
-      },
-    );
-    print('Map right-clicked at: ${point.latitude}, ${point.longitude}');
-    
-    _showContextMenu(tapPosition, point);
-  }
 
   void _onMapLongPress(Offset globalPosition) {
     // Handle long press events on mobile/touchscreen - show context menu
@@ -1298,6 +1285,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       point: LatLng(location.latitude, location.longitude),
       width: 30,
       height: 40,
+      alignment: Alignment.bottomCenter, // Align bottom center of icon with GPS location
       child: CustomPaint(
         painter: TeardropPinPainter(),
         child: const Center(
