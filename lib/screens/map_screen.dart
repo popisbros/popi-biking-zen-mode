@@ -153,10 +153,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             height: _isDebugPanelOpen 
                 ? MediaQuery.of(context).size.height * 0.7 
                 : MediaQuery.of(context).size.height,
-            child: GestureDetector(
-              onLongPressStart: (details) => _onMapLongPress(details.globalPosition),
-              behavior: HitTestBehavior.translucent, // Ensure gesture detection works on iPad
-              child: FlutterMap(
+            child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
                 initialCenter: mapState.center,
@@ -165,7 +162,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 maxZoom: 20.0,
                 onMapReady: () => _onMapReady(),
                 onTap: (tapPosition, point) => _onMapTap(point),
-                // Remove onSecondaryTap - use long press for all platforms
+                // Use onLongPress for better cross-platform support
+                onLongPress: (tapPosition, point) => _onMapLongPressFromTap(tapPosition, point),
               ),
             children: [
               // Dynamic tile layer based on current selection
@@ -693,19 +691,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
 
-  void _onMapLongPress(Offset globalPosition) {
-    // Handle long press events on mobile/touchscreen - show context menu
+  void _onMapLongPressFromTap(TapPosition tapPosition, LatLng point) {
+    // Handle long press events from FlutterMap's onLongPress - show context menu
     if (!_isMapReady) return;
     
     // Provide haptic feedback for mobile users
     HapticFeedback.mediumImpact();
-    
-    // Convert global position to map coordinates
-    final RenderBox? renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    
-    final localPosition = renderBox.globalToLocal(globalPosition);
-    final point = _mapController.camera.pointToLatLng(Point(localPosition.dx, localPosition.dy));
     
     _debugService.logAction(
       action: 'Map Long Press',
@@ -713,16 +704,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       parameters: {
         'latitude': point.latitude,
         'longitude': point.longitude,
-        'platform': 'mobile',
+        'platform': 'flutter_map',
       },
     );
     print('Map long-pressed at: ${point.latitude}, ${point.longitude}');
-    
-    // Create a TapPosition from the global position
-    final tapPosition = TapPosition(
-      globalPosition,
-      localPosition,
-    );
     
     _showContextMenu(tapPosition, point);
   }
@@ -1285,7 +1270,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       point: LatLng(location.latitude, location.longitude),
       width: 30,
       height: 40,
-      alignment: Alignment.bottomCenter, // Align bottom center of icon with GPS location
+      alignment: Alignment.topCenter, // Align top center of icon with GPS location
       child: CustomPaint(
         painter: TeardropPinPainter(),
         child: const Center(
