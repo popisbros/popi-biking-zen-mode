@@ -33,26 +33,48 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
     print('OSM POI Provider: loadPOIsForLocation called with center=$center, zoom=$zoom');
     // Check if we need to load new data
     if (_shouldLoadNewPOIs(center, zoom)) {
-      print('OSM POI Provider: Loading new POIs...');
-      state = const AsyncValue.loading();
+      await _loadPOIs(center, zoom);
+    }
+  }
+  
+  /// Force reload OSM POIs for the current location
+  Future<void> forceReloadPOIs(LatLng center, double zoom) async {
+    print('OSM POI Provider: forceReloadPOIs called with center=$center, zoom=$zoom');
+    await _loadPOIs(center, zoom);
+  }
+  
+  /// Force reload OSM POIs using the last known location
+  Future<void> forceReload() async {
+    if (_lastLoadedCenter != null) {
+      print('OSM POI Provider: forceReload called with last known location=$_lastLoadedCenter, zoom=$_lastLoadedZoom');
+      await _loadPOIs(_lastLoadedCenter!, _lastLoadedZoom);
+    } else {
+      print('OSM POI Provider: forceReload called but no previous location available');
+      state = const AsyncValue.data([]);
+    }
+  }
+  
+  /// Internal method to load POIs
+  Future<void> _loadPOIs(LatLng center, double zoom) async {
+    print('OSM POI Provider: Loading new POIs...');
+    state = const AsyncValue.loading();
+    
+    try {
+      // Calculate bounding box based on zoom level
+      final bbox = _calculateBoundingBox(center, zoom);
       
-      try {
-        // Calculate bounding box based on zoom level
-        final bbox = _calculateBoundingBox(center, zoom);
-        
-        final pois = await _osmService.getPOIsInBounds(
-          south: bbox.south,
-          west: bbox.west,
-          north: bbox.north,
-          east: bbox.east,
-        );
-        
-        state = AsyncValue.data(pois);
-        _lastLoadedCenter = center;
-        _lastLoadedZoom = zoom;
-      } catch (e, stackTrace) {
-        state = AsyncValue.error(e, stackTrace);
-      }
+      final pois = await _osmService.getPOIsInBounds(
+        south: bbox.south,
+        west: bbox.west,
+        north: bbox.north,
+        east: bbox.east,
+      );
+      
+      state = AsyncValue.data(pois);
+      _lastLoadedCenter = center;
+      _lastLoadedZoom = zoom;
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
     }
   }
   

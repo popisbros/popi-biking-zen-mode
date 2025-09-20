@@ -350,12 +350,10 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   _debugService.logButtonClick('Force Reload OSM POIs', screen: 'DebugPanel');
-                  // Force refresh the OSM POI provider
-                  ref.refresh(osmPOIsNotifierProvider);
-                  // Also invalidate to force a complete reload
-                  ref.invalidate(osmPOIsNotifierProvider);
+                  // Force reload OSM POIs using the last known location
+                  await ref.read(osmPOIsNotifierProvider.notifier).forceReload();
                 },
                 icon: const Icon(Icons.public, size: 16),
                 label: const Text('Reload OSM POIs'),

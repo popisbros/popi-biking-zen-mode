@@ -17,6 +17,7 @@ class OSMService {
     try {
       final query = _generateOverpassQuery(south, west, north, east);
       print('OSM Service: Starting query for bounds: south=$south, west=$west, north=$north, east=$east');
+      print('OSM Service: Query timestamp: ${DateTime.now()}');
       print('OSM Query: $query');
       
       final response = await http.post(
