@@ -16,7 +16,9 @@ import '../models/cycling_poi.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 import '../widgets/debug_panel.dart';
+import '../widgets/osm_debug_window.dart';
 import '../services/debug_service.dart';
+import '../services/osm_debug_service.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -29,10 +31,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   final MapController _mapController = MapController();
   final MapService _mapService = MapService();
   final DebugService _debugService = DebugService();
+  final OSMDebugService _osmDebugService = OSMDebugService();
   
   bool _isMapReady = false;
   bool _isDebugPanelOpen = false;
   bool _showMobileHint = false;
+  bool _showOSMDebugWindow = false;
   
   late AnimationController _debugPanelAnimationController;
   late Animation<double> _debugPanelAnimation;
@@ -543,31 +547,30 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             ),
           ),
 
-          // Map controls
-          if (_isMapReady) ...[
-            // Layer switching button
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 80,
-              right: 16,
-              child: Semantics(
-                label: 'Switch map layer',
-                button: true,
-                child: Tooltip(
-                  message: 'Switch map layer',
-                  child: FloatingActionButton(
-                    mini: true,
-                    backgroundColor: AppColors.surface,
-                    foregroundColor: AppColors.urbanBlue,
-                    onPressed: () {
-                      _debugService.logButtonClick('Map Layer Switch', screen: 'MapScreen');
-                      _showMapStyleSelector();
-                    },
-                    child: const Icon(Icons.layers),
-                  ),
-                ),
+          // OSM Debug button
+          Positioned(
+            bottom: 16,
+            left: 80,
+            child: Semantics(
+              label: 'Open OSM debug window',
+              button: true,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: AppColors.lightGrey,
+                foregroundColor: AppColors.surface,
+                onPressed: () {
+                  _debugService.logButtonClick('OSM Debug Window', screen: 'MapScreen');
+                  setState(() {
+                    _showOSMDebugWindow = !_showOSMDebugWindow;
+                  });
+                },
+                child: const Icon(Icons.api),
               ),
             ),
+          ),
 
+          // Map controls
+          if (_isMapReady) ...[
             // POI toggle button with count
             Positioned(
               top: MediaQuery.of(context).padding.top + 116,
@@ -1140,6 +1143,21 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       ),
                     ),
                   );
+                },
+              ),
+            ),
+
+          // OSM Debug Window - slides from bottom
+          if (_showOSMDebugWindow)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: OSMDebugWindow(
+                onClose: () {
+                  setState(() {
+                    _showOSMDebugWindow = false;
+                  });
                 },
               ),
             ),
