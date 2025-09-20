@@ -1423,12 +1423,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       alignment: Alignment.topCenter, // Align top center of icon with POI location
       child: GestureDetector(
         onTap: () => _onPOITap(poi),
-        child: CustomPaint(
-          painter: POITeardropPinPainter(),
-          child: Center(
-            child: Text(
-              POIIcons.getPOIIcon(poi.type),
-              style: const TextStyle(fontSize: 16),
+        child: SizedBox(
+          width: 30,
+          height: 40,
+          child: CustomPaint(
+            painter: POITeardropPinPainter(),
+            child: Center(
+              child: Text(
+                POIIcons.getPOIIcon(poi.type),
+                style: const TextStyle(fontSize: 16),
+              ),
             ),
           ),
         ),
@@ -1444,12 +1448,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       alignment: Alignment.topCenter, // Align top center of icon with warning location
       child: GestureDetector(
         onTap: () => _onWarningTap(warning),
-        child: CustomPaint(
-          painter: WarningTeardropPinPainter(),
-          child: Center(
-            child: Text(
-              POIIcons.getHazardIcon(warning.type),
-              style: const TextStyle(fontSize: 16),
+        child: SizedBox(
+          width: 30,
+          height: 40,
+          child: CustomPaint(
+            painter: WarningTeardropPinPainter(),
+            child: Center(
+              child: Text(
+                POIIcons.getHazardIcon(warning.type),
+                style: const TextStyle(fontSize: 16),
+              ),
             ),
           ),
         ),
@@ -1465,12 +1473,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       alignment: Alignment.topCenter,
       child: GestureDetector(
         onTap: () => _onPOITap(poi), // Use the same enhanced dialog
-        child: CustomPaint(
-          painter: OSMTeardropPinPainter(),
-          child: Center(
-            child: Text(
-              POIIcons.getPOIIcon(poi.type),
-              style: const TextStyle(fontSize: 16),
+        child: SizedBox(
+          width: 30,
+          height: 40,
+          child: CustomPaint(
+            painter: OSMTeardropPinPainter(),
+            child: Center(
+              child: Text(
+                POIIcons.getPOIIcon(poi.type),
+                style: const TextStyle(fontSize: 16),
+              ),
             ),
           ),
         ),
@@ -1484,16 +1496,20 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       width: 30,
       height: 40,
       alignment: Alignment.topCenter, // Align top center of icon with GPS location
-      child: CustomPaint(
-        painter: TeardropPinPainter(),
-        child: const Center(
-          child: Icon(
-            Icons.directions_bike,
-            color: AppColors.urbanBlue,
-            size: 16,
+        child: SizedBox(
+          width: 30,
+          height: 40,
+          child: CustomPaint(
+            painter: TeardropPinPainter(),
+            child: const Center(
+              child: Icon(
+                Icons.directions_bike,
+                color: AppColors.urbanBlue,
+                size: 16,
+              ),
+            ),
           ),
         ),
-      ),
     );
   }
 }
