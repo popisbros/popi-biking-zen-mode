@@ -499,6 +499,30 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               ),
             ),
 
+          // Map style selector button
+          if (_isMapReady)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 48,
+              right: 16,
+              child: Semantics(
+                label: 'Change map style',
+                button: true,
+                child: Tooltip(
+                  message: 'Change map style',
+                  child: FloatingActionButton(
+                    mini: true,
+                    backgroundColor: AppColors.surface,
+                    foregroundColor: AppColors.urbanBlue,
+                    onPressed: () {
+                      _debugService.logButtonClick('Map Layer Switch', screen: 'MapScreen');
+                      _showMapStyleSelector();
+                    },
+                    child: const Icon(Icons.layers),
+                  ),
+                ),
+              ),
+            ),
+
           // Debug button
           Positioned(
             bottom: 16,
