@@ -125,6 +125,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         );
         
         // Load OSM POIs for current location
+        print('Map Screen: Loading OSM POIs for location: ${location.latitude}, ${location.longitude}');
         final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
         osmPOIsNotifier.loadPOIsForLocation(
           LatLng(location.latitude, location.longitude),
@@ -229,6 +230,80 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       },
     );
     print('Map tapped at: ${point.latitude}, ${point.longitude}');
+  }
+
+  void _onPOITap(poi) {
+    _debugService.logAction(
+      action: 'POI Tap',
+      screen: 'MapScreen',
+      parameters: {
+        'poi_id': poi.id,
+        'poi_name': poi.name,
+        'poi_type': poi.type,
+      },
+    );
+    print('POI tapped: ${poi.name} (${poi.type})');
+    
+    // Show POI details dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(poi.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Type: ${poi.type}'),
+            Text('Location: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+            if (poi.description != null) Text('Description: ${poi.description}'),
+            if (poi.address != null) Text('Address: ${poi.address}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onWarningTap(warning) {
+    _debugService.logAction(
+      action: 'Warning Tap',
+      screen: 'MapScreen',
+      parameters: {
+        'warning_id': warning.id,
+        'warning_type': warning.type,
+        'warning_description': warning.description,
+      },
+    );
+    print('Warning tapped: ${warning.type} - ${warning.description}');
+    
+    // Show warning details dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Hazard: ${warning.type}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Description: ${warning.description}'),
+            Text('Location: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
+            Text('Reported: ${warning.reportedAt.toString()}'),
+            if (warning.severity != null) Text('Severity: ${warning.severity}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onMapLongPressFromTap(TapPosition tapPosition, LatLng point) {
@@ -494,7 +569,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
             // OSM POI toggle button
             Positioned(
-              top: MediaQuery.of(context).padding.top + 200,
+              top: MediaQuery.of(context).padding.top + 170,
               right: 16,
               child: Semantics(
                 label: mapState.showOSMPOIs ? 'Hide OSM POIs' : 'Show OSM POIs',
@@ -1102,12 +1177,15 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       width: 30,
       height: 40,
       alignment: Alignment.topCenter, // Align top center of icon with POI location
-      child: CustomPaint(
-        painter: POITeardropPinPainter(),
-        child: Center(
-          child: Text(
-            POIIcons.getPOIIcon(poi.type),
-            style: const TextStyle(fontSize: 16),
+      child: GestureDetector(
+        onTap: () => _onPOITap(poi),
+        child: CustomPaint(
+          painter: POITeardropPinPainter(),
+          child: Center(
+            child: Text(
+              POIIcons.getPOIIcon(poi.type),
+              style: const TextStyle(fontSize: 16),
+            ),
           ),
         ),
       ),
@@ -1120,12 +1198,15 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       width: 30,
       height: 40,
       alignment: Alignment.topCenter, // Align top center of icon with warning location
-      child: CustomPaint(
-        painter: WarningTeardropPinPainter(),
-        child: Center(
-          child: Text(
-            POIIcons.getHazardIcon(warning.type),
-            style: const TextStyle(fontSize: 16),
+      child: GestureDetector(
+        onTap: () => _onWarningTap(warning),
+        child: CustomPaint(
+          painter: WarningTeardropPinPainter(),
+          child: Center(
+            child: Text(
+              POIIcons.getHazardIcon(warning.type),
+              style: const TextStyle(fontSize: 16),
+            ),
           ),
         ),
       ),

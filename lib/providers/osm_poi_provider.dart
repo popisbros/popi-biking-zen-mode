@@ -30,8 +30,10 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
   
   /// Load OSM POIs for a specific location
   Future<void> loadPOIsForLocation(LatLng center, double zoom) async {
+    print('OSM POI Provider: loadPOIsForLocation called with center=$center, zoom=$zoom');
     // Check if we need to load new data
     if (_shouldLoadNewPOIs(center, zoom)) {
+      print('OSM POI Provider: Loading new POIs...');
       state = const AsyncValue.loading();
       
       try {

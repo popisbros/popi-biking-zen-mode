@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_colors.dart';
 import '../providers/community_provider.dart';
+import '../providers/osm_poi_provider.dart';
 import '../services/debug_service.dart';
 
 class DebugPanel extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
   Widget build(BuildContext context) {
     final warningsAsync = ref.watch(communityWarningsProvider);
     final poisAsync = ref.watch(cyclingPOIsProvider);
+    final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -368,6 +370,18 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
             poisAsync as AsyncValue<List<dynamic>>,
             (pois) => pois.length,
             (pois) => pois.map((p) => '${p.name} (${p.type})').toList(),
+          ),
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // OSM POIs Section
+        Expanded(
+          child: _buildDataSection<dynamic>(
+            'OSM POIs',
+            osmPOIsAsync as AsyncValue<List<dynamic>>,
+            (osmPOIs) => osmPOIs.length,
+            (osmPOIs) => osmPOIs.map((p) => '${p.name} (${p.type})').toList(),
           ),
         ),
       ],
