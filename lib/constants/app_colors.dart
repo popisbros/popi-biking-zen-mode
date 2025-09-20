@@ -17,6 +17,7 @@ class AppColors {
   
   // Map-specific colors
   static const Color bikeLaneBlue = Color(0xFF2196F3);
+  static const Color azureBlue = Color(0xFF87CEEB); // Azure Blue for OSM POIs
   static const Color protectedPathGreen = Color(0xFF4CAF50);
   static const Color cyclewayPurple = Color(0xFF9C27B0);
   

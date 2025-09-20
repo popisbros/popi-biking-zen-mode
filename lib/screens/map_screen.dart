@@ -806,7 +806,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                   message: 'Toggle OSM POI visibility',
                   child: FloatingActionButton(
                     mini: true,
-                    backgroundColor: mapState.showOSMPOIs ? AppColors.urbanBlue : AppColors.urbanBlue.withValues(alpha: 0.5),
+                    backgroundColor: mapState.showOSMPOIs ? AppColors.azureBlue : AppColors.azureBlue.withValues(alpha: 0.5),
                     foregroundColor: AppColors.surface,
                     onPressed: () {
                       _debugService.logButtonClick('OSM POI Toggle', screen: 'MapScreen');
@@ -1208,7 +1208,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     children: [
                       Icon(
                         Icons.public,
-                        color: AppColors.urbanBlue,
+                        color: AppColors.azureBlue,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
@@ -1425,10 +1425,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         onTap: () => _onPOITap(poi),
         child: CustomPaint(
           painter: POITeardropPinPainter(),
-          child: Center(
+          child: Positioned(
+            top: 12, // 30% of 40px height = 12px from top
+            left: 0,
+            right: 0,
             child: Text(
               POIIcons.getPOIIcon(poi.type),
               style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -1446,10 +1450,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         onTap: () => _onWarningTap(warning),
         child: CustomPaint(
           painter: WarningTeardropPinPainter(),
-          child: Center(
+          child: Positioned(
+            top: 12, // 30% of 40px height = 12px from top
+            left: 0,
+            right: 0,
             child: Text(
               POIIcons.getHazardIcon(warning.type),
               style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -1467,10 +1475,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         onTap: () => _onPOITap(poi), // Use the same enhanced dialog
         child: CustomPaint(
           painter: OSMTeardropPinPainter(),
-          child: Center(
+          child: Positioned(
+            top: 12, // 30% of 40px height = 12px from top
+            left: 0,
+            right: 0,
             child: Text(
               POIIcons.getPOIIcon(poi.type),
               style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -1486,8 +1498,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       alignment: Alignment.topCenter, // Align top center of icon with GPS location
       child: CustomPaint(
         painter: TeardropPinPainter(),
-        child: const Center(
-          child: Icon(
+        child: Positioned(
+          top: 12, // 30% of 40px height = 12px from top
+          left: 0,
+          right: 0,
+          child: const Icon(
             Icons.directions_bike,
             color: AppColors.urbanBlue,
             size: 16,
@@ -1671,7 +1686,7 @@ class OSMTeardropPinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.urbanBlue // Blue color for OSM POIs
+      ..color = AppColors.azureBlue // Azure Blue color for OSM POIs
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()

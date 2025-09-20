@@ -367,7 +367,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 icon: const Icon(Icons.public, size: 16),
                 label: const Text('Reload OSM POIs'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.urbanBlue,
+                  backgroundColor: AppColors.azureBlue,
                   foregroundColor: AppColors.surface,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),
