@@ -101,7 +101,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           Flexible(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildTabContent(_selectedTab, warningsAsync, poisAsync),
+              child: _buildTabContent(_selectedTab, warningsAsync, poisAsync, osmPOIsAsync),
             ),
           ),
         ],
@@ -144,12 +144,12 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     );
   }
 
-  Widget _buildTabContent(int tabIndex, AsyncValue warningsAsync, AsyncValue poisAsync) {
+  Widget _buildTabContent(int tabIndex, AsyncValue warningsAsync, AsyncValue poisAsync, AsyncValue osmPOIsAsync) {
     switch (tabIndex) {
       case 0:
         return _buildActionsTab();
       case 1:
-        return _buildDataTab(warningsAsync, poisAsync);
+        return _buildDataTab(warningsAsync, poisAsync, osmPOIsAsync);
       case 2:
         return _buildErrorsTab();
       default:
@@ -303,7 +303,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     );
   }
 
-  Widget _buildDataTab(AsyncValue warningsAsync, AsyncValue poisAsync) {
+  Widget _buildDataTab(AsyncValue warningsAsync, AsyncValue poisAsync, AsyncValue osmPOIsAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
