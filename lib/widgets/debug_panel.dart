@@ -21,8 +21,8 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final warningsAsync = ref.watch(communityWarningsProvider);
-    final poisAsync = ref.watch(cyclingPOIsProvider);
+    final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
+    final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
 
     return Container(
@@ -313,12 +313,14 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   _debugService.logButtonClick('Force Reload Warnings', screen: 'DebugPanel');
-                  // Force refresh the provider
-                  ref.refresh(communityWarningsProvider);
-                  // Also invalidate to force a complete reload
-                  ref.invalidate(communityWarningsProvider);
+                  // Use the callback to reload with actual map bounds, or fallback to force reload
+                  if (widget.onReloadOSMPOIs != null) {
+                    widget.onReloadOSMPOIs!();
+                  } else {
+                    await ref.read(communityWarningsBoundsNotifierProvider.notifier).forceReload();
+                  }
                 },
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Reload Warnings'),
@@ -332,12 +334,14 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   _debugService.logButtonClick('Force Reload POIs', screen: 'DebugPanel');
-                  // Force refresh the provider
-                  ref.refresh(cyclingPOIsProvider);
-                  // Also invalidate to force a complete reload
-                  ref.invalidate(cyclingPOIsProvider);
+                  // Use the callback to reload with actual map bounds, or fallback to force reload
+                  if (widget.onReloadOSMPOIs != null) {
+                    widget.onReloadOSMPOIs!();
+                  } else {
+                    await ref.read(cyclingPOIsBoundsNotifierProvider.notifier).forceReload();
+                  }
                 },
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Reload POIs'),
@@ -363,7 +367,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 icon: const Icon(Icons.public, size: 16),
                 label: const Text('Reload OSM POIs'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.lightGrey,
+                  backgroundColor: AppColors.urbanBlue,
                   foregroundColor: AppColors.surface,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                 ),

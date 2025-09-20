@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/community_warning.dart';
 import '../models/cycling_poi.dart';
 import '../services/firebase_service.dart';
 import '../services/debug_service.dart';
+import 'osm_poi_provider.dart'; // Import BoundingBox
 
 /// Provider for Firebase service
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -400,5 +402,151 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
 final cyclingPOIsNotifierProvider = StateNotifierProvider<CyclingPOIsNotifier, AsyncValue<List<CyclingPOI>>>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
   return CyclingPOIsNotifier(firebaseService);
+});
+
+// BoundingBox class is imported from osm_poi_provider.dart
+
+/// State notifier for bounds-based community warnings
+class CommunityWarningsBoundsNotifier extends StateNotifier<AsyncValue<List<CommunityWarning>>> {
+  final FirebaseService _firebaseService;
+  final DebugService _debugService = DebugService();
+  BoundingBox? _lastLoadedBounds;
+
+  CommunityWarningsBoundsNotifier(this._firebaseService) : super(const AsyncValue.loading());
+
+  /// Load warnings using actual map bounds
+  Future<void> loadWarningsWithBounds(BoundingBox bounds) async {
+    print('Community Warnings Bounds Notifier: Loading warnings with bounds=$bounds');
+    state = const AsyncValue.loading();
+    
+    try {
+      final snapshot = await _firebaseService.getWarningsInBounds(
+        bounds.south,
+        bounds.west,
+        bounds.north,
+        bounds.east,
+      ).first;
+      
+      final warnings = snapshot.docs
+          .map((doc) {
+            try {
+              return CommunityWarning.fromMap({
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              });
+            } catch (e) {
+              print('Error parsing warning document ${doc.id}: $e');
+              return null;
+            }
+          })
+          .where((warning) => warning != null)
+          .cast<CommunityWarning>()
+          .toList();
+      
+      // Client-side filtering by bounds
+      final filteredWarnings = warnings.where((warning) {
+        return warning.latitude >= bounds.south &&
+               warning.latitude <= bounds.north &&
+               warning.longitude >= bounds.west &&
+               warning.longitude <= bounds.east;
+      }).toList();
+      
+      print('Community Warnings Bounds Notifier: Loaded ${filteredWarnings.length} warnings with bounds');
+      state = AsyncValue.data(filteredWarnings);
+      _lastLoadedBounds = bounds;
+    } catch (error, stackTrace) {
+      print('Community Warnings Bounds Notifier: Error loading warnings with bounds: $error');
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+  
+  /// Force reload warnings using the last known bounds
+  Future<void> forceReload() async {
+    if (_lastLoadedBounds != null) {
+      print('Community Warnings Bounds Notifier: Force reloading with last known bounds=$_lastLoadedBounds');
+      await loadWarningsWithBounds(_lastLoadedBounds!);
+    } else {
+      print('Community Warnings Bounds Notifier: Force reload called but no previous bounds available');
+      state = const AsyncValue.data([]);
+    }
+  }
+}
+
+/// State notifier for bounds-based cycling POIs
+class CyclingPOIsBoundsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
+  final FirebaseService _firebaseService;
+  final DebugService _debugService = DebugService();
+  BoundingBox? _lastLoadedBounds;
+
+  CyclingPOIsBoundsNotifier(this._firebaseService) : super(const AsyncValue.loading());
+
+  /// Load POIs using actual map bounds
+  Future<void> loadPOIsWithBounds(BoundingBox bounds) async {
+    print('Cycling POIs Bounds Notifier: Loading POIs with bounds=$bounds');
+    state = const AsyncValue.loading();
+    
+    try {
+      final snapshot = await _firebaseService.getPOIsInBounds(
+        bounds.south,
+        bounds.west,
+        bounds.north,
+        bounds.east,
+      ).first;
+      
+      final pois = snapshot.docs
+          .map((doc) {
+            try {
+              return CyclingPOI.fromMap({
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              });
+            } catch (e) {
+              print('Error parsing POI document ${doc.id}: $e');
+              return null;
+            }
+          })
+          .where((poi) => poi != null)
+          .cast<CyclingPOI>()
+          .toList();
+      
+      // Client-side filtering by bounds
+      final filteredPOIs = pois.where((poi) {
+        return poi.latitude >= bounds.south &&
+               poi.latitude <= bounds.north &&
+               poi.longitude >= bounds.west &&
+               poi.longitude <= bounds.east;
+      }).toList();
+      
+      print('Cycling POIs Bounds Notifier: Loaded ${filteredPOIs.length} POIs with bounds');
+      state = AsyncValue.data(filteredPOIs);
+      _lastLoadedBounds = bounds;
+    } catch (error, stackTrace) {
+      print('Cycling POIs Bounds Notifier: Error loading POIs with bounds: $error');
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+  
+  /// Force reload POIs using the last known bounds
+  Future<void> forceReload() async {
+    if (_lastLoadedBounds != null) {
+      print('Cycling POIs Bounds Notifier: Force reloading with last known bounds=$_lastLoadedBounds');
+      await loadPOIsWithBounds(_lastLoadedBounds!);
+    } else {
+      print('Cycling POIs Bounds Notifier: Force reload called but no previous bounds available');
+      state = const AsyncValue.data([]);
+    }
+  }
+}
+
+/// Provider for bounds-based community warnings notifier
+final communityWarningsBoundsNotifierProvider = StateNotifierProvider<CommunityWarningsBoundsNotifier, AsyncValue<List<CommunityWarning>>>((ref) {
+  final firebaseService = ref.watch(firebaseServiceProvider);
+  return CommunityWarningsBoundsNotifier(firebaseService);
+});
+
+/// Provider for bounds-based cycling POIs notifier
+final cyclingPOIsBoundsNotifierProvider = StateNotifierProvider<CyclingPOIsBoundsNotifier, AsyncValue<List<CyclingPOI>>>((ref) {
+  final firebaseService = ref.watch(firebaseServiceProvider);
+  return CyclingPOIsBoundsNotifier(firebaseService);
 });
 

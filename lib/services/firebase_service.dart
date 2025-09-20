@@ -297,6 +297,40 @@ class FirebaseService {
     }
   }
 
+  /// Get warnings within bounds (for map-based loading)
+  Stream<QuerySnapshot> getWarningsInBounds(double south, double west, double north, double east) {
+    try {
+      print('FirebaseService.getWarningsInBounds: Loading warnings for bounds south=$south, west=$west, north=$north, east=$east');
+      // For now, we'll get all active warnings and filter client-side
+      // In production, you'd use GeoFirestore for proper geospatial queries
+      return _firestore
+          .collection(_warningsCollection)
+          .where('isActive', isEqualTo: true)
+          .limit(100) // Reasonable limit for map view
+          .snapshots();
+    } catch (e) {
+      print('FirebaseService.getWarningsInBounds: Error: $e');
+      return Stream.empty();
+    }
+  }
+
+  /// Get POIs within bounds (for map-based loading)
+  Stream<QuerySnapshot> getPOIsInBounds(double south, double west, double north, double east) {
+    try {
+      print('FirebaseService.getPOIsInBounds: Loading POIs for bounds south=$south, west=$west, north=$north, east=$east');
+      // For now, we'll get all active POIs and filter client-side
+      // In production, you'd use GeoFirestore for proper geospatial queries
+      return _firestore
+          .collection(_poisCollection)
+          .where('isActive', isEqualTo: true)
+          .limit(100) // Reasonable limit for map view
+          .snapshots();
+    } catch (e) {
+      print('FirebaseService.getPOIsInBounds: Error: $e');
+      return Stream.empty();
+    }
+  }
+
   /// Force create the pois collection with a sample document
   Future<void> forceCreatePOIsCollection() async {
     try {

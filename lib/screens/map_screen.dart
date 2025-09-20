@@ -11,6 +11,7 @@ import '../providers/location_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/community_provider.dart';
 import '../providers/osm_poi_provider.dart';
+import '../models/community_warning.dart';
 import '../services/map_service.dart';
 import '../utils/poi_icons.dart';
 import '../models/cycling_poi.dart';
@@ -131,9 +132,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           15.0,
         );
         
-        // Wait a bit for the map to settle, then load OSM POIs with actual bounds
+        // Wait a bit for the map to settle, then load all map data with actual bounds
         Future.delayed(const Duration(milliseconds: 500), () {
-          _loadOSMPOIsWithMapBounds();
+          _loadAllMapDataWithBounds();
         });
       } else {
         _debugService.logAction(action: 'Map: GPS location not available');
@@ -141,10 +142,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     });
   }
   
-  /// Load OSM POIs using the actual visible map bounds
-  void _loadOSMPOIsWithMapBounds() {
+  
+  /// Load all map data (OSM POIs, Hazards, POIs) using the actual visible map bounds
+  void _loadAllMapDataWithBounds() {
     if (!_isMapReady) {
-      print('Map Screen: Map not ready, skipping OSM POI load');
+      print('Map Screen: Map not ready, skipping map data load');
       return;
     }
     
@@ -161,39 +163,37 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         east: latLngBounds.east,
       );
       
-      print('Map Screen: Loading OSM POIs with actual map bounds:');
+      print('Map Screen: Loading all map data with bounds:');
       print('  South: ${bounds.south}, North: ${bounds.north}');
       print('  West: ${bounds.west}, East: ${bounds.east}');
-      print('  Center: ${latLngBounds.center}');
       
+      // Load OSM POIs
       final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
       osmPOIsNotifier.loadPOIsWithBounds(bounds);
+      
+      // Load Hazards
+      final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
+      warningsNotifier.loadWarningsWithBounds(bounds);
+      
+      // Load POIs
+      final poisNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+      poisNotifier.loadPOIsWithBounds(bounds);
+      
     } catch (e) {
-      print('Map Screen: Error getting map bounds: $e');
-      // Fallback to center-based loading
-      final locationAsync = ref.read(locationNotifierProvider);
-      locationAsync.whenData((location) {
-        if (location != null) {
-          final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-          osmPOIsNotifier.loadPOIsForLocation(
-            LatLng(location.latitude, location.longitude),
-            15.0,
-          );
-        }
-      });
+      print('Map Screen: Error loading map data with bounds: $e');
     }
   }
   
   /// Handle map events (movement, zoom, etc.)
   void _onMapEvent(MapEvent mapEvent) {
-    // Only reload OSM POIs on significant map changes
+    // Only reload map data on significant map changes
     if (mapEvent is MapEventMove || mapEvent is MapEventMoveStart || mapEvent is MapEventMoveEnd) {
       // Debounce the reload to avoid too many API calls
       _debounceTimer?.cancel();
       _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
         if (_isMapReady) {
-          print('Map Screen: Map moved, reloading OSM POIs with new bounds');
-          _loadOSMPOIsWithMapBounds();
+          print('Map Screen: Map moved, reloading all map data with new bounds');
+          _loadAllMapDataWithBounds();
         }
       });
     }
@@ -306,20 +306,71 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
     print('POI tapped: ${poi.name} (${poi.type})');
     
-    // Show POI details dialog
+    // Show enhanced POI details dialog
+    _showEnhancedPOIDialog(poi);
+  }
+  
+  void _showEnhancedPOIDialog(dynamic poi) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(poi.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text('Type: ${poi.type}'),
-            Text('Location: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
-            if (poi.description != null) Text('Description: ${poi.description}'),
-            if (poi.address != null) Text('Address: ${poi.address}'),
+            Text(POIIcons.getPOIIcon(poi.type), style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(poi.name)),
           ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFieldRow('Type', poi.type),
+              _buildFieldRow('Location', '${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+              if (poi.description != null && poi.description!.isNotEmpty) 
+                _buildFieldRow('Description', poi.description!),
+              if (poi.address != null && poi.address!.isNotEmpty) 
+                _buildFieldRow('Address', poi.address!),
+              if (poi.phone != null && poi.phone!.isNotEmpty) 
+                _buildFieldRow('Phone', poi.phone!),
+              if (poi.website != null && poi.website!.isNotEmpty) 
+                _buildFieldRow('Website', poi.website!),
+              if (poi.createdAt != null) 
+                _buildFieldRow('Created', _formatDateTime(poi.createdAt)),
+              if (poi.updatedAt != null) 
+                _buildFieldRow('Updated', _formatDateTime(poi.updatedAt)),
+              if (poi.id != null && poi.id!.isNotEmpty) 
+                _buildFieldRow('ID', poi.id!),
+              
+              // OSM-specific fields
+              if (poi is OSMPOI) ...[
+                const Divider(),
+                const Text('OSM Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                _buildFieldRow('OSM ID', poi.osmId),
+                _buildFieldRow('OSM Type', poi.osmType),
+                if (poi.osmTags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text('OSM Tags:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...poi.osmTags.entries.map((entry) => 
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 2),
+                      child: Text('${entry.key}: ${entry.value}'),
+                    ),
+                  ),
+                ],
+              ],
+              
+              // Metadata
+              if (poi.metadata != null && poi.metadata!.isNotEmpty) ...[
+                const Divider(),
+                const Text('Additional Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ...poi.metadata!.entries.map((entry) => 
+                  _buildFieldRow(entry.key, entry.value.toString()),
+                ),
+              ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -343,20 +394,68 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
     print('Warning tapped: ${warning.type} - ${warning.description}');
     
-    // Show warning details dialog
+    // Show enhanced warning details dialog
+    _showEnhancedWarningDialog(warning);
+  }
+  
+  void _showEnhancedWarningDialog(CommunityWarning warning) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Hazard: ${warning.type}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text('Description: ${warning.description}'),
-            Text('Location: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
-            Text('Reported: ${warning.reportedAt.toString()}'),
-            if (warning.severity != null) Text('Severity: ${warning.severity}'),
+            Icon(Icons.warning, color: _getSeverityColor(warning.severity), size: 24),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Hazard: ${warning.title}')),
           ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFieldRow('Type', warning.type),
+              _buildFieldRow('Severity', warning.severity.toUpperCase()),
+              _buildFieldRow('Description', warning.description),
+              _buildFieldRow('Location', '${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
+              _buildFieldRow('Reported', _formatDateTime(warning.reportedAt)),
+              if (warning.reportedBy != null && warning.reportedBy!.isNotEmpty) 
+                _buildFieldRow('Reported By', warning.reportedBy!),
+              if (warning.expiresAt != null) 
+                _buildFieldRow('Expires', _formatDateTime(warning.expiresAt!)),
+              _buildFieldRow('Status', warning.isActive ? 'Active' : 'Inactive'),
+              if (warning.id != null && warning.id!.isNotEmpty) 
+                _buildFieldRow('ID', warning.id!),
+              
+              // Tags
+              if (warning.tags != null && warning.tags!.isNotEmpty) ...[
+                const Divider(),
+                const Text('Tags', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Wrap(
+                  children: warning.tags!.map((tag) => 
+                    Container(
+                      margin: const EdgeInsets.only(right: 4, bottom: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.urbanBlue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(tag, style: const TextStyle(fontSize: 12)),
+                    ),
+                  ).toList(),
+                ),
+              ],
+              
+              // Metadata
+              if (warning.metadata != null && warning.metadata!.isNotEmpty) ...[
+                const Divider(),
+                const Text('Additional Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ...warning.metadata!.entries.map((entry) => 
+                  _buildFieldRow(entry.key, entry.value.toString()),
+                ),
+              ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -366,6 +465,49 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         ],
       ),
     );
+  }
+
+  /// Helper method to build a field row in dialogs
+  Widget _buildFieldRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Text(value),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// Helper method to format DateTime for display
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+  
+  /// Helper method to get color based on severity
+  Color _getSeverityColor(String severity) {
+    switch (severity.toLowerCase()) {
+      case 'low':
+        return AppColors.mossGreen;
+      case 'medium':
+        return AppColors.signalYellow;
+      case 'high':
+        return AppColors.warningOrange;
+      case 'critical':
+        return AppColors.dangerRed;
+      default:
+        return AppColors.lightGrey;
+    }
   }
 
   void _onMapLongPressFromTap(TapPosition tapPosition, LatLng point) {
@@ -466,8 +608,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   Widget build(BuildContext context) {
     final locationAsync = ref.watch(locationNotifierProvider);
     final mapState = ref.watch(mapProvider);
-    final warningsAsync = ref.watch(communityWarningsProvider);
-    final poisAsync = ref.watch(cyclingPOIsProvider);
+    final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
+    final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
 
     return Scaffold(
@@ -664,7 +806,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                   message: 'Toggle OSM POI visibility',
                   child: FloatingActionButton(
                     mini: true,
-                    backgroundColor: mapState.showOSMPOIs ? AppColors.lightGrey : AppColors.lightGrey.withValues(alpha: 0.5),
+                    backgroundColor: mapState.showOSMPOIs ? AppColors.urbanBlue : AppColors.urbanBlue.withValues(alpha: 0.5),
                     foregroundColor: AppColors.surface,
                     onPressed: () {
                       _debugService.logButtonClick('OSM POI Toggle', screen: 'MapScreen');
@@ -1066,7 +1208,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     children: [
                       Icon(
                         Icons.public,
-                        color: AppColors.lightGrey,
+                        color: AppColors.urbanBlue,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
@@ -1199,7 +1341,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       width: MediaQuery.of(context).size.width,
                       child: DebugPanel(
                         onClose: _hideDebugPanel,
-                        onReloadOSMPOIs: _loadOSMPOIsWithMapBounds,
+                        onReloadOSMPOIs: _loadAllMapDataWithBounds,
                       ),
                     ),
                   );
@@ -1321,12 +1463,15 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       width: 30,
       height: 40,
       alignment: Alignment.topCenter,
-      child: CustomPaint(
-        painter: OSMTeardropPinPainter(),
-        child: Center(
-          child: Text(
-            POIIcons.getPOIIcon(poi.type),
-            style: const TextStyle(fontSize: 16),
+      child: GestureDetector(
+        onTap: () => _onPOITap(poi), // Use the same enhanced dialog
+        child: CustomPaint(
+          painter: OSMTeardropPinPainter(),
+          child: Center(
+            child: Text(
+              POIIcons.getPOIIcon(poi.type),
+              style: const TextStyle(fontSize: 16),
+            ),
           ),
         ),
       ),
@@ -1344,7 +1489,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         child: const Center(
           child: Icon(
             Icons.directions_bike,
-            color: Colors.white,
+            color: AppColors.urbanBlue,
             size: 16,
           ),
         ),
@@ -1470,11 +1615,11 @@ class TeardropPinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF4A90E2) // Light blue color
+      ..color = AppColors.lightGrey // Grey color for GPS position
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
-      ..color = const Color(0xFF4A90E2).withValues(alpha: 0.3)
+      ..color = AppColors.lightGrey.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
@@ -1526,7 +1671,7 @@ class OSMTeardropPinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.lightGrey // Grey color for OSM POIs
+      ..color = AppColors.urbanBlue // Blue color for OSM POIs
       ..style = PaintingStyle.fill;
 
     final shadowPaint = Paint()
