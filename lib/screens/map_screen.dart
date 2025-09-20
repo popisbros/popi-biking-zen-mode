@@ -149,12 +149,22 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     }
     
     try {
-      // Get the actual visible bounds from the map controller
-      final bounds = _mapController.bounds;
+      // Get the actual visible bounds from the map controller camera
+      final camera = _mapController.camera;
+      final latLngBounds = camera.visibleBounds;
+      
+      // Convert LatLngBounds to our custom BoundingBox
+      final bounds = BoundingBox(
+        south: latLngBounds.south,
+        west: latLngBounds.west,
+        north: latLngBounds.north,
+        east: latLngBounds.east,
+      );
+      
       print('Map Screen: Loading OSM POIs with actual map bounds:');
       print('  South: ${bounds.south}, North: ${bounds.north}');
       print('  West: ${bounds.west}, East: ${bounds.east}');
-      print('  Center: ${bounds.center}');
+      print('  Center: ${latLngBounds.center}');
       
       final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
       osmPOIsNotifier.loadPOIsWithBounds(bounds);
