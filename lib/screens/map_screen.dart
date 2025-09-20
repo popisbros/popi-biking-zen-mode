@@ -546,7 +546,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
             // POI toggle button with count
             Positioned(
-              top: MediaQuery.of(context).padding.top + 140,
+              top: MediaQuery.of(context).padding.top + 80,
               right: 16,
               child: Semantics(
                 label: mapState.showPOIs ? 'Hide points of interest' : 'Show points of interest',
@@ -569,7 +569,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
             // OSM POI toggle button
             Positioned(
-              top: MediaQuery.of(context).padding.top + 170,
+              top: MediaQuery.of(context).padding.top + 120,
               right: 16,
               child: Semantics(
                 label: mapState.showOSMPOIs ? 'Hide OSM POIs' : 'Show OSM POIs',
@@ -592,7 +592,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
             // Warning toggle button with count
             Positioned(
-              top: MediaQuery.of(context).padding.top + 260,
+              top: MediaQuery.of(context).padding.top + 160,
               right: 16,
               child: Semantics(
                 label: mapState.showWarnings ? 'Hide community warnings' : 'Show community warnings',
@@ -615,7 +615,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
             // Route toggle button
             Positioned(
-              top: MediaQuery.of(context).padding.top + 260,
+              top: MediaQuery.of(context).padding.top + 200,
               right: 16,
               child: Semantics(
                 label: mapState.showRoutes ? 'Hide cycling routes' : 'Show cycling routes',
@@ -638,7 +638,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
             // GPS current location button
             Positioned(
-              top: MediaQuery.of(context).padding.top + 320,
+              top: MediaQuery.of(context).padding.top + 240,
               right: 16,
               child: Semantics(
                 label: 'Center map on current location',
@@ -661,7 +661,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
             // Zoom controls
             Positioned(
-              top: MediaQuery.of(context).padding.top + 380,
+              top: MediaQuery.of(context).padding.top + 300,
               right: 16,
               child: Column(
                 children: [

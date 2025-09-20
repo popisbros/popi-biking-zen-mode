@@ -347,6 +347,25 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  _debugService.logButtonClick('Force Reload OSM POIs', screen: 'DebugPanel');
+                  // Force refresh the OSM POI provider
+                  ref.refresh(osmPOIsNotifierProvider);
+                  // Also invalidate to force a complete reload
+                  ref.invalidate(osmPOIsNotifierProvider);
+                },
+                icon: const Icon(Icons.public, size: 16),
+                label: const Text('Reload OSM POIs'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.lightGrey,
+                  foregroundColor: AppColors.surface,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -377,12 +396,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
         
         // OSM POIs Section
         Expanded(
-          child: _buildDataSection<dynamic>(
-            'OSM POIs',
-            osmPOIsAsync as AsyncValue<List<dynamic>>,
-            (osmPOIs) => osmPOIs.length,
-            (osmPOIs) => osmPOIs.map((p) => '${p.name} (${p.type})').toList(),
-          ),
+          child: _buildOSMDataSection(osmPOIsAsync),
         ),
       ],
     );
@@ -518,6 +532,126 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     );
   }
 
+  Widget _buildOSMDataSection(AsyncValue osmPOIsAsync) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'OSM POIs',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.lightGrey,
+          ),
+        ),
+        const SizedBox(height: 8),
+        osmPOIsAsync.when(
+          data: (osmPOIs) {
+            final count = osmPOIs.length;
+            final items = osmPOIs.map((p) => '${p.name} (${p.type}) - OSM ID: ${p.osmId}').toList();
+            
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.public,
+                      size: 16,
+                      color: AppColors.lightGrey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Count: $count',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                if (items.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...items.take(3).map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: SelectableText(
+                      '• $item',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  )),
+                  if (items.length > 3)
+                    Text(
+                      '... and ${items.length - 3} more',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ] else ...[
+                  Text(
+                    'No OSM POIs found in current area',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+          loading: () => Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.lightGrey),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Loading OSM POIs...',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+          error: (error, stack) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'OSM Error: $error',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Check Overpass API connection',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildErrorsTab() {
     return const Center(
       child: Text(
@@ -529,6 +663,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
 
   IconData _getActionIcon(String action) {
     if (action.contains('Button Click')) return Icons.touch_app;
+    if (action.contains('OSM')) return Icons.public; // Special icon for OSM actions
     if (action.contains('Navigation')) return Icons.navigation;
     if (action.contains('Function Call')) return Icons.functions;
     if (action.contains('API Call')) return Icons.api;
@@ -538,6 +673,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
 
   Color _getActionColor(String action) {
     if (action.contains('Error')) return AppColors.dangerRed;
+    if (action.contains('OSM')) return AppColors.lightGrey; // Highlight OSM actions
     if (action.contains('API Call')) return AppColors.urbanBlue;
     if (action.contains('Navigation')) return AppColors.mossGreen;
     if (action.contains('Button Click')) return AppColors.signalYellow;
