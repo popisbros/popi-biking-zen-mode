@@ -94,17 +94,31 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
   }
   
   BoundingBox _calculateBoundingBox(LatLng center, double zoom) {
-    // Calculate radius based on zoom level
+    // Calculate radius in meters based on zoom level
     final zoomFactor = pow(2, 20 - zoom).toDouble();
-    final radius = (1000 / zoomFactor).clamp(200.0, 2000.0);
+    final radiusMeters = (1000 / zoomFactor).clamp(200.0, 2000.0);
     
-    final distance = Distance();
-    return BoundingBox(
-      south: distance.offset(center, -radius, 180).latitude,
-      north: distance.offset(center, radius, 0).latitude,
-      west: distance.offset(center, -radius, 270).longitude,
-      east: distance.offset(center, radius, 90).longitude,
+    // Convert radius from meters to degrees
+    // Approximate: 1 degree latitude ≈ 111,000 meters
+    // 1 degree longitude ≈ 111,000 * cos(latitude) meters
+    final latRadius = radiusMeters / 111000.0;
+    final lonRadius = radiusMeters / (111000.0 * cos(center.latitude * pi / 180.0));
+    
+    final bbox = BoundingBox(
+      south: center.latitude - latRadius,
+      north: center.latitude + latRadius,
+      west: center.longitude - lonRadius,
+      east: center.longitude + lonRadius,
     );
+    
+    print('OSM POI Provider: Calculated bounding box:');
+    print('  Center: ${center.latitude}, ${center.longitude}');
+    print('  Zoom: $zoom, Radius: ${radiusMeters}m');
+    print('  South: ${bbox.south}, North: ${bbox.north}');
+    print('  West: ${bbox.west}, East: ${bbox.east}');
+    print('  Lat diff: ${bbox.north - bbox.south}, Lon diff: ${bbox.east - bbox.west}');
+    
+    return bbox;
   }
 }
 
