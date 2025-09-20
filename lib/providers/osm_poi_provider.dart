@@ -94,26 +94,49 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
   }
   
   BoundingBox _calculateBoundingBox(LatLng center, double zoom) {
-    // Calculate radius in meters based on zoom level
-    final zoomFactor = pow(2, 20 - zoom).toDouble();
-    final radiusMeters = (1000 / zoomFactor).clamp(200.0, 2000.0);
+    // Calculate the visible map area based on zoom level
+    // Each zoom level doubles the resolution, so we need to account for this
+    // At zoom 0: entire world is visible
+    // At zoom 18: very detailed view
     
-    // Convert radius from meters to degrees
-    // Approximate: 1 degree latitude ≈ 111,000 meters
-    // 1 degree longitude ≈ 111,000 * cos(latitude) meters
-    final latRadius = radiusMeters / 111000.0;
-    final lonRadius = radiusMeters / (111000.0 * cos(center.latitude * pi / 180.0));
+    // Calculate the approximate size of the visible area in degrees
+    // This is based on the standard web mercator projection
+    final worldSize = 256.0; // Standard tile size
+    final scale = pow(2, zoom).toDouble();
+    final pixelSize = worldSize * scale;
+    
+    // Approximate degrees per pixel at the equator
+    final degreesPerPixel = 360.0 / pixelSize;
+    
+    // Assume a typical screen size of 800x600 pixels for the map view
+    // This gives us a reasonable buffer around the visible area
+    final mapWidthPixels = 800.0;
+    final mapHeightPixels = 600.0;
+    
+    // Calculate the bounding box size in degrees
+    final latSpan = (mapHeightPixels * degreesPerPixel) / 2.0;
+    final lonSpan = (mapWidthPixels * degreesPerPixel) / 2.0;
+    
+    // Adjust longitude span for the current latitude (mercator projection)
+    final adjustedLonSpan = lonSpan / cos(center.latitude * pi / 180.0);
+    
+    // Ensure minimum size for very high zoom levels
+    final minSpan = 0.001; // ~100m at equator
+    final finalLatSpan = latSpan.clamp(minSpan, 1.0);
+    final finalLonSpan = adjustedLonSpan.clamp(minSpan, 1.0);
     
     final bbox = BoundingBox(
-      south: center.latitude - latRadius,
-      north: center.latitude + latRadius,
-      west: center.longitude - lonRadius,
-      east: center.longitude + lonRadius,
+      south: center.latitude - finalLatSpan,
+      north: center.latitude + finalLatSpan,
+      west: center.longitude - finalLonSpan,
+      east: center.longitude + finalLonSpan,
     );
     
     print('OSM POI Provider: Calculated bounding box:');
     print('  Center: ${center.latitude}, ${center.longitude}');
-    print('  Zoom: $zoom, Radius: ${radiusMeters}m');
+    print('  Zoom: $zoom, Scale: $scale');
+    print('  Degrees per pixel: $degreesPerPixel');
+    print('  Lat span: $finalLatSpan, Lon span: $finalLonSpan');
     print('  South: ${bbox.south}, North: ${bbox.north}');
     print('  West: ${bbox.west}, East: ${bbox.east}');
     print('  Lat diff: ${bbox.north - bbox.south}, Lon diff: ${bbox.east - bbox.west}');
