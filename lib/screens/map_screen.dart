@@ -9,7 +9,9 @@ import '../models/location_data.dart';
 import '../providers/location_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/community_provider.dart';
+import '../providers/osm_poi_provider.dart';
 import '../services/map_service.dart';
+import '../utils/poi_icons.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 import '../widgets/debug_panel.dart';
@@ -117,6 +119,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           },
         );
         _mapController.move(
+          LatLng(location.latitude, location.longitude),
+          15.0,
+        );
+        
+        // Load OSM POIs for current location
+        final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+        osmPOIsNotifier.loadPOIsForLocation(
           LatLng(location.latitude, location.longitude),
           15.0,
         );
@@ -321,6 +330,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final mapState = ref.watch(mapProvider);
     final warningsAsync = ref.watch(communityWarningsProvider);
     final poisAsync = ref.watch(cyclingPOIsProvider);
+    final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
 
     return Scaffold(
       body: Stack(
@@ -355,6 +365,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                   MarkerLayer(
                     markers: poisAsync.when(
                       data: (pois) => pois.map((poi) => _buildPOIMarker(poi)).toList(),
+                      loading: () => [],
+                      error: (_, __) => [],
+                    ),
+                  ),
+                
+                // OSM POI markers
+                if (mapState.showOSMPOIs)
+                  MarkerLayer(
+                    markers: osmPOIsAsync.when(
+                      data: (osmPOIs) => osmPOIs.map((poi) => _buildOSMPOIMarker(poi)).toList(),
                       loading: () => [],
                       error: (_, __) => [],
                     ),
@@ -471,9 +491,32 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               ),
             ),
 
-            // Warning toggle button with count
+            // OSM POI toggle button
             Positioned(
               top: MediaQuery.of(context).padding.top + 200,
+              right: 16,
+              child: Semantics(
+                label: mapState.showOSMPOIs ? 'Hide OSM POIs' : 'Show OSM POIs',
+                button: true,
+                child: Tooltip(
+                  message: 'Toggle OSM POI visibility',
+                  child: FloatingActionButton(
+                    mini: true,
+                    backgroundColor: mapState.showOSMPOIs ? AppColors.lightGrey : AppColors.lightGrey.withValues(alpha: 0.5),
+                    foregroundColor: AppColors.surface,
+                    onPressed: () {
+                      _debugService.logButtonClick('OSM POI Toggle', screen: 'MapScreen');
+                      ref.read(mapProvider.notifier).toggleOSMPOIs();
+                    },
+                    child: const Icon(Icons.public),
+                  ),
+                ),
+              ),
+            ),
+
+            // Warning toggle button with count
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 260,
               right: 16,
               child: Semantics(
                 label: mapState.showWarnings ? 'Hide community warnings' : 'Show community warnings',
@@ -837,6 +880,89 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               ),
             ),
 
+          // OSM POI Status indicator
+          if (_isMapReady)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 148,
+              left: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: osmPOIsAsync.when(
+                  data: (osmPOIs) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.public,
+                        color: AppColors.lightGrey,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'OSM: ${osmPOIs.length}',
+                        style: TextStyle(
+                          color: AppColors.lightGrey,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  loading: () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.lightGrey),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'OSM Loading...',
+                        style: TextStyle(
+                          color: AppColors.lightGrey,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  error: (_, __) => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.public_off,
+                        color: AppColors.dangerRed,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'OSM Error',
+                        style: TextStyle(
+                          color: AppColors.dangerRed,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // Mobile hint for long press
           if (_showMobileHint)
             Positioned(
@@ -977,11 +1103,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       alignment: Alignment.topCenter, // Align top center of icon with POI location
       child: CustomPaint(
         painter: POITeardropPinPainter(),
-        child: const Center(
-          child: Icon(
-            Icons.place,
-            color: Colors.white,
-            size: 16,
+        child: Center(
+          child: Text(
+            POIIcons.getPOIIcon(poi.type),
+            style: const TextStyle(fontSize: 16),
           ),
         ),
       ),
@@ -996,11 +1121,28 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       alignment: Alignment.topCenter, // Align top center of icon with warning location
       child: CustomPaint(
         painter: WarningTeardropPinPainter(),
-        child: const Center(
-          child: Icon(
-            Icons.warning,
-            color: Colors.white,
-            size: 16,
+        child: Center(
+          child: Text(
+            POIIcons.getHazardIcon(warning.type),
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Marker _buildOSMPOIMarker(OSMPOI poi) {
+    return Marker(
+      point: LatLng(poi.latitude, poi.longitude),
+      width: 30,
+      height: 40,
+      alignment: Alignment.topCenter,
+      child: CustomPaint(
+        painter: OSMTeardropPinPainter(),
+        child: Center(
+          child: Text(
+            POIIcons.getPOIIcon(poi.type),
+            style: const TextStyle(fontSize: 16),
           ),
         ),
       ),
@@ -1149,6 +1291,62 @@ class TeardropPinPainter extends CustomPainter {
 
     final shadowPaint = Paint()
       ..color = const Color(0xFF4A90E2).withValues(alpha: 0.3)
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
+    // Create teardrop path using dart:ui Path
+    final path = ui.Path();
+    
+    // Start from the top center
+    path.moveTo(size.width / 2, 0);
+    
+    // Create the rounded top (semicircle)
+    path.arcToPoint(
+      Offset(size.width, size.height * 0.3),
+      radius: Radius.circular(size.width / 2),
+      clockwise: true,
+    );
+    
+    // Create the sides of the teardrop
+    path.lineTo(size.width * 0.7, size.height * 0.8);
+    
+    // Create the pointed bottom
+    path.lineTo(size.width / 2, size.height);
+    path.lineTo(size.width * 0.3, size.height * 0.8);
+    
+    // Complete the teardrop shape
+    path.lineTo(0, size.height * 0.3);
+    path.arcToPoint(
+      Offset(size.width / 2, 0),
+      radius: Radius.circular(size.width / 2),
+      clockwise: true,
+    );
+    
+    path.close();
+
+    // Draw shadow first (slightly offset)
+    final shadowPath = ui.Path.from(path);
+    shadowPath.shift(const Offset(1, 2));
+    canvas.drawPath(shadowPath, shadowPaint);
+
+    // Draw the main teardrop
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// OSM Teardrop Pin Painter - grey color
+class OSMTeardropPinPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.lightGrey // Grey color for OSM POIs
+      ..style = PaintingStyle.fill;
+
+    final shadowPaint = Paint()
+      ..color = AppColors.lightGrey.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 

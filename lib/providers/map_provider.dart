@@ -28,6 +28,11 @@ class MapNotifier extends StateNotifier<MapState> {
     state = state.copyWith(showRoutes: !state.showRoutes);
   }
 
+  /// Toggle OSM POI visibility
+  void toggleOSMPOIs() {
+    state = state.copyWith(showOSMPOIs: !state.showOSMPOIs);
+  }
+
   /// Toggle warning visibility
   void toggleWarnings() {
     state = state.copyWith(showWarnings: !state.showWarnings);
@@ -63,6 +68,7 @@ class MapState {
   final String tileUrl;
   final String attribution;
   final bool showPOIs;
+  final bool showOSMPOIs;
   final bool showRoutes;
   final bool showWarnings;
   final List<Map<String, dynamic>> pois;
@@ -76,6 +82,7 @@ class MapState {
     required this.tileUrl,
     required this.attribution,
     required this.showPOIs,
+    required this.showOSMPOIs,
     required this.showRoutes,
     required this.showWarnings,
     required this.pois,
@@ -92,6 +99,7 @@ class MapState {
       tileUrl: mapService.getTileUrl(MapLayerType.cycling),
       attribution: mapService.getAttribution(MapLayerType.cycling),
       showPOIs: true,
+      showOSMPOIs: true,
       showRoutes: true,
       showWarnings: true,
       pois: [],
@@ -107,6 +115,7 @@ class MapState {
     String? tileUrl,
     String? attribution,
     bool? showPOIs,
+    bool? showOSMPOIs,
     bool? showRoutes,
     bool? showWarnings,
     List<Map<String, dynamic>>? pois,
@@ -120,6 +129,7 @@ class MapState {
       tileUrl: tileUrl ?? this.tileUrl,
       attribution: attribution ?? this.attribution,
       showPOIs: showPOIs ?? this.showPOIs,
+      showOSMPOIs: showOSMPOIs ?? this.showOSMPOIs,
       showRoutes: showRoutes ?? this.showRoutes,
       showWarnings: showWarnings ?? this.showWarnings,
       pois: pois ?? this.pois,
