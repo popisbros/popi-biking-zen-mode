@@ -1425,14 +1425,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         onTap: () => _onPOITap(poi),
         child: CustomPaint(
           painter: POITeardropPinPainter(),
-          child: Positioned(
-            top: 12, // 30% of 40px height = 12px from top
-            left: 0,
-            right: 0,
+          child: Center(
             child: Text(
               POIIcons.getPOIIcon(poi.type),
               style: const TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -1450,14 +1446,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         onTap: () => _onWarningTap(warning),
         child: CustomPaint(
           painter: WarningTeardropPinPainter(),
-          child: Positioned(
-            top: 12, // 30% of 40px height = 12px from top
-            left: 0,
-            right: 0,
+          child: Center(
             child: Text(
               POIIcons.getHazardIcon(warning.type),
               style: const TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -1475,14 +1467,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         onTap: () => _onPOITap(poi), // Use the same enhanced dialog
         child: CustomPaint(
           painter: OSMTeardropPinPainter(),
-          child: Positioned(
-            top: 12, // 30% of 40px height = 12px from top
-            left: 0,
-            right: 0,
+          child: Center(
             child: Text(
               POIIcons.getPOIIcon(poi.type),
               style: const TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
             ),
           ),
         ),
@@ -1498,11 +1486,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       alignment: Alignment.topCenter, // Align top center of icon with GPS location
       child: CustomPaint(
         painter: TeardropPinPainter(),
-        child: Positioned(
-          top: 12, // 30% of 40px height = 12px from top
-          left: 0,
-          right: 0,
-          child: const Icon(
+        child: const Center(
+          child: Icon(
             Icons.directions_bike,
             color: AppColors.urbanBlue,
             size: 16,
