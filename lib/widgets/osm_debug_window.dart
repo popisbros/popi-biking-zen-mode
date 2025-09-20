@@ -1,7 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/osm_debug_service.dart';
-import '../theme/app_colors.dart';
+import '../constants/app_colors.dart';
 
 class OSMDebugWindow extends StatefulWidget {
   final VoidCallback onClose;
@@ -262,7 +263,7 @@ class _OSMDebugWindowState extends State<OSMDebugWindow> {
   String _formatResponse(String responseBody) {
     try {
       final json = jsonDecode(responseBody);
-      return const JsonEncoder.withIndent('  ').convert(json);
+      return JsonEncoder.withIndent('  ').convert(json);
     } catch (e) {
       return responseBody;
     }
