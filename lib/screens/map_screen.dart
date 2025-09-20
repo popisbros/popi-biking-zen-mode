@@ -12,6 +12,7 @@ import '../providers/community_provider.dart';
 import '../providers/osm_poi_provider.dart';
 import '../services/map_service.dart';
 import '../utils/poi_icons.dart';
+import '../models/cycling_poi.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 import '../widgets/debug_panel.dart';
