@@ -7,8 +7,9 @@ import '../services/debug_service.dart';
 
 class DebugPanel extends ConsumerStatefulWidget {
   final VoidCallback? onClose;
+  final VoidCallback? onReloadOSMPOIs;
   
-  const DebugPanel({super.key, this.onClose});
+  const DebugPanel({super.key, this.onClose, this.onReloadOSMPOIs});
 
   @override
   ConsumerState<DebugPanel> createState() => _DebugPanelState();
@@ -352,8 +353,12 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   _debugService.logButtonClick('Force Reload OSM POIs', screen: 'DebugPanel');
-                  // Force reload OSM POIs using the last known location
-                  await ref.read(osmPOIsNotifierProvider.notifier).forceReload();
+                  // Use the callback to reload with actual map bounds, or fallback to force reload
+                  if (widget.onReloadOSMPOIs != null) {
+                    widget.onReloadOSMPOIs!();
+                  } else {
+                    await ref.read(osmPOIsNotifierProvider.notifier).forceReload();
+                  }
                 },
                 icon: const Icon(Icons.public, size: 16),
                 label: const Text('Reload OSM POIs'),

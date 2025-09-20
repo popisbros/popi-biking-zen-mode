@@ -37,6 +37,12 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
     }
   }
   
+  /// Load OSM POIs using actual map bounds
+  Future<void> loadPOIsWithBounds(BoundingBox bounds) async {
+    print('OSM POI Provider: loadPOIsWithBounds called with bounds=$bounds');
+    await _loadPOIsWithBounds(bounds);
+  }
+  
   /// Force reload OSM POIs for the current location
   Future<void> forceReloadPOIs(LatLng center, double zoom) async {
     print('OSM POI Provider: forceReloadPOIs called with center=$center, zoom=$zoom');
@@ -51,6 +57,37 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
     } else {
       print('OSM POI Provider: forceReload called but no previous location available');
       state = const AsyncValue.data([]);
+    }
+  }
+  
+  /// Internal method to load POIs with actual map bounds
+  Future<void> _loadPOIsWithBounds(BoundingBox bounds) async {
+    print('OSM POI Provider: Loading POIs with actual map bounds...');
+    state = const AsyncValue.loading();
+    
+    try {
+      print('OSM POI Provider: Using bounds - South: ${bounds.south}, North: ${bounds.north}, West: ${bounds.west}, East: ${bounds.east}');
+      
+      final pois = await _osmService.getPOIsInBounds(
+        south: bounds.south,
+        west: bounds.west,
+        north: bounds.north,
+        east: bounds.east,
+      );
+      
+      print('OSM POI Provider: Loaded ${pois.length} POIs with actual bounds');
+      state = AsyncValue.data(pois);
+      
+      // Store the bounds center and calculate zoom for future reference
+      final center = LatLng(
+        (bounds.north + bounds.south) / 2,
+        (bounds.east + bounds.west) / 2,
+      );
+      _lastLoadedCenter = center;
+      _lastLoadedZoom = 15.0; // Default zoom for bounds-based loading
+    } catch (error, stackTrace) {
+      print('OSM POI Provider: Error loading POIs with bounds: $error');
+      state = AsyncValue.error(error, stackTrace);
     }
   }
   

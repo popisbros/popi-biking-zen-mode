@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +38,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   bool _isDebugPanelOpen = false;
   bool _showMobileHint = false;
   bool _showOSMDebugWindow = false;
+  Timer? _debounceTimer;
   
   late AnimationController _debugPanelAnimationController;
   late Animation<double> _debugPanelAnimation;
@@ -66,6 +68,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   @override
   void dispose() {
     _debugPanelAnimationController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -128,17 +131,62 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           15.0,
         );
         
-        // Load OSM POIs for current location
-        print('Map Screen: Loading OSM POIs for location: ${location.latitude}, ${location.longitude}');
-        final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-        osmPOIsNotifier.loadPOIsForLocation(
-          LatLng(location.latitude, location.longitude),
-          15.0,
-        );
+        // Wait a bit for the map to settle, then load OSM POIs with actual bounds
+        Future.delayed(const Duration(milliseconds: 500), () {
+          _loadOSMPOIsWithMapBounds();
+        });
       } else {
         _debugService.logAction(action: 'Map: GPS location not available');
       }
     });
+  }
+  
+  /// Load OSM POIs using the actual visible map bounds
+  void _loadOSMPOIsWithMapBounds() {
+    if (!_isMapReady) {
+      print('Map Screen: Map not ready, skipping OSM POI load');
+      return;
+    }
+    
+    try {
+      // Get the actual visible bounds from the map controller
+      final bounds = _mapController.bounds;
+      print('Map Screen: Loading OSM POIs with actual map bounds:');
+      print('  South: ${bounds.south}, North: ${bounds.north}');
+      print('  West: ${bounds.west}, East: ${bounds.east}');
+      print('  Center: ${bounds.center}');
+      
+      final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+      osmPOIsNotifier.loadPOIsWithBounds(bounds);
+    } catch (e) {
+      print('Map Screen: Error getting map bounds: $e');
+      // Fallback to center-based loading
+      final locationAsync = ref.read(locationNotifierProvider);
+      locationAsync.whenData((location) {
+        if (location != null) {
+          final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+          osmPOIsNotifier.loadPOIsForLocation(
+            LatLng(location.latitude, location.longitude),
+            15.0,
+          );
+        }
+      });
+    }
+  }
+  
+  /// Handle map events (movement, zoom, etc.)
+  void _onMapEvent(MapEvent mapEvent) {
+    // Only reload OSM POIs on significant map changes
+    if (mapEvent is MapEventMove || mapEvent is MapEventMoveStart || mapEvent is MapEventMoveEnd) {
+      // Debounce the reload to avoid too many API calls
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+        if (_isMapReady) {
+          print('Map Screen: Map moved, reloading OSM POIs with new bounds');
+          _loadOSMPOIsWithMapBounds();
+        }
+      });
+    }
   }
 
   void _showDebugPanel() {
@@ -431,6 +479,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 onMapReady: () => _onMapReady(),
                 onTap: (tapPosition, point) => _onMapTap(point),
                 onLongPress: (tapPosition, point) => _onMapLongPressFromTap(tapPosition, point),
+                onMapEvent: (mapEvent) => _onMapEvent(mapEvent),
               ),
               children: [
                 // Dynamic tile layer based on current selection
@@ -1140,6 +1189,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       width: MediaQuery.of(context).size.width,
                       child: DebugPanel(
                         onClose: _hideDebugPanel,
+                        onReloadOSMPOIs: _loadOSMPOIsWithMapBounds,
                       ),
                     ),
                   );
