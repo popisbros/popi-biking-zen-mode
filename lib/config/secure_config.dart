@@ -37,7 +37,7 @@ class SecureConfig {
       return envKey;
     }
     
-    // Fallback to a default key for development
+    // Fallback to the actual API key for development
     // This will be overridden by environment variables in production
     return 'pk.1234567890abcdef';
   }

@@ -50,7 +50,8 @@ jobs:
             --no-wasm-dry-run \
             --no-source-maps \
             --dart-define=MAPTILER_API_KEY=${{ secrets.MAPTILER_API_KEY }} \
-            --dart-define=THUNDERFOREST_API_KEY=${{ secrets.THUNDERFOREST_API_KEY }}
+            --dart-define=THUNDERFOREST_API_KEY=${{ secrets.THUNDERFOREST_API_KEY }} \
+            --dart-define=LOCATIONIQ_API_KEY=${{ secrets.LOCATIONIQ_API_KEY }}
           echo "✅ Build completed successfully"
             
       - name: 📋 Verify build output
