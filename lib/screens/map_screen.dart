@@ -22,6 +22,7 @@ import '../widgets/debug_panel.dart';
 import '../widgets/osm_debug_window.dart';
 import '../services/debug_service.dart';
 import '../services/osm_debug_service.dart';
+import '../services/locationiq_service.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -44,6 +45,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   bool _isUserMoving = false;
   LatLng? _lastGPSPosition; // Track actual previous GPS position
   LatLng? _originalGPSReference; // Track original GPS position for movement detection
+  
+  // Share dialog state
+  bool _showShareDialog = false;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounceTimer;
+  List<LocationIQResult> _searchResults = [];
+  bool _isSearching = false;
+  final LocationIQService _locationIQService = LocationIQService();
   
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -78,6 +87,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   void dispose() {
     _debugPanelAnimationController.dispose();
     _debounceTimer?.cancel();
+    _searchDebounceTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -902,6 +913,206 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     return degrees * (math.pi / 180);
   }
 
+  /// Show the share/search dialog
+  void _showShareDialog() {
+    setState(() {
+      _showShareDialog = true;
+    });
+  }
+
+  /// Hide the share/search dialog
+  void _hideShareDialog() {
+    setState(() {
+      _showShareDialog = false;
+      _searchController.clear();
+      _searchResults.clear();
+      _isSearching = false;
+    });
+    _searchDebounceTimer?.cancel();
+  }
+
+  /// Perform search with debounce
+  void _performSearch() {
+    _searchDebounceTimer?.cancel();
+    _searchDebounceTimer = Timer(const Duration(seconds: 2), () {
+      _searchLocations();
+    });
+  }
+
+  /// Search for locations using LocationIQ
+  Future<void> _searchLocations() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults.clear();
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      // Get current map center as search center
+      final center = _mapController.camera.center;
+      
+      _debugService.logAction(
+        action: 'Location Search',
+        screen: 'MapScreen',
+        parameters: {
+          'query': query,
+          'center_lat': center.latitude,
+          'center_lng': center.longitude,
+        },
+      );
+
+      final results = await _locationIQService.searchLocations(
+        query: query,
+        center: center,
+        limit: 10,
+      );
+
+      setState(() {
+        _searchResults = results;
+        _isSearching = false;
+      });
+
+      _debugService.logAction(
+        action: 'Location Search Results',
+        screen: 'MapScreen',
+        parameters: {
+          'result_count': results.length,
+          'query': query,
+        },
+      );
+    } catch (e) {
+      _debugService.logAction(
+        action: 'Location Search Error',
+        screen: 'MapScreen',
+        error: e.toString(),
+      );
+      
+      setState(() {
+        _searchResults.clear();
+        _isSearching = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Search failed: ${e.toString()}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Handle search result selection
+  void _onSearchResultSelected(LocationIQResult result) {
+    _debugService.logAction(
+      action: 'Location Selected',
+      screen: 'MapScreen',
+      parameters: {
+        'place_id': result.placeId,
+        'name': result.name,
+        'lat': result.latLng.latitude,
+        'lng': result.latLng.longitude,
+      },
+    );
+
+    // Close dialog
+    _hideShareDialog();
+
+    // Move map to selected location
+    _mapController.move(result.latLng, 16.0); // Zoom to level 16 for good detail
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Navigated to ${result.name}'),
+        backgroundColor: AppColors.mossGreen,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Build search results list
+  Widget _buildSearchResults() {
+    if (_isSearching) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Searching...'),
+          ],
+        ),
+      );
+    }
+
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search,
+              size: 48,
+              color: AppColors.lightGrey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Enter a destination to search',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.lightGrey,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final result = _searchResults[index];
+        final distance = result.getDistanceFrom(_mapController.camera.center);
+        
+        return ListTile(
+          leading: Icon(
+            Icons.location_on,
+            color: AppColors.mossGreen,
+          ),
+          title: Text(
+            result.name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (result.address != null && result.address!.isNotEmpty)
+                Text(result.address!),
+              Text(
+                '${distance.toStringAsFixed(0)}m away',
+                style: TextStyle(
+                  color: AppColors.urbanBlue,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          onTap: () => _onSearchResultSelected(result),
+          tileColor: index % 2 == 0 ? AppColors.surface : AppColors.surface.withValues(alpha: 0.5),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final locationAsync = ref.watch(locationNotifierProvider);
@@ -1243,6 +1454,22 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                         );
                       },
                       child: const Icon(Icons.remove),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Share/Search button
+                  Semantics(
+                    label: 'Search and share location',
+                    button: true,
+                    child: FloatingActionButton(
+                      mini: true,
+                      backgroundColor: AppColors.signalYellow,
+                      foregroundColor: AppColors.urbanBlue,
+                      onPressed: () {
+                        _debugService.logButtonClick('Share/Search', screen: 'MapScreen');
+                        _showShareDialog();
+                      },
+                      child: const Icon(Icons.share_location),
                     ),
                   ),
                 ],
@@ -1676,6 +1903,118 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                     _showOSMDebugWindow = false;
                   });
                 },
+              ),
+            ),
+
+          // Share/Search Dialog
+          if (_showShareDialog)
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.25, // Center vertically
+              left: MediaQuery.of(context).size.width * 0.25, // Center horizontally
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.5,
+                height: MediaQuery.of(context).size.height * 0.5,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Header with title
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.signalYellow,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.share_location, color: AppColors.urbanBlue),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Search & Share Location',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.urbanBlue,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _hideShareDialog,
+                            icon: Icon(Icons.close, color: AppColors.urbanBlue),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Search input
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter destination or address...',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: Icon(Icons.search, color: AppColors.urbanBlue),
+                              ),
+                              onChanged: (value) {
+                                _performSearch();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _searchLocations,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.mossGreen,
+                              foregroundColor: AppColors.surface,
+                            ),
+                            child: const Text('Search'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Search results
+                    Expanded(
+                      child: _buildSearchResults(),
+                    ),
+                    
+                    // Close button
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: _hideShareDialog,
+                            child: Text(
+                              'Close',
+                              style: TextStyle(color: AppColors.urbanBlue),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
