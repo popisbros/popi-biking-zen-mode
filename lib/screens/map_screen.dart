@@ -493,6 +493,24 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           ),
         ),
         actions: [
+          // Show Edit/Delete buttons only for community POIs (not OSM POIs)
+          if (poi is CyclingPOI && poi.id != null && poi.id!.isNotEmpty) ...[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _openPOIManagementForEdit(poi);
+              },
+              child: const Text('Edit'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showDeletePOIConfirmation(poi);
+              },
+              style: TextButton.styleFrom(foregroundColor: AppColors.dangerRed),
+              child: const Text('Delete'),
+            ),
+          ],
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
@@ -578,6 +596,24 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           ),
         ),
         actions: [
+          // Show Edit/Delete buttons only for community warnings with ID
+          if (warning.id != null && warning.id!.isNotEmpty) ...[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _openHazardReportForEdit(warning);
+              },
+              child: const Text('Edit'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showDeleteWarningConfirmation(warning);
+              },
+              style: TextButton.styleFrom(foregroundColor: AppColors.dangerRed),
+              child: const Text('Delete'),
+            ),
+          ],
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
@@ -722,6 +758,130 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         ),
       ),
     );
+  }
+
+  void _openPOIManagementForEdit(CyclingPOI poi) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => POIManagementScreenWithLocation(
+          initialLatitude: poi.latitude,
+          initialLongitude: poi.longitude,
+          editingPOIId: poi.id!,
+        ),
+      ),
+    );
+  }
+
+  void _openHazardReportForEdit(CommunityWarning warning) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HazardReportScreenWithLocation(
+          initialLatitude: warning.latitude,
+          initialLongitude: warning.longitude,
+          editingWarningId: warning.id!,
+        ),
+      ),
+    );
+  }
+
+  void _showDeletePOIConfirmation(CyclingPOI poi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete POI'),
+        content: Text('Are you sure you want to delete "${poi.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deletePOI(poi);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.dangerRed),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteWarningConfirmation(CommunityWarning warning) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Hazard'),
+        content: Text('Are you sure you want to delete "${warning.title}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteWarning(warning);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.dangerRed),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deletePOI(CyclingPOI poi) async {
+    try {
+      final communityNotifier = ref.read(cyclingPOIsNotifierProvider.notifier);
+      await communityNotifier.deletePOI(poi.id!);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('POI "${poi.name}" deleted successfully!'),
+            backgroundColor: AppColors.mossGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete POI: ${e.toString()}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteWarning(CommunityWarning warning) async {
+    try {
+      final communityNotifier = ref.read(communityWarningsNotifierProvider.notifier);
+      await communityNotifier.deleteWarning(warning.id!);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hazard "${warning.title}" deleted successfully!'),
+            backgroundColor: AppColors.mossGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete hazard: ${e.toString()}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    }
   }
 
 

@@ -66,6 +66,18 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
     }
   }
   
+  /// Trigger background refresh of POIs when community data changes
+  Future<void> triggerBackgroundRefresh() async {
+    if (_lastLoadedCenter != null) {
+      print('OSM POI Provider: triggerBackgroundRefresh called - refreshing POIs in background');
+      // Use the last known bounds to refresh POIs in background
+      final bbox = _calculateBoundingBox(_lastLoadedCenter!, _lastLoadedZoom);
+      await _loadPOIsInBackground(bbox);
+    } else {
+      print('OSM POI Provider: triggerBackgroundRefresh called but no previous location available');
+    }
+  }
+  
   /// Internal method to load POIs with actual map bounds
   Future<void> _loadPOIsWithBounds(BoundingBox bounds) async {
     print('OSM POI Provider: Loading POIs with actual map bounds...');
@@ -188,7 +200,26 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
     );
     
     final zoomChanged = (newZoom - _lastLoadedZoom).abs() > 1;
-    final movedSignificantly = distance > 500; // 500m threshold
+    
+    // Calculate variable distance threshold based on zoom level
+    // At zoom 18 (max): 5m threshold
+    // At zoom 0 (min): 500m threshold
+    // Linear interpolation between these values
+    final minZoom = 0.0;
+    final maxZoom = 18.0;
+    final minDistance = 5.0; // 5m at max zoom
+    final maxDistance = 500.0; // 500m at min zoom
+    
+    // Clamp zoom to valid range
+    final clampedZoom = newZoom.clamp(minZoom, maxZoom);
+    
+    // Calculate distance threshold using linear interpolation
+    final zoomRatio = (clampedZoom - minZoom) / (maxZoom - minZoom);
+    final distanceThreshold = maxDistance - (zoomRatio * (maxDistance - minDistance));
+    
+    final movedSignificantly = distance > distanceThreshold;
+    
+    print('OSM POI Provider: Distance check - moved: ${distance.toStringAsFixed(1)}m, threshold: ${distanceThreshold.toStringAsFixed(1)}m, zoom: $newZoom');
     
     return zoomChanged || movedSignificantly;
   }
