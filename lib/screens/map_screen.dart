@@ -1536,18 +1536,23 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         child: SizedBox(
           width: 30,
           height: 40,
-          child: CustomPaint(
-            painter: POITeardropPinPainter(),
-            child: Positioned(
-              top: 12, // 30% of 40px height = 12px from top
-              left: 0,
-              right: 0,
-              child: Text(
-                POIIcons.getPOIIcon(poi.type),
-                style: const TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
+          child: Stack(
+            children: [
+              CustomPaint(
+                painter: POITeardropPinPainter(),
+                size: const Size(30, 40),
               ),
-            ),
+              Positioned(
+                top: 12, // 30% of 40px height = 12px from top
+                left: 0,
+                right: 0,
+                child: Text(
+                  POIIcons.getPOIIcon(poi.type),
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1565,18 +1570,23 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         child: SizedBox(
           width: 30,
           height: 40,
-          child: CustomPaint(
-            painter: WarningTeardropPinPainter(),
-            child: Positioned(
-              top: 12, // 30% of 40px height = 12px from top
-              left: 0,
-              right: 0,
-              child: Text(
-                POIIcons.getHazardIcon(warning.type),
-                style: const TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
+          child: Stack(
+            children: [
+              CustomPaint(
+                painter: WarningTeardropPinPainter(),
+                size: const Size(30, 40),
               ),
-            ),
+              Positioned(
+                top: 12, // 30% of 40px height = 12px from top
+                left: 0,
+                right: 0,
+                child: Text(
+                  POIIcons.getHazardIcon(warning.type),
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1594,18 +1604,23 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         child: SizedBox(
           width: 30,
           height: 40,
-          child: CustomPaint(
-            painter: OSMTeardropPinPainter(),
-            child: Positioned(
-              top: 12, // 30% of 40px height = 12px from top
-              left: 0,
-              right: 0,
-              child: Text(
-                POIIcons.getPOIIcon(poi.type),
-                style: const TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
+          child: Stack(
+            children: [
+              CustomPaint(
+                painter: OSMTeardropPinPainter(),
+                size: const Size(30, 40),
               ),
-            ),
+              Positioned(
+                top: 12, // 30% of 40px height = 12px from top
+                left: 0,
+                right: 0,
+                child: Text(
+                  POIIcons.getPOIIcon(poi.type),
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1621,18 +1636,23 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         child: SizedBox(
           width: 30,
           height: 40,
-          child: CustomPaint(
-            painter: TeardropPinPainter(),
-            child: Positioned(
-              top: 12, // 30% of 40px height = 12px from top
-              left: 0,
-              right: 0,
-              child: const Icon(
-                Icons.directions_bike,
-                color: AppColors.urbanBlue,
-                size: 16,
+          child: Stack(
+            children: [
+              CustomPaint(
+                painter: TeardropPinPainter(),
+                size: const Size(30, 40),
               ),
-            ),
+              Positioned(
+                top: 12, // 30% of 40px height = 12px from top
+                left: 0,
+                right: 0,
+                child: const Icon(
+                  Icons.directions_bike,
+                  color: AppColors.urbanBlue,
+                  size: 16,
+                ),
+              ),
+            ],
           ),
         ),
     );
