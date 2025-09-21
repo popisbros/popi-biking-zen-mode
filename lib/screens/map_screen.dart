@@ -311,6 +311,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
 
   /// Centralized GPS auto-center function with debug dialog
   void _performGPSAutoCenter(LatLng newPosition, {LatLng? previousPosition, String? source}) {
+    // Bypass debug dialog for "Center on User Location" (intentional user action)
+    if (source == 'Center on User Location') {
+      print('Map Screen: GPS auto-center from $source (bypassing debug dialog)');
+      _mapController.move(newPosition, _mapController.camera.zoom);
+      _loadAllMapDataWithBounds();
+      return;
+    }
+    
     if (previousPosition != null) {
       // Calculate distance for debug dialog
       final distance = _calculateDistance(
@@ -318,7 +326,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         newPosition.latitude, newPosition.longitude,
       );
       
-      // Show debug dialog
+      // Show debug dialog for other sources
       _showGPSAutoCenterDebugDialog(previousPosition, newPosition, distance, source ?? 'Unknown');
     } else {
       // No previous position, auto-center directly
@@ -1426,7 +1434,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                       Text(
                         'OSM: ${osmPOIs.length}',
                         style: TextStyle(
-                          color: AppColors.lightGrey,
+                          color: AppColors.azureBlue,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
