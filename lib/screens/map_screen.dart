@@ -136,10 +136,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           },
         );
         
-        // Use centralized GPS auto-center function with debug dialog
+        // Auto-center directly without debug dialog
         final newPosition = LatLng(location.latitude, location.longitude);
-        final currentCenter = _mapController.camera.center;
-        _performGPSAutoCenter(newPosition, previousPosition: currentCenter, source: 'Center on User Location');
+        _mapController.move(newPosition, 15.0);
+        _loadAllMapDataWithBounds();
         
         // Initialize the last GPS position and original GPS reference for future comparisons
         _lastGPSPosition = newPosition;
@@ -296,13 +296,13 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           newGPSPosition.latitude, newGPSPosition.longitude,
         );
         
-        // Only auto-center if GPS location has moved significantly (more than 20 meters for testing)
-        // and only when user is actively moving (not during background reloads)
-        if (distance > 20) {
+        // Only auto-center if GPS location has moved significantly (more than 50 meters)
+        if (distance > 50) {
           print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m from original reference)');
           
-          // Use centralized GPS auto-center function with debug dialog
-          _performGPSAutoCenter(newGPSPosition, previousPosition: _originalGPSReference, source: 'User Movement');
+          // Auto-center directly without debug dialog
+          _mapController.move(newGPSPosition, _mapController.camera.zoom);
+          _loadAllMapDataWithBounds();
           
           // Update the original GPS reference to the new position after auto-centering
           _originalGPSReference = newGPSPosition;
@@ -318,89 +318,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     }
   }
 
-  /// Centralized GPS auto-center function with debug dialog
-  void _performGPSAutoCenter(LatLng newPosition, {LatLng? previousPosition, String? source}) {
-    // Bypass debug dialog for "Center on User Location" (intentional user action)
-    if (source == 'Center on User Location') {
-      print('Map Screen: GPS auto-center from $source (bypassing debug dialog)');
-      _mapController.move(newPosition, _mapController.camera.zoom);
-      _loadAllMapDataWithBounds();
-      return;
-    }
-    
-    if (previousPosition != null) {
-      // Calculate distance for debug dialog
-      final distance = _calculateDistance(
-        previousPosition.latitude, previousPosition.longitude,
-        newPosition.latitude, newPosition.longitude,
-      );
-      
-      // Show debug dialog for other sources
-      _showGPSAutoCenterDebugDialog(previousPosition, newPosition, distance, source ?? 'Unknown');
-    } else {
-      // No previous position, auto-center directly
-      print('Map Screen: GPS auto-center from ${source ?? 'Unknown'} (no previous position)');
-      _mapController.move(newPosition, _mapController.camera.zoom);
-      _loadAllMapDataWithBounds();
-    }
-  }
-
-  /// Show debug dialog for GPS auto-centering decision
-  void _showGPSAutoCenterDebugDialog(LatLng previousPosition, LatLng newPosition, double distance, String source) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('GPS Auto-Center Debug'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Source: $source'),
-              const SizedBox(height: 16),
-              Text('Previous GPS Position:'),
-              Text('  Latitude: ${previousPosition.latitude.toStringAsFixed(6)}'),
-              Text('  Longitude: ${previousPosition.longitude.toStringAsFixed(6)}'),
-              const SizedBox(height: 16),
-              Text('New GPS Position:'),
-              Text('  Latitude: ${newPosition.latitude.toStringAsFixed(6)}'),
-              Text('  Longitude: ${newPosition.longitude.toStringAsFixed(6)}'),
-              const SizedBox(height: 16),
-              Text('Distance: ${distance.toStringAsFixed(1)} meters'),
-              const SizedBox(height: 16),
-              Text('Threshold: 20 meters (testing)'),
-              const SizedBox(height: 8),
-              Text('Action: ${distance > 20 ? 'Will auto-center' : 'Will not auto-center'}'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // User chose to refuse auto-centering
-                print('Map Screen: User refused GPS auto-centering from $source');
-              },
-              child: const Text('Refuse'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                // User chose to auto-center
-                print('Map Screen: User approved GPS auto-centering from $source');
-                
-                // Move map to new GPS location
-                _mapController.move(newPosition, _mapController.camera.zoom);
-                
-                // Trigger reload only for significant GPS movements
-                _loadAllMapDataWithBounds();
-              },
-              child: const Text('Auto-Center'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _showDebugPanel() {
     setState(() {
