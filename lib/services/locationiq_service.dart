@@ -25,6 +25,7 @@ class LocationIQService {
   }) async {
     List<LocationIQResult> results = [];
     String? error;
+    String? responseBody;
     bool success = false;
     
     try {
@@ -51,6 +52,9 @@ class LocationIQService {
           'User-Agent': 'PopiIsBikingZenMode/1.0',
         },
       );
+      
+      // Capture response body for debug purposes
+      responseBody = response.body;
       
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -86,6 +90,7 @@ class LocationIQService {
         searchLat: center.latitude,
         searchLng: center.longitude,
         results: success ? results : null,
+        responseBody: responseBody,
       );
     }
     

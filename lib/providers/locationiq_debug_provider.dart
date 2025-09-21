@@ -52,6 +52,7 @@ class LocationIQSearchRecord {
   final double? searchLat;
   final double? searchLng;
   final List<LocationIQResult>? results;
+  final String? responseBody;
 
   LocationIQSearchRecord({
     required this.query,
@@ -62,6 +63,7 @@ class LocationIQSearchRecord {
     this.searchLat,
     this.searchLng,
     this.results,
+    this.responseBody,
   });
 }
 
@@ -78,6 +80,7 @@ class LocationIQDebugNotifier extends StateNotifier<LocationIQDebugData> {
     double? searchLat,
     double? searchLng,
     List<LocationIQResult>? results,
+    String? responseBody,
   }) {
     final record = LocationIQSearchRecord(
       query: query,
@@ -88,6 +91,7 @@ class LocationIQDebugNotifier extends StateNotifier<LocationIQDebugData> {
       searchLat: searchLat,
       searchLng: searchLng,
       results: results,
+      responseBody: responseBody,
     );
 
     final newHistory = [record, ...state.searchHistory].take(50).toList(); // Keep last 50 searches

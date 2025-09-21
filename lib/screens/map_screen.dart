@@ -384,8 +384,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             Text(
               'Select Map Style',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: AppColors.urbanBlue,
               ),
             ),
@@ -413,7 +413,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         title,
         style: TextStyle(
           color: isSelected ? AppColors.mossGreen : AppColors.urbanBlue,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
         ),
       ),
       trailing: isSelected ? Icon(Icons.check, color: AppColors.mossGreen) : null,
@@ -458,7 +459,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Text(POIIcons.getPOIIcon(poi.type), style: const TextStyle(fontSize: 24)),
+            Text(POIIcons.getPOIIcon(poi.type), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             const SizedBox(width: 8),
             Expanded(child: Text(poi.name)),
           ],
@@ -488,12 +489,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               // OSM-specific fields
               if (poi is OSMPOI) ...[
                 const Divider(),
-                const Text('OSM Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('OSM Information', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                 _buildFieldRow('OSM ID', poi.osmId),
                 _buildFieldRow('OSM Type', poi.osmType),
                 if (poi.osmTags.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  const Text('OSM Tags:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('OSM Tags:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                   ...poi.osmTags.entries.map((entry) => 
                     Padding(
                       padding: const EdgeInsets.only(left: 16, top: 2),
@@ -506,7 +507,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               // Metadata
               if (poi.metadata != null && poi.metadata!.isNotEmpty) ...[
                 const Divider(),
-                const Text('Additional Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Additional Information', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                 ...poi.metadata!.entries.map((entry) => 
                   _buildFieldRow(entry.key, entry.value.toString()),
                 ),
@@ -590,7 +591,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               // Tags
               if (warning.tags != null && warning.tags!.isNotEmpty) ...[
                 const Divider(),
-                const Text('Tags', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Tags', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                 Wrap(
                   children: warning.tags!.map((tag) => 
                     Container(
@@ -600,7 +601,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                         color: AppColors.urbanBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Text(tag, style: const TextStyle(fontSize: 12)),
+                      child: Text(tag, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                     ),
                   ).toList(),
                 ),
@@ -609,7 +610,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               // Metadata
               if (warning.metadata != null && warning.metadata!.isNotEmpty) ...[
                 const Divider(),
-                const Text('Additional Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Additional Information', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                 ...warning.metadata!.entries.map((entry) => 
                   _buildFieldRow(entry.key, entry.value.toString()),
                 ),
@@ -656,11 +657,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             width: 100,
             child: Text(
               '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
             ),
           ),
           Expanded(
-            child: Text(value),
+            child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -1085,7 +1086,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             Text(
               'Enter a destination to search',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
                 color: AppColors.lightGrey,
               ),
             ),
@@ -1107,18 +1109,19 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           ),
           title: Text(
             result.name,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (result.address != null && result.address!.isNotEmpty)
-                Text(result.address!),
+                Text(result.address!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
               Text(
                 '${distance.toStringAsFixed(0)}m away',
                 style: TextStyle(
                   color: AppColors.urbanBlue,
                   fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1882,7 +1885,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                           'Long press anywhere on the map to add POIs or report hazards',
                           style: TextStyle(
                             color: AppColors.surface,
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1998,8 +2001,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                             child: Text(
                               'Search your destination',
                               style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                                 color: AppColors.urbanBlue,
                               ),
                             ),
@@ -2063,7 +2066,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                             onPressed: _hideShareDialog,
                             child: Text(
                               'Close',
-                              style: TextStyle(color: AppColors.urbanBlue),
+                              style: TextStyle(color: AppColors.urbanBlue, fontSize: 12, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ],
@@ -2148,7 +2151,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 right: 0,
                 child: Text(
                   POIIcons.getPOIIcon(poi.type),
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -2182,7 +2185,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 right: 0,
                 child: Text(
                   POIIcons.getHazardIcon(warning.type),
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -2216,7 +2219,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 right: 0,
                 child: Text(
                   POIIcons.getPOIIcon(poi.type),
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                   textAlign: TextAlign.center,
                 ),
               ),

@@ -62,8 +62,8 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
                     'LocationIQ API Debug Window',
                     style: TextStyle(
                       color: AppColors.urbanBlue,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -109,7 +109,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
                         Text(
                           'No LocationIQ API calls yet',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 12,
                             color: AppColors.lightGrey,
                           ),
                         ),
@@ -117,7 +117,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
                         Text(
                           'Use the Search feature to see debug info',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             color: AppColors.lightGrey,
                           ),
                         ),
@@ -157,8 +157,8 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
         title: Text(
           '${log.timestamp.hour.toString().padLeft(2, '0')}:${log.timestamp.minute.toString().padLeft(2, '0')}:${log.timestamp.second.toString().padLeft(2, '0')}',
           style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
           ),
         ),
         subtitle: Text(
@@ -168,6 +168,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
           style: TextStyle(
             color: isError ? AppColors.dangerRed : AppColors.lightGrey,
             fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
         ),
         children: [
@@ -199,8 +200,8 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
                 const SizedBox(height: 12),
                 
                 // Response Body (if available)
-                if (log.results != null && log.results!.isNotEmpty) ...[
-                  _buildInfoSection('Response Body', _formatResponseBody(log.results!)),
+                if (log.responseBody != null && log.responseBody!.isNotEmpty) ...[
+                  _buildInfoSection('Response Body', log.responseBody!),
                   const SizedBox(height: 12),
                 ],
                 
@@ -248,7 +249,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
         Text(
           title,
           style: TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w500,
             fontSize: 12,
             color: isError ? AppColors.dangerRed : AppColors.signalYellow,
           ),
@@ -267,7 +268,8 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
           child: SelectableText(
             content,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
               fontFamily: 'monospace',
               color: isError ? AppColors.dangerRed : Colors.black87,
             ),
@@ -321,25 +323,6 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
         .join('\n');
   }
 
-  String _formatResponseBody(List<dynamic> results) {
-    try {
-      final responseData = results.map((result) => {
-        'place_id': result.placeId,
-        'display_name': result.displayName,
-        'name': result.name,
-        'lat': result.latLng.latitude.toString(),
-        'lon': result.latLng.longitude.toString(),
-        'type': result.type,
-        'class': result.category,
-        'address': result.address,
-        'importance': result.importance,
-      }).toList();
-      
-      return JsonEncoder.withIndent('  ').convert(responseData);
-    } catch (e) {
-      return 'Error formatting response: $e';
-    }
-  }
 
   String _formatResults(List<dynamic> results) {
     final formattedResults = results.map((result) {
@@ -361,7 +344,7 @@ Search Center: Lat: ${log.searchLat?.toStringAsFixed(6) ?? 'N/A'}, Lng: ${log.se
 Results Count: ${log.resultCount}
 Success: ${log.success}
 Error: ${log.error ?? 'None'}
-Response Body: ${log.results != null ? _formatResponseBody(log.results!) : 'None'}
+Response Body: ${log.responseBody ?? 'None'}
 Results: ${log.results != null ? _formatResults(log.results!) : 'None'}
 ''';
     
