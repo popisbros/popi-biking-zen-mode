@@ -43,6 +43,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   Timer? _debounceTimer;
   bool _isUserMoving = false;
   LatLng? _lastGPSPosition; // Track actual previous GPS position
+  LatLng? _originalGPSReference; // Track original GPS position for movement detection
   
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -140,8 +141,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         final currentCenter = _mapController.camera.center;
         _performGPSAutoCenter(newPosition, previousPosition: currentCenter, source: 'Center on User Location');
         
-        // Initialize the last GPS position for future comparisons
+        // Initialize the last GPS position and original GPS reference for future comparisons
         _lastGPSPosition = newPosition;
+        _originalGPSReference = newPosition;
       } else {
         _debugService.logAction(action: 'Map: GPS location not available');
       }
@@ -286,22 +288,29 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     if (location != null && _isMapReady && _isUserMoving) {
       final newGPSPosition = LatLng(location.latitude, location.longitude);
       
-      // Only proceed if we have a previous GPS position to compare with
-      if (_lastGPSPosition != null) {
-        // Calculate distance between previous GPS position and new GPS position
+      // Only proceed if we have an original GPS reference to compare with
+      if (_originalGPSReference != null) {
+        // Calculate distance between original GPS reference and new GPS position
         final distance = _calculateDistance(
-          _lastGPSPosition!.latitude, _lastGPSPosition!.longitude,
+          _originalGPSReference!.latitude, _originalGPSReference!.longitude,
           newGPSPosition.latitude, newGPSPosition.longitude,
         );
         
-        // Only auto-center if GPS location has moved significantly (more than 200 meters)
+        // Only auto-center if GPS location has moved significantly (more than 20 meters for testing)
         // and only when user is actively moving (not during background reloads)
-        if (distance > 200) {
-          print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m)');
+        if (distance > 20) {
+          print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m from original reference)');
           
           // Use centralized GPS auto-center function with debug dialog
-          _performGPSAutoCenter(newGPSPosition, previousPosition: _lastGPSPosition, source: 'User Movement');
+          _performGPSAutoCenter(newGPSPosition, previousPosition: _originalGPSReference, source: 'User Movement');
+          
+          // Update the original GPS reference to the new position after auto-centering
+          _originalGPSReference = newGPSPosition;
         }
+      } else {
+        // Initialize the original GPS reference if we don't have one
+        _originalGPSReference = newGPSPosition;
+        print('Map Screen: Initialized original GPS reference at ${newGPSPosition.latitude.toStringAsFixed(6)}, ${newGPSPosition.longitude.toStringAsFixed(6)}');
       }
       
       // Update the last GPS position for next comparison
@@ -359,9 +368,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               const SizedBox(height: 16),
               Text('Distance: ${distance.toStringAsFixed(1)} meters'),
               const SizedBox(height: 16),
-              Text('Threshold: 200 meters'),
+              Text('Threshold: 20 meters (testing)'),
               const SizedBox(height: 8),
-              Text('Action: ${distance > 200 ? 'Will auto-center' : 'Will not auto-center'}'),
+              Text('Action: ${distance > 20 ? 'Will auto-center' : 'Will not auto-center'}'),
             ],
           ),
           actions: [
