@@ -244,15 +244,15 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   void _loadDataInBackground(BoundingBox extendedBounds) {
     print('Map Screen: Starting background data loading...');
     
-    // Load OSM POIs in background
+    // Load OSM POIs in background (preserves existing data)
     final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-    osmPOIsNotifier.loadPOIsWithBounds(extendedBounds);
+    osmPOIsNotifier.loadPOIsInBackground(extendedBounds);
     
-    // Load Hazards in background
+    // Load Hazards in background (preserves existing data)
     final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
     warningsNotifier.loadWarningsWithBounds(extendedBounds);
     
-    // Load POIs in background
+    // Load POIs in background (preserves existing data)
     final poisNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
     poisNotifier.loadPOIsWithBounds(extendedBounds);
     
@@ -698,8 +698,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         // Move map to new GPS location
         _mapController.move(newCenter, _mapController.camera.zoom);
         
-        // Reload map data with new center (this will use smart reload logic)
-        _loadAllMapDataWithBounds();
+        // Don't trigger reload here - let the smart reload logic handle it based on map movement
+        // The _onMapEvent will detect the map movement and trigger reload if needed
       }
     }
   }
@@ -1555,7 +1555,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 28, // 70% of 40px height = 28px from top (30% from bottom)
+                top: 12, // 30% of 40px height = 12px from top
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1589,7 +1589,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 28, // 70% of 40px height = 28px from top (30% from bottom)
+                top: 12, // 30% of 40px height = 12px from top
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1623,7 +1623,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 28, // 70% of 40px height = 28px from top (30% from bottom)
+                top: 12, // 30% of 40px height = 12px from top
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1655,7 +1655,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 28, // 70% of 40px height = 28px from top (30% from bottom)
+                top: 12, // 30% of 40px height = 12px from top
                 left: 0,
                 right: 0,
                 child: const Icon(

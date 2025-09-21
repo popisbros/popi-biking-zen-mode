@@ -42,6 +42,12 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
     print('OSM POI Provider: loadPOIsWithBounds called with bounds=$bounds');
     await _loadPOIsWithBounds(bounds);
   }
+
+  /// Load OSM POIs in background without clearing existing data
+  Future<void> loadPOIsInBackground(BoundingBox bounds) async {
+    print('OSM POI Provider: loadPOIsInBackground called with bounds=$bounds');
+    await _loadPOIsInBackground(bounds);
+  }
   
   /// Force reload OSM POIs for the current location
   Future<void> forceReloadPOIs(LatLng center, double zoom) async {
@@ -89,6 +95,63 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
       print('OSM POI Provider: Error loading POIs with bounds: $error');
       state = AsyncValue.error(error, stackTrace);
     }
+  }
+
+  /// Internal method to load POIs in background without clearing existing data
+  Future<void> _loadPOIsInBackground(BoundingBox bounds) async {
+    print('OSM POI Provider: Loading POIs in background with bounds...');
+    // Don't set loading state - keep existing data visible
+    
+    try {
+      print('OSM POI Provider: Using bounds - South: ${bounds.south}, North: ${bounds.north}, West: ${bounds.west}, East: ${bounds.east}');
+      
+      final newPOIs = await _osmService.getPOIsInBounds(
+        south: bounds.south,
+        west: bounds.west,
+        north: bounds.north,
+        east: bounds.east,
+      );
+      
+      print('OSM POI Provider: Loaded ${newPOIs.length} POIs in background');
+      
+      // Merge with existing data to avoid duplicates
+      final currentPOIs = state.value ?? [];
+      final mergedPOIs = _mergePOIs(currentPOIs, newPOIs);
+      
+      print('OSM POI Provider: Merged ${currentPOIs.length} existing + ${newPOIs.length} new = ${mergedPOIs.length} total POIs');
+      state = AsyncValue.data(mergedPOIs);
+      
+      // Store the bounds center and calculate zoom for future reference
+      final center = LatLng(
+        (bounds.north + bounds.south) / 2,
+        (bounds.east + bounds.west) / 2,
+      );
+      _lastLoadedCenter = center;
+      _lastLoadedZoom = 15.0; // Default zoom for bounds-based loading
+      
+    } catch (e) {
+      print('OSM POI Provider: Error loading POIs in background: $e');
+      // Don't change state on error - keep existing data
+    }
+  }
+
+  /// Merge POIs to avoid duplicates
+  List<OSMPOI> _mergePOIs(List<OSMPOI> existing, List<OSMPOI> newPOIs) {
+    final Map<String, OSMPOI> mergedMap = {};
+    
+    // Add existing POIs
+    for (final poi in existing) {
+      final key = '${poi.osmId}_${poi.osmType}';
+      mergedMap[key] = poi;
+    }
+    
+    // Add new POIs (will overwrite duplicates)
+    for (final poi in newPOIs) {
+      final key = '${poi.osmId}_${poi.osmType}';
+      mergedMap[key] = poi;
+    }
+    
+    return mergedMap.values.toList();
   }
   
   /// Internal method to load POIs
