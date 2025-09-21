@@ -283,9 +283,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     }
   }
 
-  /// Handle GPS location changes only when user is actively moving
-  void _handleGPSLocationChangeOnUserMovement(LocationData? location) {
-    if (location != null && _isMapReady && _isUserMoving) {
+  /// Handle GPS location changes automatically on every GPS update
+  void _handleGPSLocationChange(LocationData? location) {
+    if (location != null && _isMapReady) {
       final newGPSPosition = LatLng(location.latitude, location.longitude);
       
       // Only proceed if we have an original GPS reference to compare with
@@ -833,12 +833,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
 
-    // GPS auto-centering only when user is actively moving
-    if (_isUserMoving) {
-      locationAsync.whenData((location) {
-        _handleGPSLocationChangeOnUserMovement(location);
-      });
-    }
+    // GPS auto-centering happens automatically on every GPS location update
+    locationAsync.whenData((location) {
+      _handleGPSLocationChange(location);
+    });
 
     return Scaffold(
       body: Stack(
