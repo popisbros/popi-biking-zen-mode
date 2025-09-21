@@ -133,15 +133,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             'longitude': location.longitude,
           },
         );
-        _mapController.move(
-          LatLng(location.latitude, location.longitude),
-          15.0,
-        );
         
-        // Wait a bit for the map to settle, then load all map data with actual bounds
-        Future.delayed(const Duration(milliseconds: 500), () {
-          _loadAllMapDataWithBounds();
-        });
+        // Use centralized GPS auto-center function with debug dialog
+        final newPosition = LatLng(location.latitude, location.longitude);
+        final currentCenter = _mapController.camera.center;
+        _performGPSAutoCenter(newPosition, previousPosition: currentCenter, source: 'Center on User Location');
       } else {
         _debugService.logAction(action: 'Map: GPS location not available');
       }
@@ -298,14 +294,33 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       if (distance > 200) {
         print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m)');
         
-        // Show debug dialog before auto-centering
-        _showGPSAutoCenterDebugDialog(currentCenter, newCenter, distance);
+        // Use centralized GPS auto-center function with debug dialog
+        _performGPSAutoCenter(newCenter, previousPosition: currentCenter, source: 'User Movement');
       }
     }
   }
 
+  /// Centralized GPS auto-center function with debug dialog
+  void _performGPSAutoCenter(LatLng newPosition, {LatLng? previousPosition, String? source}) {
+    if (previousPosition != null) {
+      // Calculate distance for debug dialog
+      final distance = _calculateDistance(
+        previousPosition.latitude, previousPosition.longitude,
+        newPosition.latitude, newPosition.longitude,
+      );
+      
+      // Show debug dialog
+      _showGPSAutoCenterDebugDialog(previousPosition, newPosition, distance, source ?? 'Unknown');
+    } else {
+      // No previous position, auto-center directly
+      print('Map Screen: GPS auto-center from ${source ?? 'Unknown'} (no previous position)');
+      _mapController.move(newPosition, _mapController.camera.zoom);
+      _loadAllMapDataWithBounds();
+    }
+  }
+
   /// Show debug dialog for GPS auto-centering decision
-  void _showGPSAutoCenterDebugDialog(LatLng previousPosition, LatLng newPosition, double distance) {
+  void _showGPSAutoCenterDebugDialog(LatLng previousPosition, LatLng newPosition, double distance, String source) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -315,6 +330,8 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text('Source: $source'),
+              const SizedBox(height: 16),
               Text('Previous GPS Position:'),
               Text('  Latitude: ${previousPosition.latitude.toStringAsFixed(6)}'),
               Text('  Longitude: ${previousPosition.longitude.toStringAsFixed(6)}'),
@@ -335,7 +352,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               onPressed: () {
                 Navigator.of(context).pop();
                 // User chose to refuse auto-centering
-                print('Map Screen: User refused GPS auto-centering');
+                print('Map Screen: User refused GPS auto-centering from $source');
               },
               child: const Text('Refuse'),
             ),
@@ -343,7 +360,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               onPressed: () {
                 Navigator.of(context).pop();
                 // User chose to auto-center
-                print('Map Screen: User approved GPS auto-centering');
+                print('Map Screen: User approved GPS auto-centering from $source');
                 
                 // Move map to new GPS location
                 _mapController.move(newPosition, _mapController.camera.zoom);
