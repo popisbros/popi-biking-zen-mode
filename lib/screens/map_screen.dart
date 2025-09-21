@@ -20,6 +20,7 @@ import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 import '../widgets/debug_panel.dart';
 import '../widgets/osm_debug_window.dart';
+import '../widgets/locationiq_debug_window.dart';
 import '../services/debug_service.dart';
 import '../services/osm_debug_service.dart';
 import '../services/locationiq_service.dart';
@@ -42,6 +43,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   bool _isDebugPanelOpen = false;
   bool _showMobileHint = false;
   bool _showOSMDebugWindow = false;
+  bool _showLocationIQDebugWindow = false;
   Timer? _debounceTimer;
   bool _isUserMoving = false;
   LatLng? _lastGPSPosition; // Track actual previous GPS position
@@ -1290,18 +1292,36 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             child: Semantics(
               label: 'Open OSM debug window',
               button: true,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: AppColors.lightGrey,
-                foregroundColor: AppColors.surface,
-                onPressed: () {
-                  _debugService.logButtonClick('OSM Debug Window', screen: 'MapScreen');
-                  setState(() {
-                    _showOSMDebugWindow = !_showOSMDebugWindow;
-                  });
-                },
-                child: const Icon(Icons.api),
-              ),
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: AppColors.lightGrey,
+              foregroundColor: AppColors.surface,
+              onPressed: () {
+                _debugService.logButtonClick('OSM Debug Window', screen: 'MapScreen');
+                setState(() {
+                  _showOSMDebugWindow = !_showOSMDebugWindow;
+                });
+              },
+              child: const Icon(Icons.api),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // LocationIQ Debug Window button
+          Semantics(
+            label: 'LocationIQ Debug Window',
+            button: true,
+            child: FloatingActionButton(
+              mini: true,
+              backgroundColor: AppColors.signalYellow,
+              foregroundColor: AppColors.urbanBlue,
+              onPressed: () {
+                _debugService.logButtonClick('LocationIQ Debug Window', screen: 'MapScreen');
+                setState(() {
+                  _showLocationIQDebugWindow = !_showLocationIQDebugWindow;
+                });
+              },
+              child: const Icon(Icons.search),
+            ),
             ),
           ),
 
@@ -1915,14 +1935,29 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
               ),
             ),
 
+          // LocationIQ Debug Window - slides from bottom
+          if (_showLocationIQDebugWindow)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: LocationIQDebugWindow(
+                onClose: () {
+                  setState(() {
+                    _showLocationIQDebugWindow = false;
+                  });
+                },
+              ),
+            ),
+
           // Share/Search Dialog
           if (_isShareDialogVisible)
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.25, // Center vertically
-              left: MediaQuery.of(context).size.width * 0.25, // Center horizontally
+              top: MediaQuery.of(context).size.height * 0.05, // Center vertically
+              left: MediaQuery.of(context).size.width * 0.05, // Center horizontally
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.5,
-                height: MediaQuery.of(context).size.height * 0.5,
+                width: MediaQuery.of(context).size.width * 0.9,
+                height: MediaQuery.of(context).size.height * 0.9,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
@@ -1952,7 +1987,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Search & Share Location',
+                              'Search your destination',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -1985,6 +2020,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                               ),
                               onChanged: (value) {
                                 _performSearch();
+                              },
+                              onSubmitted: (value) {
+                                _searchLocations();
                               },
                             ),
                           ),
