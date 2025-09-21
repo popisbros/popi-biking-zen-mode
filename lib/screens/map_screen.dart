@@ -1292,36 +1292,39 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             child: Semantics(
               label: 'Open OSM debug window',
               button: true,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: AppColors.lightGrey,
-              foregroundColor: AppColors.surface,
-              onPressed: () {
-                _debugService.logButtonClick('OSM Debug Window', screen: 'MapScreen');
-                setState(() {
-                  _showOSMDebugWindow = !_showOSMDebugWindow;
-                });
-              },
-              child: const Icon(Icons.api),
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: AppColors.lightGrey,
+                foregroundColor: AppColors.surface,
+                onPressed: () {
+                  _debugService.logButtonClick('OSM Debug Window', screen: 'MapScreen');
+                  setState(() {
+                    _showOSMDebugWindow = !_showOSMDebugWindow;
+                  });
+                },
+                child: const Icon(Icons.api),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
           // LocationIQ Debug Window button
-          Semantics(
-            label: 'LocationIQ Debug Window',
-            button: true,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: AppColors.signalYellow,
-              foregroundColor: AppColors.urbanBlue,
-              onPressed: () {
-                _debugService.logButtonClick('LocationIQ Debug Window', screen: 'MapScreen');
-                setState(() {
-                  _showLocationIQDebugWindow = !_showLocationIQDebugWindow;
-                });
-              },
-              child: const Icon(Icons.search),
-            ),
+          Positioned(
+            bottom: 16,
+            left: 140,
+            child: Semantics(
+              label: 'LocationIQ Debug Window',
+              button: true,
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: AppColors.signalYellow,
+                foregroundColor: AppColors.urbanBlue,
+                onPressed: () {
+                  _debugService.logButtonClick('LocationIQ Debug Window', screen: 'MapScreen');
+                  setState(() {
+                    _showLocationIQDebugWindow = !_showLocationIQDebugWindow;
+                  });
+                },
+                child: const Icon(Icons.search),
+              ),
             ),
           ),
 

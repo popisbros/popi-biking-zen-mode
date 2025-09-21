@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/locationiq_debug_provider.dart';
 import '../constants/app_colors.dart';
 
-class LocationIQDebugWindow extends StatefulWidget {
+class LocationIQDebugWindow extends ConsumerStatefulWidget {
   final VoidCallback onClose;
 
   const LocationIQDebugWindow({
@@ -14,10 +13,10 @@ class LocationIQDebugWindow extends StatefulWidget {
   });
 
   @override
-  State<LocationIQDebugWindow> createState() => _LocationIQDebugWindowState();
+  ConsumerState<LocationIQDebugWindow> createState() => _LocationIQDebugWindowState();
 }
 
-class _LocationIQDebugWindowState extends State<LocationIQDebugWindow> {
+class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -69,7 +68,7 @@ class _LocationIQDebugWindowState extends State<LocationIQDebugWindow> {
                 ),
                 IconButton(
                   onPressed: () {
-                    context.read(locationIQDebugProvider.notifier).clearHistory();
+                    ref.read(locationIQDebugProvider.notifier).clearHistory();
                     setState(() {});
                   },
                   icon: const Icon(
