@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_colors.dart';
 import '../providers/community_provider.dart';
 import '../providers/osm_poi_provider.dart';
+import '../providers/locationiq_debug_provider.dart';
 import '../services/debug_service.dart';
 
 class DebugPanel extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
     final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
+    final locationIQDebugData = ref.watch(locationIQDebugProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -102,7 +104,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
           Flexible(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildTabContent(_selectedTab, warningsAsync, poisAsync, osmPOIsAsync),
+              child: _buildTabContent(_selectedTab, warningsAsync, poisAsync, osmPOIsAsync, locationIQDebugData),
             ),
           ),
         ],
@@ -145,12 +147,12 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     );
   }
 
-  Widget _buildTabContent(int tabIndex, AsyncValue warningsAsync, AsyncValue poisAsync, AsyncValue osmPOIsAsync) {
+  Widget _buildTabContent(int tabIndex, AsyncValue warningsAsync, AsyncValue poisAsync, AsyncValue osmPOIsAsync, LocationIQDebugData locationIQDebugData) {
     switch (tabIndex) {
       case 0:
         return _buildActionsTab();
       case 1:
-        return _buildDataTab(warningsAsync, poisAsync, osmPOIsAsync);
+        return _buildDataTab(warningsAsync, poisAsync, osmPOIsAsync, locationIQDebugData);
       case 2:
         return _buildErrorsTab();
       default:
@@ -304,7 +306,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     );
   }
 
-  Widget _buildDataTab(AsyncValue warningsAsync, AsyncValue poisAsync, AsyncValue osmPOIsAsync) {
+  Widget _buildDataTab(AsyncValue warningsAsync, AsyncValue poisAsync, AsyncValue osmPOIsAsync, LocationIQDebugData locationIQDebugData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,6 +406,13 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
         // OSM POIs Section
         Expanded(
           child: _buildOSMDataSection(osmPOIsAsync),
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // LocationIQ Search Section
+        Expanded(
+          child: _buildLocationIQDataSection(locationIQDebugData),
         ),
       ],
     );
@@ -659,6 +668,171 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
     );
   }
 
+  Widget _buildLocationIQDataSection(LocationIQDebugData debugData) {
+    final stats = ref.read(locationIQDebugProvider.notifier).getStatistics();
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade400, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.search,
+                size: 16,
+                color: AppColors.signalYellow,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'LocationIQ Search',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.signalYellow,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  ref.read(locationIQDebugProvider.notifier).clearHistory();
+                  _debugService.logAction(action: 'Debug: Cleared LocationIQ search history');
+                },
+                child: const Text('Clear', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Statistics
+          if (stats['totalSearches'] > 0) ...[
+            Row(
+              children: [
+                Text(
+                  'Searches: ${stats['totalSearches']}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Success: ${stats['successRate'].toStringAsFixed(1)}%',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: stats['successRate'] > 80 ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Avg Results: ${stats['averageResults'].toStringAsFixed(1)}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+            if (stats['mostCommonQuery'] != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Most Common: "${stats['mostCommonQuery']}"',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            if (stats['lastSearch'] != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Last: ${stats['lastSearch']}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ] else ...[
+            Text(
+              'No searches performed yet',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          
+          // Recent searches
+          if (debugData.searchHistory.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Recent Searches:',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...debugData.searchHistory.take(3).map((record) => Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    record.success ? Icons.check_circle : Icons.error,
+                    size: 12,
+                    color: record.success ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '"${record.query}" → ${record.resultCount} results',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            )),
+            if (debugData.searchHistory.length > 3)
+              Text(
+                '... and ${debugData.searchHistory.length - 3} more',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildErrorsTab() {
     return const Center(
       child: Text(
@@ -671,6 +845,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
   IconData _getActionIcon(String action) {
     if (action.contains('Button Click')) return Icons.touch_app;
     if (action.contains('OSM')) return Icons.public; // Special icon for OSM actions
+    if (action.contains('Location Search') || action.contains('LocationIQ')) return Icons.search; // Special icon for LocationIQ actions
     if (action.contains('Navigation')) return Icons.navigation;
     if (action.contains('Function Call')) return Icons.functions;
     if (action.contains('API Call')) return Icons.api;
@@ -681,6 +856,7 @@ class _DebugPanelState extends ConsumerState<DebugPanel> {
   Color _getActionColor(String action) {
     if (action.contains('Error')) return AppColors.dangerRed;
     if (action.contains('OSM')) return AppColors.lightGrey; // Highlight OSM actions
+    if (action.contains('Location Search') || action.contains('LocationIQ')) return AppColors.signalYellow; // Highlight LocationIQ actions
     if (action.contains('API Call')) return AppColors.urbanBlue;
     if (action.contains('Navigation')) return AppColors.mossGreen;
     if (action.contains('Button Click')) return AppColors.signalYellow;

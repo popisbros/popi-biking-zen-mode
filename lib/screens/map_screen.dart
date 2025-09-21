@@ -23,6 +23,7 @@ import '../widgets/osm_debug_window.dart';
 import '../services/debug_service.dart';
 import '../services/osm_debug_service.dart';
 import '../services/locationiq_service.dart';
+import '../providers/locationiq_debug_provider.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -52,7 +53,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   Timer? _searchDebounceTimer;
   List<LocationIQResult> _searchResults = [];
   bool _isSearching = false;
-  final LocationIQService _locationIQService = LocationIQService();
+  late final LocationIQService _locationIQService;
   
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -81,6 +82,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     _initializeLocation();
     _initializeMap();
     _debugService.logAction(action: 'Map Screen: Initialized');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize LocationIQ service with debug provider
+    final debugNotifier = ref.read(locationIQDebugProvider.notifier);
+    _locationIQService = LocationIQService(debugNotifier: debugNotifier);
   }
 
   @override

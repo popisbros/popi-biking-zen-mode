@@ -2,14 +2,17 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/secure_config.dart';
+import '../providers/locationiq_debug_provider.dart';
 
 /// Service for LocationIQ API geocoding and search
 class LocationIQService {
   static const String _baseUrl = 'https://us1.locationiq.com/v1';
   late final String _apiKey;
+  LocationIQDebugNotifier? _debugNotifier;
   
-  LocationIQService({String? apiKey}) {
+  LocationIQService({String? apiKey, LocationIQDebugNotifier? debugNotifier}) {
     _apiKey = apiKey ?? SecureConfig.locationIQApiKey;
+    _debugNotifier = debugNotifier;
   }
   
   /// Search for locations using LocationIQ geocoding API
@@ -19,6 +22,10 @@ class LocationIQService {
     required LatLng center,
     int limit = 10,
   }) async {
+    List<LocationIQResult> results = [];
+    String? error;
+    bool success = false;
+    
     try {
       print('LocationIQ Service: Searching for "$query" near ${center.latitude}, ${center.longitude}');
       
@@ -49,7 +56,7 @@ class LocationIQService {
         final List<dynamic> data = json.decode(response.body);
         print('LocationIQ Service: Received ${data.length} results');
         
-        final results = data.map((item) => LocationIQResult.fromJson(item)).toList();
+        results = data.map((item) => LocationIQResult.fromJson(item)).toList();
         
         // Sort by distance from center point
         results.sort((a, b) {
@@ -59,15 +66,30 @@ class LocationIQService {
         });
         
         print('LocationIQ Service: Sorted results by distance');
-        return results;
+        success = true;
       } else {
         print('LocationIQ Service: Error ${response.statusCode}: ${response.body}');
-        throw Exception('LocationIQ API error: ${response.statusCode}');
+        error = 'LocationIQ API error: ${response.statusCode}';
+        throw Exception(error);
       }
     } catch (e) {
       print('LocationIQ Service: Exception during search: $e');
-      throw Exception('Failed to search locations: $e');
+      error = 'Failed to search locations: $e';
+      throw Exception(error);
+    } finally {
+      // Record debug data
+      _debugNotifier?.recordSearch(
+        query: query,
+        success: success,
+        resultCount: results.length,
+        error: error,
+        searchLat: center.latitude,
+        searchLng: center.longitude,
+        results: success ? results : null,
+      );
     }
+    
+    return results;
   }
   
   /// Calculate distance between two points in meters
