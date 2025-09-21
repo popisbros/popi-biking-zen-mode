@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,6 +41,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   bool _showMobileHint = false;
   bool _showOSMDebugWindow = false;
   Timer? _debounceTimer;
+  
+  // Smart reload logic - store loaded bounds and buffer zone
+  BoundingBox? _lastLoadedBounds;
+  BoundingBox? _reloadTriggerBounds;
   
   late AnimationController _debugPanelAnimationController;
   late Animation<double> _debugPanelAnimation;
@@ -143,7 +148,56 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   }
   
   
-  /// Load all map data (OSM POIs, Hazards, POIs) using the actual visible map bounds
+  /// Calculate extended bounds that are bigger than the visible map
+  BoundingBox _calculateExtendedBounds(LatLngBounds visibleBounds) {
+    // Calculate the dimensions of the visible area
+    final latDiff = visibleBounds.north - visibleBounds.south;
+    final lngDiff = visibleBounds.east - visibleBounds.west;
+    
+    // Extend by the same distance as the visible map dimensions
+    // This creates a loading area that's 3x3 times the visible area
+    final latExtension = latDiff; // Extend by full visible height
+    final lngExtension = lngDiff; // Extend by full visible width
+    
+    return BoundingBox(
+      south: visibleBounds.south - latExtension,
+      west: visibleBounds.west - lngExtension,
+      north: visibleBounds.north + latExtension,
+      east: visibleBounds.east + lngExtension,
+    );
+  }
+
+  /// Calculate reload trigger bounds (10% buffer zone from loaded bounds)
+  BoundingBox _calculateReloadTriggerBounds(BoundingBox loadedBounds) {
+    // Calculate 10% buffer zone
+    final latDiff = loadedBounds.north - loadedBounds.south;
+    final lngDiff = loadedBounds.east - loadedBounds.west;
+    
+    final latBuffer = latDiff * 0.1; // 10% buffer
+    final lngBuffer = lngDiff * 0.1; // 10% buffer
+    
+    return BoundingBox(
+      south: loadedBounds.south + latBuffer,
+      west: loadedBounds.west + lngBuffer,
+      north: loadedBounds.north - latBuffer,
+      east: loadedBounds.east - lngBuffer,
+    );
+  }
+
+  /// Check if current visible bounds are within the reload trigger zone
+  bool _shouldReloadData(LatLngBounds visibleBounds) {
+    if (_reloadTriggerBounds == null) {
+      return true; // First load
+    }
+    
+    // Check if any part of the visible bounds is outside the trigger zone
+    return visibleBounds.south < _reloadTriggerBounds!.south ||
+           visibleBounds.north > _reloadTriggerBounds!.north ||
+           visibleBounds.west < _reloadTriggerBounds!.west ||
+           visibleBounds.east > _reloadTriggerBounds!.east;
+  }
+
+  /// Load all map data (OSM POIs, Hazards, POIs) using extended bounds with smart reload logic
   void _loadAllMapDataWithBounds() {
     if (!_isMapReady) {
       print('Map Screen: Map not ready, skipping map data load');
@@ -155,29 +209,40 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       final camera = _mapController.camera;
       final latLngBounds = camera.visibleBounds;
       
-      // Convert LatLngBounds to our custom BoundingBox
-      final bounds = BoundingBox(
-        south: latLngBounds.south,
-        west: latLngBounds.west,
-        north: latLngBounds.north,
-        east: latLngBounds.east,
-      );
+      // Check if we should reload data based on smart reload logic
+      if (!_shouldReloadData(latLngBounds)) {
+        print('Map Screen: Within loaded bounds, skipping reload');
+        return;
+      }
       
-      print('Map Screen: Loading all map data with bounds:');
-      print('  South: ${bounds.south}, North: ${bounds.north}');
-      print('  West: ${bounds.west}, East: ${bounds.east}');
+      // Calculate extended bounds (bigger than visible map)
+      final extendedBounds = _calculateExtendedBounds(latLngBounds);
+      
+      print('Map Screen: Loading all map data with extended bounds:');
+      print('  Visible - South: ${latLngBounds.south}, North: ${latLngBounds.north}');
+      print('  Visible - West: ${latLngBounds.west}, East: ${latLngBounds.east}');
+      print('  Extended - South: ${extendedBounds.south}, North: ${extendedBounds.north}');
+      print('  Extended - West: ${extendedBounds.west}, East: ${extendedBounds.east}');
       
       // Load OSM POIs
       final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-      osmPOIsNotifier.loadPOIsWithBounds(bounds);
+      osmPOIsNotifier.loadPOIsWithBounds(extendedBounds);
       
       // Load Hazards
       final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
-      warningsNotifier.loadWarningsWithBounds(bounds);
+      warningsNotifier.loadWarningsWithBounds(extendedBounds);
       
       // Load POIs
       final poisNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-      poisNotifier.loadPOIsWithBounds(bounds);
+      poisNotifier.loadPOIsWithBounds(extendedBounds);
+      
+      // Update stored bounds for smart reload logic
+      _lastLoadedBounds = extendedBounds;
+      _reloadTriggerBounds = _calculateReloadTriggerBounds(extendedBounds);
+      
+      print('Map Screen: Updated reload trigger bounds:');
+      print('  Trigger - South: ${_reloadTriggerBounds!.south}, North: ${_reloadTriggerBounds!.north}');
+      print('  Trigger - West: ${_reloadTriggerBounds!.west}, East: ${_reloadTriggerBounds!.east}');
       
     } catch (e) {
       print('Map Screen: Error loading map data with bounds: $e');
@@ -604,6 +669,46 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
+  /// Auto-center map on GPS location when it changes
+  void _handleGPSLocationChange(LocationData? location) {
+    if (location != null && _isMapReady) {
+      final newCenter = LatLng(location.latitude, location.longitude);
+      final currentCenter = _mapController.camera.center;
+      
+      // Calculate distance between current center and new GPS location
+      final distance = _calculateDistance(
+        currentCenter.latitude, currentCenter.longitude,
+        newCenter.latitude, newCenter.longitude,
+      );
+      
+      // Only auto-center if GPS location has moved significantly (more than 50 meters)
+      if (distance > 50) {
+        print('Map Screen: Auto-centering map on GPS location change (distance: ${distance.toStringAsFixed(1)}m)');
+        _mapController.move(newCenter, _mapController.camera.zoom);
+        
+        // Reload map data with new center
+        _loadAllMapDataWithBounds();
+      }
+    }
+  }
+
+  /// Calculate distance between two points in meters
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371000; // Earth's radius in meters
+    final double dLat = _degreesToRadians(lat2 - lat1);
+    final double dLon = _degreesToRadians(lon2 - lon1);
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) * math.cos(_degreesToRadians(lat2)) *
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  /// Convert degrees to radians
+  double _degreesToRadians(double degrees) {
+    return degrees * (math.pi / 180);
+  }
+
   @override
   Widget build(BuildContext context) {
     final locationAsync = ref.watch(locationNotifierProvider);
@@ -611,6 +716,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
     final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
+
+    // Auto-center map on GPS location changes
+    locationAsync.whenData((location) {
+      _handleGPSLocationChange(location);
+    });
 
     return Scaffold(
       body: Stack(
@@ -1428,10 +1538,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           height: 40,
           child: CustomPaint(
             painter: POITeardropPinPainter(),
-            child: Center(
+            child: Positioned(
+              top: 12, // 30% of 40px height = 12px from top
+              left: 0,
+              right: 0,
               child: Text(
                 POIIcons.getPOIIcon(poi.type),
                 style: const TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -1453,10 +1567,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           height: 40,
           child: CustomPaint(
             painter: WarningTeardropPinPainter(),
-            child: Center(
+            child: Positioned(
+              top: 12, // 30% of 40px height = 12px from top
+              left: 0,
+              right: 0,
               child: Text(
                 POIIcons.getHazardIcon(warning.type),
                 style: const TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -1478,10 +1596,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           height: 40,
           child: CustomPaint(
             painter: OSMTeardropPinPainter(),
-            child: Center(
+            child: Positioned(
+              top: 12, // 30% of 40px height = 12px from top
+              left: 0,
+              right: 0,
               child: Text(
                 POIIcons.getPOIIcon(poi.type),
                 style: const TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -1501,8 +1623,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           height: 40,
           child: CustomPaint(
             painter: TeardropPinPainter(),
-            child: const Center(
-              child: Icon(
+            child: Positioned(
+              top: 12, // 30% of 40px height = 12px from top
+              left: 0,
+              right: 0,
+              child: const Icon(
                 Icons.directions_bike,
                 color: AppColors.urbanBlue,
                 size: 16,
