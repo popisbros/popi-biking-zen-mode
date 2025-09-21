@@ -461,7 +461,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           children: [
             Text(POIIcons.getPOIIcon(poi.type), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             const SizedBox(width: 8),
-            Expanded(child: Text(poi.name)),
+            Expanded(child: Text(poi.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
           ],
         ),
         content: SingleChildScrollView(
@@ -498,7 +498,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                   ...poi.osmTags.entries.map((entry) => 
                     Padding(
                       padding: const EdgeInsets.only(left: 16, top: 2),
-                      child: Text('${entry.key}: ${entry.value}'),
+                      child: Text('${entry.key}: ${entry.value}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                     ),
                   ),
                 ],
@@ -523,7 +523,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 Navigator.pop(context);
                 _openPOIManagementForEdit(poi);
               },
-              child: const Text('Edit'),
+              child: const Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             ),
             TextButton(
               onPressed: () {
@@ -531,12 +531,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 _showDeletePOIConfirmation(poi);
               },
               style: TextButton.styleFrom(foregroundColor: AppColors.dangerRed),
-              child: const Text('Delete'),
+              child: const Text('Delete', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             ),
           ],
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('Close', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -567,7 +567,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           children: [
             Icon(Icons.warning, color: _getSeverityColor(warning.severity), size: 24),
             const SizedBox(width: 8),
-            Expanded(child: Text('Hazard: ${warning.title}')),
+            Expanded(child: Text('Hazard: ${warning.title}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
           ],
         ),
         content: SingleChildScrollView(
@@ -626,7 +626,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 Navigator.pop(context);
                 _openHazardReportForEdit(warning);
               },
-              child: const Text('Edit'),
+              child: const Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             ),
             TextButton(
               onPressed: () {
@@ -634,12 +634,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 _showDeleteWarningConfirmation(warning);
               },
               style: TextButton.styleFrom(foregroundColor: AppColors.dangerRed),
-              child: const Text('Delete'),
+              child: const Text('Delete', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             ),
           ],
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('Close', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -726,7 +726,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             children: [
               Icon(Icons.add_location, color: AppColors.mossGreen),
               const SizedBox(width: 8),
-              const Text('Add New POI'),
+              const Text('Add New POI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -736,7 +736,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             children: [
               Icon(Icons.warning, color: AppColors.warningOrange),
               const SizedBox(width: 8),
-              const Text('Report Hazard'),
+              const Text('Report Hazard', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -813,12 +813,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete POI'),
-        content: Text('Are you sure you want to delete "${poi.name}"? This action cannot be undone.'),
+        title: const Text('Delete POI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        content: Text('Are you sure you want to delete "${poi.name}"? This action cannot be undone.', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ),
           TextButton(
             onPressed: () async {
@@ -837,12 +837,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Hazard'),
-        content: Text('Are you sure you want to delete "${warning.title}"? This action cannot be undone.'),
+        title: const Text('Delete Hazard', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        content: Text('Are you sure you want to delete "${warning.title}"? This action cannot be undone.', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ),
           TextButton(
             onPressed: () async {
@@ -865,7 +865,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('POI "${poi.name}" deleted successfully!'),
+            content: Text('POI "${poi.name}" deleted successfully!', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             backgroundColor: AppColors.mossGreen,
           ),
         );
@@ -874,7 +874,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete POI: ${e.toString()}'),
+            content: Text('Failed to delete POI: ${e.toString()}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             backgroundColor: AppColors.dangerRed,
           ),
         );
@@ -890,7 +890,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hazard "${warning.title}" deleted successfully!'),
+            content: Text('Hazard "${warning.title}" deleted successfully!', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             backgroundColor: AppColors.mossGreen,
           ),
         );
@@ -899,7 +899,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete hazard: ${e.toString()}'),
+            content: Text('Failed to delete hazard: ${e.toString()}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             backgroundColor: AppColors.dangerRed,
           ),
         );
@@ -1020,7 +1020,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Search failed: ${e.toString()}'),
+            content: Text('Search failed: ${e.toString()}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
             backgroundColor: AppColors.dangerRed,
           ),
         );
@@ -1050,7 +1050,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Navigated to ${result.name}'),
+        content: Text('Navigated to ${result.name}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
         backgroundColor: AppColors.mossGreen,
         duration: const Duration(seconds: 2),
       ),
@@ -1066,7 +1066,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Searching...'),
+            Text('Searching...', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ],
         ),
       );
@@ -2023,8 +2023,10 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                           Expanded(
                             child: TextField(
                               controller: _searchController,
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                               decoration: InputDecoration(
                                 hintText: 'Enter destination or address...',
+                                hintStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -2045,7 +2047,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                               backgroundColor: AppColors.mossGreen,
                               foregroundColor: AppColors.surface,
                             ),
-                            child: const Text('Search'),
+                            child: const Text('Search', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                           ),
                         ],
                       ),

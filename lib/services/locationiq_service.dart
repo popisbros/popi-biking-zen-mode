@@ -37,11 +37,8 @@ class LocationIQService {
         'format': 'json',
         'limit': limit.toString(),
         'addressdetails': '1',
-        'extratags': '1',
         'namedetails': '1',
         'dedupe': '1',
-        'bounded': '1',
-        'viewbox': '${center.longitude - 0.1},${center.latitude + 0.1},${center.longitude + 0.1},${center.latitude - 0.1}',
       });
       
       print('LocationIQ Service: Request URL: $uri');

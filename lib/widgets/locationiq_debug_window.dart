@@ -224,7 +224,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
                       child: ElevatedButton.icon(
                         onPressed: () => _copyToClipboard(log),
                         icon: const Icon(Icons.copy, size: 16),
-                        label: const Text('Copy All'),
+                        label: const Text('Copy All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.signalYellow,
                           foregroundColor: AppColors.urbanBlue,
@@ -287,15 +287,9 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
       'format': 'json',
       'limit': '10',
       'addressdetails': '1',
-      'extratags': '1',
       'namedetails': '1',
       'dedupe': '1',
-      'bounded': '1',
     };
-    
-    if (searchLat != null && searchLng != null) {
-      params['viewbox'] = '${searchLng - 0.1},${searchLat + 0.1},${searchLng + 0.1},${searchLat - 0.1}';
-    }
     
     final queryString = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
     return '$baseUrl?$queryString';
@@ -308,15 +302,9 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
       'format': 'json',
       'limit': '10',
       'addressdetails': '1',
-      'extratags': '1',
       'namedetails': '1',
       'dedupe': '1',
-      'bounded': '1',
     };
-    
-    if (searchLat != null && searchLng != null) {
-      params['viewbox'] = '${searchLng - 0.1},${searchLat + 0.1},${searchLng + 0.1},${searchLat - 0.1}';
-    }
     
     return params.entries
         .map((e) => '${e.key}: ${e.value}')
@@ -351,7 +339,7 @@ Results: ${log.results != null ? _formatResults(log.results!) : 'None'}
     Clipboard.setData(ClipboardData(text: debugText));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Debug info copied to clipboard'),
+        content: Text('Debug info copied to clipboard', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
         duration: Duration(seconds: 2),
       ),
     );
