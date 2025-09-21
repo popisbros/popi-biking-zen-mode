@@ -48,7 +48,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   LatLng? _originalGPSReference; // Track original GPS position for movement detection
   
   // Share dialog state
-  bool _showShareDialog = false;
+  bool _isShareDialogVisible = false;
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounceTimer;
   List<LocationIQResult> _searchResults = [];
@@ -925,14 +925,14 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   /// Show the share/search dialog
   void _showShareDialog() {
     setState(() {
-      _showShareDialog = true;
+      _isShareDialogVisible = true;
     });
   }
 
   /// Hide the share/search dialog
   void _hideShareDialog() {
     setState(() {
-      _showShareDialog = false;
+      _isShareDialogVisible = false;
       _searchController.clear();
       _searchResults.clear();
       _isSearching = false;
@@ -1916,7 +1916,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
             ),
 
           // Share/Search Dialog
-          if (_showShareDialog)
+          if (_isShareDialogVisible)
             Positioned(
               top: MediaQuery.of(context).size.height * 0.25, // Center vertically
               left: MediaQuery.of(context).size.width * 0.25, // Center horizontally

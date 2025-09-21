@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/secure_config.dart';
@@ -40,7 +41,6 @@ class LocationIQService {
         'dedupe': '1',
         'bounded': '1',
         'viewbox': '${center.longitude - 0.1},${center.latitude + 0.1},${center.longitude + 0.1},${center.latitude - 0.1}',
-        'bounded': '1',
       });
       
       print('LocationIQ Service: Request URL: $uri');
@@ -97,10 +97,10 @@ class LocationIQService {
     const double earthRadius = 6371000; // Earth's radius in meters
     final double dLat = _degreesToRadians(point2.latitude - point1.latitude);
     final double dLon = _degreesToRadians(point2.longitude - point1.longitude);
-    final double a = (dLat / 2).sin() * (dLat / 2).sin() +
-        point1.latitude.cos() * point2.latitude.cos() *
-        (dLon / 2).sin() * (dLon / 2).sin();
-    final double c = 2 * (a.sqrt()).asin();
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(point1.latitude)) * math.cos(_degreesToRadians(point2.latitude)) *
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    final double c = 2 * math.asin(math.sqrt(a));
     return earthRadius * c;
   }
   
@@ -180,10 +180,10 @@ class LocationIQResult {
     const double earthRadius = 6371000; // Earth's radius in meters
     final double dLat = _degreesToRadians(latLng.latitude - point.latitude);
     final double dLon = _degreesToRadians(latLng.longitude - point.longitude);
-    final double a = (dLat / 2).sin() * (dLat / 2).sin() +
-        point.latitude.cos() * latLng.latitude.cos() *
-        (dLon / 2).sin() * (dLon / 2).sin();
-    final double c = 2 * (a.sqrt()).asin();
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(point.latitude)) * math.cos(_degreesToRadians(latLng.latitude)) *
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    final double c = 2 * math.asin(math.sqrt(a));
     return earthRadius * c;
   }
   
