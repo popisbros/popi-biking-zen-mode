@@ -288,7 +288,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
       'limit': '10',
       'addressdetails': '1',
       'namedetails': '1',
-      'dedupe': '1',
+      'dedupe': '0',
     };
     
     final queryString = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
@@ -303,7 +303,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
       'limit': '10',
       'addressdetails': '1',
       'namedetails': '1',
-      'dedupe': '1',
+      'dedupe': '0',
     };
     
     return params.entries

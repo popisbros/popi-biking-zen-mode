@@ -38,7 +38,7 @@ class LocationIQService {
         'limit': limit.toString(),
         'addressdetails': '1',
         'namedetails': '1',
-        'dedupe': '1',
+        'dedupe': '0',
       });
       
       print('LocationIQ Service: Request URL: $uri');
