@@ -924,6 +924,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     return degrees * (math.pi / 180);
   }
 
+  /// Check if the current device is mobile
+  bool _isMobile() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return screenWidth < 768; // Consider devices with width < 768px as mobile
+  }
+
   /// Show the share/search dialog
   void _showShareDialog() {
     setState(() {
@@ -1956,11 +1962,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           // Share/Search Dialog
           if (_isShareDialogVisible)
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.05, // Center vertically
-              left: MediaQuery.of(context).size.width * 0.05, // Center horizontally
+              top: _isMobile() ? MediaQuery.of(context).size.height * 0.05 : MediaQuery.of(context).size.height * 0.25,
+              left: _isMobile() ? MediaQuery.of(context).size.width * 0.05 : MediaQuery.of(context).size.width * 0.25,
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.9,
-                height: MediaQuery.of(context).size.height * 0.9,
+                width: _isMobile() ? MediaQuery.of(context).size.width * 0.9 : MediaQuery.of(context).size.width * 0.5,
+                height: _isMobile() ? MediaQuery.of(context).size.height * 0.9 : MediaQuery.of(context).size.height * 0.5,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),

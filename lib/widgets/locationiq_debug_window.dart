@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -163,7 +164,7 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
         subtitle: Text(
           isError 
               ? 'Error: ${log.error}'
-              : 'Query: "${log.query}" | Results: ${log.resultCount}',
+              : 'Query: "${log.query}" | Results: ${log.resultCount} | Status: ${log.success ? "Success" : "Failed"}',
           style: TextStyle(
             color: isError ? AppColors.dangerRed : AppColors.lightGrey,
             fontSize: 12,
@@ -175,6 +176,14 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // URL
+                _buildInfoSection('URL', _buildLocationIQURL(log.query, log.searchLat, log.searchLng)),
+                const SizedBox(height: 12),
+                
+                // Parameters
+                _buildInfoSection('Parameters', _formatParameters(log.query, log.searchLat, log.searchLng)),
+                const SizedBox(height: 12),
+                
                 // Query
                 _buildInfoSection('Search Query', log.query),
                 const SizedBox(height: 12),
@@ -188,6 +197,12 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
                 // Results
                 _buildInfoSection('Results Count', log.resultCount.toString()),
                 const SizedBox(height: 12),
+                
+                // Response Body (if available)
+                if (log.results != null && log.results!.isNotEmpty) ...[
+                  _buildInfoSection('Response Body', _formatResponseBody(log.results!)),
+                  const SizedBox(height: 12),
+                ],
                 
                 // Results Details (if available)
                 if (log.results != null && log.results!.isNotEmpty) ...[
@@ -262,6 +277,70 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
     );
   }
 
+  String _buildLocationIQURL(String query, double? searchLat, double? searchLng) {
+    const baseUrl = 'https://us1.locationiq.com/v1/search.php';
+    final params = <String, String>{
+      'key': 'pk.1234567890abcdef', // This would be the actual API key
+      'q': query,
+      'format': 'json',
+      'limit': '10',
+      'addressdetails': '1',
+      'extratags': '1',
+      'namedetails': '1',
+      'dedupe': '1',
+      'bounded': '1',
+    };
+    
+    if (searchLat != null && searchLng != null) {
+      params['viewbox'] = '${searchLng - 0.1},${searchLat + 0.1},${searchLng + 0.1},${searchLat - 0.1}';
+    }
+    
+    final queryString = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+    return '$baseUrl?$queryString';
+  }
+
+  String _formatParameters(String query, double? searchLat, double? searchLng) {
+    final params = <String, String>{
+      'key': 'pk.1234567890abcdef',
+      'q': query,
+      'format': 'json',
+      'limit': '10',
+      'addressdetails': '1',
+      'extratags': '1',
+      'namedetails': '1',
+      'dedupe': '1',
+      'bounded': '1',
+    };
+    
+    if (searchLat != null && searchLng != null) {
+      params['viewbox'] = '${searchLng - 0.1},${searchLat + 0.1},${searchLng + 0.1},${searchLat - 0.1}';
+    }
+    
+    return params.entries
+        .map((e) => '${e.key}: ${e.value}')
+        .join('\n');
+  }
+
+  String _formatResponseBody(List<dynamic> results) {
+    try {
+      final responseData = results.map((result) => {
+        'place_id': result.placeId,
+        'display_name': result.displayName,
+        'name': result.name,
+        'lat': result.latLng.latitude.toString(),
+        'lon': result.latLng.longitude.toString(),
+        'type': result.type,
+        'class': result.category,
+        'address': result.address,
+        'importance': result.importance,
+      }).toList();
+      
+      return JsonEncoder.withIndent('  ').convert(responseData);
+    } catch (e) {
+      return 'Error formatting response: $e';
+    }
+  }
+
   String _formatResults(List<dynamic> results) {
     final formattedResults = results.map((result) {
       return '• ${result.name} (${result.latLng.latitude.toStringAsFixed(6)}, ${result.latLng.longitude.toStringAsFixed(6)})';
@@ -275,11 +354,14 @@ class _LocationIQDebugWindowState extends ConsumerState<LocationIQDebugWindow> {
 LocationIQ API Debug Info
 ========================
 Timestamp: ${log.timestamp.toIso8601String()}
+URL: ${_buildLocationIQURL(log.query, log.searchLat, log.searchLng)}
+Parameters: ${_formatParameters(log.query, log.searchLat, log.searchLng)}
 Query: ${log.query}
 Search Center: Lat: ${log.searchLat?.toStringAsFixed(6) ?? 'N/A'}, Lng: ${log.searchLng?.toStringAsFixed(6) ?? 'N/A'}
 Results Count: ${log.resultCount}
 Success: ${log.success}
 Error: ${log.error ?? 'None'}
+Response Body: ${log.results != null ? _formatResponseBody(log.results!) : 'None'}
 Results: ${log.results != null ? _formatResults(log.results!) : 'None'}
 ''';
     
