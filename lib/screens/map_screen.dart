@@ -909,10 +909,22 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
     final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
+    final refreshTrigger = ref.watch(mapDataRefreshTriggerProvider);
 
     // GPS auto-centering happens automatically on every GPS location update
     locationAsync.whenData((location) {
       _handleGPSLocationChange(location);
+    });
+
+    // Listen for global refresh triggers (e.g., after POI/Hazard operations)
+    ref.listen<int>(mapDataRefreshTriggerProvider, (previous, next) {
+      if (previous != null && next > previous) {
+        print('Map Screen: Global refresh triggered, reloading all map data');
+        // Force reload all map data by clearing the bounds cache
+        _lastLoadedBounds = null;
+        _reloadTriggerBounds = null;
+        _loadAllMapDataWithBounds();
+      }
     });
 
     return Scaffold(

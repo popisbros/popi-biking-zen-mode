@@ -181,7 +181,7 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
       
-      // Trigger background refresh of OSM POIs
+      // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -199,7 +199,7 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
       
-      // Trigger background refresh of OSM POIs
+      // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -217,7 +217,7 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
       
-      // Trigger background refresh of OSM POIs
+      // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
@@ -230,13 +230,19 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
     await _loadWarnings();
   }
   
-  /// Trigger background refresh of OSM POIs
+  /// Trigger background refresh of all map data (POIs, Hazards, OSM POIs)
   Future<void> _triggerOSMBackgroundRefresh() async {
     try {
-      final osmPOIsNotifier = _ref.read(osmPOIsNotifierProvider.notifier);
-      await osmPOIsNotifier.triggerBackgroundRefresh();
+      // Trigger a global refresh by incrementing the refresh counter
+      // This will cause the map screen to reload all data
+      print('Community Provider: Triggering global map data refresh after POI/Hazard operation');
+      
+      final refreshNotifier = _ref.read(mapDataRefreshTriggerProvider.notifier);
+      refreshNotifier.triggerRefresh();
+      
+      print('Community Provider: Global map data refresh triggered');
     } catch (e) {
-      print('Failed to trigger OSM background refresh: $e');
+      print('Failed to trigger global map data refresh: $e');
       // Don't throw - this is a background operation
     }
   }
@@ -313,7 +319,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
         parameters: {'poiCount': pois.length},
       );
       
-      // Trigger background refresh of OSM POIs
+      // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       debugService.logAction(
@@ -363,7 +369,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
         parameters: {'poiCount': pois.length},
       );
       
-      // Trigger background refresh of OSM POIs
+      // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       debugService.logAction(
@@ -409,7 +415,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
         parameters: {'poiCount': pois.length},
       );
       
-      // Trigger background refresh of OSM POIs
+      // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       debugService.logAction(
@@ -428,13 +434,19 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
     await _loadPOIs();
   }
   
-  /// Trigger background refresh of OSM POIs
+  /// Trigger background refresh of all map data (POIs, Hazards, OSM POIs)
   Future<void> _triggerOSMBackgroundRefresh() async {
     try {
-      final osmPOIsNotifier = _ref.read(osmPOIsNotifierProvider.notifier);
-      await osmPOIsNotifier.triggerBackgroundRefresh();
+      // Trigger a global refresh by incrementing the refresh counter
+      // This will cause the map screen to reload all data
+      print('Community Provider: Triggering global map data refresh after POI/Hazard operation');
+      
+      final refreshNotifier = _ref.read(mapDataRefreshTriggerProvider.notifier);
+      refreshNotifier.triggerRefresh();
+      
+      print('Community Provider: Global map data refresh triggered');
     } catch (e) {
-      print('Failed to trigger OSM background refresh: $e');
+      print('Failed to trigger global map data refresh: $e');
       // Don't throw - this is a background operation
     }
   }
@@ -590,5 +602,20 @@ final communityWarningsBoundsNotifierProvider = StateNotifierProvider<CommunityW
 final cyclingPOIsBoundsNotifierProvider = StateNotifierProvider<CyclingPOIsBoundsNotifier, AsyncValue<List<CyclingPOI>>>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
   return CyclingPOIsBoundsNotifier(firebaseService);
+});
+
+/// Global refresh trigger for map data
+class MapDataRefreshTrigger extends StateNotifier<int> {
+  MapDataRefreshTrigger() : super(0);
+  
+  void triggerRefresh() {
+    state = state + 1;
+    print('MapDataRefreshTrigger: Refresh triggered, counter: $state');
+  }
+}
+
+/// Provider for map data refresh trigger
+final mapDataRefreshTriggerProvider = StateNotifierProvider<MapDataRefreshTrigger, int>((ref) {
+  return MapDataRefreshTrigger();
 });
 
