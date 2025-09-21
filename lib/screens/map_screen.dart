@@ -42,6 +42,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   bool _showOSMDebugWindow = false;
   Timer? _debounceTimer;
   bool _isUserMoving = false;
+  LatLng? _lastGPSPosition; // Track actual previous GPS position
   
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -138,6 +139,9 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         final newPosition = LatLng(location.latitude, location.longitude);
         final currentCenter = _mapController.camera.center;
         _performGPSAutoCenter(newPosition, previousPosition: currentCenter, source: 'Center on User Location');
+        
+        // Initialize the last GPS position for future comparisons
+        _lastGPSPosition = newPosition;
       } else {
         _debugService.logAction(action: 'Map: GPS location not available');
       }
@@ -280,23 +284,28 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   /// Handle GPS location changes only when user is actively moving
   void _handleGPSLocationChangeOnUserMovement(LocationData? location) {
     if (location != null && _isMapReady && _isUserMoving) {
-      final newCenter = LatLng(location.latitude, location.longitude);
-      final currentCenter = _mapController.camera.center;
+      final newGPSPosition = LatLng(location.latitude, location.longitude);
       
-      // Calculate distance between current center and new GPS location
-      final distance = _calculateDistance(
-        currentCenter.latitude, currentCenter.longitude,
-        newCenter.latitude, newCenter.longitude,
-      );
-      
-      // Only auto-center if GPS location has moved significantly (more than 200 meters)
-      // and only when user is actively moving (not during background reloads)
-      if (distance > 200) {
-        print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m)');
+      // Only proceed if we have a previous GPS position to compare with
+      if (_lastGPSPosition != null) {
+        // Calculate distance between previous GPS position and new GPS position
+        final distance = _calculateDistance(
+          _lastGPSPosition!.latitude, _lastGPSPosition!.longitude,
+          newGPSPosition.latitude, newGPSPosition.longitude,
+        );
         
-        // Use centralized GPS auto-center function with debug dialog
-        _performGPSAutoCenter(newCenter, previousPosition: currentCenter, source: 'User Movement');
+        // Only auto-center if GPS location has moved significantly (more than 200 meters)
+        // and only when user is actively moving (not during background reloads)
+        if (distance > 200) {
+          print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m)');
+          
+          // Use centralized GPS auto-center function with debug dialog
+          _performGPSAutoCenter(newGPSPosition, previousPosition: _lastGPSPosition, source: 'User Movement');
+        }
       }
+      
+      // Update the last GPS position for next comparison
+      _lastGPSPosition = newGPSPosition;
     }
   }
 
