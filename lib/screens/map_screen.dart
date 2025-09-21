@@ -298,13 +298,65 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
       if (distance > 200) {
         print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m)');
         
-        // Move map to new GPS location
-        _mapController.move(newCenter, _mapController.camera.zoom);
-        
-        // Trigger reload only for significant GPS movements
-        _loadAllMapDataWithBounds();
+        // Show debug dialog before auto-centering
+        _showGPSAutoCenterDebugDialog(currentCenter, newCenter, distance);
       }
     }
+  }
+
+  /// Show debug dialog for GPS auto-centering decision
+  void _showGPSAutoCenterDebugDialog(LatLng previousPosition, LatLng newPosition, double distance) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('GPS Auto-Center Debug'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Previous GPS Position:'),
+              Text('  Latitude: ${previousPosition.latitude.toStringAsFixed(6)}'),
+              Text('  Longitude: ${previousPosition.longitude.toStringAsFixed(6)}'),
+              const SizedBox(height: 16),
+              Text('New GPS Position:'),
+              Text('  Latitude: ${newPosition.latitude.toStringAsFixed(6)}'),
+              Text('  Longitude: ${newPosition.longitude.toStringAsFixed(6)}'),
+              const SizedBox(height: 16),
+              Text('Distance: ${distance.toStringAsFixed(1)} meters'),
+              const SizedBox(height: 16),
+              Text('Threshold: 200 meters'),
+              const SizedBox(height: 8),
+              Text('Action: ${distance > 200 ? 'Will auto-center' : 'Will not auto-center'}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // User chose to refuse auto-centering
+                print('Map Screen: User refused GPS auto-centering');
+              },
+              child: const Text('Refuse'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // User chose to auto-center
+                print('Map Screen: User approved GPS auto-centering');
+                
+                // Move map to new GPS location
+                _mapController.move(newPosition, _mapController.camera.zoom);
+                
+                // Trigger reload only for significant GPS movements
+                _loadAllMapDataWithBounds();
+              },
+              child: const Text('Auto-Center'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showDebugPanel() {
@@ -1566,7 +1618,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 5, // 5px from top of teardrop (as requested)
+                top: 1, // 1px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1600,7 +1652,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 5, // 5px from top of teardrop (as requested)
+                top: 1, // 1px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1634,7 +1686,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 5, // 5px from top of teardrop (as requested)
+                top: 1, // 1px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1666,7 +1718,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 5, // 5px from top of teardrop (as requested)
+                top: 1, // 1px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: const Icon(
