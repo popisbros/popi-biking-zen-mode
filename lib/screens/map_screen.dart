@@ -1965,11 +1965,11 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
           // Share/Search Dialog
           if (_isShareDialogVisible)
             Positioned(
-              top: _isMobile() ? MediaQuery.of(context).size.height * 0.05 : MediaQuery.of(context).size.height * 0.25,
-              left: _isMobile() ? MediaQuery.of(context).size.width * 0.05 : MediaQuery.of(context).size.width * 0.25,
+              top: _isMobile() ? MediaQuery.of(context).size.height * 0.1 : MediaQuery.of(context).size.height * 0.25,
+              left: _isMobile() ? MediaQuery.of(context).size.width * 0.1 : MediaQuery.of(context).size.width * 0.25,
               child: Container(
-                width: _isMobile() ? MediaQuery.of(context).size.width * 0.9 : MediaQuery.of(context).size.width * 0.5,
-                height: _isMobile() ? MediaQuery.of(context).size.height * 0.9 : MediaQuery.of(context).size.height * 0.5,
+                width: _isMobile() ? MediaQuery.of(context).size.width * 0.8 : MediaQuery.of(context).size.width * 0.5,
+                height: _isMobile() ? MediaQuery.of(context).size.height * 0.8 : MediaQuery.of(context).size.height * 0.5,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
