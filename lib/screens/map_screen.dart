@@ -691,15 +691,16 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
         newCenter.latitude, newCenter.longitude,
       );
       
-      // Only auto-center if GPS location has moved significantly (more than 50 meters)
-      if (distance > 50) {
-        print('Map Screen: Auto-centering map on GPS location change (distance: ${distance.toStringAsFixed(1)}m)');
+      // Only auto-center if GPS location has moved significantly (more than 100 meters)
+      // and only if this is a significant movement (not during background reloads)
+      if (distance > 100) {
+        print('Map Screen: Smart GPS auto-centering (distance: ${distance.toStringAsFixed(1)}m)');
         
         // Move map to new GPS location
         _mapController.move(newCenter, _mapController.camera.zoom);
         
-        // Don't trigger reload here - let the smart reload logic handle it based on map movement
-        // The _onMapEvent will detect the map movement and trigger reload if needed
+        // Trigger reload only for significant GPS movements
+        _loadAllMapDataWithBounds();
       }
     }
   }
@@ -729,7 +730,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
 
-    // Auto-center map on GPS location changes
+    // Smart GPS auto-centering - only triggers for significant movements
     locationAsync.whenData((location) {
       _handleGPSLocationChange(location);
     });
@@ -1555,7 +1556,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 12, // 30% of 40px height = 12px from top
+                top: 8, // 20% of 40px height = 8px from top (better visual center)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1589,7 +1590,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 12, // 30% of 40px height = 12px from top
+                top: 8, // 20% of 40px height = 8px from top (better visual center)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1623,7 +1624,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 12, // 30% of 40px height = 12px from top
+                top: 8, // 20% of 40px height = 8px from top (better visual center)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1655,7 +1656,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 12, // 30% of 40px height = 12px from top
+                top: 8, // 20% of 40px height = 8px from top (better visual center)
                 left: 0,
                 right: 0,
                 child: const Icon(
