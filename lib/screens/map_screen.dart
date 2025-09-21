@@ -41,6 +41,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   bool _showMobileHint = false;
   bool _showOSMDebugWindow = false;
   Timer? _debounceTimer;
+  bool _isUserMoving = false;
   
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -263,14 +264,46 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
   void _onMapEvent(MapEvent mapEvent) {
     // Only reload map data on significant map changes
     if (mapEvent is MapEventMove || mapEvent is MapEventMoveStart || mapEvent is MapEventMoveEnd) {
+      // Track user movement
+      _isUserMoving = true;
+      
       // Debounce the reload to avoid too many API calls
       _debounceTimer?.cancel();
       _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
         if (_isMapReady) {
           print('Map Screen: Map moved, reloading all map data with new bounds');
           _loadAllMapDataWithBounds();
+          
+          // Reset user movement flag after reload
+          _isUserMoving = false;
         }
       });
+    }
+  }
+
+  /// Handle GPS location changes only when user is actively moving
+  void _handleGPSLocationChangeOnUserMovement(LocationData? location) {
+    if (location != null && _isMapReady && _isUserMoving) {
+      final newCenter = LatLng(location.latitude, location.longitude);
+      final currentCenter = _mapController.camera.center;
+      
+      // Calculate distance between current center and new GPS location
+      final distance = _calculateDistance(
+        currentCenter.latitude, currentCenter.longitude,
+        newCenter.latitude, newCenter.longitude,
+      );
+      
+      // Only auto-center if GPS location has moved significantly (more than 200 meters)
+      // and only when user is actively moving (not during background reloads)
+      if (distance > 200) {
+        print('Map Screen: GPS auto-centering on user movement (distance: ${distance.toStringAsFixed(1)}m)');
+        
+        // Move map to new GPS location
+        _mapController.move(newCenter, _mapController.camera.zoom);
+        
+        // Trigger reload only for significant GPS movements
+        _loadAllMapDataWithBounds();
+      }
     }
   }
 
@@ -679,31 +712,6 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     );
   }
 
-  /// Auto-center map on GPS location when it changes
-  void _handleGPSLocationChange(LocationData? location) {
-    if (location != null && _isMapReady) {
-      final newCenter = LatLng(location.latitude, location.longitude);
-      final currentCenter = _mapController.camera.center;
-      
-      // Calculate distance between current center and new GPS location
-      final distance = _calculateDistance(
-        currentCenter.latitude, currentCenter.longitude,
-        newCenter.latitude, newCenter.longitude,
-      );
-      
-      // Only auto-center if GPS location has moved significantly (more than 100 meters)
-      // and only if this is a significant movement (not during background reloads)
-      if (distance > 100) {
-        print('Map Screen: Smart GPS auto-centering (distance: ${distance.toStringAsFixed(1)}m)');
-        
-        // Move map to new GPS location
-        _mapController.move(newCenter, _mapController.camera.zoom);
-        
-        // Trigger reload only for significant GPS movements
-        _loadAllMapDataWithBounds();
-      }
-    }
-  }
 
   /// Calculate distance between two points in meters
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -730,10 +738,12 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
     final poisAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final osmPOIsAsync = ref.watch(osmPOIsNotifierProvider);
 
-    // Smart GPS auto-centering - only triggers for significant movements
-    locationAsync.whenData((location) {
-      _handleGPSLocationChange(location);
-    });
+    // GPS auto-centering only when user is actively moving
+    if (_isUserMoving) {
+      locationAsync.whenData((location) {
+        _handleGPSLocationChangeOnUserMovement(location);
+      });
+    }
 
     return Scaffold(
       body: Stack(
@@ -1556,7 +1566,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 8, // 20% of 40px height = 8px from top (better visual center)
+                top: 5, // 5px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1590,7 +1600,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 8, // 20% of 40px height = 8px from top (better visual center)
+                top: 5, // 5px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1624,7 +1634,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 8, // 20% of 40px height = 8px from top (better visual center)
+                top: 5, // 5px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: Text(
@@ -1656,7 +1666,7 @@ class _MapScreenState extends ConsumerState<MapScreen> with TickerProviderStateM
                 size: const Size(30, 40),
               ),
               Positioned(
-                top: 8, // 20% of 40px height = 8px from top (better visual center)
+                top: 5, // 5px from top of teardrop (as requested)
                 left: 0,
                 right: 0,
                 child: const Icon(
