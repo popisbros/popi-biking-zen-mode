@@ -145,22 +145,23 @@ final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
 /// Notifier for community warnings management
 class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityWarning>>> {
   final FirebaseService _firebaseService;
+  final Ref _ref;
   
-  CommunityWarningsNotifier(this._firebaseService) : super(const AsyncValue.loading()) {
+  CommunityWarningsNotifier(this._firebaseService, this._ref) : super(const AsyncValue.loading()) {
     _loadWarnings();
   }
   
   Future<void> _loadWarnings() async {
     try {
       // Get initial warnings
-      final warnings = await _getWarningsFromFirestore();
+      final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
   }
   
-  Future<List<CommunityWarning>> _getWarningsFromFirestore() async {
+  Future<List<CommunityWarning>> getWarningsFromFirestore() async {
     final snapshot = await _firebaseService.getAllWarnings().first;
     return snapshot.docs
         .map((doc) => CommunityWarning.fromMap({
@@ -177,8 +178,11 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       await _firebaseService.submitWarning(warning.toMap());
       
       // Reload warnings
-      final warnings = await _getWarningsFromFirestore();
+      final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
+      
+      // Trigger background refresh of OSM POIs
+      _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow; // Re-throw so the UI can handle the error
@@ -192,8 +196,11 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       await _firebaseService.updateWarning(documentId, warning.toMap());
       
       // Reload warnings
-      final warnings = await _getWarningsFromFirestore();
+      final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
+      
+      // Trigger background refresh of OSM POIs
+      _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow; // Re-throw so the UI can handle the error
@@ -207,8 +214,11 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       await _firebaseService.deleteWarning(warningId);
       
       // Reload warnings
-      final warnings = await _getWarningsFromFirestore();
+      final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
+      
+      // Trigger background refresh of OSM POIs
+      _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
       rethrow; // Re-throw so the UI can handle the error
@@ -219,33 +229,45 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
   Future<void> refreshWarnings() async {
     await _loadWarnings();
   }
+  
+  /// Trigger background refresh of OSM POIs
+  Future<void> _triggerOSMBackgroundRefresh() async {
+    try {
+      final osmPOIsNotifier = _ref.read(osmPOIsNotifierProvider.notifier);
+      await osmPOIsNotifier.triggerBackgroundRefresh();
+    } catch (e) {
+      print('Failed to trigger OSM background refresh: $e');
+      // Don't throw - this is a background operation
+    }
+  }
 }
 
 /// Provider for community warnings notifier
 final communityWarningsNotifierProvider = StateNotifierProvider<CommunityWarningsNotifier, AsyncValue<List<CommunityWarning>>>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
-  return CommunityWarningsNotifier(firebaseService);
+  return CommunityWarningsNotifier(firebaseService, ref);
 });
 
 /// Notifier for cycling POIs management
 class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
   final FirebaseService _firebaseService;
+  final Ref _ref;
   
-  CyclingPOIsNotifier(this._firebaseService) : super(const AsyncValue.loading()) {
+  CyclingPOIsNotifier(this._firebaseService, this._ref) : super(const AsyncValue.loading()) {
     _loadPOIs();
   }
   
   Future<void> _loadPOIs() async {
     try {
       // Get initial POIs
-      final pois = await _getPOIsFromFirestore();
+      final pois = await getPOIsFromFirestore();
       state = AsyncValue.data(pois);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
   }
   
-  Future<List<CyclingPOI>> _getPOIsFromFirestore() async {
+  Future<List<CyclingPOI>> getPOIsFromFirestore() async {
     final snapshot = await _firebaseService.getCyclingPOIs().first;
     return snapshot.docs
         .map((doc) => CyclingPOI.fromMap({
@@ -282,7 +304,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
       );
       
       // Reload POIs after successful creation
-      final pois = await _getPOIsFromFirestore();
+      final pois = await getPOIsFromFirestore();
       state = AsyncValue.data(pois);
       
       debugService.logAction(
@@ -290,6 +312,9 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
         screen: 'CyclingPOIsNotifier',
         parameters: {'poiCount': pois.length},
       );
+      
+      // Trigger background refresh of OSM POIs
+      _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       debugService.logAction(
         action: 'POI: Failed to add to Firebase',
@@ -329,7 +354,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
       );
       
       // Reload POIs after successful update
-      final pois = await _getPOIsFromFirestore();
+      final pois = await getPOIsFromFirestore();
       state = AsyncValue.data(pois);
       
       debugService.logAction(
@@ -337,6 +362,9 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
         screen: 'CyclingPOIsNotifier',
         parameters: {'poiCount': pois.length},
       );
+      
+      // Trigger background refresh of OSM POIs
+      _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       debugService.logAction(
         action: 'POI: Failed to update in Firebase',
@@ -372,7 +400,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
       );
       
       // Reload POIs after successful deletion
-      final pois = await _getPOIsFromFirestore();
+      final pois = await getPOIsFromFirestore();
       state = AsyncValue.data(pois);
       
       debugService.logAction(
@@ -380,6 +408,9 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
         screen: 'CyclingPOIsNotifier',
         parameters: {'poiCount': pois.length},
       );
+      
+      // Trigger background refresh of OSM POIs
+      _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       debugService.logAction(
         action: 'POI: Failed to delete from Firebase',
@@ -396,12 +427,23 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
   Future<void> refreshPOIs() async {
     await _loadPOIs();
   }
+  
+  /// Trigger background refresh of OSM POIs
+  Future<void> _triggerOSMBackgroundRefresh() async {
+    try {
+      final osmPOIsNotifier = _ref.read(osmPOIsNotifierProvider.notifier);
+      await osmPOIsNotifier.triggerBackgroundRefresh();
+    } catch (e) {
+      print('Failed to trigger OSM background refresh: $e');
+      // Don't throw - this is a background operation
+    }
+  }
 }
 
 /// Provider for cycling POIs notifier
 final cyclingPOIsNotifierProvider = StateNotifierProvider<CyclingPOIsNotifier, AsyncValue<List<CyclingPOI>>>((ref) {
   final firebaseService = ref.watch(firebaseServiceProvider);
-  return CyclingPOIsNotifier(firebaseService);
+  return CyclingPOIsNotifier(firebaseService, ref);
 });
 
 // BoundingBox class is imported from osm_poi_provider.dart

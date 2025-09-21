@@ -15,11 +15,13 @@ class HazardReportScreen extends ConsumerStatefulWidget {
 class HazardReportScreenWithLocation extends ConsumerStatefulWidget {
   final double initialLatitude;
   final double initialLongitude;
+  final String? editingWarningId;
 
   const HazardReportScreenWithLocation({
     super.key,
     required this.initialLatitude,
     required this.initialLongitude,
+    this.editingWarningId,
   });
 
   @override
@@ -773,6 +775,12 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
   void initState() {
     super.initState();
     print('HazardReportScreenWithLocation initialized with coordinates: ${widget.initialLatitude}, ${widget.initialLongitude}');
+    
+    // Set editing mode if editing warning ID is provided
+    if (widget.editingWarningId != null) {
+      _editingWarningId = widget.editingWarningId;
+      _loadWarningForEditing();
+    }
   }
 
   @override
@@ -780,6 +788,35 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _loadWarningForEditing() async {
+    if (_editingWarningId == null) return;
+    
+    try {
+      final communityNotifier = ref.read(communityWarningsNotifierProvider.notifier);
+      final warnings = await communityNotifier.getWarningsFromFirestore();
+      
+      final warning = warnings.firstWhere(
+        (w) => w.id == _editingWarningId,
+        orElse: () => throw Exception('Warning not found'),
+      );
+      
+      if (mounted) {
+        _startEditingWarning(warning);
+      }
+    } catch (e) {
+      print('Failed to load warning for editing: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load warning for editing: ${e.toString()}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    }
   }
 
   void _startEditingWarning(CommunityWarning warning) {

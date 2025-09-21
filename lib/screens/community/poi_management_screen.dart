@@ -16,11 +16,13 @@ class POIManagementScreen extends ConsumerStatefulWidget {
 class POIManagementScreenWithLocation extends ConsumerStatefulWidget {
   final double initialLatitude;
   final double initialLongitude;
+  final String? editingPOIId;
 
   const POIManagementScreenWithLocation({
     super.key,
     required this.initialLatitude,
     required this.initialLongitude,
+    this.editingPOIId,
   });
 
   @override
@@ -773,12 +775,19 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
     _latitudeController.text = widget.initialLatitude.toStringAsFixed(6);
     _longitudeController.text = widget.initialLongitude.toStringAsFixed(6);
     
+    // Set editing mode if editing POI ID is provided
+    if (widget.editingPOIId != null) {
+      _editingPOIId = widget.editingPOIId;
+      _loadPOIForEditing();
+    }
+    
     _debugService.logAction(
       action: 'POI: Initialized with specific location',
       screen: 'POIManagementScreenWithLocation',
       parameters: {
         'latitude': widget.initialLatitude,
         'longitude': widget.initialLongitude,
+        'editingPOIId': widget.editingPOIId,
       },
     );
   }
@@ -816,6 +825,39 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
         );
       }
     });
+  }
+
+  void _loadPOIForEditing() async {
+    if (_editingPOIId == null) return;
+    
+    try {
+      final communityNotifier = ref.read(cyclingPOIsNotifierProvider.notifier);
+      final pois = await communityNotifier.getPOIsFromFirestore();
+      
+      final poi = pois.firstWhere(
+        (p) => p.id == _editingPOIId,
+        orElse: () => throw Exception('POI not found'),
+      );
+      
+      if (mounted) {
+        _startEditingPOI(poi);
+      }
+    } catch (e) {
+      _debugService.logAction(
+        action: 'POI: Failed to load POI for editing',
+        screen: 'POIManagementScreenWithLocation',
+        error: e.toString(),
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load POI for editing: ${e.toString()}'),
+            backgroundColor: AppColors.dangerRed,
+          ),
+        );
+      }
+    }
   }
 
   void _startEditingPOI(CyclingPOI poi) {
