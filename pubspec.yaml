@@ -38,6 +38,7 @@ dependencies:
   # Maps & Location
   # maplibre_gl: ^0.20.0  # Web compatibility issues
   flutter_map: ^7.0.2  # Better web compatibility with Leaflet
+  mapbox_gl: ^0.15.0  # Mapbox GL for 3D capabilities
   latlong2: ^0.9.1  # Required for flutter_map
   geolocator: ^12.0.0
   permission_handler: ^11.3.1

@@ -42,6 +42,19 @@ class SecureConfig {
     return 'pk.1234567890abcdef';
   }
   
+  // Mapbox API Key
+  static String get mapboxApiKey {
+    // Try to get from environment variable first
+    const envKey = String.fromEnvironment('MAPBOX_API_KEY');
+    if (envKey.isNotEmpty && envKey != 'YOUR_MAPBOX_API_KEY_HERE') {
+      return envKey;
+    }
+    
+    // Fallback for development - you can set this temporarily for local testing
+    // This will be overridden by environment variables in production
+    return 'YOUR_MAPBOX_API_KEY_HERE';
+  }
+  
   // Firebase Configuration
   static String get firebaseApiKey {
     const envKey = String.fromEnvironment('FIREBASE_API_KEY');
