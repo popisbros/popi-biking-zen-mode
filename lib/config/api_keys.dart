@@ -9,6 +9,9 @@ class ApiKeys {
   // Now loaded securely from environment variables
   static String get mapTilerApiKey => SecureConfig.mapTilerApiKey;
   
+  // Mapbox Access Token for native iOS 3D map
+  static String get mapboxApiKey => SecureConfig.mapboxApiKey;
+  
   // Thunderforest API Key for cycling maps
   // Now loaded securely from environment variables
   static String get thunderforestApiKey => SecureConfig.thunderforestApiKey;

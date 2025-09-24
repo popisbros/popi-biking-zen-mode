@@ -3,6 +3,15 @@ import 'dart:io';
 /// Secure configuration for API keys and sensitive data
 /// This class loads configuration from environment variables or secure sources
 class SecureConfig {
+  // Mapbox Access Token
+  static String get mapboxApiKey {
+    const envKey = String.fromEnvironment('MAPBOX_API_KEY');
+    if (envKey.isNotEmpty) {
+      return envKey;
+    }
+    // Debug/demo default for iOS native Mapbox testing
+    return 'pk.eyJ1Ijoic3lsdmFpbmJyb3NzZXQiLCJhIjoiY21mdXoxZm5wMDF5azJpcXF5ZzRzdTFubyJ9.ekDTXkW79XiOFOAJtcHXdQ';
+  }
   // MapTiler API Key
   static String get mapTilerApiKey {
     // Try to get from environment variable first
