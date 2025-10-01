@@ -1,11 +1,11 @@
 {
-    "name": "Popi Is Biking Zen Mode",
-    "short_name": "Popi Biking",
+    "name": "popi_biking_fresh",
+    "short_name": "popi_biking_fresh",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#233749",
-    "theme_color": "#233749",
-    "description": "Urban cycling navigation app with immersive map experience",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

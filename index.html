@@ -18,102 +18,21 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Popi Is Biking Zen Mode - Urban cycling navigation app with immersive map experience">
+  <meta name="description" content="A new Flutter project.">
 
   <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Popi Biking">
+  <meta name="apple-mobile-web-app-title" content="popi_biking_fresh">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Popi Is Biking Zen Mode</title>
+  <title>popi_biking_fresh</title>
   <link rel="manifest" href="manifest.json">
-
-  <!-- This script adds the flutter initialization JS code -->
-  <script src="flutter.js" defer></script>
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #F5F5F5;
-    }
-    
-    .loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: linear-gradient(135deg, #233749 0%, #1A2A3A 100%);
-      color: white;
-    }
-    
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-      border-top: 3px solid #F4D35E;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .loading-text {
-      font-size: 18px;
-      font-weight: 500;
-      margin-bottom: 10px;
-    }
-    
-    .loading-subtitle {
-      font-size: 14px;
-      opacity: 0.8;
-    }
-    
-    #loading {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 9999;
-    }
-  </style>
 </head>
 <body>
-  <div id="loading" class="loading">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Popi Is Biking Zen Mode</div>
-    <div class="loading-subtitle">Loading your cycling companion...</div>
-  </div>
-
-  <script>
-    window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            // Hide loading screen
-            document.getElementById('loading').style.display = 'none';
-            appRunner.runApp();
-          });
-        }
-      });
-    });
-  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
