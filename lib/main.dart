@@ -21,32 +21,28 @@ void main() async {
   print('🚀 iOS DEBUG [MAIN]: Platform: ${kIsWeb ? "WEB" : "MOBILE"}');
   print('🚀 iOS DEBUG [MAIN]: Timestamp: ${DateTime.now().toIso8601String()}');
 
-  // Only initialize Firebase on mobile platforms (not web)
-  if (!kIsWeb) {
-    try {
-      print('🔥 iOS DEBUG [MAIN]: Initializing Firebase with 10s timeout...');
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          print('⏱️ iOS DEBUG [MAIN]: Firebase initialization TIMED OUT after 10s');
-          print('⚠️ iOS DEBUG [MAIN]: Continuing without Firebase...');
-          throw TimeoutException('Firebase initialization timed out');
-        },
-      );
-      print('✅ iOS DEBUG [MAIN]: Firebase initialized successfully');
-    } catch (e, stackTrace) {
-      print('❌ iOS DEBUG [MAIN]: Firebase initialization FAILED');
-      print('❌ iOS DEBUG [MAIN]: Error: $e');
-      print('❌ iOS DEBUG [MAIN]: Error type: ${e.runtimeType}');
-      print('❌ iOS DEBUG [MAIN]: Stack trace:');
-      print(stackTrace.toString().split('\n').take(10).join('\n'));
-      print('⚠️ iOS DEBUG [MAIN]: Continuing anyway - Firebase not critical for map display');
-      // Continue anyway - Firebase is not critical for map display
-    }
-  } else {
-    print('⚠️ iOS DEBUG [MAIN]: Firebase disabled on web platform');
+  // Initialize Firebase on all platforms
+  try {
+    print('🔥 iOS DEBUG [MAIN]: Initializing Firebase with 10s timeout...');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        print('⏱️ iOS DEBUG [MAIN]: Firebase initialization TIMED OUT after 10s');
+        print('⚠️ iOS DEBUG [MAIN]: Continuing without Firebase...');
+        throw TimeoutException('Firebase initialization timed out');
+      },
+    );
+    print('✅ iOS DEBUG [MAIN]: Firebase initialized successfully on ${kIsWeb ? "WEB" : "MOBILE"}');
+  } catch (e, stackTrace) {
+    print('❌ iOS DEBUG [MAIN]: Firebase initialization FAILED');
+    print('❌ iOS DEBUG [MAIN]: Error: $e');
+    print('❌ iOS DEBUG [MAIN]: Error type: ${e.runtimeType}');
+    print('❌ iOS DEBUG [MAIN]: Stack trace:');
+    print(stackTrace.toString().split('\n').take(10).join('\n'));
+    print('⚠️ iOS DEBUG [MAIN]: Continuing anyway - Firebase not critical for map display');
+    // Continue anyway - Firebase is not critical for map display
   }
 
   print('🚀 iOS DEBUG [MAIN]: Starting app with ProviderScope...');
