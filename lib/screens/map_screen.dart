@@ -381,10 +381,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// Navigate to Community POI management screen
-  void _showAddPOIDialog(LatLng point) {
+  void _showAddPOIDialog(LatLng point) async {
     print('🗺️ iOS DEBUG [MapScreen]: Opening Add POI screen at: ${point.latitude}, ${point.longitude}');
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => POIManagementScreenWithLocation(
@@ -393,13 +393,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       ),
     );
+
+    // After returning from POI screen, force reload of map data
+    print('🗺️ iOS DEBUG [MapScreen]: Returned from POI screen, reloading map data...');
+    if (mounted && _isMapReady) {
+      _loadAllMapDataWithBounds();
+    }
   }
 
   /// Navigate to Hazard report screen
-  void _showReportHazardDialog(LatLng point) {
+  void _showReportHazardDialog(LatLng point) async {
     print('🗺️ iOS DEBUG [MapScreen]: Opening Report Hazard screen at: ${point.latitude}, ${point.longitude}');
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => HazardReportScreenWithLocation(
@@ -408,6 +414,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       ),
     );
+
+    // After returning from Warning screen, force reload of map data
+    print('🗺️ iOS DEBUG [MapScreen]: Returned from Warning screen, reloading map data...');
+    if (mounted && _isMapReady) {
+      _loadAllMapDataWithBounds();
+    }
   }
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -652,6 +664,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     required int count,
     required VoidCallback onPressed,
     required String tooltip,
+    bool showFullCount = false, // If true, shows actual count. If false, shows "99+" for counts > 99
   }) {
     return Tooltip(
       message: tooltip,
@@ -683,7 +696,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    count > 99 ? '99+' : count.toString(),
+                    showFullCount ? count.toString() : (count > 99 ? '99+' : count.toString()),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -820,23 +833,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     print('🗺️ iOS DEBUG [MapScreen]: Total markers on map: ${markers.length}');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Popi Biking'),
-        backgroundColor: Colors.green,
-        actions: [
-          // POI count indicator
-          poisAsync.when(
-            data: (pois) => Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text('POIs: ${pois.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(16), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
-            error: (_, __) => const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('POIs: Error'))),
-          ),
-        ],
-      ),
       body: Stack(
         children: [
           // Main map content
@@ -927,12 +923,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             right: 16,
             child: Column(
               children: [
-                // OSM POI toggle with count
+                // OSM POI toggle with count (no limit)
                 _buildToggleButton(
                   isActive: mapState.showOSMPOIs,
                   icon: Icons.public,
                   activeColor: Colors.blue,
                   count: poisAsync.value?.length ?? 0,
+                  showFullCount: true, // Show actual count, not 99+
                   onPressed: () {
                     print('🗺️ iOS DEBUG [MapScreen]: OSM POI toggle pressed');
                     ref.read(mapProvider.notifier).toggleOSMPOIs();
@@ -941,12 +938,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Community POI toggle with count (placeholder for now)
+                // Community POI toggle with count
                 _buildToggleButton(
                   isActive: mapState.showPOIs,
                   icon: Icons.location_on,
                   activeColor: Colors.green,
-                  count: 0, // Will be populated when community POIs are added
+                  count: communityPOIsAsync.value?.length ?? 0,
                   onPressed: () {
                     print('🗺️ iOS DEBUG [MapScreen]: Community POI toggle pressed');
                     ref.read(mapProvider.notifier).togglePOIs();

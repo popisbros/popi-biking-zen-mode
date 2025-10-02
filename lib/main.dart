@@ -60,14 +60,13 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     print('🎨 iOS DEBUG [MyApp]: Building MaterialApp...');
 
-    // On Native (iOS/Android), start with 3D map. On Web, start with 2D map.
-    final homeScreen = kIsWeb ? const MapScreen() : const MapboxMapScreenSimple();
-    print('🎨 iOS DEBUG [MyApp]: Starting with ${kIsWeb ? "2D" : "3D"} map (${kIsWeb ? "WEB" : "NATIVE"})');
+    // Always start with 2D map, but on Native we'll auto-navigate to 3D
+    print('🎨 iOS DEBUG [MyApp]: Starting with 2D map (${kIsWeb ? "WEB" : "NATIVE will auto-navigate to 3D"})');
 
     return MaterialApp(
       title: 'Popi Biking',
       theme: AppTheme.lightTheme,
-      home: homeScreen,
+      home: kIsWeb ? const MapScreen() : const NativeStartupScreen(),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         print('🎨 iOS DEBUG [MyApp]: MaterialApp builder called');
@@ -110,6 +109,52 @@ class MyApp extends ConsumerWidget {
         };
         return child ?? const Center(child: CircularProgressIndicator());
       },
+    );
+  }
+}
+
+/// Startup screen for Native apps - shows 2D map first, then auto-navigates to 3D
+class NativeStartupScreen extends StatefulWidget {
+  const NativeStartupScreen({super.key});
+
+  @override
+  State<NativeStartupScreen> createState() => _NativeStartupScreenState();
+}
+
+class _NativeStartupScreenState extends State<NativeStartupScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Auto-navigate to 3D map after a short delay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🚀 iOS DEBUG [NativeStartup]: Auto-navigating to 3D map...');
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MapScreen()),
+          ).then((_) {
+            // After 2D map is loaded, navigate to 3D
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MapboxMapScreenSimple()),
+                );
+              }
+            });
+          });
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }
