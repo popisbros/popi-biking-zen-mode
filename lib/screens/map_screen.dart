@@ -29,6 +29,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   LatLng? _lastGPSPosition;
   LatLng? _originalGPSReference;
   bool _isUserMoving = false;
+  bool _hasTriggeredInitialPOILoad = false; // Track if we've loaded POIs on first location
 
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -85,9 +86,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           _mapController.move(newPosition, 15.0);
           print('✅ iOS DEBUG [MapScreen]: Map moved to Lat=${newPosition.latitude}, Lng=${newPosition.longitude}, Zoom=15.0');
 
-          // NOW load POIs at user's actual location
-          print('🗺️ iOS DEBUG [MapScreen]: Triggering POI load at user location...');
-          _loadAllMapDataWithBounds();
+          // Add a small delay to ensure map is fully positioned before loading POIs
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              print('🗺️ iOS DEBUG [MapScreen]: Triggering POI load at user location (after delay)...');
+              _loadAllMapDataWithBounds();
+            }
+          });
 
           // Initialize GPS position tracking
           _lastGPSPosition = newPosition;
@@ -95,13 +100,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           print('✅ iOS DEBUG [MapScreen]: GPS references initialized');
         } else {
           print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - GPS not available yet');
+          print('🔄 iOS DEBUG [MapScreen]: Will retry when location becomes available via build() listener');
         }
       },
       loading: () {
         print('⏳ iOS DEBUG [MapScreen]: Location still LOADING...');
+        print('   Will load POIs automatically when location becomes available');
       },
       error: (error, stack) {
         print('❌ iOS DEBUG [MapScreen]: Location ERROR: $error');
+        print('   Cannot load POIs without location');
       },
     );
   }
@@ -245,6 +253,30 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (location != null && _isMapReady) {
       final newGPSPosition = LatLng(location.latitude, location.longitude);
 
+      // CRITICAL: If this is the first time we have location and haven't loaded POIs yet, do it now!
+      if (!_hasTriggeredInitialPOILoad) {
+        print('🗺️ iOS DEBUG [MapScreen]: ========== FIRST LOCATION RECEIVED ==========');
+        print('   Location: ${location.latitude}, ${location.longitude}');
+        print('   Centering map and loading POIs...');
+
+        _mapController.move(newGPSPosition, 15.0);
+        _originalGPSReference = newGPSPosition;
+        _lastGPSPosition = newGPSPosition;
+
+        // Add delay to ensure map has moved before loading POIs
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            print('🗺️ iOS DEBUG [MapScreen]: Triggering INITIAL POI load...');
+            _loadAllMapDataWithBounds();
+            _hasTriggeredInitialPOILoad = true;
+            print('✅ iOS DEBUG [MapScreen]: Initial POI load triggered');
+          }
+        });
+
+        return;
+      }
+
+      // Normal auto-center logic for subsequent location updates
       if (_originalGPSReference != null) {
         final distance = _calculateDistance(
           _originalGPSReference!.latitude,
@@ -260,8 +292,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           _loadAllMapDataWithBounds();
           _originalGPSReference = newGPSPosition;
         }
-      } else {
-        _originalGPSReference = newGPSPosition;
       }
 
       _lastGPSPosition = newGPSPosition;
@@ -301,7 +331,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           children: [
             const Text(
               'Choose Map Layer',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...MapLayerType.values.map((layer) {
@@ -310,7 +340,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   _getLayerIcon(layer),
                   color: currentLayer == layer ? Colors.green : Colors.grey,
                 ),
-                title: Text(mapService.getLayerName(layer)),
+                title: Text(
+                  mapService.getLayerName(layer),
+                  style: const TextStyle(fontSize: 16),
+                ),
                 trailing: currentLayer == layer ? const Icon(Icons.check, color: Colors.green) : null,
                 onTap: () {
                   print('🗺️ iOS DEBUG [MapScreen]: Layer changed to $layer');
