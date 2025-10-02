@@ -86,6 +86,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // DON'T load POIs immediately - wait for GPS location first!
     print('🗺️ iOS DEBUG [MapScreen]: Waiting for GPS location before loading POIs...');
     _centerOnUserLocation();
+
+    // Fallback: if POIs haven't loaded after 2 seconds, load them anyway
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && _isMapReady && !_hasTriggeredInitialPOILoad) {
+        print('⚠️ iOS DEBUG [MapScreen]: Fallback POI load triggered (location might not be available)');
+        _loadAllMapDataWithBounds();
+        _hasTriggeredInitialPOILoad = true;
+      }
+    });
   }
 
   /// Center map on user's GPS location (CRITICAL for OSM POIs to work)
