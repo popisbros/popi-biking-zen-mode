@@ -27,23 +27,8 @@ enum MapLayerType {
 
 /// 3D Mapbox style types for cycling
 enum MapboxStyleType {
-  /// Mapbox Outdoors - Great for cycling with terrain (default)
-  outdoors,
-
-  /// Mapbox Streets - Clean street map
+  /// Mapbox Streets - Clean street map (default)
   streets,
-
-  /// Mapbox Satellite - Aerial imagery
-  satellite,
-
-  /// Mapbox Satellite Streets - Hybrid satellite + streets
-  satelliteStreets,
-
-  /// Mapbox Light - Minimal, clean design
-  light,
-
-  /// Mapbox Dark - Dark theme
-  dark,
 }
 
 /// Service for managing map tiles and styles
@@ -56,7 +41,7 @@ class MapService {
   MapLayerType _current2DLayer = MapLayerType.openCycleMap;
 
   /// Current active 3D style
-  MapboxStyleType _current3DStyle = MapboxStyleType.outdoors;
+  MapboxStyleType _current3DStyle = MapboxStyleType.streets;
 
   /// Get current 2D layer type
   MapLayerType get current2DLayer => _current2DLayer;
@@ -108,20 +93,8 @@ class MapService {
 
   /// Get Mapbox style URI for the specified 3D style
   String getMapboxStyleUri(MapboxStyleType style) {
-    switch (style) {
-      case MapboxStyleType.outdoors:
-        return 'mapbox://styles/mapbox/outdoors-v12';
-      case MapboxStyleType.streets:
-        return 'mapbox://styles/mapbox/streets-v12';
-      case MapboxStyleType.satellite:
-        return 'mapbox://styles/mapbox/satellite-v9';
-      case MapboxStyleType.satelliteStreets:
-        return 'mapbox://styles/mapbox/satellite-streets-v12';
-      case MapboxStyleType.light:
-        return 'mapbox://styles/mapbox/light-v11';
-      case MapboxStyleType.dark:
-        return 'mapbox://styles/mapbox/dark-v11';
-    }
+    // Only Streets 3D is available
+    return 'mapbox://styles/mapbox/streets-v12';
   }
 
   /// Get user agent for tile requests
@@ -176,20 +149,8 @@ class MapService {
 
   /// Get human-readable name for 3D style
   String getStyleName(MapboxStyleType style) {
-    switch (style) {
-      case MapboxStyleType.outdoors:
-        return 'Outdoors 3D';
-      case MapboxStyleType.streets:
-        return 'Streets 3D';
-      case MapboxStyleType.satellite:
-        return 'Satellite 3D';
-      case MapboxStyleType.satelliteStreets:
-        return 'Hybrid 3D';
-      case MapboxStyleType.light:
-        return 'Light 3D';
-      case MapboxStyleType.dark:
-        return 'Dark 3D';
-    }
+    // Only Streets 3D is available
+    return 'Streets 3D';
   }
 
   /// Get default cycling center (San Francisco)

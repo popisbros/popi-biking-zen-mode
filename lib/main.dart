@@ -60,13 +60,13 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     print('🎨 iOS DEBUG [MyApp]: Building MaterialApp...');
 
-    // Always start with 2D map, but on Native we'll auto-navigate to 3D
-    print('🎨 iOS DEBUG [MyApp]: Starting with 2D map (${kIsWeb ? "WEB" : "NATIVE will auto-navigate to 3D"})');
+    // Web starts with 2D map, Native starts directly with 3D map
+    print('🎨 iOS DEBUG [MyApp]: Starting with ${kIsWeb ? "2D map (WEB)" : "3D map (NATIVE)"}');
 
     return MaterialApp(
       title: 'Popi Biking',
       theme: AppTheme.lightTheme,
-      home: kIsWeb ? const MapScreen() : const NativeStartupScreen(),
+      home: kIsWeb ? const MapScreen() : const MapboxMapScreenSimple(),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         print('🎨 iOS DEBUG [MyApp]: MaterialApp builder called');
@@ -113,36 +113,4 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-/// Startup screen for Native apps - navigates to 2D map which then auto-opens 3D
-class NativeStartupScreen extends StatefulWidget {
-  const NativeStartupScreen({super.key});
-
-  @override
-  State<NativeStartupScreen> createState() => _NativeStartupScreenState();
-}
-
-class _NativeStartupScreenState extends State<NativeStartupScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Navigate to 2D map immediately
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🚀 iOS DEBUG [NativeStartup]: Navigating to 2D map...');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const MapScreen(autoOpen3D: true),
-        ),
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-}
+// NativeStartupScreen removed - app now starts directly in 3D map on Native

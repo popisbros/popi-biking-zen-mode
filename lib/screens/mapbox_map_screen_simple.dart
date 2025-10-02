@@ -8,6 +8,7 @@ import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../services/map_service.dart';
+import 'map_screen.dart';
 
 /// Simplified Mapbox 3D Map Screen
 /// This version works with Mapbox Maps Flutter 2.11.0 API
@@ -154,66 +155,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
   }
 
-  void _showStylePicker() {
-    final mapService = ref.read(mapServiceProvider);
-    final currentStyle = ref.read(mapProvider).current3DStyle;
+  // Style picker removed - only Streets 3D is available
 
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Choose 3D Map Style',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ...MapboxStyleType.values.map((style) {
-              return ListTile(
-                leading: Icon(
-                  _getStyleIcon(style),
-                  color: currentStyle == style ? Colors.green : Colors.grey,
-                ),
-                title: Text(mapService.getStyleName(style)),
-                trailing: currentStyle == style
-                    ? const Icon(Icons.check, color: Colors.green)
-                    : null,
-                onTap: () async {
-                  ref.read(mapProvider.notifier).change3DStyle(style);
-                  final styleUri = mapService.getMapboxStyleUri(style);
-                  await _mapboxMap?.loadStyleURI(styleUri);
-                  // Re-add markers after style change
-                  _pointAnnotationManager = await _mapboxMap?.annotations.createPointAnnotationManager();
-                  _addMarkers();
-                  Navigator.pop(context);
-                  setState(() => _debugMessage = 'Style changed to ${mapService.getStyleName(style)}');
-                },
-              );
-            }),
-          ],
-        ),
+  void _switchTo2DMap() {
+    print('🗺️ iOS DEBUG [Mapbox3D]: Switching to 2D map...');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MapScreen(),
       ),
     );
-  }
-
-  IconData _getStyleIcon(MapboxStyleType style) {
-    switch (style) {
-      case MapboxStyleType.outdoors:
-        return Icons.terrain;
-      case MapboxStyleType.streets:
-        return Icons.map;
-      case MapboxStyleType.satellite:
-        return Icons.satellite;
-      case MapboxStyleType.satelliteStreets:
-        return Icons.satellite_alt;
-      case MapboxStyleType.light:
-        return Icons.wb_sunny;
-      case MapboxStyleType.dark:
-        return Icons.nights_stay;
-    }
   }
 
   @override
@@ -276,22 +227,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Style picker button
-                  FloatingActionButton(
-                    mini: false,
-                    heroTag: 'style_picker_button',
-                    onPressed: _showStylePicker,
-                    backgroundColor: Colors.blue,
-                    child: const Icon(Icons.layers),
-                  ),
-                  const SizedBox(height: 16),
                   // Back to 2D button (matching 3D button style from 2D map)
                   FloatingActionButton(
                     mini: false,
                     heroTag: 'back_to_2d_button',
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _switchTo2DMap,
                     backgroundColor: Colors.green,
-                    tooltip: 'Back to 2D Map',
+                    tooltip: 'Switch to 2D Map',
                     child: const Icon(Icons.map),
                   ),
                   const SizedBox(height: 16),

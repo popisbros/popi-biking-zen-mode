@@ -21,9 +21,7 @@ import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
-  final bool autoOpen3D;
-
-  const MapScreen({super.key, this.autoOpen3D = false});
+  const MapScreen({super.key});
 
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
@@ -37,7 +35,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   LatLng? _originalGPSReference;
   bool _isUserMoving = false;
   bool _hasTriggeredInitialPOILoad = false; // Track if we've loaded POIs on first location
-  bool _hasAutoOpened3D = false; // Track if we've already auto-opened 3D
 
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -48,8 +45,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.initState();
     print('🗺️ iOS DEBUG [MapScreen]: ========== initState called ==========');
     print('🗺️ iOS DEBUG [MapScreen]: Timestamp = ${DateTime.now().toIso8601String()}');
-    print('🗺️ iOS DEBUG [MapScreen]: ⭐ autoOpen3D = ${widget.autoOpen3D}');
-    print('🗺️ iOS DEBUG [MapScreen]: ⭐ kIsWeb = $kIsWeb');
 
     // Initialize map when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -118,25 +113,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // NOTE: POI loading will be triggered automatically by the location listener in build()
           print('✅ iOS DEBUG [MapScreen]: GPS references initialized');
-
-          // Auto-open 3D map if requested (Native app startup)
-          if (widget.autoOpen3D && !_hasAutoOpened3D && !kIsWeb) {
-            _hasAutoOpened3D = true;
-            print('🚀 iOS DEBUG [MapScreen]: Auto-opening 3D map in 1 second...');
-            print('   autoOpen3D=${widget.autoOpen3D}, hasAutoOpened=$_hasAutoOpened3D, kIsWeb=$kIsWeb');
-            Future.delayed(const Duration(milliseconds: 1000), () {
-              if (mounted) {
-                print('🚀 iOS DEBUG [MapScreen]: NOW calling _open3DMap()...');
-                _open3DMap();
-                print('🚀 iOS DEBUG [MapScreen]: _open3DMap() called successfully');
-              } else {
-                print('❌ iOS DEBUG [MapScreen]: Cannot open 3D map - widget not mounted');
-              }
-            });
-          } else {
-            print('🔍 iOS DEBUG [MapScreen]: Auto-open 3D skipped:');
-            print('   autoOpen3D=${widget.autoOpen3D}, hasAutoOpened=$_hasAutoOpened3D, kIsWeb=$kIsWeb');
-          }
         } else {
           print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - GPS not available yet');
           print('🔄 iOS DEBUG [MapScreen]: Will retry when location becomes available via build() listener');
