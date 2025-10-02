@@ -27,27 +27,51 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   @override
   void initState() {
     super.initState();
+    print('🗺️ iOS DEBUG [Mapbox3D]: initState called');
     // Move provider reading to initState to avoid modifying provider during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final locationState = ref.read(locationProvider);
-      final camera = locationState.position != null
-          ? CameraOptions(
-              center: Point(
-                coordinates: Position(
-                  locationState.position!.longitude,
-                  locationState.position!.latitude,
-                ),
-              ),
-              zoom: 15.0,
-              pitch: 60.0,
-            )
-          : _getDefaultCamera();
+      print('🗺️ iOS DEBUG [Mapbox3D]: PostFrameCallback - getting initial camera');
+      final locationAsync = ref.read(locationNotifierProvider);
 
-      if (mounted) {
-        setState(() {
-          _initialCamera = camera;
-        });
-      }
+      locationAsync.when(
+        data: (location) {
+          final camera = location != null
+              ? CameraOptions(
+                  center: Point(
+                    coordinates: Position(
+                      location.longitude,
+                      location.latitude,
+                    ),
+                  ),
+                  zoom: 15.0,
+                  pitch: 60.0,
+                )
+              : _getDefaultCamera();
+
+          if (mounted) {
+            setState(() {
+              _initialCamera = camera;
+            });
+            print('✅ iOS DEBUG [Mapbox3D]: Initial camera set to ${location?.latitude}, ${location?.longitude}');
+          }
+        },
+        loading: () {
+          print('⏳ iOS DEBUG [Mapbox3D]: Location still loading, using default camera');
+          if (mounted) {
+            setState(() {
+              _initialCamera = _getDefaultCamera();
+            });
+          }
+        },
+        error: (_, __) {
+          print('❌ iOS DEBUG [Mapbox3D]: Location error, using default camera');
+          if (mounted) {
+            setState(() {
+              _initialCamera = _getDefaultCamera();
+            });
+          }
+        },
+      );
     });
   }
 
@@ -62,38 +86,59 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   Future<void> _centerOnUserLocation() async {
+    print('🗺️ iOS DEBUG [Mapbox3D]: GPS button clicked');
     setState(() => _debugMessage = 'GPS button clicked...');
 
     if (_mapboxMap == null) {
+      print('❌ iOS DEBUG [Mapbox3D]: Map not ready');
       setState(() => _debugMessage = 'ERROR: Map not ready');
       return;
     }
 
     try {
       setState(() => _debugMessage = 'Requesting location...');
-      final locationState = ref.read(locationProvider);
-      final location = locationState.position;
+      print('🗺️ iOS DEBUG [Mapbox3D]: Reading location from provider');
 
-      if (location != null) {
-        setState(() => _debugMessage = 'Got location: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}');
+      final locationAsync = ref.read(locationNotifierProvider);
 
-        _mapboxMap!.flyTo(
-          CameraOptions(
-            center: Point(
-              coordinates: Position(location.longitude, location.latitude),
-            ),
-            zoom: 15.0,
-            pitch: 60.0,
-          ),
-          MapAnimationOptions(duration: 1000),
-        );
+      locationAsync.when(
+        data: (location) {
+          if (location != null) {
+            print('✅ iOS DEBUG [Mapbox3D]: Got location ${location.latitude}, ${location.longitude}');
+            setState(() => _debugMessage = 'Got location: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}');
 
-        await Future.delayed(Duration(seconds: 2));
-        setState(() => _debugMessage = 'SUCCESS! Centered on your location');
-      } else {
-        setState(() => _debugMessage = 'ERROR: Location is null (permission denied?)');
-      }
+            _mapboxMap!.flyTo(
+              CameraOptions(
+                center: Point(
+                  coordinates: Position(location.longitude, location.latitude),
+                ),
+                zoom: 15.0,
+                pitch: 60.0,
+              ),
+              MapAnimationOptions(duration: 1000),
+            );
+
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                setState(() => _debugMessage = 'SUCCESS! Centered on your location');
+              }
+            });
+          } else {
+            print('❌ iOS DEBUG [Mapbox3D]: Location is NULL');
+            setState(() => _debugMessage = 'ERROR: Location is null (permission denied?)');
+          }
+        },
+        loading: () {
+          print('⏳ iOS DEBUG [Mapbox3D]: Location still loading');
+          setState(() => _debugMessage = 'Location is loading...');
+        },
+        error: (error, _) {
+          print('❌ iOS DEBUG [Mapbox3D]: Location error: $error');
+          setState(() => _debugMessage = 'ERROR: $error');
+        },
+      );
     } catch (e) {
+      print('❌ iOS DEBUG [Mapbox3D]: Exception: $e');
       setState(() => _debugMessage = 'ERROR: $e');
     }
   }
@@ -163,7 +208,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   @override
   Widget build(BuildContext context) {
     // Watch location updates to keep camera centered
-    final locationState = ref.watch(locationProvider);
+    final locationAsync = ref.watch(locationNotifierProvider);
     final mapState = ref.watch(mapProvider);
 
     // Use cached initial camera or default
