@@ -155,7 +155,61 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
   }
 
-  // Style picker removed - only Streets 3D is available
+  void _showStylePicker() {
+    final mapService = ref.read(mapServiceProvider);
+    final currentStyle = ref.read(mapProvider).current3DStyle;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Choose 3D Map Style',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ...MapboxStyleType.values.map((style) {
+              return ListTile(
+                leading: Icon(
+                  _getStyleIcon(style),
+                  color: currentStyle == style ? Colors.green : Colors.grey,
+                ),
+                title: Text(mapService.getStyleName(style)),
+                trailing: currentStyle == style
+                    ? const Icon(Icons.check, color: Colors.green)
+                    : null,
+                onTap: () async {
+                  ref.read(mapProvider.notifier).change3DStyle(style);
+                  final styleUri = mapService.getMapboxStyleUri(style);
+                  await _mapboxMap?.loadStyleURI(styleUri);
+                  // Re-add markers after style change
+                  _pointAnnotationManager = await _mapboxMap?.annotations.createPointAnnotationManager();
+                  _addMarkers();
+                  Navigator.pop(context);
+                  setState(() => _debugMessage = 'Style changed to ${mapService.getStyleName(style)}');
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getStyleIcon(MapboxStyleType style) {
+    switch (style) {
+      case MapboxStyleType.streets:
+        return Icons.map;
+      case MapboxStyleType.outdoors:
+        return Icons.terrain;
+      case MapboxStyleType.satelliteStreets:
+        return Icons.satellite_alt;
+    }
+  }
 
   void _switchTo2DMap() {
     print('🗺️ iOS DEBUG [Mapbox3D]: Switching to 2D map...');
@@ -227,10 +281,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Back to 2D button (matching 3D button style from 2D map)
+                  // Style picker button
                   FloatingActionButton(
                     mini: false,
-                    heroTag: 'back_to_2d_button',
+                    heroTag: 'style_picker_button',
+                    onPressed: _showStylePicker,
+                    backgroundColor: Colors.blue,
+                    child: const Icon(Icons.layers),
+                  ),
+                  const SizedBox(height: 16),
+                  // Switch to 2D button (matching 3D button style from 2D map)
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'switch_to_2d_button',
                     onPressed: _switchTo2DMap,
                     backgroundColor: Colors.green,
                     tooltip: 'Switch to 2D Map',

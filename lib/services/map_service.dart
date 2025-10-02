@@ -29,6 +29,12 @@ enum MapLayerType {
 enum MapboxStyleType {
   /// Mapbox Streets - Clean street map (default)
   streets,
+
+  /// Mapbox Outdoors - Great for cycling with terrain
+  outdoors,
+
+  /// Mapbox Satellite Streets - Hybrid satellite + streets
+  satelliteStreets,
 }
 
 /// Service for managing map tiles and styles
@@ -93,8 +99,14 @@ class MapService {
 
   /// Get Mapbox style URI for the specified 3D style
   String getMapboxStyleUri(MapboxStyleType style) {
-    // Only Streets 3D is available
-    return 'mapbox://styles/mapbox/streets-v12';
+    switch (style) {
+      case MapboxStyleType.streets:
+        return 'mapbox://styles/mapbox/streets-v12';
+      case MapboxStyleType.outdoors:
+        return 'mapbox://styles/mapbox/outdoors-v12';
+      case MapboxStyleType.satelliteStreets:
+        return 'mapbox://styles/mapbox/satellite-streets-v12';
+    }
   }
 
   /// Get user agent for tile requests
@@ -149,8 +161,14 @@ class MapService {
 
   /// Get human-readable name for 3D style
   String getStyleName(MapboxStyleType style) {
-    // Only Streets 3D is available
-    return 'Streets 3D';
+    switch (style) {
+      case MapboxStyleType.streets:
+        return 'Streets 3D';
+      case MapboxStyleType.outdoors:
+        return 'Outdoors 3D';
+      case MapboxStyleType.satelliteStreets:
+        return 'Hybrid 3D';
+    }
   }
 
   /// Get default cycling center (San Francisco)
