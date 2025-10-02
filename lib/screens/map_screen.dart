@@ -21,7 +21,9 @@ import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
-  const MapScreen({super.key});
+  final bool autoOpen3D;
+
+  const MapScreen({super.key, this.autoOpen3D = false});
 
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
@@ -35,6 +37,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   LatLng? _originalGPSReference;
   bool _isUserMoving = false;
   bool _hasTriggeredInitialPOILoad = false; // Track if we've loaded POIs on first location
+  bool _hasAutoOpened3D = false; // Track if we've already auto-opened 3D
 
   // Smart reload logic - store loaded bounds and buffer zone
   BoundingBox? _lastLoadedBounds;
@@ -113,6 +116,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // NOTE: POI loading will be triggered automatically by the location listener in build()
           print('✅ iOS DEBUG [MapScreen]: GPS references initialized');
+
+          // Auto-open 3D map if requested (Native app startup)
+          if (widget.autoOpen3D && !_hasAutoOpened3D && !kIsWeb) {
+            _hasAutoOpened3D = true;
+            print('🚀 iOS DEBUG [MapScreen]: Auto-opening 3D map...');
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              if (mounted) {
+                _open3DMap();
+              }
+            });
+          }
         } else {
           print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - GPS not available yet');
           print('🔄 iOS DEBUG [MapScreen]: Will retry when location becomes available via build() listener');
