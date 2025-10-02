@@ -31,6 +31,17 @@ class CommunityWarning {
   });
 
   factory CommunityWarning.fromMap(Map<String, dynamic> map) {
+    // Helper function to convert Firestore Timestamp or int to DateTime
+    DateTime _parseTimestamp(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      // Handle Firestore Timestamp object
+      if (value.runtimeType.toString() == 'Timestamp') {
+        return (value as dynamic).toDate();
+      }
+      return DateTime.now();
+    }
+
     return CommunityWarning(
       id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
       type: map['type'] ?? '',
@@ -40,10 +51,8 @@ class CommunityWarning {
       latitude: map['latitude']?.toDouble() ?? 0.0,
       longitude: map['longitude']?.toDouble() ?? 0.0,
       reportedBy: map['reportedBy'],
-      reportedAt: DateTime.fromMillisecondsSinceEpoch(map['reportedAt'] ?? 0),
-      expiresAt: map['expiresAt'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(map['expiresAt'])
-          : null,
+      reportedAt: _parseTimestamp(map['reportedAt']),
+      expiresAt: map['expiresAt'] != null ? _parseTimestamp(map['expiresAt']) : null,
       isActive: map['isActive'] ?? true,
       tags: map['tags']?.cast<String>(),
       metadata: map['metadata'],

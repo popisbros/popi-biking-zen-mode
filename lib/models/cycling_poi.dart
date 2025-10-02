@@ -29,6 +29,17 @@ class CyclingPOI {
   });
 
   factory CyclingPOI.fromMap(Map<String, dynamic> map) {
+    // Helper function to convert Firestore Timestamp or int to DateTime
+    DateTime _parseTimestamp(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      // Handle Firestore Timestamp object
+      if (value.runtimeType.toString() == 'Timestamp') {
+        return (value as dynamic).toDate();
+      }
+      return DateTime.now();
+    }
+
     return CyclingPOI(
       id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
       name: map['name'] ?? '',
@@ -40,8 +51,8 @@ class CyclingPOI {
       phone: map['phone'],
       website: map['website'],
       metadata: map['metadata'],
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] ?? 0),
+      createdAt: _parseTimestamp(map['createdAt']),
+      updatedAt: _parseTimestamp(map['updatedAt']),
     );
   }
 
