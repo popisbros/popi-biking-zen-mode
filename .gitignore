@@ -45,3 +45,4 @@ app.*.map.json
 /android/app/release
 .env
 lib/config/api_keys.dart
+build_web.sh
