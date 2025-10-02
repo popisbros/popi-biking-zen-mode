@@ -244,7 +244,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Warning' : 'Report Hazard'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.urbanBlue,
         foregroundColor: AppColors.surface,
       ),
       body: SingleChildScrollView(
@@ -257,7 +257,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
               Text(
                 _isEditing ? 'Edit Warning' : 'Report Hazard',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.primary,
+                  color: AppColors.urbanBlue,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -273,13 +273,13 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: AppColors.primary, size: 20),
+                    const Icon(Icons.location_on, color: AppColors.urbanBlue, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Location: ${widget.initialLatitude.toStringAsFixed(5)}, ${widget.initialLongitude.toStringAsFixed(5)}',
                         style: const TextStyle(
-                          color: AppColors.primary,
+                          color: AppColors.urbanBlue,
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
                         ),
@@ -327,7 +327,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                 'Warning Type *',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: AppColors.urbanBlue,
                 ),
               ),
               const SizedBox(height: 8),
@@ -341,7 +341,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : AppColors.lightGrey,
+                        color: isSelected ? AppColors.urbanBlue : AppColors.lightGrey,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -352,7 +352,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                           Text(
                             type['label']!,
                             style: TextStyle(
-                              color: isSelected ? AppColors.surface : AppColors.textDark,
+                              color: isSelected ? AppColors.surface : AppColors.onSurface,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               fontSize: 14,
                             ),
@@ -371,7 +371,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                 'Severity *',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: AppColors.urbanBlue,
                 ),
               ),
               const SizedBox(height: 8),
@@ -391,7 +391,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                       child: Text(
                         severity['label']!,
                         style: TextStyle(
-                          color: isSelected ? AppColors.surface : AppColors.textDark,
+                          color: isSelected ? AppColors.surface : AppColors.onSurface,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           fontSize: 14,
                         ),
@@ -431,7 +431,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submitWarning,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.urbanBlue,
                         foregroundColor: AppColors.surface,
                       ),
                       child: _isLoading

@@ -282,7 +282,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Community POI'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.urbanBlue,
         foregroundColor: AppColors.surface,
       ),
       body: SingleChildScrollView(
@@ -295,7 +295,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
               Text(
                 _isEditing ? 'Edit POI' : 'Add New POI',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.primary,
+                  color: AppColors.urbanBlue,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -311,13 +311,13 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: AppColors.primary, size: 20),
+                    const Icon(Icons.location_on, color: AppColors.urbanBlue, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Location: ${_latitude.toStringAsFixed(5)}, ${_longitude.toStringAsFixed(5)}',
                         style: const TextStyle(
-                          color: AppColors.primary,
+                          color: AppColors.urbanBlue,
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
                         ),
@@ -431,7 +431,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _savePOI,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.urbanBlue,
                         foregroundColor: AppColors.surface,
                       ),
                       child: _isLoading
