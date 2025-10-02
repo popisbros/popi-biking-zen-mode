@@ -236,12 +236,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     print('🔄 iOS DEBUG [MapScreen]: Calling OSM POI background load...');
     osmPOIsNotifier.loadPOIsInBackground(extendedBounds);
 
+    // Load Community POIs in background
+    final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+    print('🔄 iOS DEBUG [MapScreen]: Calling community POIs background load...');
+    communityPOIsNotifier.loadPOIsWithBounds(extendedBounds);
+
     // Load Warnings in background
     final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
     print('🔄 iOS DEBUG [MapScreen]: Calling community warnings background load...');
     warningsNotifier.loadWarningsWithBounds(extendedBounds);
 
-    print('✅ iOS DEBUG [MapScreen]: Background loading calls completed');
+    print('✅ iOS DEBUG [MapScreen]: Background loading calls completed (OSM POIs, Community POIs, Warnings)');
   }
 
   /// Handle map events
@@ -539,6 +544,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  Marker _buildCommunityPOIMarker(CyclingPOI poi) {
+    return Marker(
+      point: LatLng(poi.latitude, poi.longitude),
+      width: 40,
+      height: 40,
+      child: GestureDetector(
+        onTap: () {
+          print('🗺️ iOS DEBUG [MapScreen]: Community POI tapped: ${poi.name}');
+          _showCommunityPOIDetails(poi);
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.green.shade100,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.green, width: 2),
+          ),
+          child: const Icon(
+            Icons.location_on,
+            color: Colors.green,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showPOIDetails(OSMPOI poi) {
     showDialog(
       context: context,
@@ -570,6 +601,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       builder: (context) => AlertDialog(
         title: Text(warning.type),
         content: Text(warning.description),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCommunityPOIDetails(CyclingPOI poi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(poi.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Type: ${poi.type}'),
+            if (poi.description != null && poi.description!.isNotEmpty)
+              Text('Description: ${poi.description}'),
+            if (poi.address != null && poi.address!.isNotEmpty)
+              Text('Address: ${poi.address}'),
+            if (poi.phone != null && poi.phone!.isNotEmpty)
+              Text('Phone: ${poi.phone}'),
+            if (poi.website != null && poi.website!.isNotEmpty)
+              Text('Website: ${poi.website}'),
+            Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -640,6 +702,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final locationAsync = ref.watch(locationNotifierProvider);
     final poisAsync = ref.watch(osmPOIsNotifierProvider);
+    final communityPOIsAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
     final mapState = ref.watch(mapProvider);
 
@@ -682,7 +745,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     });
 
-    // Add POI markers (only if showOSMPOIs is true)
+    // Add OSM POI markers (only if showOSMPOIs is true)
     if (mapState.showOSMPOIs) {
       poisAsync.whenData((pois) {
         print('🗺️ iOS DEBUG [MapScreen]: Adding ${pois.length} OSM POI markers to map');
@@ -690,6 +753,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       });
     } else {
       print('🗺️ iOS DEBUG [MapScreen]: OSM POIs hidden by toggle');
+    }
+
+    // Add Community POI markers (only if showPOIs is true)
+    if (mapState.showPOIs) {
+      communityPOIsAsync.whenData((communityPOIs) {
+        print('🗺️ iOS DEBUG [MapScreen]: Adding ${communityPOIs.length} Community POI markers to map');
+        markers.addAll(communityPOIs.map((poi) => _buildCommunityPOIMarker(poi)));
+      });
+    } else {
+      print('🗺️ iOS DEBUG [MapScreen]: Community POIs hidden by toggle');
     }
 
     // Add warning markers (only if showWarnings is true)
