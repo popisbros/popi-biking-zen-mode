@@ -275,7 +275,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.9),
+                  color: AppColors.surface.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(

@@ -127,7 +127,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: const CardTheme(
         color: AppColors.surface,
         elevation: 2,
         shape: RoundedRectangleBorder(
