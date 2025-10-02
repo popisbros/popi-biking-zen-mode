@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../constants/app_colors.dart';
@@ -9,6 +10,8 @@ import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../services/map_service.dart';
 import 'map_screen.dart';
+import 'community/poi_management_screen.dart';
+import 'community/hazard_report_screen.dart';
 
 /// Simplified Mapbox 3D Map Screen
 /// This version works with Mapbox Maps Flutter 2.11.0 API
@@ -226,6 +229,145 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     );
   }
 
+  /// Handle long press on map to show context menu
+  void _onMapLongPress(Point coordinates) {
+    print('🗺️ iOS DEBUG [Mapbox3D]: Map long-pressed at: ${coordinates.coordinates.lat}, ${coordinates.coordinates.lng}');
+
+    // Provide haptic feedback for mobile users
+    HapticFeedback.mediumImpact();
+
+    _showContextMenu(coordinates);
+  }
+
+  /// Show context menu for adding Community POI or reporting hazard
+  void _showContextMenu(Point coordinates) {
+    final lat = coordinates.coordinates.lat;
+    final lng = coordinates.coordinates.lng;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add to Map'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.add_location, color: Colors.green[700]),
+              title: const Text('Add Community POI'),
+              onTap: () {
+                Navigator.pop(context);
+                _showAddPOIDialog(lat, lng);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.warning, color: Colors.orange[700]),
+              title: const Text('Report Hazard'),
+              onTap: () {
+                Navigator.pop(context);
+                _showReportHazardDialog(lat, lng);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Navigate to Community POI management screen
+  void _showAddPOIDialog(double latitude, double longitude) async {
+    print('🗺️ iOS DEBUG [Mapbox3D]: Opening Add POI screen at: $latitude, $longitude');
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => POIManagementScreenWithLocation(
+          initialLatitude: latitude,
+          initialLongitude: longitude,
+        ),
+      ),
+    );
+
+    print('🗺️ iOS DEBUG [Mapbox3D]: Returned from POI screen, refreshing markers...');
+    if (mounted) {
+      _addMarkers();
+    }
+  }
+
+  /// Navigate to Hazard report screen
+  void _showReportHazardDialog(double latitude, double longitude) async {
+    print('🗺️ iOS DEBUG [Mapbox3D]: Opening Report Hazard screen at: $latitude, $longitude');
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HazardReportScreenWithLocation(
+          initialLatitude: latitude,
+          initialLongitude: longitude,
+        ),
+      ),
+    );
+
+    print('🗺️ iOS DEBUG [Mapbox3D]: Returned from Warning screen, refreshing markers...');
+    if (mounted) {
+      _addMarkers();
+    }
+  }
+
+  /// Build toggle button with count badge (matching 2D map style)
+  Widget _buildToggleButton({
+    required bool isActive,
+    required IconData icon,
+    required Color activeColor,
+    required int count,
+    required VoidCallback onPressed,
+    required String tooltip,
+    bool showFullCount = false,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          FloatingActionButton(
+            mini: true,
+            backgroundColor: isActive ? activeColor : Colors.grey.shade300,
+            foregroundColor: Colors.white,
+            onPressed: onPressed,
+            heroTag: tooltip,
+            child: Icon(icon),
+          ),
+          if (count > 0)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 20,
+                  minHeight: 20,
+                ),
+                child: Center(
+                  child: Text(
+                    showFullCount ? count.toString() : (count > 99 ? '99+' : count.toString()),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch location updates to keep camera centered
@@ -279,6 +421,76 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
           // Simple controls (only show when map is ready)
           if (_isMapReady) ...[
+            // Toggle buttons and zoom controls on the right side
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 16,
+              child: Column(
+                children: [
+                  // OSM POI toggle
+                  _buildToggleButton(
+                    isActive: mapState.showOSMPOIs,
+                    icon: Icons.public,
+                    activeColor: Colors.blue,
+                    count: ref.watch(osmPOIsNotifierProvider).value?.length ?? 0,
+                    showFullCount: true,
+                    onPressed: () => ref.read(mapProvider.notifier).toggleOSMPOIs(),
+                    tooltip: 'Toggle OSM POIs',
+                  ),
+                  const SizedBox(height: 12),
+                  // Community POI toggle
+                  _buildToggleButton(
+                    isActive: mapState.showPOIs,
+                    icon: Icons.location_on,
+                    activeColor: Colors.green,
+                    count: ref.watch(cyclingPOIsBoundsNotifierProvider).value?.length ?? 0,
+                    onPressed: () => ref.read(mapProvider.notifier).togglePOIs(),
+                    tooltip: 'Toggle Community POIs',
+                  ),
+                  const SizedBox(height: 12),
+                  // Warning toggle
+                  _buildToggleButton(
+                    isActive: mapState.showWarnings,
+                    icon: Icons.warning,
+                    activeColor: Colors.orange,
+                    count: ref.watch(communityWarningsBoundsNotifierProvider).value?.length ?? 0,
+                    onPressed: () => ref.read(mapProvider.notifier).toggleWarnings(),
+                    tooltip: 'Toggle Warnings',
+                  ),
+                  const SizedBox(height: 24),
+                  // Zoom in
+                  FloatingActionButton(
+                    mini: true,
+                    heroTag: 'zoom_in_3d',
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.blue,
+                    onPressed: () async {
+                      final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
+                      if (currentZoom != null) {
+                        _mapboxMap?.setCamera(CameraOptions(zoom: currentZoom + 1));
+                      }
+                    },
+                    child: const Icon(Icons.add),
+                  ),
+                  const SizedBox(height: 8),
+                  // Zoom out
+                  FloatingActionButton(
+                    mini: true,
+                    heroTag: 'zoom_out_3d',
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.blue,
+                    onPressed: () async {
+                      final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
+                      if (currentZoom != null) {
+                        _mapboxMap?.setCamera(CameraOptions(zoom: currentZoom - 1));
+                      }
+                    },
+                    child: const Icon(Icons.remove),
+                  ),
+                ],
+              ),
+            ),
+
             // Floating action buttons in bottom-right (matching 2D layout)
             Positioned(
               bottom: 16,
@@ -348,6 +560,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Initialize point annotation manager for markers
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _addMarkers();
+
+    // Add long-press gesture listener
+    try {
+      await mapboxMap.gestures.addOnMapLongClickListener(OnMapLongClickListener(
+        onMapLongClick: (Point point) {
+          _onMapLongPress(point);
+        },
+      ));
+      print('✅ Long-press gesture listener added');
+    } catch (e) {
+      print('❌ Failed to add long-press listener: $e');
+    }
 
     print('✅ Mapbox map ready!');
   }
