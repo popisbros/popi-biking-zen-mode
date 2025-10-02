@@ -475,6 +475,60 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  /// Build toggle button with count badge
+  Widget _buildToggleButton({
+    required bool isActive,
+    required IconData icon,
+    required Color activeColor,
+    required int count,
+    required VoidCallback onPressed,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          FloatingActionButton(
+            mini: true,
+            backgroundColor: isActive ? activeColor : Colors.grey.shade300,
+            foregroundColor: Colors.white,
+            onPressed: onPressed,
+            heroTag: tooltip,
+            child: Icon(icon),
+          ),
+          if (count > 0)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 20,
+                  minHeight: 20,
+                ),
+                child: Center(
+                  child: Text(
+                    count > 99 ? '99+' : count.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     print('🗺️ iOS DEBUG [MapScreen]: Building widget...');
@@ -516,17 +570,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     });
 
-    // Add POI markers
-    poisAsync.whenData((pois) {
-      print('🗺️ iOS DEBUG [MapScreen]: Adding ${pois.length} POI markers to map');
-      markers.addAll(pois.map((poi) => _buildPOIMarker(poi)));
-    });
+    // Add POI markers (only if showOSMPOIs is true)
+    if (mapState.showOSMPOIs) {
+      poisAsync.whenData((pois) {
+        print('🗺️ iOS DEBUG [MapScreen]: Adding ${pois.length} OSM POI markers to map');
+        markers.addAll(pois.map((poi) => _buildPOIMarker(poi)));
+      });
+    } else {
+      print('🗺️ iOS DEBUG [MapScreen]: OSM POIs hidden by toggle');
+    }
 
-    // Add warning markers
-    warningsAsync.whenData((warnings) {
-      print('🗺️ iOS DEBUG [MapScreen]: Adding ${warnings.length} warning markers to map');
-      markers.addAll(warnings.map((warning) => _buildWarningMarker(warning)));
-    });
+    // Add warning markers (only if showWarnings is true)
+    if (mapState.showWarnings) {
+      warningsAsync.whenData((warnings) {
+        print('🗺️ iOS DEBUG [MapScreen]: Adding ${warnings.length} warning markers to map');
+        markers.addAll(warnings.map((warning) => _buildWarningMarker(warning)));
+      });
+    } else {
+      print('🗺️ iOS DEBUG [MapScreen]: Warnings hidden by toggle');
+    }
 
     print('🗺️ iOS DEBUG [MapScreen]: Total markers on map: ${markers.length}');
 
@@ -548,84 +610,139 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ],
       ),
-      body: locationAsync.when(
-        data: (location) {
-          if (location == null) {
-            print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - showing loading indicator');
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Stack(
+        children: [
+          // Main map content
+          locationAsync.when(
+            data: (location) {
+              if (location == null) {
+                print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - showing loading indicator');
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Waiting for GPS location...'),
+                    ],
+                  ),
+                );
+              }
+
+              print('🗺️ iOS DEBUG [MapScreen]: Building map with location ${location.latitude}, ${location.longitude}');
+
+              return FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: LatLng(location.latitude, location.longitude),
+                  initialZoom: 15,
+                  onMapEvent: _onMapEvent,
+                ),
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Waiting for GPS location...'),
+                  TileLayer(
+                    urlTemplate: mapState.tileUrl,
+                    userAgentPackageName: 'com.popibiking.popiBikingFresh',
+                    subdomains: const ['a', 'b', 'c'],
+                  ),
+                  if (markers.isNotEmpty)
+                    MarkerLayer(
+                      markers: markers,
+                    ),
                 ],
-              ),
-            );
-          }
-
-          print('🗺️ iOS DEBUG [MapScreen]: Building map with location ${location.latitude}, ${location.longitude}');
-
-          return FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: LatLng(location.latitude, location.longitude),
-              initialZoom: 15,
-              onMapEvent: _onMapEvent,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: mapState.tileUrl,
-                userAgentPackageName: 'com.popibiking.popiBikingFresh',
-                subdomains: const ['a', 'b', 'c'],
-              ),
-              if (markers.isNotEmpty)
-                MarkerLayer(
-                  markers: markers,
+              );
+            },
+            loading: () {
+              print('⏳ iOS DEBUG [MapScreen]: Location LOADING - showing spinner');
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Getting your location...'),
+                    SizedBox(height: 8),
+                    Text('(Make sure to allow location permission)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
                 ),
-            ],
-          );
-        },
-        loading: () {
-          print('⏳ iOS DEBUG [MapScreen]: Location LOADING - showing spinner');
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Getting your location...'),
-                SizedBox(height: 8),
-                Text('(Make sure to allow location permission)', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          );
-        },
-        error: (error, stack) {
-          print('❌ iOS DEBUG [MapScreen]: Location ERROR - $error');
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(
-                  'Error: $error',
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
+              );
+            },
+            error: (error, stack) {
+              print('❌ iOS DEBUG [MapScreen]: Location ERROR - $error');
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error: $error',
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        print('🔄 iOS DEBUG [MapScreen]: User requested permission retry');
+                        ref.read(locationNotifierProvider.notifier).requestPermission();
+                      },
+                      child: const Text('Request Permission'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton(
+              );
+            },
+          ),
+
+          // Toggle buttons on the right side
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 16,
+            child: Column(
+              children: [
+                // OSM POI toggle with count
+                _buildToggleButton(
+                  isActive: mapState.showOSMPOIs,
+                  icon: Icons.public,
+                  activeColor: Colors.blue,
+                  count: poisAsync.value?.length ?? 0,
                   onPressed: () {
-                    print('🔄 iOS DEBUG [MapScreen]: User requested permission retry');
-                    ref.read(locationNotifierProvider.notifier).requestPermission();
+                    print('🗺️ iOS DEBUG [MapScreen]: OSM POI toggle pressed');
+                    ref.read(mapProvider.notifier).toggleOSMPOIs();
                   },
-                  child: const Text('Request Permission'),
+                  tooltip: 'Toggle OSM POIs',
+                ),
+                const SizedBox(height: 12),
+
+                // Community POI toggle with count (placeholder for now)
+                _buildToggleButton(
+                  isActive: mapState.showPOIs,
+                  icon: Icons.location_on,
+                  activeColor: Colors.green,
+                  count: 0, // Will be populated when community POIs are added
+                  onPressed: () {
+                    print('🗺️ iOS DEBUG [MapScreen]: Community POI toggle pressed');
+                    ref.read(mapProvider.notifier).togglePOIs();
+                  },
+                  tooltip: 'Toggle Community POIs',
+                ),
+                const SizedBox(height: 12),
+
+                // Warning toggle with count
+                _buildToggleButton(
+                  isActive: mapState.showWarnings,
+                  icon: Icons.warning,
+                  activeColor: Colors.orange,
+                  count: warningsAsync.value?.length ?? 0,
+                  onPressed: () {
+                    print('🗺️ iOS DEBUG [MapScreen]: Warning toggle pressed');
+                    ref.read(mapProvider.notifier).toggleWarnings();
+                  },
+                  tooltip: 'Toggle Warnings',
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ],
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
