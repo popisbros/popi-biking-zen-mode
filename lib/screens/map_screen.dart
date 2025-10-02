@@ -331,7 +331,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           children: [
             const Text(
               'Choose Map Layer',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...MapLayerType.values.map((layer) {
@@ -342,7 +342,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 title: Text(
                   mapService.getLayerName(layer),
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 12),
                 ),
                 trailing: currentLayer == layer ? const Icon(Icons.check, color: Colors.green) : null,
                 onTap: () {
