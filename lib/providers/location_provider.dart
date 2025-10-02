@@ -68,8 +68,12 @@ class LocationNotifier extends StateNotifier<AsyncValue<LocationData?>> {
         print('   Accuracy=${initialLocation.accuracy}m');
         state = AsyncValue.data(initialLocation);
 
+        // Start continuous location tracking
+        print('🔍 iOS DEBUG [LocationNotifier]: Starting continuous location tracking...');
+        await _locationService.startLocationTracking();
+
         // Start listening to location updates
-        print('🔍 iOS DEBUG [LocationNotifier]: Starting continuous location stream...');
+        print('🔍 iOS DEBUG [LocationNotifier]: Setting up location stream listener...');
         _locationSubscription = _locationService.locationStream.listen(
           (location) {
             print('📍 iOS DEBUG [LocationNotifier]: Location update received from stream:');

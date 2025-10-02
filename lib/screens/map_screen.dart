@@ -10,6 +10,7 @@ import '../providers/location_provider.dart';
 import '../providers/osm_poi_provider.dart';
 import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
+import '../providers/compass_provider.dart';
 import '../services/map_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
@@ -706,6 +707,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final communityPOIsAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
     final mapState = ref.watch(mapProvider);
+    final compassHeading = kIsWeb ? null : ref.watch(compassNotifierProvider);
 
     // Listen for location changes to trigger POI loading
     ref.listen<AsyncValue<LocationData?>>(locationNotifierProvider, (previous, next) {
@@ -717,28 +719,67 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       });
     });
 
+    // Listen for compass changes to rotate map (Native only)
+    if (!kIsWeb) {
+      ref.listen<double?>(compassNotifierProvider, (previous, next) {
+        if (next != null && _isMapReady && !_isUserMoving) {
+          // Rotate map to match compass heading
+          // flutter_map rotation is counter-clockwise, compass is clockwise
+          // So we need to negate the heading
+          final rotation = -next;
+          print('🧭 iOS DEBUG [MapScreen]: Rotating map to ${rotation.toStringAsFixed(1)}° (heading=$next°)');
+          _mapController.rotate(rotation);
+        }
+      });
+    }
+
     // Build marker list
     List<Marker> markers = [];
 
-    // Add user location marker
+    // Add user location marker with direction indicator
     locationAsync.whenData((location) {
       if (location != null) {
         print('🗺️ iOS DEBUG [MapScreen]: Adding user location marker at ${location.latitude}, ${location.longitude}');
+
+        // Use compass heading on Native, or GPS heading as fallback
+        final heading = !kIsWeb && compassHeading != null ? compassHeading : location.heading;
+        final hasHeading = heading != null && heading >= 0;
+
+        print('🗺️ iOS DEBUG [MapScreen]: Marker heading = ${heading?.toStringAsFixed(1)}° (has heading: $hasHeading)');
+
         markers.add(
           Marker(
             point: LatLng(location.latitude, location.longitude),
             width: 50,
             height: 50,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.3),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.blue, width: 3),
-              ),
-              child: const Icon(
-                Icons.my_location,
-                color: Colors.blue,
-                size: 30,
+            alignment: Alignment.center,
+            child: Transform.rotate(
+              angle: hasHeading ? (heading * math.pi / 180) : 0, // Convert to radians
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Outer circle (accuracy indicator)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.blue, width: 2),
+                    ),
+                  ),
+                  // Direction arrow (only if we have heading)
+                  if (hasHeading)
+                    const Icon(
+                      Icons.navigation,
+                      color: Colors.blue,
+                      size: 30,
+                    )
+                  else
+                    const Icon(
+                      Icons.my_location,
+                      color: Colors.blue,
+                      size: 30,
+                    ),
+                ],
               ),
             ),
           ),
