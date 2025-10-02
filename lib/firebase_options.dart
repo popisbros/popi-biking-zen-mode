@@ -62,8 +62,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD1atb61TBjZV-IVdTagh7J2nGKMUn4QM4',
-    appId: '1:762853433576:web:5cb93bb60f2915e2e4a95d',
+    apiKey: 'AIzaSyDHD5kxe_c8xUzFmOXkF7rGMs0hyfV96yU',
+    appId: '1:762853433576:ios:fc503b0f4584a736e4a95d',
     messagingSenderId: '762853433576',
     projectId: 'popi-biking-zen-mode',
     storageBucket: 'popi-biking-zen-mode.firebasestorage.app',
