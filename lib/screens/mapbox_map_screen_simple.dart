@@ -30,9 +30,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   void initState() {
     super.initState();
     print('🗺️ iOS DEBUG [Mapbox3D]: initState called');
-    // Move provider reading to initState to avoid modifying provider during build
+
+    // Ensure location provider is initialized and permissions are requested
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🗺️ iOS DEBUG [Mapbox3D]: PostFrameCallback - getting initial camera');
+      print('🗺️ iOS DEBUG [Mapbox3D]: PostFrameCallback - initializing location');
+      // This will trigger location provider initialization and permission request
+      ref.read(locationNotifierProvider);
+
+      print('🗺️ iOS DEBUG [Mapbox3D]: Getting initial camera position');
       final locationAsync = ref.read(locationNotifierProvider);
 
       locationAsync.when(
