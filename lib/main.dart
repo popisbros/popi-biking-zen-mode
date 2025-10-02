@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'constants/app_theme.dart';
 import 'screens/map_screen.dart';
+import 'screens/mapbox_map_screen_simple.dart';
 
 void main() async {
   // Catch all errors
@@ -52,16 +53,21 @@ void main() async {
   print('✅ iOS DEBUG [MAIN]: App started successfully');
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     print('🎨 iOS DEBUG [MyApp]: Building MaterialApp...');
+
+    // On Native (iOS/Android), start with 3D map. On Web, start with 2D map.
+    final homeScreen = kIsWeb ? const MapScreen() : const MapboxMapScreenSimple();
+    print('🎨 iOS DEBUG [MyApp]: Starting with ${kIsWeb ? "2D" : "3D"} map (${kIsWeb ? "WEB" : "NATIVE"})');
+
     return MaterialApp(
       title: 'Popi Biking',
       theme: AppTheme.lightTheme,
-      home: const MapScreen(),
+      home: homeScreen,
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         print('🎨 iOS DEBUG [MyApp]: MaterialApp builder called');
