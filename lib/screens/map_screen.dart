@@ -1016,9 +1016,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             backgroundColor: Colors.blue,
             child: const Icon(Icons.layers),
           ),
+          const SizedBox(height: 16), // Consistent spacing
           // 3D Map button - only show on Native (not on web/PWA)
           if (!kIsWeb) ...[
-            const SizedBox(height: 16),
             FloatingActionButton(
               heroTag: '3d_map',
               onPressed: _open3DMap,
@@ -1026,7 +1026,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               tooltip: 'Switch to 3D Map',
               child: const Icon(Icons.terrain),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 16), // Consistent spacing
           ],
           FloatingActionButton(
             heroTag: 'my_location',
