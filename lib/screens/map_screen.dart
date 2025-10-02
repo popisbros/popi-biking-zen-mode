@@ -190,7 +190,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// Load all map data (OSM POIs, Warnings) using extended bounds
-  void _loadAllMapDataWithBounds() {
+  void _loadAllMapDataWithBounds({bool forceReload = false}) {
     if (!_isMapReady) {
       print('⚠️ iOS DEBUG [MapScreen]: Map not ready, skipping data load');
       return;
@@ -202,8 +202,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       final camera = _mapController.camera;
       final latLngBounds = camera.visibleBounds;
 
-      // Check if we should reload
-      if (!_shouldReloadData(latLngBounds)) {
+      // Check if we should reload (skip check if forceReload is true)
+      if (!forceReload && !_shouldReloadData(latLngBounds)) {
         print('⏭️ iOS DEBUG [MapScreen]: Within loaded bounds, skipping reload');
         return;
       }
@@ -397,7 +397,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // After returning from POI screen, force reload of map data
     print('🗺️ iOS DEBUG [MapScreen]: Returned from POI screen, reloading map data...');
     if (mounted && _isMapReady) {
-      _loadAllMapDataWithBounds();
+      _loadAllMapDataWithBounds(forceReload: true);
     }
   }
 
@@ -418,7 +418,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // After returning from Warning screen, force reload of map data
     print('🗺️ iOS DEBUG [MapScreen]: Returned from Warning screen, reloading map data...');
     if (mounted && _isMapReady) {
-      _loadAllMapDataWithBounds();
+      _loadAllMapDataWithBounds(forceReload: true);
     }
   }
 
