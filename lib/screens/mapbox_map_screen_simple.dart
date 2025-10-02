@@ -6,6 +6,7 @@ import '../providers/location_provider.dart';
 import '../providers/osm_poi_provider.dart';
 import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
+import '../providers/compass_provider.dart';
 import '../services/map_service.dart';
 
 /// Simplified Mapbox 3D Map Screen
@@ -220,6 +221,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Watch location updates to keep camera centered
     final locationAsync = ref.watch(locationNotifierProvider);
     final mapState = ref.watch(mapProvider);
+    final compassHeading = ref.watch(compassNotifierProvider);
+
+    // Listen for compass changes to rotate the map
+    ref.listen<double?>(compassNotifierProvider, (previous, next) {
+      if (next != null && _mapboxMap != null && _isMapReady) {
+        // Rotate map based on compass heading
+        _mapboxMap!.setCamera(CameraOptions(bearing: -next));
+        print('🧭 iOS DEBUG [Mapbox3D]: Map rotated to bearing: ${-next}°');
+      }
+    });
 
     // Use cached initial camera or default
     final initialCamera = _initialCamera ?? _getDefaultCamera();
@@ -274,12 +285,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     child: const Icon(Icons.layers),
                   ),
                   const SizedBox(height: 16),
-                  // Back to 2D button (matching 3D button position from 2D map)
+                  // Back to 2D button (matching 3D button style from 2D map)
                   FloatingActionButton(
                     mini: false,
                     heroTag: 'back_to_2d_button',
                     onPressed: () => Navigator.pop(context),
-                    backgroundColor: AppColors.urbanBlue,
+                    backgroundColor: Colors.green,
                     tooltip: 'Back to 2D Map',
                     child: const Icon(Icons.map),
                   ),
@@ -311,14 +322,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _isMapReady = true;
     });
 
-    // Enable location component to show user position with arrow
+    // Enable location component to show user position with bearing arrow
     try {
       await mapboxMap.location.updateSettings(LocationComponentSettings(
         enabled: true,
-        pulsingEnabled: true,
-        showAccuracyRing: true,
+        pulsingEnabled: false, // Disable pulsing for cleaner arrow display
+        showAccuracyRing: false,
+        puckBearingEnabled: true, // Enable bearing/heading indicator
       ));
-      print('✅ Location component enabled with pulsing and accuracy ring');
+      print('✅ Location component enabled with bearing arrow');
     } catch (e) {
       print('❌ Failed to enable location component: $e');
     }
