@@ -137,9 +137,13 @@ class FirebaseService {
           .map((doc) {
             try {
               final data = doc.data();
-              return CyclingPOI.fromMap({...data, 'id': doc.id});
-            } catch (e) {
-              print('Error parsing POI document ${doc.id}: $e');
+              final poi = CyclingPOI.fromMap({...data, 'id': doc.id});
+              print('  ✓ Parsed POI ${doc.id}: ${poi.name} at (${poi.latitude}, ${poi.longitude})');
+              return poi;
+            } catch (e, stackTrace) {
+              print('❌ Error parsing POI document ${doc.id}: $e');
+              print('   Data: ${doc.data()}');
+              print('   Stack trace: ${stackTrace.toString().split('\n').take(3).join('\n')}');
               return null;
             }
           })
@@ -147,7 +151,7 @@ class FirebaseService {
           .cast<CyclingPOI>()
           .toList();
 
-      print('FirebaseService: Loaded ${pois.length} POIs');
+      print('FirebaseService: Loaded ${pois.length} POIs (from ${snapshot.docs.length} documents)');
       return pois;
     } catch (e) {
       print('Error getting POIs: $e');
