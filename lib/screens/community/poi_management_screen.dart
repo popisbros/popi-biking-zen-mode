@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../constants/app_theme.dart';
+import '../../constants/app_colors.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../models/cycling_poi.dart';
