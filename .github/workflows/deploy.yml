@@ -1,0 +1,48 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Flutter Web with API keys
+        env:
+          THUNDERFOREST_API_KEY: ${{ secrets.THUNDERFOREST_API_KEY }}
+          MAPTILER_API_KEY: ${{ secrets.MAPTILER_API_KEY }}
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+          LOCATIONIQ_API_KEY: ${{ secrets.LOCATIONIQ_API_KEY }}
+        run: |
+          flutter build web --release \
+            --base-href="/popi-biking-zen-mode/" \
+            --dart-define=THUNDERFOREST_API_KEY="${THUNDERFOREST_API_KEY}" \
+            --dart-define=MAPTILER_API_KEY="${MAPTILER_API_KEY}" \
+            --dart-define=MAPBOX_ACCESS_TOKEN="${MAPBOX_ACCESS_TOKEN}" \
+            --dart-define=LOCATIONIQ_API_KEY="${LOCATIONIQ_API_KEY}"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          publish_branch: gh-pages
+          force_orphan: true
