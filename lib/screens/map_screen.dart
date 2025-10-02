@@ -331,7 +331,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           children: [
             const Text(
               'Choose Map Layer',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...MapLayerType.values.map((layer) {
