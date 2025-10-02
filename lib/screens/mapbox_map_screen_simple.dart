@@ -258,104 +258,42 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
           // Simple controls (only show when map is ready)
           if (_isMapReady) ...[
-            // Back to 2D button
-            Positioned(
-              bottom: 16,
-              left: 16,
-              child: FloatingActionButton.extended(
-                heroTag: 'back_to_2d_button',
-                onPressed: () => Navigator.pop(context),
-                backgroundColor: AppColors.urbanBlue,
-                foregroundColor: Colors.white,
-                icon: const Icon(Icons.map, color: Colors.white),
-                label: const Text('Back to 2D', style: TextStyle(color: Colors.white)),
-              ),
-            ),
-
-            // Style picker button
-            Positioned(
-              bottom: 96,
-              right: 16,
-              child: FloatingActionButton(
-                heroTag: 'style_picker_button',
-                onPressed: _showStylePicker,
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                child: const Icon(Icons.layers, color: Colors.white),
-              ),
-            ),
-
-            // GPS center button
+            // Floating action buttons in bottom-right (matching 2D layout)
             Positioned(
               bottom: 16,
               right: 16,
-              child: FloatingActionButton(
-                heroTag: 'gps_center_button_3d',
-                onPressed: _centerOnUserLocation,
-                backgroundColor: AppColors.urbanBlue,
-                foregroundColor: Colors.white,
-                child: const Icon(Icons.my_location, color: Colors.white),
-              ),
-            ),
-
-            // Debug message badge
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.mossGreen, width: 2),
-                ),
-                child: Text(
-                  _debugMessage,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Style picker button
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'style_picker_button',
+                    onPressed: _showStylePicker,
+                    backgroundColor: Colors.blue,
+                    child: const Icon(Icons.layers),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-
-            // Info message
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 60,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '🗺️ Mapbox 3D Map',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pinch to zoom • Drag to pan • Two fingers to rotate',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Green markers: POIs • Red markers: Warnings',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.mossGreen,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 16),
+                  // Back to 2D button (matching 3D button position from 2D map)
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'back_to_2d_button',
+                    onPressed: () => Navigator.pop(context),
+                    backgroundColor: AppColors.urbanBlue,
+                    tooltip: 'Back to 2D Map',
+                    child: const Icon(Icons.map),
+                  ),
+                  const SizedBox(height: 16),
+                  // GPS center button (matching 2D map style)
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'gps_center_button_3d',
+                    onPressed: _centerOnUserLocation,
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    child: const Icon(Icons.my_location),
+                  ),
+                ],
               ),
             ),
           ],

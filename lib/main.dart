@@ -125,27 +125,38 @@ class _NativeStartupScreenState extends State<NativeStartupScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-navigate to 3D map after a short delay
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🚀 iOS DEBUG [NativeStartup]: Auto-navigating to 3D map...');
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MapScreen()),
-          ).then((_) {
-            // After 2D map is loaded, navigate to 3D
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MapboxMapScreenSimple()),
-                );
-              }
-            });
-          });
-        }
-      });
+    // Auto-navigate to 2D map first, then to 3D map
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      print('🚀 iOS DEBUG [NativeStartup]: Starting navigation sequence...');
+
+      // Wait a bit for the app to fully initialize
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!mounted) return;
+
+      print('🚀 iOS DEBUG [NativeStartup]: Navigating to 2D map...');
+      // Navigate to 2D map (replace startup screen)
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MapScreen()),
+      );
+
+      if (!mounted) return;
+
+      print('🚀 iOS DEBUG [NativeStartup]: Waiting for 2D map to load...');
+      // Wait for 2D map to fully initialize
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      if (!mounted) return;
+
+      print('🚀 iOS DEBUG [NativeStartup]: Navigating to 3D map...');
+      // Now push 3D map on top of 2D
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MapboxMapScreenSimple()),
+      );
+
+      print('🚀 iOS DEBUG [NativeStartup]: Navigation sequence complete');
     });
   }
 
