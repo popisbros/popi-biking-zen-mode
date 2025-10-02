@@ -15,6 +15,8 @@ import '../models/community_warning.dart';
 import '../models/location_data.dart';
 import '../utils/poi_icons.dart';
 import 'mapbox_map_screen_simple.dart';
+import 'community/poi_management_screen.dart';
+import 'community/hazard_report_screen.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -46,6 +48,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       print('🗺️ iOS DEBUG [MapScreen]: PostFrameCallback executing...');
       _onMapReady();
+
+      // CRITICAL FIX: Manually trigger location handler for initial load
+      // The ref.listen() in build() only fires on CHANGES, not initial value
+      final locationAsync = ref.read(locationNotifierProvider);
+      locationAsync.whenData((location) {
+        if (location != null && !_hasTriggeredInitialPOILoad) {
+          print('🗺️ iOS DEBUG [MapScreen]: MANUAL TRIGGER for initial location');
+          // Give the map a moment to fully initialize before loading POIs
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) {
+              print('🗺️ iOS DEBUG [MapScreen]: Triggering initial POI load via manual handler');
+              _handleGPSLocationChange(location);
+            }
+          });
+        }
+      });
     });
   }
 
@@ -87,17 +105,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           _mapController.move(newPosition, 15.0);
           print('✅ iOS DEBUG [MapScreen]: Map moved to Lat=${newPosition.latitude}, Lng=${newPosition.longitude}, Zoom=15.0');
 
-          // Add a small delay to ensure map is fully positioned before loading POIs
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              print('🗺️ iOS DEBUG [MapScreen]: Triggering POI load at user location (after delay)...');
-              _loadAllMapDataWithBounds();
-            }
-          });
-
           // Initialize GPS position tracking
           _lastGPSPosition = newPosition;
           _originalGPSReference = newPosition;
+
+          // NOTE: POI loading will be triggered automatically by the location listener in build()
           print('✅ iOS DEBUG [MapScreen]: GPS references initialized');
         } else {
           print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - GPS not available yet');
@@ -361,35 +373,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
-  /// Show dialog to add Community POI
+  /// Navigate to Community POI management screen
   void _showAddPOIDialog(LatLng point) {
-    print('🗺️ iOS DEBUG [MapScreen]: Opening Add POI dialog at: ${point.latitude}, ${point.longitude}');
+    print('🗺️ iOS DEBUG [MapScreen]: Opening Add POI screen at: ${point.latitude}, ${point.longitude}');
 
-    // TODO: Navigate to POI management screen with location pre-filled
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Add Community POI at: ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}'),
-        duration: const Duration(seconds: 2),
-        action: SnackBarAction(
-          label: 'Coming Soon',
-          onPressed: () {},
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => POIManagementScreenWithLocation(
+          initialLatitude: point.latitude,
+          initialLongitude: point.longitude,
         ),
       ),
     );
   }
 
-  /// Show dialog to report hazard
+  /// Navigate to Hazard report screen
   void _showReportHazardDialog(LatLng point) {
-    print('🗺️ iOS DEBUG [MapScreen]: Opening Report Hazard dialog at: ${point.latitude}, ${point.longitude}');
+    print('🗺️ iOS DEBUG [MapScreen]: Opening Report Hazard screen at: ${point.latitude}, ${point.longitude}');
 
-    // TODO: Navigate to hazard report screen with location pre-filled
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Report Hazard at: ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}'),
-        duration: const Duration(seconds: 2),
-        action: SnackBarAction(
-          label: 'Coming Soon',
-          onPressed: () {},
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HazardReportScreenWithLocation(
+          initialLatitude: point.latitude,
+          initialLongitude: point.longitude,
         ),
       ),
     );
@@ -635,8 +643,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
     final mapState = ref.watch(mapProvider);
 
-    // Listen to location changes for auto-centering
-    locationAsync.whenData((location) => _handleGPSLocationChange(location));
+    // Listen for location changes to trigger POI loading
+    ref.listen<AsyncValue<LocationData?>>(locationNotifierProvider, (previous, next) {
+      next.whenData((location) {
+        if (location != null) {
+          print('🗺️ iOS DEBUG [MapScreen]: Location changed via listener!');
+          _handleGPSLocationChange(location);
+        }
+      });
+    });
 
     // Build marker list
     List<Marker> markers = [];
