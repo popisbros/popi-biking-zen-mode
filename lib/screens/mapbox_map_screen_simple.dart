@@ -289,8 +289,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     mini: false,
                     heroTag: 'gps_center_button_3d',
                     onPressed: _centerOnUserLocation,
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
+                    backgroundColor: AppColors.signalYellow,
+                    foregroundColor: AppColors.urbanBlue,
                     child: const Icon(Icons.my_location),
                   ),
                 ],
@@ -310,6 +310,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     setState(() {
       _isMapReady = true;
     });
+
+    // Enable location component to show user position with arrow
+    try {
+      await mapboxMap.location.updateSettings(LocationComponentSettings(
+        enabled: true,
+        pulsingEnabled: true,
+        showAccuracyRing: true,
+      ));
+      print('✅ Location component enabled with pulsing and accuracy ring');
+    } catch (e) {
+      print('❌ Failed to enable location component: $e');
+    }
 
     // Initialize point annotation manager for markers
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();

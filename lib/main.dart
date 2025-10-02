@@ -113,7 +113,7 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-/// Startup screen for Native apps - shows 2D map first, then auto-navigates to 3D
+/// Startup screen for Native apps - navigates to 2D map which then auto-opens 3D
 class NativeStartupScreen extends StatefulWidget {
   const NativeStartupScreen({super.key});
 
@@ -125,38 +125,15 @@ class _NativeStartupScreenState extends State<NativeStartupScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-navigate to 2D map first, then to 3D map
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      print('🚀 iOS DEBUG [NativeStartup]: Starting navigation sequence...');
-
-      // Wait a bit for the app to fully initialize
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      if (!mounted) return;
-
+    // Navigate to 2D map immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       print('🚀 iOS DEBUG [NativeStartup]: Navigating to 2D map...');
-      // Navigate to 2D map (replace startup screen)
-      await Navigator.pushReplacement(
+      Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MapScreen()),
+        MaterialPageRoute(
+          builder: (context) => const MapScreen(autoOpen3D: true),
+        ),
       );
-
-      if (!mounted) return;
-
-      print('🚀 iOS DEBUG [NativeStartup]: Waiting for 2D map to load...');
-      // Wait for 2D map to fully initialize
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      if (!mounted) return;
-
-      print('🚀 iOS DEBUG [NativeStartup]: Navigating to 3D map...');
-      // Now push 3D map on top of 2D
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const MapboxMapScreenSimple()),
-      );
-
-      print('🚀 iOS DEBUG [NativeStartup]: Navigation sequence complete');
     });
   }
 
