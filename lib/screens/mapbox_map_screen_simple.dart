@@ -53,6 +53,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               _initialCamera = camera;
             });
             print('✅ iOS DEBUG [Mapbox3D]: Initial camera set to ${location?.latitude}, ${location?.longitude}');
+
+            // Auto-center on GPS after map is ready (wait 1s for map initialization)
+            if (location != null) {
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                if (mounted && _mapboxMap != null) {
+                  print('🎯 iOS DEBUG [Mapbox3D]: Auto-centering on GPS location');
+                  _centerOnUserLocation();
+                }
+              });
+            }
           }
         },
         loading: () {

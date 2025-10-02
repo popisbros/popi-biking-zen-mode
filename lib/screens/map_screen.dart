@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -977,14 +978,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             backgroundColor: Colors.blue,
             child: const Icon(Icons.layers),
           ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: '3d_map',
-            onPressed: _open3DMap,
-            backgroundColor: Colors.green,
-            child: const Icon(Icons.terrain),
-          ),
-          const SizedBox(height: 16),
+          // 3D Map button - only show on Native (not on web/PWA)
+          if (!kIsWeb) ...[
+            const SizedBox(height: 16),
+            FloatingActionButton(
+              heroTag: '3d_map',
+              onPressed: _open3DMap,
+              backgroundColor: Colors.green,
+              tooltip: 'Switch to 3D Map',
+              child: const Icon(Icons.terrain),
+            ),
+            const SizedBox(height: 16),
+          ],
           FloatingActionButton(
             heroTag: 'my_location',
             onPressed: () {
