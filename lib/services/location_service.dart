@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../models/location_data.dart';
 
 /// Service for handling GPS location tracking and permissions
@@ -37,20 +36,21 @@ class LocationService {
 
   /// Request location permission
   Future<LocationPermission> requestPermission() async {
-    print('📍 iOS DEBUG [LocationService]: Requesting location permission...');
+    print('📍 iOS DEBUG [LocationService]: ========== Requesting location permission ==========');
+    print('📍 iOS DEBUG [LocationService]: Using ONLY Geolocator (removed permission_handler)');
 
-    // Request permission using permission_handler
-    final status = await Permission.location.request();
-    print('📍 iOS DEBUG [LocationService]: Permission handler status = $status');
+    // Use ONLY geolocator to request permission - this will show iOS dialog
+    final permission = await Geolocator.requestPermission();
+    print('📍 iOS DEBUG [LocationService]: Geolocator.requestPermission() result = $permission');
 
-    if (status.isGranted) {
-      final geoPermission = await Geolocator.checkPermission();
-      print('📍 iOS DEBUG [LocationService]: Geolocator permission after grant = $geoPermission');
-      return geoPermission;
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      print('✅ iOS DEBUG [LocationService]: Permission GRANTED ($permission)');
     } else {
-      print('❌ iOS DEBUG [LocationService]: Permission NOT granted by user');
-      return LocationPermission.denied;
+      print('❌ iOS DEBUG [LocationService]: Permission DENIED ($permission)');
     }
+
+    print('📍 iOS DEBUG [LocationService]: ========== End permission request ==========');
+    return permission;
   }
 
   /// Get current position once

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -296,6 +297,102 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       _lastGPSPosition = newGPSPosition;
     }
+  }
+
+  /// Handle long press on map to show context menu
+  void _onMapLongPress(TapPosition tapPosition, LatLng point) {
+    if (!_isMapReady) return;
+
+    print('🗺️ iOS DEBUG [MapScreen]: Map long-pressed at: ${point.latitude}, ${point.longitude}');
+
+    // Provide haptic feedback for mobile users
+    HapticFeedback.mediumImpact();
+
+    _showContextMenu(tapPosition, point);
+  }
+
+  /// Show context menu for adding Community POI or reporting hazard
+  void _showContextMenu(TapPosition tapPosition, LatLng point) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        tapPosition.global & Size.zero,
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem<String>(
+          value: 'add_poi',
+          child: Row(
+            children: [
+              Icon(Icons.add_location, color: Colors.green[700]),
+              const SizedBox(width: 8),
+              const Text('Add Community POI', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'report_hazard',
+          child: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange[700]),
+              const SizedBox(width: 8),
+              const Text('Report Hazard', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+      ],
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ).then((String? selectedValue) {
+      if (selectedValue != null) {
+        switch (selectedValue) {
+          case 'add_poi':
+            _showAddPOIDialog(point);
+            break;
+          case 'report_hazard':
+            _showReportHazardDialog(point);
+            break;
+        }
+      }
+    });
+  }
+
+  /// Show dialog to add Community POI
+  void _showAddPOIDialog(LatLng point) {
+    print('🗺️ iOS DEBUG [MapScreen]: Opening Add POI dialog at: ${point.latitude}, ${point.longitude}');
+
+    // TODO: Navigate to POI management screen with location pre-filled
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Add Community POI at: ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}'),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'Coming Soon',
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
+  /// Show dialog to report hazard
+  void _showReportHazardDialog(LatLng point) {
+    print('🗺️ iOS DEBUG [MapScreen]: Opening Report Hazard dialog at: ${point.latitude}, ${point.longitude}');
+
+    // TODO: Navigate to hazard report screen with location pre-filled
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Report Hazard at: ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}'),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'Coming Soon',
+          onPressed: () {},
+        ),
+      ),
+    );
   }
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
@@ -637,6 +734,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   initialCenter: LatLng(location.latitude, location.longitude),
                   initialZoom: 15,
                   onMapEvent: _onMapEvent,
+                  onLongPress: _onMapLongPress,
                 ),
                 children: [
                   TileLayer(
