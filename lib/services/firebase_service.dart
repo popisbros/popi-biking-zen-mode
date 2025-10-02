@@ -10,12 +10,12 @@ class FirebaseService {
   factory FirebaseService() => _instance;
   FirebaseService._internal();
 
-  // Lazy initialization to avoid issues on web
+  // Lazy initialization - works on all platforms
   FirebaseFirestore? _firestore;
 
   FirebaseFirestore get _firestoreInstance {
-    if (kIsWeb || Firebase.apps.isEmpty) {
-      throw Exception('Firebase not available on web platform');
+    if (Firebase.apps.isEmpty) {
+      throw Exception('Firebase not initialized - call Firebase.initializeApp() first');
     }
     _firestore ??= FirebaseFirestore.instance;
     return _firestore!;
