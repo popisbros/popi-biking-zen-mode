@@ -1,4 +1,5 @@
 import 'package:latlong2/latlong.dart';
+import '../config/api_keys.dart';
 
 /// 2D Map layer types for cycling
 enum MapLayerType {
@@ -80,29 +81,28 @@ class MapService {
         return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
       case MapLayerType.openCycleMap:
-        // OpenCycleMap powered by Thunderforest (requires API key for production)
-        // For now using without key (limited to development)
-        return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png';
+        // OpenCycleMap powered by Thunderforest
+        return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
 
       case MapLayerType.thunderforestCycle:
         // Thunderforest Cycle layer - Premium cycling map
-        return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png';
+        return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
 
       case MapLayerType.thunderforestOutdoors:
         // Thunderforest Outdoors - Great for mountain biking
-        return 'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png';
+        return 'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
 
       case MapLayerType.cyclOSM:
         // CyclOSM - Community-driven cycling map
         return 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
 
       case MapLayerType.satellite:
-        // OpenStreetMap satellite (via ArcGIS)
-        return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+        // MapTiler Satellite
+        return 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${ApiKeys.mapTilerApiKey}';
 
       case MapLayerType.terrain:
-        // OpenTopoMap - Topographic map with elevation
-        return 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+        // MapTiler Outdoor/Terrain
+        return 'https://api.maptiler.com/maps/outdoor/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}';
     }
   }
 
@@ -142,10 +142,10 @@ class MapService {
         return '© CyclOSM, © OpenStreetMap contributors';
 
       case MapLayerType.satellite:
-        return '© Esri, © OpenStreetMap contributors';
+        return '© MapTiler, © OpenStreetMap contributors';
 
       case MapLayerType.terrain:
-        return '© OpenTopoMap, © OpenStreetMap contributors';
+        return '© MapTiler, © OpenStreetMap contributors';
     }
   }
 
@@ -154,23 +154,23 @@ class MapService {
     return '© Mapbox, © OpenStreetMap contributors';
   }
 
-  /// Get human-readable name for 2D layer
+  /// Get human-readable name with provider for 2D layer
   String getLayerName(MapLayerType layer) {
     switch (layer) {
       case MapLayerType.openStreetMap:
-        return 'OpenStreetMap';
+        return 'Standard (OSM)';
       case MapLayerType.openCycleMap:
-        return 'OpenCycleMap';
+        return 'OpenCycleMap (Thunderforest)';
       case MapLayerType.thunderforestCycle:
-        return 'Cycle Map';
+        return 'Cycle (Thunderforest)';
       case MapLayerType.thunderforestOutdoors:
-        return 'Outdoors';
+        return 'Outdoors (Thunderforest)';
       case MapLayerType.cyclOSM:
-        return 'CyclOSM';
+        return 'CyclOSM (Community)';
       case MapLayerType.satellite:
-        return 'Satellite';
+        return 'Satellite (MapTiler)';
       case MapLayerType.terrain:
-        return 'Terrain';
+        return 'Terrain (MapTiler)';
     }
   }
 

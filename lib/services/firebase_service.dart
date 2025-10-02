@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 
@@ -8,7 +10,16 @@ class FirebaseService {
   factory FirebaseService() => _instance;
   FirebaseService._internal();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Lazy initialization to avoid issues on web
+  FirebaseFirestore? _firestore;
+
+  FirebaseFirestore get _firestoreInstance {
+    if (kIsWeb || Firebase.apps.isEmpty) {
+      throw Exception('Firebase not available on web platform');
+    }
+    _firestore ??= FirebaseFirestore.instance;
+    return _firestore!;
+  }
 
   // Collections
   static const String _warningsCollection = 'community_warnings';
@@ -18,7 +29,7 @@ class FirebaseService {
 
   /// Get all warnings as a stream
   Stream<QuerySnapshot> getAllWarnings() {
-    return _firestore
+    return _firestoreInstance
         .collection(_warningsCollection)
         .orderBy('createdAt', descending: true)
         .snapshots();
@@ -34,7 +45,7 @@ class FirebaseService {
     try {
       print('FirebaseService.getWarningsInBounds: Loading warnings for bounds south=$south, west=$west, north=$north, east=$east');
 
-      final snapshot = await _firestore
+      final snapshot = await _firestoreInstance
           .collection(_warningsCollection)
           .where('latitude', isGreaterThanOrEqualTo: south)
           .where('latitude', isLessThanOrEqualTo: north)
@@ -59,7 +70,7 @@ class FirebaseService {
   /// Submit a new warning
   Future<void> submitWarning(Map<String, dynamic> warningData) async {
     try {
-      await _firestore.collection(_warningsCollection).add({
+      await _firestoreInstance.collection(_warningsCollection).add({
         ...warningData,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -74,7 +85,7 @@ class FirebaseService {
   /// Update an existing warning
   Future<void> updateWarning(String documentId, Map<String, dynamic> warningData) async {
     try {
-      await _firestore.collection(_warningsCollection).doc(documentId).update({
+      await _firestoreInstance.collection(_warningsCollection).doc(documentId).update({
         ...warningData,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -88,7 +99,7 @@ class FirebaseService {
   /// Delete a warning
   Future<void> deleteWarning(String warningId) async {
     try {
-      await _firestore.collection(_warningsCollection).doc(warningId).delete();
+      await _firestoreInstance.collection(_warningsCollection).doc(warningId).delete();
       print('FirebaseService: Warning deleted successfully');
     } catch (e) {
       print('Error deleting warning: $e');
@@ -100,7 +111,7 @@ class FirebaseService {
 
   /// Get all cycling POIs as a stream
   Stream<QuerySnapshot> getCyclingPOIs() {
-    return _firestore
+    return _firestoreInstance
         .collection(_poisCollection)
         .orderBy('name')
         .snapshots();
@@ -116,7 +127,7 @@ class FirebaseService {
     try {
       print('FirebaseService.getPOIsInBounds: Loading POIs for bounds south=$south, west=$west, north=$north, east=$east');
 
-      final snapshot = await _firestore
+      final snapshot = await _firestoreInstance
           .collection(_poisCollection)
           .where('latitude', isGreaterThanOrEqualTo: south)
           .where('latitude', isLessThanOrEqualTo: north)
@@ -147,7 +158,7 @@ class FirebaseService {
   /// Add a new POI
   Future<void> addPOI(Map<String, dynamic> poiData) async {
     try {
-      await _firestore.collection(_poisCollection).add({
+      await _firestoreInstance.collection(_poisCollection).add({
         ...poiData,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -162,7 +173,7 @@ class FirebaseService {
   /// Update an existing POI
   Future<void> updatePOI(String documentId, Map<String, dynamic> poiData) async {
     try {
-      await _firestore.collection(_poisCollection).doc(documentId).update({
+      await _firestoreInstance.collection(_poisCollection).doc(documentId).update({
         ...poiData,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -176,7 +187,7 @@ class FirebaseService {
   /// Delete a POI
   Future<void> deletePOI(String poiId) async {
     try {
-      await _firestore.collection(_poisCollection).doc(poiId).delete();
+      await _firestoreInstance.collection(_poisCollection).doc(poiId).delete();
       print('FirebaseService: POI deleted successfully');
     } catch (e) {
       print('Error deleting POI: $e');
