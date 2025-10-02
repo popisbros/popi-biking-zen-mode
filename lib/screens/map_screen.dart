@@ -120,12 +120,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // Auto-open 3D map if requested (Native app startup)
           if (widget.autoOpen3D && !_hasAutoOpened3D && !kIsWeb) {
             _hasAutoOpened3D = true;
-            print('🚀 iOS DEBUG [MapScreen]: Auto-opening 3D map...');
+            print('🚀 iOS DEBUG [MapScreen]: Auto-opening 3D map in 1 second...');
+            print('   autoOpen3D=${widget.autoOpen3D}, hasAutoOpened=$_hasAutoOpened3D, kIsWeb=$kIsWeb');
             Future.delayed(const Duration(milliseconds: 1000), () {
               if (mounted) {
+                print('🚀 iOS DEBUG [MapScreen]: NOW calling _open3DMap()...');
                 _open3DMap();
+                print('🚀 iOS DEBUG [MapScreen]: _open3DMap() called successfully');
+              } else {
+                print('❌ iOS DEBUG [MapScreen]: Cannot open 3D map - widget not mounted');
               }
             });
+          } else {
+            print('🔍 iOS DEBUG [MapScreen]: Auto-open 3D skipped:');
+            print('   autoOpen3D=${widget.autoOpen3D}, hasAutoOpened=$_hasAutoOpened3D, kIsWeb=$kIsWeb');
           }
         } else {
           print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - GPS not available yet');
