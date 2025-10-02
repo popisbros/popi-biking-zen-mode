@@ -48,6 +48,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.initState();
     print('🗺️ iOS DEBUG [MapScreen]: ========== initState called ==========');
     print('🗺️ iOS DEBUG [MapScreen]: Timestamp = ${DateTime.now().toIso8601String()}');
+    print('🗺️ iOS DEBUG [MapScreen]: ⭐ autoOpen3D = ${widget.autoOpen3D}');
+    print('🗺️ iOS DEBUG [MapScreen]: ⭐ kIsWeb = $kIsWeb');
 
     // Initialize map when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
