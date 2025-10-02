@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,67 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   final MapController _mapController = MapController();
+  bool _isMapReady = false;
+  Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize map when widget is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onMapReady();
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onMapReady() {
+    setState(() {
+      _isMapReady = true;
+    });
+    // Load POIs when map is ready
+    _loadAllMapData();
+  }
+
+  void _loadAllMapData() {
+    if (!_isMapReady) return;
+
+    try {
+      final camera = _mapController.camera;
+      final bounds = camera.visibleBounds;
+
+      final bbox = BoundingBox(
+        south: bounds.south,
+        west: bounds.west,
+        north: bounds.north,
+        east: bounds.east,
+      );
+
+      print('MapScreen: Loading OSM POIs with bounds=$bbox');
+
+      // Load OSM POIs
+      final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+      osmPOIsNotifier.loadPOIsWithBounds(bbox);
+    } catch (e) {
+      print('MapScreen: Error loading map data: $e');
+    }
+  }
+
+  void _onMapEvent(MapEvent mapEvent) {
+    if (mapEvent is MapEventMove || mapEvent is MapEventMoveEnd) {
+      // Debounce the reload to avoid too many API calls
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+        if (_isMapReady) {
+          _loadAllMapData();
+        }
+      });
+    }
+  }
 
   void _open3DMap() {
     Navigator.push(
@@ -257,6 +319,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           )
                         : const LatLng(37.7749, -122.4194), // San Francisco default
                     initialZoom: 15,
+                    onMapEvent: _onMapEvent,
                   ),
                   children: [
                     TileLayer(

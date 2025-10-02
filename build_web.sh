@@ -1,21 +1,27 @@
 #!/bin/bash
 
-# Build script for web deployment with API keys
-# Usage: ./build_web.sh
+# Build script for web deployment
+# Reads API keys from .env file and injects them at build time
 
-echo "🔨 Building Flutter Web with API keys..."
+echo "🔨 Building Flutter Web with API keys from .env file..."
 
-# REPLACE THESE WITH YOUR ACTUAL API KEYS
-THUNDERFOREST_KEY="your_thunderforest_key_here"
-MAPTILER_KEY="your_maptiler_key_here"
-MAPBOX_TOKEN="your_mapbox_token_here"
-LOCATIONIQ_KEY="your_locationiq_key_here"
+# Check if .env exists
+if [ ! -f .env ]; then
+    echo "❌ Error: .env file not found!"
+    echo "👉 Copy .env.example to .env and add your API keys"
+    exit 1
+fi
 
+# Load environment variables from .env
+export $(cat .env | grep -v '^#' | xargs)
+
+# Build with API keys injected
 flutter build web --release \
   --base-href="/popi-biking-zen-mode/" \
-  --dart-define=THUNDERFOREST_API_KEY="$THUNDERFOREST_KEY" \
-  --dart-define=MAPTILER_API_KEY="$MAPTILER_KEY" \
-  --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_TOKEN" \
-  --dart-define=LOCATIONIQ_API_KEY="$LOCATIONIQ_KEY"
+  --dart-define=THUNDERFOREST_API_KEY="$THUNDERFOREST_API_KEY" \
+  --dart-define=MAPTILER_API_KEY="$MAPTILER_API_KEY" \
+  --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN" \
+  --dart-define=LOCATIONIQ_API_KEY="$LOCATIONIQ_API_KEY"
 
 echo "✅ Build complete! Output in build/web/"
+echo "🔑 API keys were read from .env and compiled into the build"
