@@ -826,10 +826,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // Add Community POI markers (only if showPOIs is true)
     if (mapState.showPOIs) {
-      communityPOIsAsync.whenData((communityPOIs) {
-        print('🗺️ iOS DEBUG [MapScreen]: Adding ${communityPOIs.length} Community POI markers to map');
-        markers.addAll(communityPOIs.map((poi) => _buildCommunityPOIMarker(poi)));
-      });
+      communityPOIsAsync.when(
+        data: (communityPOIs) {
+          print('🗺️ iOS DEBUG [MapScreen]: Adding ${communityPOIs.length} Community POI markers to map');
+          markers.addAll(communityPOIs.map((poi) => _buildCommunityPOIMarker(poi)));
+        },
+        loading: () {
+          print('⏳ iOS DEBUG [MapScreen]: Community POIs still loading...');
+        },
+        error: (error, stackTrace) {
+          print('❌ iOS DEBUG [MapScreen]: Community POIs error: $error');
+          print('   Stack trace: ${stackTrace.toString().split('\n').take(3).join('\n')}');
+        },
+      );
     } else {
       print('🗺️ iOS DEBUG [MapScreen]: Community POIs hidden by toggle');
     }
