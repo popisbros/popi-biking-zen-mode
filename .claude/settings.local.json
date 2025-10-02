@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(flutter:*)",
+      "Read(//Users/sylvain/Cursor/PopiIsBikingZenMode/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
