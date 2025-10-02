@@ -88,7 +88,7 @@ class MapState {
 
   factory MapState.initial() {
     final mapService = MapService();
-    final defaultLayer = MapLayerType.cyclOSM;
+    final defaultLayer = MapLayerType.openCycleMap;
     final defaultStyle = MapboxStyleType.outdoors;
 
     return MapState(

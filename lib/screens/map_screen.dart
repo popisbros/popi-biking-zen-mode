@@ -739,6 +739,44 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   },
                   tooltip: 'Toggle Warnings',
                 ),
+                const SizedBox(height: 24),
+
+                // Zoom controls
+                FloatingActionButton(
+                  mini: true,
+                  heroTag: 'zoom_in',
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue,
+                  onPressed: () {
+                    print('🗺️ iOS DEBUG [MapScreen]: Zoom in pressed');
+                    final currentZoom = _mapController.camera.zoom;
+                    _mapController.move(
+                      _mapController.camera.center,
+                      currentZoom + 1,
+                    );
+                    print('🗺️ iOS DEBUG [MapScreen]: Zoom changed from $currentZoom to ${currentZoom + 1}');
+                  },
+                  child: const Icon(Icons.add),
+                ),
+                const SizedBox(height: 8),
+
+                // Zoom out button
+                FloatingActionButton(
+                  mini: true,
+                  heroTag: 'zoom_out',
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.blue,
+                  onPressed: () {
+                    print('🗺️ iOS DEBUG [MapScreen]: Zoom out pressed');
+                    final currentZoom = _mapController.camera.zoom;
+                    _mapController.move(
+                      _mapController.camera.center,
+                      currentZoom - 1,
+                    );
+                    print('🗺️ iOS DEBUG [MapScreen]: Zoom changed from $currentZoom to ${currentZoom - 1}');
+                  },
+                  child: const Icon(Icons.remove),
+                ),
               ],
             ),
           ),
