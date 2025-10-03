@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../constants/app_colors.dart';
@@ -999,16 +1002,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to enable location component', error: e);
     }
 
-    // Initialize annotation managers based on platform
-    if (!kIsWeb) {
-      // Native platforms: Use symbol annotations for emoji markers
-      AppLogger.ios('Initializing symbol annotation manager for native platform', data: {'platform': 'native'});
-      _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
-    } else {
-      // Web: Use circle annotations (symbols not supported)
-      AppLogger.warning('Symbol annotations not available on Web - using circle markers instead', tag: 'MAP');
-      _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
-    }
+    // Initialize annotation managers
+    // Use both PointAnnotation (for Community POIs with icons) and CircleAnnotation (for OSM/Warnings)
+    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    AppLogger.success('Annotation managers created (Point + Circle)', tag: 'MAP');
 
     // Center on user location if available
     final locationState = ref.read(locationNotifierProvider);
@@ -1193,23 +1191,51 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     super.dispose();
   }
 
-  /// Add POI and warning markers to the map using circles
-  Future<void> _addMarkers() async {
-    // For now, use circle markers on all platforms until native symbol support is fully implemented
-    await _addCircleMarkers();
+  /// Create an image from emoji text for use as marker icon
+  Future<Uint8List> _createEmojiIcon(String emoji, {double size = 48}) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Draw white circle background
+    final circlePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
+
+    // Draw emoji text
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: emoji,
+        style: TextStyle(fontSize: size * 0.6),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size - textPainter.width) / 2,
+        (size - textPainter.height) / 2,
+      ),
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
   }
 
-  /// Add markers using CircleAnnotations
-  Future<void> _addCircleMarkers() async {
-    if (_circleAnnotationManager == null) {
-      AppLogger.warning('Circle annotation manager not ready', tag: 'MAP');
+  /// Add POI and warning markers to the map
+  /// Community POIs use icon images, OSM POIs and Warnings use colored circles
+  Future<void> _addMarkers() async {
+    if (_pointAnnotationManager == null || _circleAnnotationManager == null) {
+      AppLogger.warning('Annotation managers not ready', tag: 'MAP');
       return;
     }
 
-    // Clear existing markers first
+    // Clear existing markers
+    await _pointAnnotationManager!.deleteAll();
     await _circleAnnotationManager!.deleteAll();
-
-    List<CircleAnnotationOptions> circleOptions = [];
 
     final mapState = ref.read(mapProvider);
 
@@ -1218,74 +1244,103 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _communityPoiById.clear();
     _warningById.clear();
 
-    // Get OSM POIs (if enabled)
-    if (mapState.showOSMPOIs) {
-      final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding OSM POIs as circles (Web)', tag: 'MAP', data: {'count': osmPOIs.length});
-      for (var poi in osmPOIs) {
-        final id = 'osm_${poi.latitude}_${poi.longitude}';
-        _osmPoiById[id] = poi;
-        circleOptions.add(
-          CircleAnnotationOptions(
-            geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
-            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.osmPOI),
-            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.osmPOI),
-          ),
-        );
-      }
-    }
+    // Add OSM POIs as circles
+    await _addOSMPOIsAsCircles(mapState);
 
-    // Get Community POIs (if enabled)
-    if (mapState.showPOIs) {
-      final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Community POIs as circles (Web)', tag: 'MAP', data: {'count': communityPOIs.length});
-      for (var poi in communityPOIs) {
-        final id = 'community_${poi.latitude}_${poi.longitude}';
-        _communityPoiById[id] = poi;
-        circleOptions.add(
-          CircleAnnotationOptions(
-            geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI),
-            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.communityPOI),
-            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.communityPOI),
-          ),
-        );
-      }
-    }
+    // Add Community POIs as icons
+    await _addCommunityPOIsAsIcons(mapState);
 
-    // Get Warnings (if enabled)
-    if (mapState.showWarnings) {
-      final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Warnings as circles (Web)', tag: 'MAP', data: {'count': warnings.length});
-      for (var warning in warnings) {
-        final id = 'warning_${warning.latitude}_${warning.longitude}';
-        _warningById[id] = warning;
-        circleOptions.add(
-          CircleAnnotationOptions(
-            geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.warning),
-            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.warning),
-            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.warning),
-          ),
-        );
-      }
+    // Add Warnings as circles
+    await _addWarningsAsCircles(mapState);
+  }
+
+  /// Add OSM POIs as colored circles
+  Future<void> _addOSMPOIsAsCircles(mapState) async {
+    if (!mapState.showOSMPOIs) return;
+
+    final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
+    List<CircleAnnotationOptions> circleOptions = [];
+
+    AppLogger.debug('Adding OSM POIs as circles', tag: 'MAP', data: {'count': osmPOIs.length});
+    for (var poi in osmPOIs) {
+      final id = 'osm_${poi.latitude}_${poi.longitude}';
+      _osmPoiById[id] = poi;
+      circleOptions.add(
+        CircleAnnotationOptions(
+          geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
+          circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
+          circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.osmPOI),
+          circleStrokeWidth: MarkerConfig.circleStrokeWidth,
+          circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.osmPOI),
+        ),
+      );
     }
 
     if (circleOptions.isNotEmpty) {
       await _circleAnnotationManager!.createMulti(circleOptions);
-      AppLogger.success('Added circle markers to 3D map (Web)', tag: 'MAP', data: {
-        'count': circleOptions.length,
-      });
-    } else {
-      AppLogger.warning('No markers to add - all toggles might be off or no data loaded', tag: 'MAP', data: {
-        'showOSMPOIs': mapState.showOSMPOIs,
-        'showPOIs': mapState.showPOIs,
-        'showWarnings': mapState.showWarnings,
-      });
+      AppLogger.success('Added OSM POI circles', tag: 'MAP', data: {'count': circleOptions.length});
     }
   }
+
+  /// Add Community POIs as emoji icons
+  Future<void> _addCommunityPOIsAsIcons(mapState) async {
+    if (!mapState.showPOIs) return;
+
+    final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
+    List<PointAnnotationOptions> pointOptions = [];
+
+    AppLogger.debug('Adding Community POIs as icons', tag: 'MAP', data: {'count': communityPOIs.length});
+    for (var poi in communityPOIs) {
+      final id = 'community_${poi.latitude}_${poi.longitude}';
+      _communityPoiById[id] = poi;
+
+      // Get emoji for this POI type
+      final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
+
+      // Create icon image from emoji
+      final iconImage = await _createEmojiIcon(emoji);
+
+      pointOptions.add(
+        PointAnnotationOptions(
+          geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
+          image: iconImage,
+          iconSize: 0.5, // Scale down the icon
+        ),
+      );
+    }
+
+    if (pointOptions.isNotEmpty) {
+      await _pointAnnotationManager!.createMulti(pointOptions);
+      AppLogger.success('Added Community POI icons', tag: 'MAP', data: {'count': pointOptions.length});
+    }
+  }
+
+  /// Add Warnings as colored circles
+  Future<void> _addWarningsAsCircles(mapState) async {
+    if (!mapState.showWarnings) return;
+
+    final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
+    List<CircleAnnotationOptions> circleOptions = [];
+
+    AppLogger.debug('Adding Warnings as circles', tag: 'MAP', data: {'count': warnings.length});
+    for (var warning in warnings) {
+      final id = 'warning_${warning.latitude}_${warning.longitude}';
+      _warningById[id] = warning;
+      circleOptions.add(
+        CircleAnnotationOptions(
+          geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
+          circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.warning),
+          circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.warning),
+          circleStrokeWidth: MarkerConfig.circleStrokeWidth,
+          circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.warning),
+        ),
+      );
+    }
+
+    if (circleOptions.isNotEmpty) {
+      await _circleAnnotationManager!.createMulti(circleOptions);
+      AppLogger.success('Added Warning circles', tag: 'MAP', data: {'count': circleOptions.length});
+    }
+  }
+
 }
