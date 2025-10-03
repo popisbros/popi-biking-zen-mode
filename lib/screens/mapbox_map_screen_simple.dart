@@ -300,8 +300,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ),
     );
 
-    AppLogger.map('Returned from POI screen, refreshing markers');
-    if (mounted) {
+    AppLogger.map('Returned from POI screen, reloading data and refreshing markers');
+    if (mounted && _isMapReady) {
+      // Reload POI data from Firebase
+      await _loadAllPOIData();
+      // Refresh markers on map
       _addMarkers();
     }
   }
@@ -323,8 +326,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ),
     );
 
-    AppLogger.map('Returned from Warning screen, refreshing markers');
-    if (mounted) {
+    AppLogger.map('Returned from Warning screen, reloading data and refreshing markers');
+    if (mounted && _isMapReady) {
+      // Reload warning data from Firebase
+      await _loadAllPOIData();
+      // Refresh markers on map
       _addMarkers();
     }
   }
@@ -390,6 +396,45 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final locationAsync = ref.watch(locationNotifierProvider);
     final mapState = ref.watch(mapProvider);
     final compassHeading = ref.watch(compassNotifierProvider);
+
+    // Watch POI data changes and rebuild markers
+    final osmPOIs = ref.watch(osmPOIsNotifierProvider);
+    final communityPOIs = ref.watch(cyclingPOIsBoundsNotifierProvider);
+    final warnings = ref.watch(communityWarningsBoundsNotifierProvider);
+
+    // Listen for POI data changes and refresh markers
+    ref.listen<AsyncValue<List<dynamic>>>(osmPOIsNotifierProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        AppLogger.debug('OSM POIs updated, refreshing markers', tag: 'MAP');
+        _addMarkers();
+      }
+    });
+
+    ref.listen<AsyncValue<List<dynamic>>>(communityWarningsBoundsNotifierProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        AppLogger.debug('Warnings updated, refreshing markers', tag: 'MAP');
+        _addMarkers();
+      }
+    });
+
+    ref.listen<AsyncValue<List<dynamic>>>(cyclingPOIsBoundsNotifierProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        AppLogger.debug('Community POIs updated, refreshing markers', tag: 'MAP');
+        _addMarkers();
+      }
+    });
+
+    // Listen for map state changes (toggle buttons) and refresh markers
+    ref.listen<MapState>(mapProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        if (previous?.showOSMPOIs != next.showOSMPOIs ||
+            previous?.showPOIs != next.showPOIs ||
+            previous?.showWarnings != next.showWarnings) {
+          AppLogger.debug('Map toggles changed, refreshing markers', tag: 'MAP');
+          _addMarkers();
+        }
+      }
+    });
 
     // Listen for compass changes to rotate the map
     ref.listen<double?>(compassNotifierProvider, (previous, next) {
@@ -592,41 +637,135 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Initialize point annotation manager for markers
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+
+    // Load POI data initially
+    await _loadAllPOIData();
+
+    // Add markers after data is loaded
     _addMarkers();
 
     AppLogger.success('Mapbox map ready', tag: 'MAP');
+  }
+
+  /// Load all POI data (OSM POIs, Community POIs, Warnings)
+  Future<void> _loadAllPOIData() async {
+    AppLogger.separator('Loading POI Data for 3D Map');
+
+    try {
+      // Get current camera position for bounds
+      final cameraState = await _mapboxMap?.getCameraState();
+      if (cameraState == null) {
+        AppLogger.warning('Camera state not available, using default bounds', tag: 'MAP');
+        return;
+      }
+
+      final center = cameraState.center;
+      final zoom = cameraState.zoom;
+
+      // Calculate bounds based on zoom level
+      // At zoom 15, roughly 0.01 degrees = ~1km
+      final latDelta = 0.05 / (zoom / 10);
+      final lngDelta = 0.05 / (zoom / 10);
+
+      final south = center.coordinates.lat - latDelta;
+      final north = center.coordinates.lat + latDelta;
+      final west = center.coordinates.lng - lngDelta;
+      final east = center.coordinates.lng + lngDelta;
+
+      AppLogger.map('Loading POIs for bounds', data: {
+        'south': south.toStringAsFixed(4),
+        'north': north.toStringAsFixed(4),
+        'west': west.toStringAsFixed(4),
+        'east': east.toStringAsFixed(4),
+        'zoom': zoom.toStringAsFixed(1),
+      });
+
+      // Load OSM POIs
+      final osmNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+      await osmNotifier.loadPOIsWithBounds(BoundingBox(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+      ));
+
+      final bounds = BoundingBox(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+      );
+
+      // Load Community Warnings
+      final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
+      await warningsNotifier.loadWarningsWithBounds(bounds);
+
+      // Load Community POIs
+      final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+      await communityPOIsNotifier.loadPOIsWithBounds(bounds);
+
+      AppLogger.success('All POI data loaded', tag: 'MAP');
+    } catch (e) {
+      AppLogger.error('Failed to load POI data', error: e);
+    }
+
+    AppLogger.separator();
   }
 
   /// Add POI and warning markers to the map
   Future<void> _addMarkers() async {
     if (_pointAnnotationManager == null) return;
 
+    // Clear existing markers first
+    await _pointAnnotationManager!.deleteAll();
+
     List<PointAnnotationOptions> annotationOptions = [];
 
-    // Get POIs and warnings
-    final pois = ref.read(osmPOIsNotifierProvider).value ?? [];
-    final warnings = ref.read(communityWarningsNotifierProvider).value ?? [];
+    final mapState = ref.read(mapProvider);
 
-    // Add POI markers (green)
-    for (var poi in pois) {
-      annotationOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-          iconColor: Colors.green.value,
-          iconSize: 1.0,
-        ),
-      );
+    // Get OSM POIs (if enabled)
+    if (mapState.showOSMPOIs) {
+      final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
+      AppLogger.debug('Adding OSM POIs', tag: 'MAP', data: {'count': osmPOIs.length});
+      for (var poi in osmPOIs) {
+        annotationOptions.add(
+          PointAnnotationOptions(
+            geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
+            iconColor: Colors.blue.value,
+            iconSize: 1.0,
+          ),
+        );
+      }
     }
 
-    // Add warning markers (red)
-    for (var warning in warnings) {
-      annotationOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-          iconColor: Colors.red.value,
-          iconSize: 1.2,
-        ),
-      );
+    // Get Community POIs (if enabled)
+    if (mapState.showPOIs) {
+      final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
+      AppLogger.debug('Adding Community POIs', tag: 'MAP', data: {'count': communityPOIs.length});
+      for (var poi in communityPOIs) {
+        annotationOptions.add(
+          PointAnnotationOptions(
+            geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
+            iconColor: Colors.green.value,
+            iconSize: 1.2,
+          ),
+        );
+      }
+    }
+
+    // Get Warnings (if enabled)
+    if (mapState.showWarnings) {
+      final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
+      AppLogger.debug('Adding Warnings', tag: 'MAP', data: {'count': warnings.length});
+      for (var warning in warnings) {
+        annotationOptions.add(
+          PointAnnotationOptions(
+            geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
+            iconColor: Colors.red.value,
+            iconSize: 1.5,
+          ),
+        );
+      }
     }
 
     if (annotationOptions.isNotEmpty) {
