@@ -82,16 +82,28 @@ class AppLogger {
   }
 
   /// Firebase-related logs
-  static void firebase(String message, {Map<String, dynamic>? data}) {
+  static void firebase(String message, {Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
     if (kDebugMode) {
       _log(_firebaseIcon, 'FIREBASE', message, data);
+      if (error != null) {
+        debugPrint('  ↳ Error: $error');
+      }
+      if (stackTrace != null) {
+        debugPrint('  ↳ Stack: ${stackTrace.toString().split('\n').take(3).join('\n')}');
+      }
     }
   }
 
   /// API/Network-related logs
-  static void api(String message, {Map<String, dynamic>? data}) {
+  static void api(String message, {Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
     if (kDebugMode) {
       _log(_apiIcon, 'API', message, data);
+      if (error != null) {
+        debugPrint('  ↳ Error: $error');
+      }
+      if (stackTrace != null) {
+        debugPrint('  ↳ Stack: ${stackTrace.toString().split('\n').take(3).join('\n')}');
+      }
     }
   }
 

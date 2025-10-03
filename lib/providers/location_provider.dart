@@ -65,7 +65,7 @@ class LocationNotifier extends StateNotifier<AsyncValue<LocationData?>> {
         AppLogger.success('Got initial location', tag: 'LOCATION', data: {
           'lat': initialLocation.latitude.toStringAsFixed(6),
           'lng': initialLocation.longitude.toStringAsFixed(6),
-          'accuracy': '${initialLocation.accuracy.toStringAsFixed(1)}m'
+          'accuracy': '${initialLocation.accuracy?.toStringAsFixed(1) ?? 'unknown'}m'
         });
         state = AsyncValue.data(initialLocation);
 
@@ -80,7 +80,7 @@ class LocationNotifier extends StateNotifier<AsyncValue<LocationData?>> {
             AppLogger.debug('Location update received', tag: 'LOCATION', data: {
               'lat': location.latitude.toStringAsFixed(6),
               'lng': location.longitude.toStringAsFixed(6),
-              'acc': '${location.accuracy.toStringAsFixed(1)}m'
+              'acc': '${location.accuracy?.toStringAsFixed(1) ?? 'unknown'}m'
             });
             state = AsyncValue.data(location);
           },
