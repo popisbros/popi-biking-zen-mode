@@ -6,7 +6,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'constants/app_theme.dart';
 import 'screens/map_screen.dart';
-import 'screens/mapbox_map_screen_simple.dart';
+// Conditional import: Only import 3D Mapbox map on native platforms (iOS/Android)
+// On Web, import MapScreen stub instead (Web never uses 3D map anyway)
+import 'screens/mapbox_map_screen_simple.dart'
+    if (dart.library.html) 'screens/map_screen.dart' as mapbox_stub;
 import 'utils/app_logger.dart';
 
 void main() async {
@@ -64,7 +67,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Popi Biking',
       theme: AppTheme.lightTheme,
-      home: kIsWeb ? const MapScreen() : const MapboxMapScreenSimple(),
+      home: kIsWeb ? const MapScreen() : const mapbox_stub.MapboxMapScreenSimple(),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         AppLogger.debug('MaterialApp builder called', tag: 'MyApp');
