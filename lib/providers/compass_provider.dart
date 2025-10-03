@@ -2,25 +2,28 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_compass/flutter_compass.dart';
+import '../utils/app_logger.dart';
 
 /// Provider for compass heading (Native only, returns null on Web)
 final compassHeadingProvider = StreamProvider<double?>((ref) {
   // Compass doesn't work on web
   if (kIsWeb) {
-    print('🧭 DEBUG [Compass]: Web platform detected - compass not available');
+    AppLogger.debug('Web platform detected - compass not available', tag: 'COMPASS');
     return Stream.value(null);
   }
 
-  print('🧭 DEBUG [Compass]: Setting up compass stream (Native)');
+  AppLogger.debug('Setting up compass stream (Native)', tag: 'COMPASS');
 
   return FlutterCompass.events!.map((event) {
     final heading = event.heading;
     if (heading != null) {
-      print('🧭 DEBUG [Compass]: Heading = ${heading.toStringAsFixed(1)}°');
+      AppLogger.debug('Heading', tag: 'COMPASS', data: {
+        'heading': '${heading.toStringAsFixed(1)}°',
+      });
     }
     return heading;
   }).handleError((error) {
-    print('❌ DEBUG [Compass]: Error: $error');
+    AppLogger.error('Compass error', tag: 'COMPASS', error: error);
     return null;
   });
 });
@@ -35,35 +38,37 @@ class CompassNotifier extends StateNotifier<double?> {
 
   void _initializeCompass() {
     if (kIsWeb) {
-      print('🧭 DEBUG [CompassNotifier]: Web platform - compass disabled');
+      AppLogger.debug('Web platform - compass disabled', tag: 'COMPASS');
       return;
     }
 
-    print('🧭 DEBUG [CompassNotifier]: Initializing compass...');
+    AppLogger.debug('Initializing compass', tag: 'COMPASS');
 
     _compassSubscription = FlutterCompass.events?.listen(
       (CompassEvent event) {
         final heading = event.heading;
         if (heading != null) {
           state = heading;
-          print('🧭 DEBUG [CompassNotifier]: Updated heading = ${heading.toStringAsFixed(1)}°');
+          AppLogger.debug('Updated heading', tag: 'COMPASS', data: {
+            'heading': '${heading.toStringAsFixed(1)}°',
+          });
         }
       },
       onError: (error) {
-        print('❌ DEBUG [CompassNotifier]: Compass error: $error');
+        AppLogger.error('Compass error', tag: 'COMPASS', error: error);
         state = null;
       },
       onDone: () {
-        print('🧭 DEBUG [CompassNotifier]: Compass stream completed');
+        AppLogger.debug('Compass stream completed', tag: 'COMPASS');
       },
     );
 
-    print('✅ DEBUG [CompassNotifier]: Compass initialized');
+    AppLogger.success('Compass initialized', tag: 'COMPASS');
   }
 
   @override
   void dispose() {
-    print('🗑️ DEBUG [CompassNotifier]: Disposing...');
+    AppLogger.debug('Disposing compass', tag: 'COMPASS');
     _compassSubscription?.cancel();
     super.dispose();
   }
@@ -71,6 +76,6 @@ class CompassNotifier extends StateNotifier<double?> {
 
 /// Provider for compass notifier
 final compassNotifierProvider = StateNotifierProvider<CompassNotifier, double?>((ref) {
-  print('🧭 DEBUG [Provider]: Creating CompassNotifier instance');
+  AppLogger.debug('Creating CompassNotifier instance', tag: 'COMPASS');
   return CompassNotifier();
 });

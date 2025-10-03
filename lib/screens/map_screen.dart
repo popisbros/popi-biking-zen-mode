@@ -15,6 +15,7 @@ import '../services/map_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
+import '../utils/app_logger.dart';
 import '../utils/poi_icons.dart';
 import 'mapbox_map_screen_simple.dart';
 import 'community/poi_management_screen.dart';
@@ -43,12 +44,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   void initState() {
     super.initState();
-    print('🗺️ iOS DEBUG [MapScreen]: ========== initState called ==========');
-    print('🗺️ iOS DEBUG [MapScreen]: Timestamp = ${DateTime.now().toIso8601String()}');
+    AppLogger.separator('MapScreen initState');
+    AppLogger.ios('initState called', data: {
+      'timestamp': DateTime.now().toIso8601String(),
+    });
 
     // Initialize map when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🗺️ iOS DEBUG [MapScreen]: PostFrameCallback executing...');
+      AppLogger.ios('PostFrameCallback executing', data: {'screen': 'MapScreen'});
       _onMapReady();
 
       // CRITICAL FIX: Manually trigger location handler for initial load
@@ -56,11 +59,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       final locationAsync = ref.read(locationNotifierProvider);
       locationAsync.whenData((location) {
         if (location != null && !_hasTriggeredInitialPOILoad) {
-          print('🗺️ iOS DEBUG [MapScreen]: MANUAL TRIGGER for initial location');
+          AppLogger.ios('MANUAL TRIGGER for initial location', data: {'screen': 'MapScreen'});
           // Give the map a moment to fully initialize before loading POIs
           Future.delayed(const Duration(milliseconds: 800), () {
             if (mounted) {
-              print('🗺️ iOS DEBUG [MapScreen]: Triggering initial POI load via manual handler');
+              AppLogger.ios('Triggering initial POI load via manual handler', data: {'screen': 'MapScreen'});
               _handleGPSLocationChange(location);
             }
           });
@@ -71,26 +74,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   void dispose() {
-    print('🗑️ iOS DEBUG [MapScreen]: Disposing map screen...');
+    AppLogger.debug('Disposing map screen', tag: 'MapScreen');
     _debounceTimer?.cancel();
     super.dispose();
   }
 
   void _onMapReady() {
-    print('🗺️ iOS DEBUG [MapScreen]: ========== Map ready ==========');
+    AppLogger.separator('Map ready');
     setState(() {
       _isMapReady = true;
     });
-    print('🗺️ iOS DEBUG [MapScreen]: Map ready flag set to TRUE');
+    AppLogger.success('Map ready flag set to TRUE', tag: 'MAP');
 
     // DON'T load POIs immediately - wait for GPS location first!
-    print('🗺️ iOS DEBUG [MapScreen]: Waiting for GPS location before loading POIs...');
+    AppLogger.map('Waiting for GPS location before loading POIs');
     _centerOnUserLocation();
 
     // Fallback: if POIs haven't loaded after 2 seconds, load them anyway
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _isMapReady && !_hasTriggeredInitialPOILoad) {
-        print('⚠️ iOS DEBUG [MapScreen]: Fallback POI load triggered (location might not be available)');
+        AppLogger.warning('Fallback POI load triggered (location might not be available)', tag: 'MAP');
         _loadAllMapDataWithBounds();
         _hasTriggeredInitialPOILoad = true;
       }
@@ -99,41 +102,49 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Center map on user's GPS location (CRITICAL for OSM POIs to work)
   Future<void> _centerOnUserLocation() async {
-    print('🗺️ iOS DEBUG [MapScreen]: ========== Centering on user location ==========');
+    AppLogger.separator('Centering on user location');
 
     final locationAsync = ref.read(locationNotifierProvider);
 
     locationAsync.when(
       data: (location) {
         if (location != null) {
-          print('✅ iOS DEBUG [MapScreen]: Got GPS location!');
-          print('   Lat=${location.latitude}, Lng=${location.longitude}');
-          print('   Accuracy=${location.accuracy}m');
+          AppLogger.success('Got GPS location', tag: 'LOCATION', data: {
+            'lat': location.latitude,
+            'lng': location.longitude,
+            'accuracy': '${location.accuracy}m',
+          });
 
           final newPosition = LatLng(location.latitude, location.longitude);
-          print('🗺️ iOS DEBUG [MapScreen]: Moving map to user location...');
+          AppLogger.map('Moving map to user location');
 
           _mapController.move(newPosition, 15.0);
-          print('✅ iOS DEBUG [MapScreen]: Map moved to Lat=${newPosition.latitude}, Lng=${newPosition.longitude}, Zoom=15.0');
+          AppLogger.success('Map moved', tag: 'MAP', data: {
+            'lat': newPosition.latitude,
+            'lng': newPosition.longitude,
+            'zoom': 15.0,
+          });
 
           // Initialize GPS position tracking
           _lastGPSPosition = newPosition;
           _originalGPSReference = newPosition;
 
           // NOTE: POI loading will be triggered automatically by the location listener in build()
-          print('✅ iOS DEBUG [MapScreen]: GPS references initialized');
+          AppLogger.success('GPS references initialized', tag: 'MAP');
         } else {
-          print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - GPS not available yet');
-          print('🔄 iOS DEBUG [MapScreen]: Will retry when location becomes available via build() listener');
+          AppLogger.warning('Location is NULL - GPS not available yet', tag: 'LOCATION');
+          AppLogger.debug('Will retry when location becomes available via build() listener', tag: 'MAP');
         }
       },
       loading: () {
-        print('⏳ iOS DEBUG [MapScreen]: Location still LOADING...');
-        print('   Will load POIs automatically when location becomes available');
+        AppLogger.ios('Location still LOADING', data: {
+          'note': 'Will load POIs automatically when location becomes available',
+        });
       },
       error: (error, stack) {
-        print('❌ iOS DEBUG [MapScreen]: Location ERROR: $error');
-        print('   Cannot load POIs without location');
+        AppLogger.error('Location ERROR', tag: 'LOCATION', error: error, data: {
+          'note': 'Cannot load POIs without location',
+        });
       },
     );
   }
@@ -153,11 +164,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       east: visibleBounds.east + lngExtension,
     );
 
-    print('🗺️ iOS DEBUG [MapScreen]: Extended bounds calculated:');
-    print('   Visible: S=${visibleBounds.south.toStringAsFixed(4)}, N=${visibleBounds.north.toStringAsFixed(4)}');
-    print('   Visible: W=${visibleBounds.west.toStringAsFixed(4)}, E=${visibleBounds.east.toStringAsFixed(4)}');
-    print('   Extended: S=${bbox.south.toStringAsFixed(4)}, N=${bbox.north.toStringAsFixed(4)}');
-    print('   Extended: W=${bbox.west.toStringAsFixed(4)}, E=${bbox.east.toStringAsFixed(4)}');
+    AppLogger.map('Extended bounds calculated', data: {
+      'visible_S': visibleBounds.south.toStringAsFixed(4),
+      'visible_N': visibleBounds.north.toStringAsFixed(4),
+      'visible_W': visibleBounds.west.toStringAsFixed(4),
+      'visible_E': visibleBounds.east.toStringAsFixed(4),
+      'extended_S': bbox.south.toStringAsFixed(4),
+      'extended_N': bbox.north.toStringAsFixed(4),
+      'extended_W': bbox.west.toStringAsFixed(4),
+      'extended_E': bbox.east.toStringAsFixed(4),
+    });
 
     return bbox;
   }
@@ -181,7 +197,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Check if we should reload data (smart reload logic)
   bool _shouldReloadData(LatLngBounds visibleBounds) {
     if (_reloadTriggerBounds == null) {
-      print('🗺️ iOS DEBUG [MapScreen]: First load - should reload = TRUE');
+      AppLogger.map('First load - should reload = TRUE');
       return true;
     }
 
@@ -190,9 +206,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         visibleBounds.west < _reloadTriggerBounds!.west ||
         visibleBounds.east > _reloadTriggerBounds!.east;
 
-    print('🗺️ iOS DEBUG [MapScreen]: Should reload check = $shouldReload');
+    AppLogger.map('Should reload check', data: {'shouldReload': shouldReload});
     if (!shouldReload) {
-      print('   Still within buffer zone, skipping reload');
+      AppLogger.debug('Still within buffer zone, skipping reload', tag: 'MAP');
     }
 
     return shouldReload;
@@ -201,26 +217,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Load all map data (OSM POIs, Warnings) using extended bounds
   void _loadAllMapDataWithBounds({bool forceReload = false}) {
     if (!_isMapReady) {
-      print('⚠️ iOS DEBUG [MapScreen]: Map not ready, skipping data load');
+      AppLogger.warning('Map not ready, skipping data load', tag: 'MAP');
       return;
     }
 
     try {
-      print('🗺️ iOS DEBUG [MapScreen]: ========== Loading map data ==========');
+      AppLogger.separator('Loading map data');
 
       final camera = _mapController.camera;
       final latLngBounds = camera.visibleBounds;
 
       // Check if we should reload (skip check if forceReload is true)
       if (!forceReload && !_shouldReloadData(latLngBounds)) {
-        print('⏭️ iOS DEBUG [MapScreen]: Within loaded bounds, skipping reload');
+        AppLogger.debug('Within loaded bounds, skipping reload', tag: 'MAP');
         return;
       }
 
       // Calculate extended bounds
       final extendedBounds = _calculateExtendedBounds(latLngBounds);
 
-      print('🗺️ iOS DEBUG [MapScreen]: Starting background data reload...');
+      AppLogger.map('Starting background data reload');
 
       // Load data in background
       _loadDataInBackground(extendedBounds);
@@ -229,35 +245,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _lastLoadedBounds = extendedBounds;
       _reloadTriggerBounds = _calculateReloadTriggerBounds(extendedBounds);
 
-      print('✅ iOS DEBUG [MapScreen]: Background loading initiated');
+      AppLogger.success('Background loading initiated', tag: 'MAP');
     } catch (e, stackTrace) {
-      print('❌ iOS DEBUG [MapScreen]: Error loading map data: $e');
-      print(stackTrace.toString().split('\n').take(5).join('\n'));
+      AppLogger.error('Error loading map data', tag: 'MAP', error: e, stackTrace: stackTrace);
     }
   }
 
   /// Load data in background without clearing existing data
   void _loadDataInBackground(BoundingBox extendedBounds) {
-    print('🔄 iOS DEBUG [MapScreen]: Loading data in background...');
-    print('   Bounds: S=${extendedBounds.south.toStringAsFixed(4)}, N=${extendedBounds.north.toStringAsFixed(4)}');
-    print('   Bounds: W=${extendedBounds.west.toStringAsFixed(4)}, E=${extendedBounds.east.toStringAsFixed(4)}');
+    AppLogger.debug('Loading data in background', tag: 'MAP', data: {
+      'S': extendedBounds.south.toStringAsFixed(4),
+      'N': extendedBounds.north.toStringAsFixed(4),
+      'W': extendedBounds.west.toStringAsFixed(4),
+      'E': extendedBounds.east.toStringAsFixed(4),
+    });
 
     // Load OSM POIs in background
     final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-    print('🔄 iOS DEBUG [MapScreen]: Calling OSM POI background load...');
+    AppLogger.debug('Calling OSM POI background load', tag: 'MAP');
     osmPOIsNotifier.loadPOIsInBackground(extendedBounds);
 
     // Load Community POIs in background
     final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-    print('🔄 iOS DEBUG [MapScreen]: Calling community POIs background load...');
+    AppLogger.debug('Calling community POIs background load', tag: 'MAP');
     communityPOIsNotifier.loadPOIsWithBounds(extendedBounds);
 
     // Load Warnings in background
     final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
-    print('🔄 iOS DEBUG [MapScreen]: Calling community warnings background load...');
+    AppLogger.debug('Calling community warnings background load', tag: 'MAP');
     warningsNotifier.loadWarningsWithBounds(extendedBounds);
 
-    print('✅ iOS DEBUG [MapScreen]: Background loading calls completed (OSM POIs, Community POIs, Warnings)');
+    AppLogger.success('Background loading calls completed', tag: 'MAP', data: {
+      'types': 'OSM POIs, Community POIs, Warnings',
+    });
   }
 
   /// Handle map events
@@ -269,7 +289,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
         if (_isMapReady) {
-          print('🗺️ iOS DEBUG [MapScreen]: Map moved, reloading data (debounced)...');
+          AppLogger.map('Map moved, reloading data (debounced)');
           _loadAllMapDataWithBounds();
           _isUserMoving = false;
         }
@@ -284,9 +304,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       // CRITICAL: If this is the first time we have location and haven't loaded POIs yet, do it now!
       if (!_hasTriggeredInitialPOILoad) {
-        print('🗺️ iOS DEBUG [MapScreen]: ========== FIRST LOCATION RECEIVED ==========');
-        print('   Location: ${location.latitude}, ${location.longitude}');
-        print('   Centering map and loading POIs...');
+        AppLogger.separator('FIRST LOCATION RECEIVED');
+        AppLogger.location('Centering map and loading POIs', data: {
+          'lat': location.latitude,
+          'lng': location.longitude,
+        });
 
         _mapController.move(newGPSPosition, 15.0);
         _originalGPSReference = newGPSPosition;
@@ -295,10 +317,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         // Add delay to ensure map has moved before loading POIs
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
-            print('🗺️ iOS DEBUG [MapScreen]: Triggering INITIAL POI load...');
+            AppLogger.map('Triggering INITIAL POI load');
             _loadAllMapDataWithBounds();
             _hasTriggeredInitialPOILoad = true;
-            print('✅ iOS DEBUG [MapScreen]: Initial POI load triggered');
+            AppLogger.success('Initial POI load triggered', tag: 'MAP');
           }
         });
 
@@ -316,7 +338,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
         // Auto-center if user moved > 50m
         if (distance > 50) {
-          print('🗺️ iOS DEBUG [MapScreen]: GPS moved ${distance.toStringAsFixed(1)}m, auto-centering...');
+          AppLogger.location('GPS moved, auto-centering', data: {
+            'distance': '${distance.toStringAsFixed(1)}m',
+          });
           _mapController.move(newGPSPosition, _mapController.camera.zoom);
           _loadAllMapDataWithBounds();
           _originalGPSReference = newGPSPosition;
@@ -331,7 +355,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _onMapLongPress(TapPosition tapPosition, LatLng point) {
     if (!_isMapReady) return;
 
-    print('🗺️ iOS DEBUG [MapScreen]: Map long-pressed at: ${point.latitude}, ${point.longitude}');
+    AppLogger.map('Map long-pressed', data: {
+      'lat': point.latitude,
+      'lng': point.longitude,
+    });
 
     // Provide haptic feedback for mobile users
     HapticFeedback.mediumImpact();
@@ -391,7 +418,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Navigate to Community POI management screen
   void _showAddPOIDialog(LatLng point) async {
-    print('🗺️ iOS DEBUG [MapScreen]: Opening Add POI screen at: ${point.latitude}, ${point.longitude}');
+    AppLogger.map('Opening Add POI screen', data: {
+      'lat': point.latitude,
+      'lng': point.longitude,
+    });
 
     await Navigator.push(
       context,
@@ -404,7 +434,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
 
     // After returning from POI screen, force reload of map data
-    print('🗺️ iOS DEBUG [MapScreen]: Returned from POI screen, reloading map data...');
+    AppLogger.map('Returned from POI screen, reloading map data');
     if (mounted && _isMapReady) {
       _loadAllMapDataWithBounds(forceReload: true);
     }
@@ -412,7 +442,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Navigate to Hazard report screen
   void _showReportHazardDialog(LatLng point) async {
-    print('🗺️ iOS DEBUG [MapScreen]: Opening Report Hazard screen at: ${point.latitude}, ${point.longitude}');
+    AppLogger.map('Opening Report Hazard screen', data: {
+      'lat': point.latitude,
+      'lng': point.longitude,
+    });
 
     await Navigator.push(
       context,
@@ -425,7 +458,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
 
     // After returning from Warning screen, force reload of map data
-    print('🗺️ iOS DEBUG [MapScreen]: Returned from Warning screen, reloading map data...');
+    AppLogger.map('Returned from Warning screen, reloading map data');
     if (mounted && _isMapReady) {
       _loadAllMapDataWithBounds(forceReload: true);
     }
@@ -440,7 +473,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _open3DMap() {
-    print('🗺️ iOS DEBUG [MapScreen]: Opening 3D map...');
+    AppLogger.map('Opening 3D map');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -450,7 +483,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showLayerPicker() {
-    print('🗺️ iOS DEBUG [MapScreen]: Showing layer picker...');
+    AppLogger.map('Showing layer picker');
     final mapService = ref.read(mapServiceProvider);
     final currentLayer = ref.read(mapProvider).current2DLayer;
 
@@ -479,7 +512,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 trailing: currentLayer == layer ? const Icon(Icons.check, color: Colors.green) : null,
                 onTap: () {
-                  print('🗺️ iOS DEBUG [MapScreen]: Layer changed to $layer');
+                  AppLogger.map('Layer changed', data: {'layer': layer.toString()});
                   ref.read(mapProvider.notifier).change2DLayer(layer);
                   Navigator.pop(context);
                 },
@@ -515,7 +548,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       height: 40,
       child: GestureDetector(
         onTap: () {
-          print('🗺️ iOS DEBUG [MapScreen]: POI tapped: ${poi.name} (${poi.type})');
+          AppLogger.map('POI tapped', data: {
+            'name': poi.name,
+            'type': poi.type,
+          });
           _showPOIDetails(poi);
         },
         child: Container(
@@ -548,7 +584,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       height: 40,
       child: GestureDetector(
         onTap: () {
-          print('🗺️ iOS DEBUG [MapScreen]: Warning tapped: ${warning.type}');
+          AppLogger.map('Warning tapped', data: {'type': warning.type});
           _showWarningDetails(warning);
         },
         child: Container(
@@ -574,7 +610,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       height: 40,
       child: GestureDetector(
         onTap: () {
-          print('🗺️ iOS DEBUG [MapScreen]: Community POI tapped: ${poi.name}');
+          AppLogger.map('Community POI tapped', data: {'name': poi.name});
           _showCommunityPOIDetails(poi);
         },
         child: Container(
@@ -722,7 +758,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('🗺️ iOS DEBUG [MapScreen]: Building widget...');
+    AppLogger.debug('Building widget', tag: 'MapScreen');
 
     final locationAsync = ref.watch(locationNotifierProvider);
     final poisAsync = ref.watch(osmPOIsNotifierProvider);
@@ -735,7 +771,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ref.listen<AsyncValue<LocationData?>>(locationNotifierProvider, (previous, next) {
       next.whenData((location) {
         if (location != null) {
-          print('🗺️ iOS DEBUG [MapScreen]: Location changed via listener!');
+          AppLogger.location('Location changed via listener');
           _handleGPSLocationChange(location);
         }
       });
@@ -749,7 +785,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // flutter_map rotation is counter-clockwise, compass is clockwise
           // So we need to negate the heading
           final rotation = -next;
-          print('🧭 iOS DEBUG [MapScreen]: Rotating map to ${rotation.toStringAsFixed(1)}° (heading=$next°)');
+          AppLogger.debug('Rotating map', tag: 'COMPASS', data: {
+            'rotation': '${rotation.toStringAsFixed(1)}°',
+            'heading': '${next}°',
+          });
           _mapController.rotate(rotation);
         }
       });
@@ -761,13 +800,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Add user location marker with direction indicator
     locationAsync.whenData((location) {
       if (location != null) {
-        print('🗺️ iOS DEBUG [MapScreen]: Adding user location marker at ${location.latitude}, ${location.longitude}');
+        AppLogger.map('Adding user location marker', data: {
+          'lat': location.latitude,
+          'lng': location.longitude,
+        });
 
         // Use compass heading on Native, or GPS heading as fallback
         final heading = !kIsWeb && compassHeading != null ? compassHeading : location.heading;
         final hasHeading = heading != null && heading >= 0;
 
-        print('🗺️ iOS DEBUG [MapScreen]: Marker heading = ${heading?.toStringAsFixed(1)}° (has heading: $hasHeading)');
+        AppLogger.map('Marker heading', data: {
+          'heading': heading?.toStringAsFixed(1),
+          'hasHeading': hasHeading,
+        });
 
         markers.add(
           Marker(
@@ -812,43 +857,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Add OSM POI markers (only if showOSMPOIs is true)
     if (mapState.showOSMPOIs) {
       poisAsync.whenData((pois) {
-        print('🗺️ iOS DEBUG [MapScreen]: Adding ${pois.length} OSM POI markers to map');
+        AppLogger.map('Adding OSM POI markers', data: {'count': pois.length});
         markers.addAll(pois.map((poi) => _buildPOIMarker(poi)));
       });
     } else {
-      print('🗺️ iOS DEBUG [MapScreen]: OSM POIs hidden by toggle');
+      AppLogger.debug('OSM POIs hidden by toggle', tag: 'MAP');
     }
 
     // Add Community POI markers (only if showPOIs is true)
     if (mapState.showPOIs) {
       communityPOIsAsync.when(
         data: (communityPOIs) {
-          print('🗺️ iOS DEBUG [MapScreen]: Adding ${communityPOIs.length} Community POI markers to map');
+          AppLogger.map('Adding Community POI markers', data: {'count': communityPOIs.length});
           markers.addAll(communityPOIs.map((poi) => _buildCommunityPOIMarker(poi)));
         },
         loading: () {
-          print('⏳ iOS DEBUG [MapScreen]: Community POIs still loading...');
+          AppLogger.debug('Community POIs still loading', tag: 'MAP');
         },
         error: (error, stackTrace) {
-          print('❌ iOS DEBUG [MapScreen]: Community POIs error: $error');
-          print('   Stack trace: ${stackTrace.toString().split('\n').take(3).join('\n')}');
+          AppLogger.error('Community POIs error', tag: 'MAP', error: error, stackTrace: stackTrace);
         },
       );
     } else {
-      print('🗺️ iOS DEBUG [MapScreen]: Community POIs hidden by toggle');
+      AppLogger.debug('Community POIs hidden by toggle', tag: 'MAP');
     }
 
     // Add warning markers (only if showWarnings is true)
     if (mapState.showWarnings) {
       warningsAsync.whenData((warnings) {
-        print('🗺️ iOS DEBUG [MapScreen]: Adding ${warnings.length} warning markers to map');
+        AppLogger.map('Adding warning markers', data: {'count': warnings.length});
         markers.addAll(warnings.map((warning) => _buildWarningMarker(warning)));
       });
     } else {
-      print('🗺️ iOS DEBUG [MapScreen]: Warnings hidden by toggle');
+      AppLogger.debug('Warnings hidden by toggle', tag: 'MAP');
     }
 
-    print('🗺️ iOS DEBUG [MapScreen]: Total markers on map: ${markers.length}');
+    AppLogger.map('Total markers on map', data: {'count': markers.length});
 
     return Scaffold(
       body: Stack(
@@ -857,7 +901,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           locationAsync.when(
             data: (location) {
               if (location == null) {
-                print('⚠️ iOS DEBUG [MapScreen]: Location is NULL - showing loading indicator');
+                AppLogger.warning('Location is NULL - showing loading indicator', tag: 'MAP');
                 return const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -870,7 +914,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 );
               }
 
-              print('🗺️ iOS DEBUG [MapScreen]: Building map with location ${location.latitude}, ${location.longitude}');
+              AppLogger.map('Building map with location', data: {
+                'lat': location.latitude,
+                'lng': location.longitude,
+              });
 
               return FlutterMap(
                 mapController: _mapController,
@@ -894,7 +941,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               );
             },
             loading: () {
-              print('⏳ iOS DEBUG [MapScreen]: Location LOADING - showing spinner');
+              AppLogger.debug('Location LOADING - showing spinner', tag: 'MAP');
               return const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -909,7 +956,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               );
             },
             error: (error, stack) {
-              print('❌ iOS DEBUG [MapScreen]: Location ERROR - $error');
+              AppLogger.error('Location ERROR', tag: 'MAP', error: error);
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -924,7 +971,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        print('🔄 iOS DEBUG [MapScreen]: User requested permission retry');
+                        AppLogger.debug('User requested permission retry', tag: 'MAP');
                         ref.read(locationNotifierProvider.notifier).requestPermission();
                       },
                       child: const Text('Request Permission'),
@@ -949,7 +996,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   count: poisAsync.value?.length ?? 0,
                   showFullCount: true, // Show actual count, not 99+
                   onPressed: () {
-                    print('🗺️ iOS DEBUG [MapScreen]: OSM POI toggle pressed');
+                    AppLogger.map('OSM POI toggle pressed');
                     ref.read(mapProvider.notifier).toggleOSMPOIs();
                   },
                   tooltip: 'Toggle OSM POIs',
@@ -963,7 +1010,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   activeColor: Colors.green,
                   count: communityPOIsAsync.value?.length ?? 0,
                   onPressed: () {
-                    print('🗺️ iOS DEBUG [MapScreen]: Community POI toggle pressed');
+                    AppLogger.map('Community POI toggle pressed');
                     ref.read(mapProvider.notifier).togglePOIs();
                   },
                   tooltip: 'Toggle Community POIs',
@@ -977,7 +1024,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   activeColor: Colors.orange,
                   count: warningsAsync.value?.length ?? 0,
                   onPressed: () {
-                    print('🗺️ iOS DEBUG [MapScreen]: Warning toggle pressed');
+                    AppLogger.map('Warning toggle pressed');
                     ref.read(mapProvider.notifier).toggleWarnings();
                   },
                   tooltip: 'Toggle Warnings',
@@ -991,13 +1038,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.blue,
                   onPressed: () {
-                    print('🗺️ iOS DEBUG [MapScreen]: Zoom in pressed');
+                    AppLogger.map('Zoom in pressed');
                     final currentZoom = _mapController.camera.zoom;
                     _mapController.move(
                       _mapController.camera.center,
                       currentZoom + 1,
                     );
-                    print('🗺️ iOS DEBUG [MapScreen]: Zoom changed from $currentZoom to ${currentZoom + 1}');
+                    AppLogger.map('Zoom changed', data: {
+                      'from': currentZoom,
+                      'to': currentZoom + 1,
+                    });
                   },
                   child: const Icon(Icons.add),
                 ),
@@ -1010,13 +1060,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.blue,
                   onPressed: () {
-                    print('🗺️ iOS DEBUG [MapScreen]: Zoom out pressed');
+                    AppLogger.map('Zoom out pressed');
                     final currentZoom = _mapController.camera.zoom;
                     _mapController.move(
                       _mapController.camera.center,
                       currentZoom - 1,
                     );
-                    print('🗺️ iOS DEBUG [MapScreen]: Zoom changed from $currentZoom to ${currentZoom - 1}');
+                    AppLogger.map('Zoom changed', data: {
+                      'from': currentZoom,
+                      'to': currentZoom - 1,
+                    });
                   },
                   child: const Icon(Icons.remove),
                 ),
@@ -1049,10 +1102,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           FloatingActionButton(
             heroTag: 'my_location',
             onPressed: () {
-              print('🗺️ iOS DEBUG [MapScreen]: My location button pressed');
+              AppLogger.map('My location button pressed');
               locationAsync.whenData((location) {
                 if (location != null) {
-                  print('🗺️ iOS DEBUG [MapScreen]: Centering on GPS location');
+                  AppLogger.map('Centering on GPS location');
                   _mapController.move(LatLng(location.latitude, location.longitude), 15);
                   _loadAllMapDataWithBounds();
                 }

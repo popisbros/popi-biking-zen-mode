@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'app_logger.dart';
 
 /// Helper class for POI and Hazard type icons
-/// Enhanced with logging for iOS debugging
 class POIIcons {
   /// Get the appropriate icon for a POI type
   static String getPOIIcon(String type) {
     final icon = _getPOIIconInternal(type);
-    print('🎨 iOS DEBUG [POIIcons]: Type "$type" → Icon "$icon"');
+    AppLogger.debug('POI icon resolved', tag: 'ICONS', data: {'type': type, 'icon': icon});
     return icon;
   }
 
@@ -60,7 +60,7 @@ class POIIcons {
 
       // Default
       default:
-        print('⚠️ iOS DEBUG [POIIcons]: Unknown POI type "$type", using default 📍');
+        AppLogger.warning('Unknown POI type, using default', tag: 'ICONS', data: {'type': type});
         return '📍';
     }
   }
@@ -68,7 +68,7 @@ class POIIcons {
   /// Get the appropriate icon for a Hazard type
   static String getHazardIcon(String type) {
     final icon = _getHazardIconInternal(type);
-    print('🎨 iOS DEBUG [POIIcons]: Hazard "$type" → Icon "$icon"');
+    AppLogger.debug('Hazard icon resolved', tag: 'ICONS', data: {'type': type, 'icon': icon});
     return icon;
   }
 
@@ -103,7 +103,7 @@ class POIIcons {
       case 'maintenance':
         return '🔧';
       default:
-        print('⚠️ iOS DEBUG [POIIcons]: Unknown hazard type "$type", using default ⚠️');
+        AppLogger.warning('Unknown hazard type, using default', tag: 'ICONS', data: {'type': type});
         return '⚠️';
     }
   }
@@ -111,7 +111,7 @@ class POIIcons {
   /// Get the appropriate Material icon for a POI type (fallback)
   static IconData getPOIMaterialIcon(String type) {
     final icon = _getPOIMaterialIconInternal(type);
-    print('🎨 iOS DEBUG [POIIcons]: Material icon for "$type" → $icon');
+    AppLogger.debug('Material POI icon resolved', tag: 'ICONS', data: {'type': type});
     return icon;
   }
 
@@ -147,7 +147,7 @@ class POIIcons {
   /// Get the appropriate Material icon for a Hazard type (fallback)
   static IconData getHazardMaterialIcon(String type) {
     final icon = _getHazardMaterialIconInternal(type);
-    print('🎨 iOS DEBUG [POIIcons]: Material hazard icon for "$type" → $icon');
+    AppLogger.debug('Material hazard icon resolved', tag: 'ICONS', data: {'type': type});
     return icon;
   }
 

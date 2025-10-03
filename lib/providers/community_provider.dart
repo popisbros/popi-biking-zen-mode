@@ -5,6 +5,7 @@ import '../models/community_warning.dart';
 import '../models/cycling_poi.dart';
 import '../services/firebase_service.dart';
 import '../services/debug_service.dart';
+import '../utils/app_logger.dart';
 import 'osm_poi_provider.dart'; // Import BoundingBox
 
 /// Provider for Firebase service
@@ -40,8 +41,14 @@ final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
                   ...doc.data() as Map<String, dynamic>,
                 });
               } catch (e) {
-                print('Error parsing warning document ${doc.id}: $e');
-                print('Document data: ${doc.data()}');
+                AppLogger.error(
+                  'Error parsing warning document',
+                  error: e,
+                  data: {
+                    'docId': doc.id,
+                    'docData': doc.data(),
+                  },
+                );
                 debugService.logAction(
                   action: 'Firebase: Error parsing warning document',
                   screen: 'CommunityProvider',
@@ -61,14 +68,14 @@ final communityWarningsProvider = StreamProvider<List<CommunityWarning>>((ref) {
         return warnings;
       })
       .handleError((error) {
-        print('Firestore stream error: $error');
+        AppLogger.firebase('Firestore stream error loading warnings', error: error);
         debugService.logAction(
           action: 'Firebase: Stream error loading warnings',
           screen: 'CommunityProvider',
           error: error.toString(),
         );
         if (error.toString().contains('CORS') || error.toString().contains('access control')) {
-          print('CORS error detected - Firebase Firestore access blocked');
+          AppLogger.error('CORS error detected - Firebase Firestore access blocked', error: error);
           debugService.logAction(
             action: 'Firebase: CORS error detected',
             screen: 'CommunityProvider',
@@ -107,8 +114,14 @@ final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
                   ...doc.data() as Map<String, dynamic>,
                 });
               } catch (e) {
-                print('Error parsing POI document ${doc.id}: $e');
-                print('Document data: ${doc.data()}');
+                AppLogger.error(
+                  'Error parsing POI document',
+                  error: e,
+                  data: {
+                    'docId': doc.id,
+                    'docData': doc.data(),
+                  },
+                );
                 debugService.logAction(
                   action: 'Firebase: Error parsing POI document',
                   screen: 'CommunityProvider',
@@ -123,14 +136,14 @@ final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
             .toList();
       })
       .handleError((error) {
-        print('Firestore POI stream error: $error');
+        AppLogger.firebase('Firestore stream error loading POIs', error: error);
         debugService.logAction(
           action: 'Firebase: Stream error loading POIs',
           screen: 'CommunityProvider',
           error: error.toString(),
         );
         if (error.toString().contains('CORS') || error.toString().contains('access control')) {
-          print('CORS error detected - Firebase Firestore access blocked');
+          AppLogger.error('CORS error detected - Firebase Firestore access blocked', error: error);
           debugService.logAction(
             action: 'Firebase: CORS error detected',
             screen: 'CommunityProvider',
@@ -235,14 +248,14 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
     try {
       // Trigger a global refresh by incrementing the refresh counter
       // This will cause the map screen to reload all data
-      print('Community Provider: Triggering global map data refresh after POI/Hazard operation');
-      
+      AppLogger.firebase('Triggering global map data refresh after POI/Hazard operation');
+
       final refreshNotifier = _ref.read(mapDataRefreshTriggerProvider.notifier);
       refreshNotifier.triggerRefresh();
-      
-      print('Community Provider: Global map data refresh triggered');
+
+      AppLogger.success('Global map data refresh triggered');
     } catch (e) {
-      print('Failed to trigger global map data refresh: $e');
+      AppLogger.error('Failed to trigger global map data refresh', error: e);
       // Don't throw - this is a background operation
     }
   }
@@ -439,14 +452,14 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
     try {
       // Trigger a global refresh by incrementing the refresh counter
       // This will cause the map screen to reload all data
-      print('Community Provider: Triggering global map data refresh after POI/Hazard operation');
-      
+      AppLogger.firebase('Triggering global map data refresh after POI/Hazard operation');
+
       final refreshNotifier = _ref.read(mapDataRefreshTriggerProvider.notifier);
       refreshNotifier.triggerRefresh();
-      
-      print('Community Provider: Global map data refresh triggered');
+
+      AppLogger.success('Global map data refresh triggered');
     } catch (e) {
-      print('Failed to trigger global map data refresh: $e');
+      AppLogger.error('Failed to trigger global map data refresh', error: e);
       // Don't throw - this is a background operation
     }
   }
@@ -470,9 +483,14 @@ class CommunityWarningsBoundsNotifier extends StateNotifier<AsyncValue<List<Comm
 
   /// Load warnings using actual map bounds
   Future<void> loadWarningsWithBounds(BoundingBox bounds) async {
-    print('Community Warnings Bounds Notifier: Loading warnings with bounds=$bounds');
+    AppLogger.firebase('Loading warnings with bounds', data: {
+      'south': bounds.south,
+      'west': bounds.west,
+      'north': bounds.north,
+      'east': bounds.east,
+    });
     state = const AsyncValue.loading();
-    
+
     try {
       final warnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
@@ -491,7 +509,7 @@ class CommunityWarningsBoundsNotifier extends StateNotifier<AsyncValue<List<Comm
                 ...doc.data() as Map<String, dynamic>,
               });
             } catch (e) {
-              print('Error parsing warning document ${doc.id}: $e');
+              AppLogger.error('Error parsing warning document', error: e, data: {'docId': doc.id});
               return null;
             }
           })
@@ -508,11 +526,11 @@ class CommunityWarningsBoundsNotifier extends StateNotifier<AsyncValue<List<Comm
       }).toList();
       */
 
-      print('Community Warnings Bounds Notifier: Loaded ${warnings.length} warnings with bounds');
+      AppLogger.success('Loaded ${warnings.length} warnings with bounds');
       state = AsyncValue.data(warnings);
       _lastLoadedBounds = bounds;
     } catch (error, stackTrace) {
-      print('Community Warnings Bounds Notifier: Error loading warnings with bounds: $error');
+      AppLogger.firebase('Error loading warnings with bounds', error: error);
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -520,10 +538,12 @@ class CommunityWarningsBoundsNotifier extends StateNotifier<AsyncValue<List<Comm
   /// Force reload warnings using the last known bounds
   Future<void> forceReload() async {
     if (_lastLoadedBounds != null) {
-      print('Community Warnings Bounds Notifier: Force reloading with last known bounds=$_lastLoadedBounds');
+      AppLogger.firebase('Force reloading warnings with last known bounds', data: {
+        'bounds': _lastLoadedBounds.toString(),
+      });
       await loadWarningsWithBounds(_lastLoadedBounds!);
     } else {
-      print('Community Warnings Bounds Notifier: Force reload called but no previous bounds available');
+      AppLogger.firebase('Force reload called but no previous bounds available');
       state = const AsyncValue.data([]);
     }
   }
@@ -539,9 +559,14 @@ class CyclingPOIsBoundsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI
 
   /// Load POIs using actual map bounds
   Future<void> loadPOIsWithBounds(BoundingBox bounds) async {
-    print('Cycling POIs Bounds Notifier: Loading POIs with bounds=$bounds');
+    AppLogger.firebase('Loading POIs with bounds', data: {
+      'south': bounds.south,
+      'west': bounds.west,
+      'north': bounds.north,
+      'east': bounds.east,
+    });
     state = const AsyncValue.loading();
-    
+
     try {
       final pois = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
@@ -560,7 +585,7 @@ class CyclingPOIsBoundsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI
                 ...doc.data() as Map<String, dynamic>,
               });
             } catch (e) {
-              print('Error parsing POI document ${doc.id}: $e');
+              AppLogger.error('Error parsing POI document', error: e, data: {'docId': doc.id});
               return null;
             }
           })
@@ -577,11 +602,11 @@ class CyclingPOIsBoundsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI
       }).toList();
       */
 
-      print('Cycling POIs Bounds Notifier: Loaded ${pois.length} POIs with bounds');
+      AppLogger.success('Loaded ${pois.length} POIs with bounds');
       state = AsyncValue.data(pois);
       _lastLoadedBounds = bounds;
     } catch (error, stackTrace) {
-      print('Cycling POIs Bounds Notifier: Error loading POIs with bounds: $error');
+      AppLogger.firebase('Error loading POIs with bounds', error: error);
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -589,10 +614,12 @@ class CyclingPOIsBoundsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI
   /// Force reload POIs using the last known bounds
   Future<void> forceReload() async {
     if (_lastLoadedBounds != null) {
-      print('Cycling POIs Bounds Notifier: Force reloading with last known bounds=$_lastLoadedBounds');
+      AppLogger.firebase('Force reloading POIs with last known bounds', data: {
+        'bounds': _lastLoadedBounds.toString(),
+      });
       await loadPOIsWithBounds(_lastLoadedBounds!);
     } else {
-      print('Cycling POIs Bounds Notifier: Force reload called but no previous bounds available');
+      AppLogger.firebase('Force reload called but no previous bounds available');
       state = const AsyncValue.data([]);
     }
   }
@@ -616,7 +643,7 @@ class MapDataRefreshTrigger extends StateNotifier<int> {
   
   void triggerRefresh() {
     state = state + 1;
-    print('MapDataRefreshTrigger: Refresh triggered, counter: $state');
+    AppLogger.firebase('Map data refresh triggered', data: {'counter': state});
   }
 }
 
