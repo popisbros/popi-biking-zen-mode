@@ -412,34 +412,34 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for POI data changes and refresh markers
     ref.listen<AsyncValue<List<dynamic>>>(osmPOIsNotifierProvider, (previous, next) {
-      if (_isMapReady && _pointAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null) {
         AppLogger.debug('OSM POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(communityWarningsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _pointAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null) {
         AppLogger.debug('Warnings updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(cyclingPOIsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _pointAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null) {
         AppLogger.debug('Community POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
-    // Listen for map state changes (toggle buttons) and refresh markers
+    // Listen for map state changes (toggle buttons) and refresh markers INSTANTLY
     ref.listen<MapState>(mapProvider, (previous, next) {
-      if (_isMapReady && _pointAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null) {
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
             previous?.showPOIs != next.showPOIs ||
             previous?.showWarnings != next.showWarnings) {
-          AppLogger.debug('Map toggles changed, refreshing markers', tag: 'MAP');
-          _addMarkers();
+          AppLogger.debug('Map toggles changed, instantly refreshing markers', tag: 'MAP');
+          _addMarkers(); // This is already instant - no delay
         }
       }
     });
