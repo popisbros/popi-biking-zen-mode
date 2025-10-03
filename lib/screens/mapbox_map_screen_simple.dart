@@ -437,17 +437,36 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(poi.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Type: ${poi.type}'),
-            Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
-            if (poi.description != null && poi.description!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Description: ${poi.description}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Type: ${poi.type}', style: const TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+              if (poi.description != null && poi.description!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.description!),
+              ],
+              if (poi.address != null && poi.address!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.address!),
+              ],
+              if (poi.phone != null && poi.phone!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.phone!),
+              ],
+              if (poi.website != null && poi.website!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.website!),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -461,21 +480,94 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Show warning details dialog
   void _showWarningDetails(CommunityWarning warning) {
+    // Get warning type icon
+    final warningTypes = {
+      'hazard': '⚠️',
+      'construction': '🚧',
+      'road_closure': '🚫',
+      'poor_condition': '🕳️',
+      'traffic': '🚗',
+      'weather': '🌧️',
+    };
+    final typeIcon = warningTypes[warning.type] ?? '⚠️';
+
+    // Get severity color
+    final severityColors = {
+      'low': AppColors.successGreen,
+      'medium': Colors.yellow[700],
+      'high': Colors.orange[700],
+      'critical': AppColors.dangerRed,
+    };
+    final severityColor = severityColors[warning.severity] ?? Colors.yellow[700];
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(warning.title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Type: ${warning.type}'),
-            Text('Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
-            if (warning.description.isNotEmpty) ...[
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Type with icon
+              Row(
+                children: [
+                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.urbanBlue,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(typeIcon, style: const TextStyle(fontSize: 16)),
+                        const SizedBox(width: 4),
+                        Text(
+                          warning.type,
+                          style: const TextStyle(
+                            color: AppColors.surface,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
-              Text('Description: ${warning.description}'),
+              // Severity with colored badge
+              Row(
+                children: [
+                  const Text('Severity: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: severityColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      warning.severity.toUpperCase(),
+                      style: const TextStyle(
+                        color: AppColors.surface,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text('Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
+              if (warning.description.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(warning.description),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -532,17 +624,36 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(poi.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Type: ${poi.type}'),
-            Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
-            if (poi.description != null && poi.description!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Description: ${poi.description}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Type: ${poi.type}', style: const TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+              if (poi.description != null && poi.description!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.description!),
+              ],
+              if (poi.address != null && poi.address!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.address!),
+              ],
+              if (poi.phone != null && poi.phone!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.phone!),
+              ],
+              if (poi.website != null && poi.website!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500)),
+                Text(poi.website!),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(
