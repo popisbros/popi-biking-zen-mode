@@ -18,6 +18,7 @@ import '../models/community_warning.dart';
 import '../models/location_data.dart';
 import '../utils/app_logger.dart';
 import '../config/marker_config.dart';
+import '../config/poi_type_config.dart';
 import 'mapbox_map_screen_simple.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
@@ -620,6 +621,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showPOIDetails(OSMPOI poi) {
+    final typeEmoji = POITypeConfig.getOSMPOIEmoji(poi.type);
+    final typeLabel = POITypeConfig.getOSMPOILabel(poi.type);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -629,7 +633,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Type: ${poi.type}', style: const TextStyle(fontWeight: FontWeight.w500)),
+              Row(
+                children: [
+                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Text(typeEmoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 4),
+                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500)),
+                ],
+              ),
               const SizedBox(height: 4),
               Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
               if (poi.description != null && poi.description!.isNotEmpty) ...[
@@ -666,16 +677,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showWarningDetails(CommunityWarning warning) {
-    // Get warning type icon
-    final warningTypes = {
-      'hazard': '⚠️',
-      'construction': '🚧',
-      'road_closure': '🚫',
-      'poor_condition': '🕳️',
-      'traffic': '🚗',
-      'weather': '🌧️',
-    };
-    final typeIcon = warningTypes[warning.type] ?? '⚠️';
+    // Get warning type emoji and label
+    final typeEmoji = POITypeConfig.getWarningEmoji(warning.type);
+    final typeLabel = POITypeConfig.getWarningLabel(warning.type);
 
     // Get severity color
     final severityColors = {
@@ -708,10 +712,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(typeIcon, style: const TextStyle(fontSize: 16)),
+                        Text(typeEmoji, style: const TextStyle(fontSize: 16)),
                         const SizedBox(width: 4),
                         Text(
-                          warning.type,
+                          typeLabel,
                           style: const TextStyle(
                             color: AppColors.surface,
                             fontWeight: FontWeight.bold,
@@ -803,6 +807,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showCommunityPOIDetails(CyclingPOI poi) {
+    final typeEmoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
+    final typeLabel = POITypeConfig.getCommunityPOILabel(poi.type);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -812,7 +819,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Type: ${poi.type}', style: const TextStyle(fontWeight: FontWeight.w500)),
+              Row(
+                children: [
+                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Text(typeEmoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 4),
+                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500)),
+                ],
+              ),
               const SizedBox(height: 4),
               Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
               if (poi.description != null && poi.description!.isNotEmpty) ...[
