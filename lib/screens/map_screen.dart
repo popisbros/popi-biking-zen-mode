@@ -19,7 +19,9 @@ import '../models/location_data.dart';
 import '../utils/app_logger.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
-import 'mapbox_map_screen_simple.dart';
+// Conditional import for 3D map button - use stub on Web
+import 'mapbox_map_screen_simple.dart'
+    if (dart.library.html) 'mapbox_map_screen_simple_stub.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 
