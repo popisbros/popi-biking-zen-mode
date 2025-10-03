@@ -481,13 +481,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Navigate to edit screen (TODO: Add edit support)
+              // Navigate to edit screen
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => HazardReportScreenWithLocation(
                     initialLatitude: warning.latitude,
                     initialLongitude: warning.longitude,
+                    editingWarningId: warning.id,
                   ),
                 ),
               ).then((_) {
@@ -547,13 +548,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Navigate to edit screen (TODO: Add edit support)
+              // Navigate to edit screen
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => POIManagementScreenWithLocation(
                     initialLatitude: poi.latitude,
                     initialLongitude: poi.longitude,
+                    editingPOIId: poi.id,
                   ),
                 ),
               ).then((_) {
