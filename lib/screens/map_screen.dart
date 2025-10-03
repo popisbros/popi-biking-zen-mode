@@ -567,11 +567,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               width: MarkerConfig.circleStrokeWidth,
             ),
           ),
-          child: Center(
-            child: Text(
-              emoji,
-              style: TextStyle(fontSize: size * 0.5),
-            ),
+          alignment: Alignment.center,
+          child: Text(
+            emoji,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: size * 0.5, height: 1.0),
           ),
         ),
       ),
@@ -600,11 +600,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               width: MarkerConfig.circleStrokeWidth,
             ),
           ),
-          child: Center(
-            child: Text(
-              emoji,
-              style: TextStyle(fontSize: size * 0.5),
-            ),
+          alignment: Alignment.center,
+          child: Text(
+            emoji,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: size * 0.5, height: 1.0),
           ),
         ),
       ),
@@ -633,11 +633,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               width: MarkerConfig.circleStrokeWidth,
             ),
           ),
-          child: Center(
-            child: Text(
-              emoji,
-              style: TextStyle(fontSize: size * 0.5),
-            ),
+          alignment: Alignment.center,
+          child: Text(
+            emoji,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: size * 0.5, height: 1.0),
           ),
         ),
       ),
@@ -727,28 +727,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               Row(
                 children: [
                   const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.urbanBlue,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(typeEmoji, style: const TextStyle(fontSize: 16)),
-                        const SizedBox(width: 4),
-                        Text(
-                          typeLabel,
-                          style: const TextStyle(
-                            color: AppColors.surface,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  Text(typeEmoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 4),
+                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),

@@ -35,6 +35,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   String _debugMessage = 'Tap GPS button to test';
   PointAnnotationManager? _pointAnnotationManager;
   CircleAnnotationManager? _circleAnnotationManager;
+  SymbolAnnotationManager? _symbolAnnotationManager;
   Timer? _debounceTimer;
   DateTime? _lastPOILoadTime;
   Timer? _cameraCheckTimer;
@@ -732,21 +733,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for POI data changes and refresh markers
     ref.listen<AsyncValue<List<dynamic>>>(osmPOIsNotifierProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null) {
+      if (_isMapReady && _symbolAnnotationManager != null) {
         AppLogger.debug('OSM POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(communityWarningsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null) {
+      if (_isMapReady && _symbolAnnotationManager != null) {
         AppLogger.debug('Warnings updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(cyclingPOIsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null) {
+      if (_isMapReady && _symbolAnnotationManager != null) {
         AppLogger.debug('Community POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
@@ -754,7 +755,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for map state changes (toggle buttons) and refresh markers INSTANTLY
     ref.listen<MapState>(mapProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null) {
+      if (_isMapReady && _symbolAnnotationManager != null) {
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
             previous?.showPOIs != next.showPOIs ||
             previous?.showWarnings != next.showWarnings) {
@@ -997,12 +998,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to enable location component', error: e);
     }
 
-    // Initialize circle annotation manager for markers (circles are visible without icon images)
-    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
-    AppLogger.success('Circle annotation manager created', tag: 'MAP');
+    // Initialize symbol annotation manager for markers with emojis
+    _symbolAnnotationManager = await mapboxMap.annotations.createSymbolAnnotationManager();
+    AppLogger.success('Symbol annotation manager created', tag: 'MAP');
 
-    // Add tap listener for circle annotations
-    _circleAnnotationManager!.addOnCircleAnnotationClickListener(_OnCircleClickListener(
+    // Add tap listener for symbol annotations
+    _symbolAnnotationManager!.addOnSymbolAnnotationClickListener(_OnSymbolClickListener(
       onTap: _handleMarkerTap,
     ));
 
@@ -1191,15 +1192,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Add POI and warning markers to the map using circles
   Future<void> _addMarkers() async {
-    if (_circleAnnotationManager == null) {
-      AppLogger.warning('Circle annotation manager not ready', tag: 'MAP');
+    if (_symbolAnnotationManager == null) {
+      AppLogger.warning('Symbol annotation manager not ready', tag: 'MAP');
       return;
     }
 
     // Clear existing markers first
-    await _circleAnnotationManager!.deleteAll();
+    await _symbolAnnotationManager!.deleteAll();
 
-    List<CircleAnnotationOptions> circleOptions = [];
+    List<SymbolAnnotationOptions> symbolOptions = [];
 
     final mapState = ref.read(mapProvider);
 
@@ -1211,17 +1212,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Get OSM POIs (if enabled)
     if (mapState.showOSMPOIs) {
       final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding OSM POIs as circles', tag: 'MAP', data: {'count': osmPOIs.length});
+      AppLogger.debug('Adding OSM POIs as symbols with emojis', tag: 'MAP', data: {'count': osmPOIs.length});
       for (var poi in osmPOIs) {
         final id = 'osm_${poi.latitude}_${poi.longitude}';
         _osmPoiById[id] = poi;
-        circleOptions.add(
-          CircleAnnotationOptions(
+        final emoji = POITypeConfig.getOSMPOIEmoji(poi.type);
+        symbolOptions.add(
+          SymbolAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
-            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.osmPOI),
-            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.osmPOI),
+            textField: emoji,
+            textSize: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
+            textColor: Colors.black.value,
+            iconAllowOverlap: true,
+            textAllowOverlap: true,
           ),
         );
       }
@@ -1230,17 +1233,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Get Community POIs (if enabled)
     if (mapState.showPOIs) {
       final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Community POIs as circles', tag: 'MAP', data: {'count': communityPOIs.length});
+      AppLogger.debug('Adding Community POIs as symbols with emojis', tag: 'MAP', data: {'count': communityPOIs.length});
       for (var poi in communityPOIs) {
         final id = 'community_${poi.latitude}_${poi.longitude}';
         _communityPoiById[id] = poi;
-        circleOptions.add(
-          CircleAnnotationOptions(
+        final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
+        symbolOptions.add(
+          SymbolAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI),
-            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.communityPOI),
-            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.communityPOI),
+            textField: emoji,
+            textSize: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI),
+            textColor: Colors.black.value,
+            iconAllowOverlap: true,
+            textAllowOverlap: true,
           ),
         );
       }
@@ -1249,26 +1254,28 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Get Warnings (if enabled)
     if (mapState.showWarnings) {
       final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Warnings as circles', tag: 'MAP', data: {'count': warnings.length});
+      AppLogger.debug('Adding Warnings as symbols with emojis', tag: 'MAP', data: {'count': warnings.length});
       for (var warning in warnings) {
         final id = 'warning_${warning.latitude}_${warning.longitude}';
         _warningById[id] = warning;
-        circleOptions.add(
-          CircleAnnotationOptions(
+        final emoji = POITypeConfig.getWarningEmoji(warning.type);
+        symbolOptions.add(
+          SymbolAnnotationOptions(
             geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.warning),
-            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.warning),
-            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.warning),
+            textField: emoji,
+            textSize: MarkerConfig.getRadiusForType(POIMarkerType.warning),
+            textColor: Colors.black.value,
+            iconAllowOverlap: true,
+            textAllowOverlap: true,
           ),
         );
       }
     }
 
-    if (circleOptions.isNotEmpty) {
-      await _circleAnnotationManager!.createMulti(circleOptions);
-      AppLogger.success('Added circle markers to 3D map', tag: 'MAP', data: {
-        'count': circleOptions.length,
+    if (symbolOptions.isNotEmpty) {
+      await _symbolAnnotationManager!.createMulti(symbolOptions);
+      AppLogger.success('Added symbol markers with emojis to 3D map', tag: 'MAP', data: {
+        'count': symbolOptions.length,
       });
     } else {
       AppLogger.warning('No markers to add - all toggles might be off or no data loaded', tag: 'MAP', data: {
@@ -1281,16 +1288,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 }
 
 /// Click listener for circle annotations
-class _OnCircleClickListener extends OnCircleAnnotationClickListener {
+class _OnSymbolClickListener extends OnSymbolAnnotationClickListener {
   final void Function(double lat, double lng) onTap;
 
-  _OnCircleClickListener({required this.onTap});
+  _OnSymbolClickListener({required this.onTap});
 
   @override
-  void onCircleAnnotationClick(CircleAnnotation annotation) {
+  void onSymbolAnnotationClick(SymbolAnnotation annotation) {
     // Use geometry coordinates to identify the POI
     final coords = annotation.geometry.coordinates;
-    AppLogger.map('Circle annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
+    AppLogger.map('Symbol annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
     onTap(coords.lat.toDouble(), coords.lng.toDouble());
   }
 }
