@@ -55,7 +55,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     ),
                   ),
                   zoom: 15.0,
-                  pitch: 45.0, // Locked 3D angle at 45°
+                  pitch: 70.0, // Locked 3D angle at 70°
                 )
               : _getDefaultCamera();
 
@@ -105,7 +105,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         coordinates: Position(2.3522, 48.8566), // Paris
       ),
       zoom: 15.0,
-      pitch: 45.0, // Locked 3D angle at 45°
+      pitch: 70.0, // Locked 3D angle at 70°
     );
   }
 
@@ -140,7 +140,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   coordinates: Position(location.longitude, location.latitude),
                 ),
                 zoom: 15.0,
-                pitch: 45.0, // Locked 3D angle at 45°
+                pitch: 70.0, // Locked 3D angle at 70°
               ),
               MapAnimationOptions(duration: 1000),
             );
@@ -439,10 +439,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Listen for compass changes to rotate the map
     ref.listen<double?>(compassNotifierProvider, (previous, next) {
       if (next != null && _mapboxMap != null && _isMapReady) {
-        // Rotate map based on compass heading, keeping pitch locked at 45°
+        // Rotate map based on compass heading, keeping pitch locked at 70°
         _mapboxMap!.setCamera(CameraOptions(
           bearing: -next,
-          pitch: 45.0, // Maintain locked 3D angle
+          pitch: 70.0, // Maintain locked 3D angle
         ));
         AppLogger.debug('Map rotated to bearing', tag: 'Mapbox3D', data: {'bearing': -next});
       }
@@ -550,7 +550,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       if (currentZoom != null) {
                         _mapboxMap?.setCamera(CameraOptions(
                           zoom: currentZoom + 1,
-                          pitch: 45.0, // Maintain locked 3D angle
+                          pitch: 70.0, // Maintain locked 3D angle
                         ));
                       }
                     },
@@ -568,7 +568,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       if (currentZoom != null) {
                         _mapboxMap?.setCamera(CameraOptions(
                           zoom: currentZoom - 1,
-                          pitch: 45.0, // Maintain locked 3D angle
+                          pitch: 70.0, // Maintain locked 3D angle
                         ));
                       }
                     },
@@ -631,12 +631,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _isMapReady = true;
     });
 
-    // Disable pitch gestures to lock the 3D angle at 45°
+    // Disable pitch gestures to lock the 3D angle at 70°
     try {
       await mapboxMap.gestures.updateSettings(GesturesSettings(
         pitchEnabled: false, // Lock pitch - user cannot tilt the map
       ));
-      AppLogger.success('Pitch gestures disabled - locked at 45°', tag: 'MAP');
+      AppLogger.success('Pitch gestures disabled - locked at 70°', tag: 'MAP');
     } catch (e) {
       AppLogger.error('Failed to disable pitch gestures', error: e);
     }
