@@ -11,71 +11,74 @@ class MarkerConfig {
   MarkerConfig._();
 
   // ============================================================================
-  // CIRCLE MARKER SIZES (3D Map)
+  // UNIFIED CIRCLE MARKER SIZES (2D & 3D Maps)
   // ============================================================================
 
-  /// Standard size for all POI circles in 3D map
-  /// Recommended: 8-12 pixels
-  static const double poiCircleRadius = 10.0;
+  /// Standard size for all POI circles (both 2D and 3D maps)
+  static const double poiCircleRadius = 20.0;
 
-  /// User location marker size in 3D map
-  /// Note: Mapbox's built-in puck size is controlled by LocationComponentSettings
-  /// This value is for reference/documentation only
+  /// User location marker size (both 2D and 3D maps)
   static const double userLocationSize = 12.0;
 
   /// Circle stroke width (outline)
   static const double circleStrokeWidth = 2.0;
 
   // ============================================================================
-  // COLORS
+  // UNIFIED COLORS (2D & 3D Maps)
   // ============================================================================
 
-  /// OSM POI color (bike shops, water, toilets, etc.)
-  static const Color osmPoiColor = Colors.blue;
+  /// OSM POI colors (bike shops, water, toilets, etc.)
+  static const Color osmPoiFillColor = Colors.blue;
+  static const Color osmPoiBorderColor = Colors.blue;
 
-  /// Community POI color (user-created points of interest)
-  static const Color communityPoiColor = Colors.green;
+  /// Community POI colors (user-created points of interest)
+  static const Color communityPoiFillColor = Color(0xFFC8E6C9); // green.shade100
+  static const Color communityPoiBorderColor = Colors.green;
 
-  /// Warning/Hazard color (reported dangers, road closures, etc.)
-  static const Color warningColor = Colors.red;
+  /// Warning/Hazard colors (reported dangers, road closures, etc.)
+  static const Color warningFillColor = Color(0xFFFFCDD2); // red.shade100
+  static const Color warningBorderColor = Colors.red;
 
-  /// User location marker color
-  static const Color userLocationColor = Color(0xFFFFD700); // Gold/Yellow
+  /// User location marker colors
+  static const Color userLocationFillColor = Color(0x33448AFF); // blue.withOpacity(0.2)
+  static const Color userLocationBorderColor = Color(0xFF2196F3); // Colors.blue
 
-  /// Circle stroke color (outline)
+  /// Circle stroke color (outline) - white for better visibility
   static const Color circleStrokeColor = Colors.white;
-
-  // ============================================================================
-  // 2D MAP MARKER SIZES
-  // ============================================================================
-
-  /// Marker size for 2D map (flutter_map)
-  /// These are dimensions for the marker widget
-  static const double marker2DWidth = 30.0;
-  static const double marker2DHeight = 40.0;
-
-  /// Icon size inside 2D markers
-  static const double marker2DIconSize = 20.0;
 
   // ============================================================================
   // HELPER METHODS
   // ============================================================================
 
-  /// Get color for POI type
-  static Color getColorForType(POIMarkerType type) {
+  /// Get fill color for POI type
+  static Color getFillColorForType(POIMarkerType type) {
     switch (type) {
       case POIMarkerType.osmPOI:
-        return osmPoiColor;
+        return osmPoiFillColor;
       case POIMarkerType.communityPOI:
-        return communityPoiColor;
+        return communityPoiFillColor;
       case POIMarkerType.warning:
-        return warningColor;
+        return warningFillColor;
       case POIMarkerType.userLocation:
-        return userLocationColor;
+        return userLocationFillColor;
     }
   }
 
-  /// Get circle radius for POI type (3D map)
+  /// Get border color for POI type
+  static Color getBorderColorForType(POIMarkerType type) {
+    switch (type) {
+      case POIMarkerType.osmPOI:
+        return osmPoiBorderColor;
+      case POIMarkerType.communityPOI:
+        return communityPoiBorderColor;
+      case POIMarkerType.warning:
+        return warningBorderColor;
+      case POIMarkerType.userLocation:
+        return userLocationBorderColor;
+    }
+  }
+
+  /// Get circle radius for POI type
   static double getRadiusForType(POIMarkerType type) {
     if (type == POIMarkerType.userLocation) {
       return userLocationSize;
@@ -83,9 +86,14 @@ class MarkerConfig {
     return poiCircleRadius; // All POI types use same size
   }
 
-  /// Get color value (int) for Mapbox
-  static int getColorValueForType(POIMarkerType type) {
-    return getColorForType(type).value;
+  /// Get fill color value (int) for Mapbox
+  static int getFillColorValueForType(POIMarkerType type) {
+    return getFillColorForType(type).value;
+  }
+
+  /// Get border color value (int) for Mapbox
+  static int getBorderColorValueForType(POIMarkerType type) {
+    return getBorderColorForType(type).value;
   }
 }
 
@@ -101,27 +109,32 @@ enum POIMarkerType {
 // USAGE EXAMPLES
 // ============================================================================
 //
-// 3D Map (Mapbox):
+// 3D Map (Mapbox) - Circle markers:
 // ```dart
 // CircleAnnotationOptions(
 //   geometry: Point(coordinates: Position(lng, lat)),
-//   circleRadius: MarkerConfig.poiCircleRadius,
-//   circleColor: MarkerConfig.getColorValueForType(POIMarkerType.osmPOI),
+//   circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
+//   circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.osmPOI),
 //   circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-//   circleStrokeColor: MarkerConfig.circleStrokeColor.value,
+//   circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.osmPOI),
 // )
 // ```
 //
-// 2D Map (flutter_map):
+// 2D Map (flutter_map) - Circle markers:
 // ```dart
 // Marker(
 //   point: LatLng(lat, lng),
-//   width: MarkerConfig.marker2DWidth,
-//   height: MarkerConfig.marker2DHeight,
-//   child: Icon(
-//     Icons.location_on,
-//     size: MarkerConfig.marker2DIconSize,
-//     color: MarkerConfig.getColorForType(POIMarkerType.communityPOI),
+//   width: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2,
+//   height: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2,
+//   child: Container(
+//     decoration: BoxDecoration(
+//       color: MarkerConfig.getFillColorForType(POIMarkerType.communityPOI),
+//       shape: BoxShape.circle,
+//       border: Border.all(
+//         color: MarkerConfig.getBorderColorForType(POIMarkerType.communityPOI),
+//         width: MarkerConfig.circleStrokeWidth,
+//       ),
+//     ),
 //   ),
 // )
 // ```

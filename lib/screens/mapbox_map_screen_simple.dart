@@ -886,10 +886,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: MarkerConfig.poiCircleRadius,
-            circleColor: MarkerConfig.getColorValueForType(POIMarkerType.osmPOI),
+            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
+            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.osmPOI),
             circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.circleStrokeColor.value,
+            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.osmPOI),
           ),
         );
       }
@@ -903,10 +903,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: MarkerConfig.poiCircleRadius,
-            circleColor: MarkerConfig.getColorValueForType(POIMarkerType.communityPOI),
+            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI),
+            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.communityPOI),
             circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.circleStrokeColor.value,
+            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.communityPOI),
           ),
         );
       }
@@ -920,10 +920,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-            circleRadius: MarkerConfig.poiCircleRadius,
-            circleColor: MarkerConfig.getColorValueForType(POIMarkerType.warning),
+            circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.warning),
+            circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.warning),
             circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-            circleStrokeColor: MarkerConfig.circleStrokeColor.value,
+            circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.warning),
           ),
         );
       }
