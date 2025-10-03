@@ -10,6 +10,8 @@ import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../services/map_service.dart';
+import '../models/cycling_poi.dart';
+import '../models/community_warning.dart';
 import '../utils/app_logger.dart';
 import '../config/marker_config.dart';
 import 'map_screen.dart';
@@ -37,6 +39,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Timer? _cameraCheckTimer;
   Point? _lastCameraCenter;
   double? _lastCameraZoom;
+
+  // Store POI data for tap handling
+  final Map<String, OSMPOI> _osmPoiById = {};
+  final Map<String, CyclingPOI> _communityPoiById = {};
+  final Map<String, CommunityWarning> _warningById = {};
 
   @override
   void initState() {
@@ -398,6 +405,107 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     );
   }
 
+  /// Handle marker tap - show appropriate dialog based on marker type
+  void _handleMarkerTap(double lat, double lng) {
+    AppLogger.map('Handling marker tap', data: {'lat': lat, 'lng': lng});
+
+    // Try all three types of IDs
+    final osmId = 'osm_${lat}_$lng';
+    final communityId = 'community_${lat}_$lng';
+    final warningId = 'warning_${lat}_$lng';
+
+    if (_osmPoiById.containsKey(osmId)) {
+      _showPOIDetails(_osmPoiById[osmId]!);
+    } else if (_communityPoiById.containsKey(communityId)) {
+      _showCommunityPOIDetails(_communityPoiById[communityId]!);
+    } else if (_warningById.containsKey(warningId)) {
+      _showWarningDetails(_warningById[warningId]!);
+    } else {
+      AppLogger.warning('Tapped annotation not found in POI maps', tag: 'MAP', data: {
+        'lat': lat,
+        'lng': lng,
+        'osmId': osmId,
+        'communityId': communityId,
+        'warningId': warningId,
+      });
+    }
+  }
+
+  /// Show OSM POI details dialog
+  void _showPOIDetails(OSMPOI poi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(poi.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Type: ${poi.type}'),
+            if (poi.description != null) Text('Description: ${poi.description}'),
+            if (poi.address != null) Text('Address: ${poi.address}'),
+            Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show warning details dialog
+  void _showWarningDetails(CommunityWarning warning) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(warning.type),
+        content: Text(warning.description),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show Community POI details dialog
+  void _showCommunityPOIDetails(CyclingPOI poi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(poi.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Type: ${poi.type}'),
+            if (poi.description != null && poi.description!.isNotEmpty)
+              Text('Description: ${poi.description}'),
+            if (poi.address != null && poi.address!.isNotEmpty)
+              Text('Address: ${poi.address}'),
+            if (poi.phone != null && poi.phone!.isNotEmpty)
+              Text('Phone: ${poi.phone}'),
+            if (poi.website != null && poi.website!.isNotEmpty)
+              Text('Website: ${poi.website}'),
+            Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Watch location updates to keep camera centered
@@ -681,6 +789,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     AppLogger.success('Circle annotation manager created', tag: 'MAP');
 
+    // Add tap listener for circle annotations
+    _circleAnnotationManager!.addOnCircleAnnotationClickListener(_OnCircleClickListener(
+      onTap: _handleMarkerTap,
+    ));
+
     // Center on user location if available
     final locationState = ref.read(locationNotifierProvider);
     locationState.whenData((location) {
@@ -878,11 +991,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     final mapState = ref.read(mapProvider);
 
+    // Clear POI maps
+    _osmPoiById.clear();
+    _communityPoiById.clear();
+    _warningById.clear();
+
     // Get OSM POIs (if enabled)
     if (mapState.showOSMPOIs) {
       final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
       AppLogger.debug('Adding OSM POIs as circles', tag: 'MAP', data: {'count': osmPOIs.length});
       for (var poi in osmPOIs) {
+        final id = 'osm_${poi.latitude}_${poi.longitude}';
+        _osmPoiById[id] = poi;
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
@@ -900,6 +1020,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
       AppLogger.debug('Adding Community POIs as circles', tag: 'MAP', data: {'count': communityPOIs.length});
       for (var poi in communityPOIs) {
+        final id = 'community_${poi.latitude}_${poi.longitude}';
+        _communityPoiById[id] = poi;
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
@@ -917,6 +1039,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
       AppLogger.debug('Adding Warnings as circles', tag: 'MAP', data: {'count': warnings.length});
       for (var warning in warnings) {
+        final id = 'warning_${warning.latitude}_${warning.longitude}';
+        _warningById[id] = warning;
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
@@ -941,5 +1065,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'showWarnings': mapState.showWarnings,
       });
     }
+  }
+}
+
+/// Click listener for circle annotations
+class _OnCircleClickListener extends OnCircleAnnotationClickListener {
+  final void Function(double lat, double lng) onTap;
+
+  _OnCircleClickListener({required this.onTap});
+
+  @override
+  void onCircleAnnotationClick(CircleAnnotation annotation) {
+    // Use geometry coordinates to identify the POI
+    final coords = annotation.geometry.coordinates;
+    AppLogger.map('Circle annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
+    onTap(coords.lat.toDouble(), coords.lng.toDouble());
   }
 }
