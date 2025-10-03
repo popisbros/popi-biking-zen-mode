@@ -442,15 +442,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Type: ${poi.type}'),
-            if (poi.description != null) Text('Description: ${poi.description}'),
-            if (poi.address != null) Text('Address: ${poi.address}'),
             Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+            if (poi.description != null && poi.description!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Description: ${poi.description}'),
+            ],
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('CLOSE'),
           ),
         ],
       ),
@@ -462,12 +464,61 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(warning.type),
-        content: Text(warning.description),
+        title: Text(warning.title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Type: ${warning.type}'),
+            Text('Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
+            if (warning.description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Description: ${warning.description}'),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to edit screen (TODO: Add edit support)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => HazardReportScreenWithLocation(
+                    initialLatitude: warning.latitude,
+                    initialLongitude: warning.longitude,
+                  ),
+                ),
+              ).then((_) {
+                // Reload map data after edit
+                if (mounted && _isMapReady) {
+                  _loadAllPOIData();
+                  _addMarkers();
+                }
+              });
+            },
+            child: const Text('EDIT'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              if (warning.id != null) {
+                AppLogger.map('Deleting warning', data: {'id': warning.id});
+                await ref.read(communityWarningsNotifierProvider.notifier).deleteWarning(warning.id!);
+                // Reload map data
+                if (mounted && _isMapReady) {
+                  _loadAllPOIData();
+                  _addMarkers();
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('DELETE'),
+          ),
+          TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('CLOSE'),
           ),
         ],
       ),
@@ -485,21 +536,55 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Type: ${poi.type}'),
-            if (poi.description != null && poi.description!.isNotEmpty)
-              Text('Description: ${poi.description}'),
-            if (poi.address != null && poi.address!.isNotEmpty)
-              Text('Address: ${poi.address}'),
-            if (poi.phone != null && poi.phone!.isNotEmpty)
-              Text('Phone: ${poi.phone}'),
-            if (poi.website != null && poi.website!.isNotEmpty)
-              Text('Website: ${poi.website}'),
             Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+            if (poi.description != null && poi.description!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Description: ${poi.description}'),
+            ],
           ],
         ),
         actions: [
           TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to edit screen (TODO: Add edit support)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => POIManagementScreenWithLocation(
+                    initialLatitude: poi.latitude,
+                    initialLongitude: poi.longitude,
+                  ),
+                ),
+              ).then((_) {
+                // Reload map data after edit
+                if (mounted && _isMapReady) {
+                  _loadAllPOIData();
+                  _addMarkers();
+                }
+              });
+            },
+            child: const Text('EDIT'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              if (poi.id != null) {
+                AppLogger.map('Deleting POI', data: {'id': poi.id});
+                await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
+                // Reload map data
+                if (mounted && _isMapReady) {
+                  _loadAllPOIData();
+                  _addMarkers();
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('DELETE'),
+          ),
+          TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('CLOSE'),
           ),
         ],
       ),
