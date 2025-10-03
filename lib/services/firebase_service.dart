@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
+import '../utils/app_logger.dart';
 
 /// Firebase service for POI and warning data management (without auth)
 class FirebaseService {
@@ -43,7 +44,12 @@ class FirebaseService {
     required double east,
   }) async {
     try {
-      print('FirebaseService.getWarningsInBounds: Loading warnings for bounds south=$south, west=$west, north=$north, east=$east');
+      AppLogger.firebase('Loading warnings for bounds', data: {
+        'south': south,
+        'west': west,
+        'north': north,
+        'east': east,
+      });
 
       final snapshot = await _firestoreInstance
           .collection(_warningsCollection)
@@ -59,10 +65,10 @@ class FirebaseService {
           .where((warning) => warning.longitude >= west && warning.longitude <= east)
           .toList();
 
-      print('FirebaseService: Loaded ${warnings.length} warnings');
+      AppLogger.success('Loaded ${warnings.length} warnings');
       return warnings;
     } catch (e) {
-      print('Error getting warnings: $e');
+      AppLogger.firebase('Error getting warnings', error: e);
       return [];
     }
   }
@@ -75,9 +81,9 @@ class FirebaseService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      print('FirebaseService: Warning submitted successfully');
+      AppLogger.success('Warning submitted successfully');
     } catch (e) {
-      print('Error submitting warning: $e');
+      AppLogger.firebase('Error submitting warning', error: e);
       rethrow;
     }
   }
@@ -89,9 +95,9 @@ class FirebaseService {
         ...warningData,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      print('FirebaseService: Warning updated successfully');
+      AppLogger.success('Warning updated successfully');
     } catch (e) {
-      print('Error updating warning: $e');
+      AppLogger.firebase('Error updating warning', error: e);
       rethrow;
     }
   }
@@ -100,9 +106,9 @@ class FirebaseService {
   Future<void> deleteWarning(String warningId) async {
     try {
       await _firestoreInstance.collection(_warningsCollection).doc(warningId).delete();
-      print('FirebaseService: Warning deleted successfully');
+      AppLogger.success('Warning deleted successfully');
     } catch (e) {
-      print('Error deleting warning: $e');
+      AppLogger.firebase('Error deleting warning', error: e);
       rethrow;
     }
   }
@@ -125,7 +131,12 @@ class FirebaseService {
     required double east,
   }) async {
     try {
-      print('FirebaseService.getPOIsInBounds: Loading POIs for bounds south=$south, west=$west, north=$north, east=$east');
+      AppLogger.firebase('Loading POIs for bounds', data: {
+        'south': south,
+        'west': west,
+        'north': north,
+        'east': east,
+      });
 
       final snapshot = await _firestoreInstance
           .collection(_poisCollection)
@@ -138,12 +149,14 @@ class FirebaseService {
             try {
               final data = doc.data();
               final poi = CyclingPOI.fromMap({...data, 'id': doc.id});
-              print('  ✓ Parsed POI ${doc.id}: ${poi.name} at (${poi.latitude}, ${poi.longitude})');
+              AppLogger.firebase('Parsed POI ${doc.id}: ${poi.name} at (${poi.latitude}, ${poi.longitude})');
               return poi;
             } catch (e, stackTrace) {
-              print('❌ Error parsing POI document ${doc.id}: $e');
-              print('   Data: ${doc.data()}');
-              print('   Stack trace: ${stackTrace.toString().split('\n').take(3).join('\n')}');
+              AppLogger.error('Error parsing POI document', error: e, data: {
+                'docId': doc.id,
+                'docData': doc.data(),
+                'stackTrace': stackTrace.toString().split('\n').take(3).join('\n'),
+              });
               return null;
             }
           })
@@ -151,10 +164,10 @@ class FirebaseService {
           .cast<CyclingPOI>()
           .toList();
 
-      print('FirebaseService: Loaded ${pois.length} POIs (from ${snapshot.docs.length} documents)');
+      AppLogger.success('Loaded ${pois.length} POIs (from ${snapshot.docs.length} documents)');
       return pois;
     } catch (e) {
-      print('Error getting POIs: $e');
+      AppLogger.firebase('Error getting POIs', error: e);
       return [];
     }
   }
@@ -167,9 +180,9 @@ class FirebaseService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      print('FirebaseService: POI added successfully');
+      AppLogger.success('POI added successfully');
     } catch (e) {
-      print('Error adding POI: $e');
+      AppLogger.firebase('Error adding POI', error: e);
       rethrow;
     }
   }
@@ -181,9 +194,9 @@ class FirebaseService {
         ...poiData,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      print('FirebaseService: POI updated successfully');
+      AppLogger.success('POI updated successfully');
     } catch (e) {
-      print('Error updating POI: $e');
+      AppLogger.firebase('Error updating POI', error: e);
       rethrow;
     }
   }
@@ -192,9 +205,9 @@ class FirebaseService {
   Future<void> deletePOI(String poiId) async {
     try {
       await _firestoreInstance.collection(_poisCollection).doc(poiId).delete();
-      print('FirebaseService: POI deleted successfully');
+      AppLogger.success('POI deleted successfully');
     } catch (e) {
-      print('Error deleting POI: $e');
+      AppLogger.firebase('Error deleting POI', error: e);
       rethrow;
     }
   }

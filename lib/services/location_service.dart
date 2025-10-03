@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import '../models/location_data.dart';
+import '../utils/app_logger.dart';
 
 /// Service for handling GPS location tracking and permissions
 /// Enhanced with comprehensive logging for iOS testing
@@ -23,82 +24,91 @@ class LocationService {
   /// Check if location services are enabled
   Future<bool> isLocationServiceEnabled() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
-    print('📍 iOS DEBUG [LocationService]: Location services enabled = $enabled');
+    AppLogger.location('Location services enabled', data: {'enabled': enabled});
     return enabled;
   }
 
   /// Check location permission status
   Future<LocationPermission> checkPermission() async {
     final permission = await Geolocator.checkPermission();
-    print('📍 iOS DEBUG [LocationService]: Current permission = $permission');
+    AppLogger.location('Current permission', data: {'permission': permission.toString()});
     return permission;
   }
 
   /// Request location permission
   Future<LocationPermission> requestPermission() async {
-    print('📍 iOS DEBUG [LocationService]: ========== Requesting location permission ==========');
-    print('📍 iOS DEBUG [LocationService]: Using ONLY Geolocator (removed permission_handler)');
+    AppLogger.separator('Requesting location permission');
+    AppLogger.location('Using ONLY Geolocator (removed permission_handler)');
 
     // Use ONLY geolocator to request permission - this will show iOS dialog
     final permission = await Geolocator.requestPermission();
-    print('📍 iOS DEBUG [LocationService]: Geolocator.requestPermission() result = $permission');
+    AppLogger.location('Geolocator.requestPermission() result', data: {
+      'permission': permission.toString(),
+    });
 
     if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-      print('✅ iOS DEBUG [LocationService]: Permission GRANTED ($permission)');
+      AppLogger.success('Permission GRANTED', tag: 'LOCATION', data: {
+        'permission': permission.toString(),
+      });
     } else {
-      print('❌ iOS DEBUG [LocationService]: Permission DENIED ($permission)');
+      AppLogger.error('Permission DENIED', tag: 'LOCATION', data: {
+        'permission': permission.toString(),
+      });
     }
 
-    print('📍 iOS DEBUG [LocationService]: ========== End permission request ==========');
+    AppLogger.separator();
     return permission;
   }
 
   /// Get current position once
   Future<LocationData?> getCurrentPosition() async {
     try {
-      print('🔍 iOS DEBUG [LocationService]: ========== Starting getCurrentPosition ==========');
-      print('🔍 iOS DEBUG [LocationService]: Timestamp = ${DateTime.now().toIso8601String()}');
+      AppLogger.separator('Starting getCurrentPosition');
+      AppLogger.location('Timestamp', data: {'time': DateTime.now().toIso8601String()});
 
       final permission = await checkPermission();
-      print('🔍 iOS DEBUG [LocationService]: Initial permission check = $permission');
+      AppLogger.location('Initial permission check', data: {'permission': permission.toString()});
 
       if (permission == LocationPermission.denied) {
-        print('🔍 iOS DEBUG [LocationService]: Permission denied, requesting...');
+        AppLogger.location('Permission denied, requesting');
         final newPermission = await requestPermission();
-        print('🔍 iOS DEBUG [LocationService]: Permission after request = $newPermission');
+        AppLogger.location('Permission after request', data: {'permission': newPermission.toString()});
         if (newPermission == LocationPermission.denied) {
-          print('❌ iOS DEBUG [LocationService]: Permission still DENIED after request');
+          AppLogger.error('Permission still DENIED after request', tag: 'LOCATION');
           return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('❌ iOS DEBUG [LocationService]: Permission DENIED FOREVER - User must enable in Settings');
+        AppLogger.error('Permission DENIED FOREVER - User must enable in Settings', tag: 'LOCATION');
         return null;
       }
 
       final serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('❌ iOS DEBUG [LocationService]: Location services are DISABLED on device');
+        AppLogger.error('Location services are DISABLED on device', tag: 'LOCATION');
         return null;
       }
 
-      print('🔍 iOS DEBUG [LocationService]: Calling Geolocator.getCurrentPosition...');
-      print('🔍 iOS DEBUG [LocationService]: Using accuracy=HIGH, timeout=10s');
+      AppLogger.location('Calling Geolocator.getCurrentPosition', data: {
+        'accuracy': 'HIGH',
+        'timeout': '10s',
+      });
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
       );
 
-      print('✅ iOS DEBUG [LocationService]: SUCCESS! Got GPS position:');
-      print('   📍 Latitude  = ${position.latitude}');
-      print('   📍 Longitude = ${position.longitude}');
-      print('   📍 Altitude  = ${position.altitude}m');
-      print('   📍 Accuracy  = ${position.accuracy}m');
-      print('   📍 Speed     = ${position.speed}m/s');
-      print('   📍 Heading   = ${position.heading}°');
-      print('   📍 Timestamp = ${position.timestamp}');
+      AppLogger.success('Got GPS position', tag: 'LOCATION', data: {
+        'lat': position.latitude,
+        'lng': position.longitude,
+        'altitude': '${position.altitude}m',
+        'accuracy': '${position.accuracy}m',
+        'speed': '${position.speed}m/s',
+        'heading': '${position.heading}°',
+        'timestamp': position.timestamp.toString(),
+      });
 
       final locationData = LocationData(
         latitude: position.latitude,
@@ -111,17 +121,14 @@ class LocationService {
       );
 
       _currentLocation = locationData;
-      print('✅ iOS DEBUG [LocationService]: Location data cached in service');
-      print('🔍 iOS DEBUG [LocationService]: ========== End getCurrentPosition ==========');
+      AppLogger.success('Location data cached in service', tag: 'LOCATION');
+      AppLogger.separator();
 
       return locationData;
     } catch (e, stackTrace) {
-      print('❌ iOS DEBUG [LocationService]: ========== ERROR in getCurrentPosition ==========');
-      print('❌ iOS DEBUG [LocationService]: Error type: ${e.runtimeType}');
-      print('❌ iOS DEBUG [LocationService]: Error message: $e');
-      print('❌ iOS DEBUG [LocationService]: Stack trace:');
-      print(stackTrace.toString().split('\n').take(10).join('\n'));
-      print('❌ iOS DEBUG [LocationService]: ========== End ERROR ==========');
+      AppLogger.separator('ERROR in getCurrentPosition');
+      AppLogger.error('getCurrentPosition failed', tag: 'LOCATION', error: e, stackTrace: stackTrace);
+      AppLogger.separator();
       return null;
     }
   }
@@ -129,20 +136,20 @@ class LocationService {
   /// Start continuous location tracking
   Future<void> startLocationTracking() async {
     try {
-      print('🔄 iOS DEBUG [LocationService]: ========== Starting continuous location tracking ==========');
+      AppLogger.separator('Starting continuous location tracking');
 
       final permission = await checkPermission();
       if (permission == LocationPermission.denied) {
-        print('🔄 iOS DEBUG [LocationService]: Permission denied, requesting...');
+        AppLogger.location('Permission denied, requesting');
         final newPermission = await requestPermission();
         if (newPermission == LocationPermission.denied) {
-          print('❌ iOS DEBUG [LocationService]: Cannot start tracking - permission denied');
+          AppLogger.error('Cannot start tracking - permission denied', tag: 'LOCATION');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('❌ iOS DEBUG [LocationService]: Cannot start tracking - permission denied forever');
+        AppLogger.error('Cannot start tracking - permission denied forever', tag: 'LOCATION');
         return;
       }
 
@@ -151,14 +158,19 @@ class LocationService {
         distanceFilter: 10, // Update every 10 meters
       );
 
-      print('🔄 iOS DEBUG [LocationService]: Starting position stream (distanceFilter=10m)');
+      AppLogger.location('Starting position stream', data: {
+        'distanceFilter': '10m',
+      });
 
       _positionStream = Geolocator.getPositionStream(
         locationSettings: locationSettings,
       ).listen(
         (Position position) {
-          print('📍 iOS DEBUG [LocationService]: Position update received:');
-          print('   Lat=${position.latitude}, Lng=${position.longitude}, Acc=${position.accuracy}m');
+          AppLogger.location('Position update received', data: {
+            'lat': position.latitude,
+            'lng': position.longitude,
+            'accuracy': '${position.accuracy}m',
+          });
 
           final locationData = LocationData(
             latitude: position.latitude,
@@ -172,28 +184,28 @@ class LocationService {
 
           _currentLocation = locationData;
           _locationController.add(locationData);
-          print('📍 iOS DEBUG [LocationService]: Location data broadcast to listeners');
+          AppLogger.location('Location data broadcast to listeners');
         },
         onError: (error) {
-          print('❌ iOS DEBUG [LocationService]: Position stream error: $error');
+          AppLogger.error('Position stream error', tag: 'LOCATION', error: error);
         },
         onDone: () {
-          print('🔄 iOS DEBUG [LocationService]: Position stream completed');
+          AppLogger.debug('Position stream completed', tag: 'LOCATION');
         },
       );
 
-      print('✅ iOS DEBUG [LocationService]: Location tracking started successfully');
+      AppLogger.success('Location tracking started successfully', tag: 'LOCATION');
     } catch (e) {
-      print('❌ iOS DEBUG [LocationService]: Error starting tracking: $e');
+      AppLogger.error('Error starting tracking', tag: 'LOCATION', error: e);
     }
   }
 
   /// Stop location tracking
   Future<void> stopLocationTracking() async {
-    print('🛑 iOS DEBUG [LocationService]: Stopping location tracking');
+    AppLogger.debug('Stopping location tracking', tag: 'LOCATION');
     await _positionStream?.cancel();
     _positionStream = null;
-    print('✅ iOS DEBUG [LocationService]: Location tracking stopped');
+    AppLogger.success('Location tracking stopped', tag: 'LOCATION');
   }
 
   /// Calculate distance between two points in meters
@@ -202,7 +214,9 @@ class LocationService {
     double lat2, double lon2,
   ) {
     final distance = Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
-    print('📏 iOS DEBUG [LocationService]: Distance calculated = ${distance.toStringAsFixed(2)}m');
+    AppLogger.debug('Distance calculated', tag: 'LOCATION', data: {
+      'distance': '${distance.toStringAsFixed(2)}m',
+    });
     return distance;
   }
 
@@ -212,13 +226,15 @@ class LocationService {
     double lat2, double lon2,
   ) {
     final bearing = Geolocator.bearingBetween(lat1, lon1, lat2, lon2);
-    print('🧭 iOS DEBUG [LocationService]: Bearing calculated = ${bearing.toStringAsFixed(2)}°');
+    AppLogger.debug('Bearing calculated', tag: 'LOCATION', data: {
+      'bearing': '${bearing.toStringAsFixed(2)}°',
+    });
     return bearing;
   }
 
   /// Dispose resources
   void dispose() {
-    print('🗑️ iOS DEBUG [LocationService]: Disposing location service');
+    AppLogger.debug('Disposing location service', tag: 'LOCATION');
     stopLocationTracking();
     _locationController.close();
   }

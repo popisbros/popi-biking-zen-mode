@@ -7,50 +7,48 @@ import 'firebase_options.dart';
 import 'constants/app_theme.dart';
 import 'screens/map_screen.dart';
 import 'screens/mapbox_map_screen_simple.dart';
+import 'utils/app_logger.dart';
 
 void main() async {
   // Catch all errors
   FlutterError.onError = (FlutterErrorDetails details) {
-    print('❌ iOS DEBUG [FLUTTER ERROR]: ${details.exception}');
-    print('❌ iOS DEBUG [STACK TRACE]: ${details.stack}');
+    AppLogger.error('Flutter error', error: details.exception, stackTrace: details.stack);
     FlutterError.presentError(details);
   };
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  print('🚀 iOS DEBUG [MAIN]: ========== App Starting ==========');
-  print('🚀 iOS DEBUG [MAIN]: Platform: ${kIsWeb ? "WEB" : "MOBILE"}');
-  print('🚀 iOS DEBUG [MAIN]: Timestamp: ${DateTime.now().toIso8601String()}');
+  AppLogger.separator('App Starting');
+  AppLogger.info('Platform: ${kIsWeb ? "WEB" : "MOBILE"}');
+  AppLogger.info('Timestamp: ${DateTime.now().toIso8601String()}');
 
   // Initialize Firebase on all platforms
   try {
-    print('🔥 iOS DEBUG [MAIN]: Initializing Firebase with 10s timeout...');
+    AppLogger.firebase('Initializing Firebase with 10s timeout');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     ).timeout(
       const Duration(seconds: 10),
       onTimeout: () {
-        print('⏱️ iOS DEBUG [MAIN]: Firebase initialization TIMED OUT after 10s');
-        print('⚠️ iOS DEBUG [MAIN]: Continuing without Firebase...');
+        AppLogger.warning('Firebase initialization TIMED OUT after 10s', tag: 'FIREBASE');
+        AppLogger.warning('Continuing without Firebase', tag: 'FIREBASE');
         throw TimeoutException('Firebase initialization timed out');
       },
     );
-    print('✅ iOS DEBUG [MAIN]: Firebase initialized successfully on ${kIsWeb ? "WEB" : "MOBILE"}');
+    AppLogger.success('Firebase initialized successfully', tag: 'FIREBASE', data: {
+      'platform': kIsWeb ? "WEB" : "MOBILE",
+    });
   } catch (e, stackTrace) {
-    print('❌ iOS DEBUG [MAIN]: Firebase initialization FAILED');
-    print('❌ iOS DEBUG [MAIN]: Error: $e');
-    print('❌ iOS DEBUG [MAIN]: Error type: ${e.runtimeType}');
-    print('❌ iOS DEBUG [MAIN]: Stack trace:');
-    print(stackTrace.toString().split('\n').take(10).join('\n'));
-    print('⚠️ iOS DEBUG [MAIN]: Continuing anyway - Firebase not critical for map display');
+    AppLogger.error('Firebase initialization FAILED', tag: 'FIREBASE', error: e, stackTrace: stackTrace);
+    AppLogger.warning('Continuing anyway - Firebase not critical for map display', tag: 'FIREBASE');
     // Continue anyway - Firebase is not critical for map display
   }
 
-  print('🚀 iOS DEBUG [MAIN]: Starting app with ProviderScope...');
+  AppLogger.info('Starting app with ProviderScope');
 
   runApp(const ProviderScope(child: MyApp()));
 
-  print('✅ iOS DEBUG [MAIN]: App started successfully');
+  AppLogger.success('App started successfully', tag: 'MAIN');
 }
 
 class MyApp extends ConsumerWidget {
@@ -58,10 +56,10 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print('🎨 iOS DEBUG [MyApp]: Building MaterialApp...');
+    AppLogger.info('Building MaterialApp', tag: 'MyApp');
 
     // Web starts with 2D map, Native starts directly with 3D map
-    print('🎨 iOS DEBUG [MyApp]: Starting with ${kIsWeb ? "2D map (WEB)" : "3D map (NATIVE)"}');
+    AppLogger.info('Starting with ${kIsWeb ? "2D map (WEB)" : "3D map (NATIVE)"}', tag: 'MyApp');
 
     return MaterialApp(
       title: 'Popi Biking',
@@ -69,11 +67,10 @@ class MyApp extends ConsumerWidget {
       home: kIsWeb ? const MapScreen() : const MapboxMapScreenSimple(),
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
-        print('🎨 iOS DEBUG [MyApp]: MaterialApp builder called');
+        AppLogger.debug('MaterialApp builder called', tag: 'MyApp');
         // Add error boundary
         ErrorWidget.builder = (FlutterErrorDetails details) {
-          print('❌ iOS DEBUG [ErrorWidget]: Error caught in widget tree');
-          print('   Error: ${details.exception}');
+          AppLogger.error('Error caught in widget tree', error: details.exception);
           return Material(
             child: Container(
               color: Colors.white,

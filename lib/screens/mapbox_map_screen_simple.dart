@@ -9,6 +9,7 @@ import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../services/map_service.dart';
+import '../utils/app_logger.dart';
 import 'map_screen.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
@@ -32,15 +33,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   @override
   void initState() {
     super.initState();
-    print('🗺️ iOS DEBUG [Mapbox3D]: initState called');
+    AppLogger.ios('initState called', data: {'screen': 'Mapbox3D'});
 
     // Ensure location provider is initialized and permissions are requested
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('🗺️ iOS DEBUG [Mapbox3D]: PostFrameCallback - initializing location');
+      AppLogger.ios('PostFrameCallback - initializing location', data: {'screen': 'Mapbox3D'});
       // This will trigger location provider initialization and permission request
       ref.read(locationNotifierProvider);
 
-      print('🗺️ iOS DEBUG [Mapbox3D]: Getting initial camera position');
+      AppLogger.ios('Getting initial camera position', data: {'screen': 'Mapbox3D'});
       final locationAsync = ref.read(locationNotifierProvider);
 
       locationAsync.when(
@@ -62,13 +63,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             setState(() {
               _initialCamera = camera;
             });
-            print('✅ iOS DEBUG [Mapbox3D]: Initial camera set to ${location?.latitude}, ${location?.longitude}');
+            AppLogger.success('Initial camera set', tag: 'Mapbox3D', data: {
+              'lat': location?.latitude,
+              'lng': location?.longitude,
+            });
 
             // Auto-center on GPS after map is ready (wait 1s for map initialization)
             if (location != null) {
               Future.delayed(const Duration(milliseconds: 1500), () {
                 if (mounted && _mapboxMap != null) {
-                  print('🎯 iOS DEBUG [Mapbox3D]: Auto-centering on GPS location');
+                  AppLogger.ios('Auto-centering on GPS location', data: {'screen': 'Mapbox3D'});
                   _centerOnUserLocation();
                 }
               });
@@ -76,7 +80,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           }
         },
         loading: () {
-          print('⏳ iOS DEBUG [Mapbox3D]: Location still loading, using default camera');
+          AppLogger.ios('Location still loading, using default camera', data: {'screen': 'Mapbox3D'});
           if (mounted) {
             setState(() {
               _initialCamera = _getDefaultCamera();
@@ -84,7 +88,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           }
         },
         error: (_, __) {
-          print('❌ iOS DEBUG [Mapbox3D]: Location error, using default camera');
+          AppLogger.error('Location error, using default camera', tag: 'Mapbox3D');
           if (mounted) {
             setState(() {
               _initialCamera = _getDefaultCamera();
@@ -106,25 +110,28 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   Future<void> _centerOnUserLocation() async {
-    print('🗺️ iOS DEBUG [Mapbox3D]: GPS button clicked');
+    AppLogger.map('GPS button clicked');
     setState(() => _debugMessage = 'GPS button clicked...');
 
     if (_mapboxMap == null) {
-      print('❌ iOS DEBUG [Mapbox3D]: Map not ready');
+      AppLogger.error('Map not ready', tag: 'Mapbox3D');
       setState(() => _debugMessage = 'ERROR: Map not ready');
       return;
     }
 
     try {
       setState(() => _debugMessage = 'Requesting location...');
-      print('🗺️ iOS DEBUG [Mapbox3D]: Reading location from provider');
+      AppLogger.map('Reading location from provider');
 
       final locationAsync = ref.read(locationNotifierProvider);
 
       locationAsync.when(
         data: (location) {
           if (location != null) {
-            print('✅ iOS DEBUG [Mapbox3D]: Got location ${location.latitude}, ${location.longitude}');
+            AppLogger.success('Got location', tag: 'Mapbox3D', data: {
+              'lat': location.latitude,
+              'lng': location.longitude,
+            });
             setState(() => _debugMessage = 'Got location: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}');
 
             _mapboxMap!.flyTo(
@@ -144,21 +151,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               }
             });
           } else {
-            print('❌ iOS DEBUG [Mapbox3D]: Location is NULL');
+            AppLogger.error('Location is NULL', tag: 'Mapbox3D');
             setState(() => _debugMessage = 'ERROR: Location is null (permission denied?)');
           }
         },
         loading: () {
-          print('⏳ iOS DEBUG [Mapbox3D]: Location still loading');
+          AppLogger.ios('Location still loading', data: {'screen': 'Mapbox3D'});
           setState(() => _debugMessage = 'Location is loading...');
         },
         error: (error, _) {
-          print('❌ iOS DEBUG [Mapbox3D]: Location error: $error');
+          AppLogger.error('Location error', tag: 'Mapbox3D', error: error);
           setState(() => _debugMessage = 'ERROR: $error');
         },
       );
     } catch (e) {
-      print('❌ iOS DEBUG [Mapbox3D]: Exception: $e');
+      AppLogger.error('Exception', tag: 'Mapbox3D', error: e);
       setState(() => _debugMessage = 'ERROR: $e');
     }
   }
@@ -220,7 +227,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   void _switchTo2DMap() {
-    print('🗺️ iOS DEBUG [Mapbox3D]: Switching to 2D map...');
+    AppLogger.map('Switching to 2D map');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -231,7 +238,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Handle long press on map to show context menu
   void _onMapLongPress(Point coordinates) {
-    print('🗺️ iOS DEBUG [Mapbox3D]: Map long-pressed at: ${coordinates.coordinates.lat}, ${coordinates.coordinates.lng}');
+    AppLogger.map('Map long-pressed', data: {
+      'lat': coordinates.coordinates.lat,
+      'lng': coordinates.coordinates.lng,
+    });
 
     // Provide haptic feedback for mobile users
     HapticFeedback.mediumImpact();
@@ -241,8 +251,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Show context menu for adding Community POI or reporting hazard
   void _showContextMenu(Point coordinates) {
-    final lat = coordinates.coordinates.lat;
-    final lng = coordinates.coordinates.lng;
+    final lat = coordinates.coordinates.lat.toDouble();
+    final lng = coordinates.coordinates.lng.toDouble();
 
     showDialog(
       context: context,
@@ -275,7 +285,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Navigate to Community POI management screen
   void _showAddPOIDialog(double latitude, double longitude) async {
-    print('🗺️ iOS DEBUG [Mapbox3D]: Opening Add POI screen at: $latitude, $longitude');
+    AppLogger.map('Opening Add POI screen', data: {
+      'lat': latitude,
+      'lng': longitude,
+    });
 
     await Navigator.push(
       context,
@@ -287,7 +300,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ),
     );
 
-    print('🗺️ iOS DEBUG [Mapbox3D]: Returned from POI screen, refreshing markers...');
+    AppLogger.map('Returned from POI screen, refreshing markers');
     if (mounted) {
       _addMarkers();
     }
@@ -295,7 +308,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Navigate to Hazard report screen
   void _showReportHazardDialog(double latitude, double longitude) async {
-    print('🗺️ iOS DEBUG [Mapbox3D]: Opening Report Hazard screen at: $latitude, $longitude');
+    AppLogger.map('Opening Report Hazard screen', data: {
+      'lat': latitude,
+      'lng': longitude,
+    });
 
     await Navigator.push(
       context,
@@ -307,7 +323,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ),
     );
 
-    print('🗺️ iOS DEBUG [Mapbox3D]: Returned from Warning screen, refreshing markers...');
+    AppLogger.map('Returned from Warning screen, refreshing markers');
     if (mounted) {
       _addMarkers();
     }
@@ -380,7 +396,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       if (next != null && _mapboxMap != null && _isMapReady) {
         // Rotate map based on compass heading
         _mapboxMap!.setCamera(CameraOptions(bearing: -next));
-        print('🧭 iOS DEBUG [Mapbox3D]: Map rotated to bearing: ${-next}°');
+        AppLogger.debug('Map rotated to bearing', tag: 'Mapbox3D', data: {'bearing': -next});
       }
     });
 
@@ -390,12 +406,29 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return Scaffold(
       body: Stack(
         children: [
-          // Mapbox Map Widget (Simplified)
-          MapWidget(
-            key: const ValueKey("mapboxWidgetSimple"),
-            cameraOptions: initialCamera,
-            styleUri: mapState.mapboxStyleUri,
-            onMapCreated: _onMapCreated,
+          // Mapbox Map Widget (Simplified) with long-press gesture
+          GestureDetector(
+            onLongPressStart: (details) async {
+              if (!_isMapReady || _mapboxMap == null) return;
+
+              // Convert screen coordinates to geographic coordinates
+              try {
+                final screenCoordinate = ScreenCoordinate(
+                  x: details.localPosition.dx,
+                  y: details.localPosition.dy,
+                );
+                final point = await _mapboxMap!.coordinateForPixel(screenCoordinate);
+                _onMapLongPress(point);
+              } catch (e) {
+                AppLogger.error('Failed to convert coordinates', error: e);
+              }
+            },
+            child: MapWidget(
+              key: const ValueKey("mapboxWidgetSimple"),
+              cameraOptions: initialCamera,
+              styleUri: mapState.mapboxStyleUri,
+              onMapCreated: _onMapCreated,
+            ),
           ),
 
           // Loading indicator
@@ -538,7 +571,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   /// Called when the Mapbox map is created and ready
   void _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
-    print('🗺️ Mapbox map created!');
+    AppLogger.map('Mapbox map created');
 
     setState(() {
       _isMapReady = true;
@@ -552,28 +585,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         showAccuracyRing: false,
         puckBearingEnabled: true, // Enable bearing/heading indicator
       ));
-      print('✅ Location component enabled with bearing arrow');
+      AppLogger.success('Location component enabled with bearing arrow', tag: 'MAP');
     } catch (e) {
-      print('❌ Failed to enable location component: $e');
+      AppLogger.error('Failed to enable location component', error: e);
     }
 
     // Initialize point annotation manager for markers
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     _addMarkers();
 
-    // Add long-press gesture listener
-    try {
-      await mapboxMap.gestures.addOnMapLongClickListener(OnMapLongClickListener(
-        onMapLongClick: (Point point) {
-          _onMapLongPress(point);
-        },
-      ));
-      print('✅ Long-press gesture listener added');
-    } catch (e) {
-      print('❌ Failed to add long-press listener: $e');
-    }
-
-    print('✅ Mapbox map ready!');
+    AppLogger.success('Mapbox map ready', tag: 'MAP');
   }
 
   /// Add POI and warning markers to the map
@@ -610,7 +631,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     if (annotationOptions.isNotEmpty) {
       await _pointAnnotationManager!.createMulti(annotationOptions);
-      print('✅ Added ${annotationOptions.length} markers to 3D map');
+      AppLogger.success('Added markers to 3D map', tag: 'MAP', data: {
+        'count': annotationOptions.length,
+      });
     }
   }
 }

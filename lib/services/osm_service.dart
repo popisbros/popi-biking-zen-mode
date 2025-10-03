@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../models/cycling_poi.dart';
+import '../utils/app_logger.dart';
 import 'osm_debug_service.dart';
 
 class OSMService {
@@ -33,10 +34,15 @@ class OSMService {
     );
     
     try {
-      print('OSM Service: Starting query for bounds: south=$south, west=$west, north=$north, east=$east');
-      print('OSM Service: Query timestamp: ${DateTime.now()}');
-      print('OSM Query: $query');
-      
+      AppLogger.api('Starting OSM query', data: {
+        'south': south,
+        'west': west,
+        'north': north,
+        'east': east,
+        'timestamp': DateTime.now().toIso8601String(),
+        'query': query,
+      });
+
       final response = await http.post(
         Uri.parse(_overpassUrl),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -67,17 +73,20 @@ class OSMService {
           error: 'HTTP ${response.statusCode}: ${response.body}',
           duration: stopwatch.elapsed,
         );
-        
-        print('OSM API Error: ${response.statusCode} - ${response.body}');
+
+        AppLogger.api('OSM API Error', error: Exception('HTTP ${response.statusCode}'), data: {
+          'statusCode': response.statusCode,
+          'body': response.body,
+        });
         if (response.statusCode == 504) {
-          print('OSM Service: Gateway timeout - trying with smaller bounding box');
+          AppLogger.api('Gateway timeout - trying with smaller bounding box');
           return await _trySmallerBoundingBox(south, west, north, east);
         }
         return [];
       }
     } catch (e) {
       stopwatch.stop();
-      
+
       // Log exception
       _debugService.logOSMError(
         url: _overpassUrl,
@@ -86,10 +95,10 @@ class OSMService {
         error: e.toString(),
         duration: stopwatch.elapsed,
       );
-      
-      print('OSM Service Error: $e');
+
+      AppLogger.api('OSM Service Error', error: e);
       if (e.toString().contains('timeout') || e.toString().contains('504')) {
-        print('OSM Service: Timeout error - trying with smaller bounding box');
+        AppLogger.api('Timeout error - trying with smaller bounding box');
         return await _trySmallerBoundingBox(south, west, north, east);
       }
       return [];
@@ -130,10 +139,15 @@ class OSMService {
       parameters: parameters,
       query: query,
     );
-    
+
     try {
-      print('OSM Service: Retrying with smaller bounds: south=$newSouth, west=$newWest, north=$newNorth, east=$newEast');
-      
+      AppLogger.api('Retrying with smaller bounds', data: {
+        'south': newSouth,
+        'west': newWest,
+        'north': newNorth,
+        'east': newEast,
+      });
+
       final response = await http.post(
         Uri.parse(_overpassUrl),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -164,13 +178,15 @@ class OSMService {
           error: 'HTTP ${response.statusCode}: ${response.body}',
           duration: stopwatch.elapsed,
         );
-        
-        print('OSM Service: Second attempt also failed: ${response.statusCode}');
+
+        AppLogger.api('Second attempt also failed', error: Exception('HTTP ${response.statusCode}'), data: {
+          'statusCode': response.statusCode,
+        });
         return [];
       }
     } catch (e) {
       stopwatch.stop();
-      
+
       // Log fallback exception
       _debugService.logOSMError(
         url: '$_overpassUrl (FALLBACK)',
@@ -179,8 +195,8 @@ class OSMService {
         error: e.toString(),
         duration: stopwatch.elapsed,
       );
-      
-      print('OSM Service: Second attempt error: $e');
+
+      AppLogger.api('Second attempt error', error: e);
       return [];
     }
   }
@@ -206,7 +222,7 @@ out;
   List<OSMPOI> _parseOSMResponse(Map<String, dynamic> data) {
     final elements = data['elements'] as List<dynamic>? ?? [];
     final pois = <OSMPOI>[];
-    
+
     for (final element in elements) {
       try {
         final poi = OSMPOI.fromOSMData(element);
@@ -214,11 +230,11 @@ out;
           pois.add(poi);
         }
       } catch (e) {
-        print('Error parsing OSM element: $e');
+        AppLogger.error('Error parsing OSM element', error: e);
       }
     }
-    
-    print('Loaded ${pois.length} OSM POIs');
+
+    AppLogger.success('Loaded ${pois.length} OSM POIs');
     return pois;
   }
 }
