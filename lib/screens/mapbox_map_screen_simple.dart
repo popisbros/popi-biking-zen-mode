@@ -110,7 +110,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   CameraOptions _getDefaultCamera() {
     return CameraOptions(
       center: Point(
-        coordinates: Position(2.3522, 48.8566), // Paris
+        coordinates: Position(5.826000, 40.643944), // Custom default location
       ),
       zoom: 15.0,
       pitch: 70.0, // Locked 3D angle at 70°
@@ -714,8 +714,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Start periodic camera check to detect map movement
     _startCameraMonitoring();
 
-    // Delayed GPS centering (retry after 5 seconds in case first attempt failed)
-    Future.delayed(const Duration(seconds: 5), () {
+    // Delayed GPS centering (retry after 2 seconds in case first attempt failed)
+    Future.delayed(const Duration(seconds: 2), () {
       final locationState = ref.read(locationNotifierProvider);
       locationState.whenData((location) {
         if (location != null && mounted && _mapboxMap != null) {
