@@ -16,7 +16,7 @@ import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
 import '../utils/app_logger.dart';
-import '../utils/poi_icons.dart';
+import '../config/marker_config.dart';
 import 'mapbox_map_screen_simple.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
@@ -541,11 +541,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Marker _buildPOIMarker(OSMPOI poi) {
-    final icon = POIIcons.getPOIIcon(poi.type);
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.osmPOI) * 2;
     return Marker(
       point: LatLng(poi.latitude, poi.longitude),
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       child: GestureDetector(
         onTap: () {
           AppLogger.map('POI tapped', data: {
@@ -556,20 +556,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: MarkerConfig.getFillColorForType(POIMarkerType.osmPOI),
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              icon,
-              style: const TextStyle(fontSize: 24),
+            border: Border.all(
+              color: MarkerConfig.getBorderColorForType(POIMarkerType.osmPOI),
+              width: MarkerConfig.circleStrokeWidth,
             ),
           ),
         ),
@@ -578,10 +569,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Marker _buildWarningMarker(CommunityWarning warning) {
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.warning) * 2;
     return Marker(
       point: LatLng(warning.latitude, warning.longitude),
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       child: GestureDetector(
         onTap: () {
           AppLogger.map('Warning tapped', data: {'type': warning.type});
@@ -589,14 +581,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.red.shade100,
+            color: MarkerConfig.getFillColorForType(POIMarkerType.warning),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.red, width: 2),
-          ),
-          child: const Icon(
-            Icons.warning,
-            color: Colors.red,
-            size: 24,
+            border: Border.all(
+              color: MarkerConfig.getBorderColorForType(POIMarkerType.warning),
+              width: MarkerConfig.circleStrokeWidth,
+            ),
           ),
         ),
       ),
@@ -604,10 +594,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Marker _buildCommunityPOIMarker(CyclingPOI poi) {
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2;
     return Marker(
       point: LatLng(poi.latitude, poi.longitude),
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       child: GestureDetector(
         onTap: () {
           AppLogger.map('Community POI tapped', data: {'name': poi.name});
@@ -615,14 +606,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         },
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.green.shade100,
+            color: MarkerConfig.getFillColorForType(POIMarkerType.communityPOI),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.green, width: 2),
-          ),
-          child: const Icon(
-            Icons.location_on,
-            color: Colors.green,
-            size: 24,
+            border: Border.all(
+              color: MarkerConfig.getBorderColorForType(POIMarkerType.communityPOI),
+              width: MarkerConfig.circleStrokeWidth,
+            ),
           ),
         ),
       ),
@@ -814,11 +803,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'hasHeading': hasHeading,
         });
 
+        final userSize = MarkerConfig.getRadiusForType(POIMarkerType.userLocation) * 2;
         markers.add(
           Marker(
             point: LatLng(location.latitude, location.longitude),
-            width: 50,
-            height: 50,
+            width: userSize,
+            height: userSize,
             alignment: Alignment.center,
             child: Transform.rotate(
               angle: hasHeading ? (heading * math.pi / 180) : 0, // Convert to radians
@@ -828,23 +818,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   // Outer circle (accuracy indicator)
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.2),
+                      color: MarkerConfig.getFillColorForType(POIMarkerType.userLocation),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.blue, width: 2),
+                      border: Border.all(
+                        color: MarkerConfig.getBorderColorForType(POIMarkerType.userLocation),
+                        width: MarkerConfig.circleStrokeWidth,
+                      ),
                     ),
                   ),
                   // Direction arrow (only if we have heading)
                   if (hasHeading)
-                    const Icon(
+                    Icon(
                       Icons.navigation,
-                      color: Colors.blue,
-                      size: 30,
+                      color: MarkerConfig.getBorderColorForType(POIMarkerType.userLocation),
+                      size: userSize * 0.6,
                     )
                   else
-                    const Icon(
+                    Icon(
                       Icons.my_location,
-                      color: Colors.blue,
-                      size: 30,
+                      color: MarkerConfig.getBorderColorForType(POIMarkerType.userLocation),
+                      size: userSize * 0.6,
                     ),
                 ],
               ),
