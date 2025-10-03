@@ -544,6 +544,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Marker _buildPOIMarker(OSMPOI poi) {
     final size = MarkerConfig.getRadiusForType(POIMarkerType.osmPOI) * 2;
+    final emoji = POITypeConfig.getOSMPOIEmoji(poi.type);
+
     return Marker(
       point: LatLng(poi.latitude, poi.longitude),
       width: size,
@@ -565,6 +567,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               width: MarkerConfig.circleStrokeWidth,
             ),
           ),
+          child: Center(
+            child: Text(
+              emoji,
+              style: TextStyle(fontSize: size * 0.5),
+            ),
+          ),
         ),
       ),
     );
@@ -572,6 +580,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Marker _buildWarningMarker(CommunityWarning warning) {
     final size = MarkerConfig.getRadiusForType(POIMarkerType.warning) * 2;
+    final emoji = POITypeConfig.getWarningEmoji(warning.type);
+
     return Marker(
       point: LatLng(warning.latitude, warning.longitude),
       width: size,
@@ -590,6 +600,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               width: MarkerConfig.circleStrokeWidth,
             ),
           ),
+          child: Center(
+            child: Text(
+              emoji,
+              style: TextStyle(fontSize: size * 0.5),
+            ),
+          ),
         ),
       ),
     );
@@ -597,6 +613,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Marker _buildCommunityPOIMarker(CyclingPOI poi) {
     final size = MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2;
+    final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
+
     return Marker(
       point: LatLng(poi.latitude, poi.longitude),
       width: size,
@@ -613,6 +631,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             border: Border.all(
               color: MarkerConfig.getBorderColorForType(POIMarkerType.communityPOI),
               width: MarkerConfig.circleStrokeWidth,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              emoji,
+              style: TextStyle(fontSize: size * 0.5),
             ),
           ),
         ),
