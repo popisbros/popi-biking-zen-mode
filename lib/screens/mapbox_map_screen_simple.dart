@@ -999,20 +999,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to enable location component', error: e);
     }
 
-    // Initialize symbol annotation manager for markers with emojis (not available on Web)
+    // Initialize annotation managers based on platform
     if (!kIsWeb) {
-      try {
-        _symbolAnnotationManager = await mapboxMap.annotations.createSymbolAnnotationManager();
-        AppLogger.success('Symbol annotation manager created', tag: 'MAP');
-
-        // Add tap listener for symbol annotations
-        _symbolAnnotationManager!.addOnSymbolAnnotationClickListener(_OnSymbolClickListener(
-          onTap: _handleMarkerTap,
-        ));
-      } catch (e) {
-        AppLogger.warning('Symbol annotations not supported on this platform', tag: 'MAP', error: e);
-      }
+      // Native platforms: Use symbol annotations for emoji markers
+      AppLogger.ios('Initializing symbol annotation manager for native platform', data: {'platform': 'native'});
+      _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     } else {
+      // Web: Use circle annotations (symbols not supported)
       AppLogger.warning('Symbol annotations not available on Web - using circle markers instead', tag: 'MAP');
       _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     }
@@ -1200,118 +1193,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     super.dispose();
   }
 
-  /// Add POI and warning markers to the map using symbols (native) or circles (web)
+  /// Add POI and warning markers to the map using circles
   Future<void> _addMarkers() async {
-    if (kIsWeb) {
-      // Use circle markers for Web
-      await _addCircleMarkers();
-    } else {
-      // Use symbol markers with emojis for native platforms
-      await _addSymbolMarkers();
-    }
+    // For now, use circle markers on all platforms until native symbol support is fully implemented
+    await _addCircleMarkers();
   }
 
-  /// Add markers using SymbolAnnotations with emojis (native platforms only)
-  Future<void> _addSymbolMarkers() async {
-    if (_symbolAnnotationManager == null) {
-      AppLogger.warning('Symbol annotation manager not ready', tag: 'MAP');
-      return;
-    }
-
-    // Clear existing markers first
-    await _symbolAnnotationManager!.deleteAll();
-
-    List<dynamic> symbolOptions = [];
-
-    final mapState = ref.read(mapProvider);
-
-    // Clear POI maps
-    _osmPoiById.clear();
-    _communityPoiById.clear();
-    _warningById.clear();
-
-    // Get OSM POIs (if enabled)
-    if (mapState.showOSMPOIs) {
-      final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding OSM POIs as symbols with emojis', tag: 'MAP', data: {'count': osmPOIs.length});
-      for (var poi in osmPOIs) {
-        final id = 'osm_${poi.latitude}_${poi.longitude}';
-        _osmPoiById[id] = poi;
-        final emoji = POITypeConfig.getOSMPOIEmoji(poi.type);
-        symbolOptions.add({
-          'geometry': Point(coordinates: Position(poi.longitude, poi.latitude)),
-          'textField': emoji,
-          'textSize': MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
-          'textColor': Colors.black.value,
-          'iconAllowOverlap': true,
-          'textAllowOverlap': true,
-        });
-      }
-    }
-
-    // Get Community POIs (if enabled)
-    if (mapState.showPOIs) {
-      final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Community POIs as symbols with emojis', tag: 'MAP', data: {'count': communityPOIs.length});
-      for (var poi in communityPOIs) {
-        final id = 'community_${poi.latitude}_${poi.longitude}';
-        _communityPoiById[id] = poi;
-        final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
-        symbolOptions.add({
-          'geometry': Point(coordinates: Position(poi.longitude, poi.latitude)),
-          'textField': emoji,
-          'textSize': MarkerConfig.getRadiusForType(POIMarkerType.communityPOI),
-          'textColor': Colors.black.value,
-          'iconAllowOverlap': true,
-          'textAllowOverlap': true,
-        });
-      }
-    }
-
-    // Get Warnings (if enabled)
-    if (mapState.showWarnings) {
-      final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Warnings as symbols with emojis', tag: 'MAP', data: {'count': warnings.length});
-      for (var warning in warnings) {
-        final id = 'warning_${warning.latitude}_${warning.longitude}';
-        _warningById[id] = warning;
-        final emoji = POITypeConfig.getWarningEmoji(warning.type);
-        symbolOptions.add({
-          'geometry': Point(coordinates: Position(warning.longitude, warning.latitude)),
-          'textField': emoji,
-          'textSize': MarkerConfig.getRadiusForType(POIMarkerType.warning),
-          'textColor': Colors.black.value,
-          'iconAllowOverlap': true,
-          'textAllowOverlap': true,
-        });
-      }
-    }
-
-    if (symbolOptions.isNotEmpty) {
-      // Use reflection/dynamic to call createMulti since type is not available at compile time on Web
-      await (_symbolAnnotationManager as dynamic).createMulti(
-        symbolOptions.map((opts) => SymbolAnnotationOptions(
-          geometry: opts['geometry'],
-          textField: opts['textField'],
-          textSize: opts['textSize'],
-          textColor: opts['textColor'],
-          iconAllowOverlap: opts['iconAllowOverlap'],
-          textAllowOverlap: opts['textAllowOverlap'],
-        )).toList(),
-      );
-      AppLogger.success('Added symbol markers with emojis to 3D map', tag: 'MAP', data: {
-        'count': symbolOptions.length,
-      });
-    } else {
-      AppLogger.warning('No markers to add - all toggles might be off or no data loaded', tag: 'MAP', data: {
-        'showOSMPOIs': mapState.showOSMPOIs,
-        'showPOIs': mapState.showPOIs,
-        'showWarnings': mapState.showWarnings,
-      });
-    }
-  }
-
-  /// Add markers using CircleAnnotations (Web fallback - emojis not supported)
+  /// Add markers using CircleAnnotations
   Future<void> _addCircleMarkers() async {
     if (_circleAnnotationManager == null) {
       AppLogger.warning('Circle annotation manager not ready', tag: 'MAP');
@@ -1399,20 +1287,5 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'showWarnings': mapState.showWarnings,
       });
     }
-  }
-}
-
-/// Click listener for circle annotations
-class _OnSymbolClickListener extends OnSymbolAnnotationClickListener {
-  final void Function(double lat, double lng) onTap;
-
-  _OnSymbolClickListener({required this.onTap});
-
-  @override
-  void onSymbolAnnotationClick(SymbolAnnotation annotation) {
-    // Use geometry coordinates to identify the POI
-    final coords = annotation.geometry.coordinates;
-    AppLogger.map('Symbol annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
-    onTap(coords.lat.toDouble(), coords.lng.toDouble());
   }
 }
