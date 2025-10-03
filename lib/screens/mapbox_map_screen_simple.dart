@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   CameraOptions? _initialCamera;
   String _debugMessage = 'Tap GPS button to test';
   PointAnnotationManager? _pointAnnotationManager;
+  Timer? _debounceTimer;
+  DateTime? _lastPOILoadTime;
 
   @override
   void initState() {
@@ -594,6 +597,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     child: const Icon(Icons.layers),
                   ),
                   const SizedBox(height: 16),
+                  // Reload POIs button
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'reload_pois_button',
+                    onPressed: () async {
+                      AppLogger.map('Manual POI reload requested');
+                      await _loadAllPOIData();
+                      _addMarkers();
+                      _lastPOILoadTime = DateTime.now();
+                    },
+                    backgroundColor: Colors.orange,
+                    tooltip: 'Reload POIs',
+                    child: const Icon(Icons.refresh),
+                  ),
+                  const SizedBox(height: 16),
                   // Switch to 2D button (matching 3D button style from 2D map)
                   FloatingActionButton(
                     mini: false,
@@ -657,11 +675,34 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Initialize point annotation manager for markers
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
 
+    // Center on user location if available
+    final locationState = ref.read(locationNotifierProvider);
+    locationState.whenData((location) {
+      if (location != null && mounted) {
+        AppLogger.map('Centering map on user location at startup');
+        mapboxMap.flyTo(
+          CameraOptions(
+            center: Point(
+              coordinates: Position(location.longitude, location.latitude),
+            ),
+            zoom: 15.0,
+            pitch: 70.0,
+          ),
+          MapAnimationOptions(duration: 1000),
+        );
+      }
+    });
+
     // Load POI data initially
     await _loadAllPOIData();
+    _lastPOILoadTime = DateTime.now(); // Track initial load time
 
     // Add markers after data is loaded
     _addMarkers();
+
+    // Note: Mapbox Maps Flutter 2.11.0 doesn't have subscribeCameraChanged
+    // POIs will reload when user interacts with toggle buttons or creates new POIs
+    // For now, we rely on periodic refresh and manual triggers
 
     AppLogger.success('Mapbox map ready', tag: 'MAP');
   }
@@ -731,6 +772,35 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     AppLogger.separator();
   }
 
+  /// Handle camera change events (debounced to avoid excessive reloads)
+  void _onCameraChanged() {
+    // Cancel existing timer
+    _debounceTimer?.cancel();
+
+    // Set new timer for 1 second after user stops moving
+    _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
+      // Don't reload if we just loaded recently (within 5 seconds)
+      if (_lastPOILoadTime != null) {
+        final timeSinceLastLoad = DateTime.now().difference(_lastPOILoadTime!);
+        if (timeSinceLastLoad.inSeconds < 5) {
+          AppLogger.debug('Skipping POI reload (loaded ${timeSinceLastLoad.inSeconds}s ago)', tag: 'MAP');
+          return;
+        }
+      }
+
+      AppLogger.map('Camera changed, reloading POIs');
+      await _loadAllPOIData();
+      _addMarkers();
+      _lastPOILoadTime = DateTime.now();
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
   /// Add POI and warning markers to the map
   Future<void> _addMarkers() async {
     if (_pointAnnotationManager == null) return;
@@ -791,6 +861,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await _pointAnnotationManager!.createMulti(annotationOptions);
       AppLogger.success('Added markers to 3D map', tag: 'MAP', data: {
         'count': annotationOptions.length,
+      });
+    } else {
+      AppLogger.warning('No markers to add - all toggles might be off or no data loaded', tag: 'MAP', data: {
+        'showOSMPOIs': mapState.showOSMPOIs,
+        'showPOIs': mapState.showPOIs,
+        'showWarnings': mapState.showWarnings,
       });
     }
   }
