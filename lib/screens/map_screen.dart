@@ -1088,6 +1088,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: const Icon(Icons.layers),
           ),
           const SizedBox(height: 16), // Consistent spacing
+          // Reload POIs button (matching 3D map)
+          FloatingActionButton(
+            heroTag: 'reload_pois_2d',
+            onPressed: () {
+              AppLogger.map('Manual POI reload requested (2D)');
+              _loadAllMapDataWithBounds(forceReload: true);
+            },
+            backgroundColor: Colors.orange,
+            tooltip: 'Reload POIs',
+            child: const Icon(Icons.refresh),
+          ),
+          const SizedBox(height: 16), // Consistent spacing
           // 3D Map button - only show on Native (not on web/PWA)
           if (!kIsWeb) ...[
             FloatingActionButton(

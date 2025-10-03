@@ -30,8 +30,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   CameraOptions? _initialCamera;
   String _debugMessage = 'Tap GPS button to test';
   PointAnnotationManager? _pointAnnotationManager;
+  CircleAnnotationManager? _circleAnnotationManager;
   Timer? _debounceTimer;
   DateTime? _lastPOILoadTime;
+  Timer? _cameraCheckTimer;
+  Point? _lastCameraCenter;
+  double? _lastCameraZoom;
 
   @override
   void initState() {
@@ -672,8 +676,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to enable location component', error: e);
     }
 
-    // Initialize point annotation manager for markers
-    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    // Initialize circle annotation manager for markers (circles are visible without icon images)
+    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    AppLogger.success('Circle annotation manager created', tag: 'MAP');
 
     // Center on user location if available
     final locationState = ref.read(locationNotifierProvider);
@@ -697,14 +702,38 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     await _loadAllPOIData();
     _lastPOILoadTime = DateTime.now(); // Track initial load time
 
+    // Get initial camera state
+    final initialState = await mapboxMap.getCameraState();
+    _lastCameraCenter = initialState.center;
+    _lastCameraZoom = initialState.zoom;
+
     // Add markers after data is loaded
     _addMarkers();
 
-    // Note: Mapbox Maps Flutter 2.11.0 doesn't have subscribeCameraChanged
-    // POIs will reload when user interacts with toggle buttons or creates new POIs
-    // For now, we rely on periodic refresh and manual triggers
+    // Start periodic camera check to detect map movement
+    _startCameraMonitoring();
 
-    AppLogger.success('Mapbox map ready', tag: 'MAP');
+    // Delayed GPS centering (retry after 3 seconds in case first attempt failed)
+    Future.delayed(const Duration(seconds: 3), () {
+      final locationState = ref.read(locationNotifierProvider);
+      locationState.whenData((location) {
+        if (location != null && mounted && _mapboxMap != null) {
+          AppLogger.map('Delayed GPS centering (retry)');
+          _mapboxMap!.flyTo(
+            CameraOptions(
+              center: Point(
+                coordinates: Position(location.longitude, location.latitude),
+              ),
+              zoom: 15.0,
+              pitch: 70.0,
+            ),
+            MapAnimationOptions(duration: 1000),
+          );
+        }
+      });
+    });
+
+    AppLogger.success('Mapbox map ready with camera monitoring', tag: 'MAP');
   }
 
   /// Load all POI data (OSM POIs, Community POIs, Warnings)
@@ -772,6 +801,38 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     AppLogger.separator();
   }
 
+  /// Start periodic camera monitoring to detect map movement
+  void _startCameraMonitoring() {
+    _cameraCheckTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+      if (!_isMapReady || _mapboxMap == null || !mounted) {
+        return;
+      }
+
+      try {
+        final currentState = await _mapboxMap!.getCameraState();
+        final currentCenter = currentState.center;
+        final currentZoom = currentState.zoom;
+
+        // Check if camera moved significantly
+        if (_lastCameraCenter != null && _lastCameraZoom != null) {
+          final latDiff = (currentCenter.coordinates.lat - _lastCameraCenter!.coordinates.lat).abs();
+          final lngDiff = (currentCenter.coordinates.lng - _lastCameraCenter!.coordinates.lng).abs();
+          final zoomDiff = (currentZoom - _lastCameraZoom!).abs();
+
+          // Trigger reload if moved more than ~100m or zoomed
+          if (latDiff > 0.001 || lngDiff > 0.001 || zoomDiff > 0.5) {
+            AppLogger.debug('Camera moved, triggering debounced reload', tag: 'MAP');
+            _lastCameraCenter = currentCenter;
+            _lastCameraZoom = currentZoom;
+            _onCameraChanged();
+          }
+        }
+      } catch (e) {
+        AppLogger.error('Error checking camera state', error: e);
+      }
+    });
+  }
+
   /// Handle camera change events (debounced to avoid excessive reloads)
   void _onCameraChanged() {
     // Cancel existing timer
@@ -798,30 +859,36 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _cameraCheckTimer?.cancel();
     super.dispose();
   }
 
-  /// Add POI and warning markers to the map
+  /// Add POI and warning markers to the map using circles
   Future<void> _addMarkers() async {
-    if (_pointAnnotationManager == null) return;
+    if (_circleAnnotationManager == null) {
+      AppLogger.warning('Circle annotation manager not ready', tag: 'MAP');
+      return;
+    }
 
     // Clear existing markers first
-    await _pointAnnotationManager!.deleteAll();
+    await _circleAnnotationManager!.deleteAll();
 
-    List<PointAnnotationOptions> annotationOptions = [];
+    List<CircleAnnotationOptions> circleOptions = [];
 
     final mapState = ref.read(mapProvider);
 
     // Get OSM POIs (if enabled)
     if (mapState.showOSMPOIs) {
       final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding OSM POIs', tag: 'MAP', data: {'count': osmPOIs.length});
+      AppLogger.debug('Adding OSM POIs as circles', tag: 'MAP', data: {'count': osmPOIs.length});
       for (var poi in osmPOIs) {
-        annotationOptions.add(
-          PointAnnotationOptions(
+        circleOptions.add(
+          CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            iconColor: Colors.blue.value,
-            iconSize: 1.0,
+            circleRadius: 8.0,
+            circleColor: Colors.blue.value,
+            circleStrokeWidth: 2.0,
+            circleStrokeColor: Colors.white.value,
           ),
         );
       }
@@ -830,13 +897,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Get Community POIs (if enabled)
     if (mapState.showPOIs) {
       final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Community POIs', tag: 'MAP', data: {'count': communityPOIs.length});
+      AppLogger.debug('Adding Community POIs as circles', tag: 'MAP', data: {'count': communityPOIs.length});
       for (var poi in communityPOIs) {
-        annotationOptions.add(
-          PointAnnotationOptions(
+        circleOptions.add(
+          CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            iconColor: Colors.green.value,
-            iconSize: 1.2,
+            circleRadius: 10.0,
+            circleColor: Colors.green.value,
+            circleStrokeWidth: 2.0,
+            circleStrokeColor: Colors.white.value,
           ),
         );
       }
@@ -845,22 +914,24 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Get Warnings (if enabled)
     if (mapState.showWarnings) {
       final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
-      AppLogger.debug('Adding Warnings', tag: 'MAP', data: {'count': warnings.length});
+      AppLogger.debug('Adding Warnings as circles', tag: 'MAP', data: {'count': warnings.length});
       for (var warning in warnings) {
-        annotationOptions.add(
-          PointAnnotationOptions(
+        circleOptions.add(
+          CircleAnnotationOptions(
             geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-            iconColor: Colors.red.value,
-            iconSize: 1.5,
+            circleRadius: 12.0,
+            circleColor: Colors.red.value,
+            circleStrokeWidth: 2.0,
+            circleStrokeColor: Colors.white.value,
           ),
         );
       }
     }
 
-    if (annotationOptions.isNotEmpty) {
-      await _pointAnnotationManager!.createMulti(annotationOptions);
-      AppLogger.success('Added markers to 3D map', tag: 'MAP', data: {
-        'count': annotationOptions.length,
+    if (circleOptions.isNotEmpty) {
+      await _circleAnnotationManager!.createMulti(circleOptions);
+      AppLogger.success('Added circle markers to 3D map', tag: 'MAP', data: {
+        'count': circleOptions.length,
       });
     } else {
       AppLogger.warning('No markers to add - all toggles might be off or no data loaded', tag: 'MAP', data: {
