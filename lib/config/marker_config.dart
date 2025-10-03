@@ -15,7 +15,7 @@ class MarkerConfig {
   // ============================================================================
 
   /// Standard size for all POI circles (both 2D and 3D maps)
-  static const double poiCircleRadius = 20.0;
+  static const double poiCircleRadius = 10.0;
 
   /// User location marker size (both 2D and 3D maps)
   static const double userLocationSize = 12.0;
@@ -28,7 +28,7 @@ class MarkerConfig {
   // ============================================================================
 
   /// OSM POI colors (bike shops, water, toilets, etc.)
-  static const Color osmPoiFillColor = Colors.blue;
+  static const Color osmPoiFillColor = Color(0xFFBBDEFB); //blue.shade100
   static const Color osmPoiBorderColor = Colors.blue;
 
   /// Community POI colors (user-created points of interest)
