@@ -11,6 +11,7 @@ import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../services/map_service.dart';
 import '../utils/app_logger.dart';
+import '../config/marker_config.dart';
 import 'map_screen.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
@@ -713,8 +714,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Start periodic camera check to detect map movement
     _startCameraMonitoring();
 
-    // Delayed GPS centering (retry after 3 seconds in case first attempt failed)
-    Future.delayed(const Duration(seconds: 3), () {
+    // Delayed GPS centering (retry after 5 seconds in case first attempt failed)
+    Future.delayed(const Duration(seconds: 5), () {
       final locationState = ref.read(locationNotifierProvider);
       locationState.whenData((location) {
         if (location != null && mounted && _mapboxMap != null) {
@@ -885,10 +886,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: 8.0,
-            circleColor: Colors.blue.value,
-            circleStrokeWidth: 2.0,
-            circleStrokeColor: Colors.white.value,
+            circleRadius: MarkerConfig.poiCircleRadius,
+            circleColor: MarkerConfig.getColorValueForType(POIMarkerType.osmPOI),
+            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
+            circleStrokeColor: MarkerConfig.circleStrokeColor.value,
           ),
         );
       }
@@ -902,10 +903,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-            circleRadius: 10.0,
-            circleColor: Colors.green.value,
-            circleStrokeWidth: 2.0,
-            circleStrokeColor: Colors.white.value,
+            circleRadius: MarkerConfig.poiCircleRadius,
+            circleColor: MarkerConfig.getColorValueForType(POIMarkerType.communityPOI),
+            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
+            circleStrokeColor: MarkerConfig.circleStrokeColor.value,
           ),
         );
       }
@@ -919,10 +920,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         circleOptions.add(
           CircleAnnotationOptions(
             geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-            circleRadius: 12.0,
-            circleColor: Colors.red.value,
-            circleStrokeWidth: 2.0,
-            circleStrokeColor: Colors.white.value,
+            circleRadius: MarkerConfig.poiCircleRadius,
+            circleColor: MarkerConfig.getColorValueForType(POIMarkerType.warning),
+            circleStrokeWidth: MarkerConfig.circleStrokeWidth,
+            circleStrokeColor: MarkerConfig.circleStrokeColor.value,
           ),
         );
       }
