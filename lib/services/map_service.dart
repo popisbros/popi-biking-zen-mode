@@ -35,6 +35,9 @@ enum MapboxStyleType {
 
   /// Mapbox Satellite Streets - Hybrid satellite + streets
   satelliteStreets,
+
+  /// Wike 3D - Custom cycling style
+  wike3D,
 }
 
 /// Service for managing map tiles and styles
@@ -106,6 +109,8 @@ class MapService {
         return 'mapbox://styles/mapbox/outdoors-v12';
       case MapboxStyleType.satelliteStreets:
         return 'mapbox://styles/mapbox/satellite-streets-v12';
+      case MapboxStyleType.wike3D:
+        return 'mapbox://styles/sylvainbrosset/cmgclfgn400f001pd72ofcdg9';
     }
   }
 
@@ -168,6 +173,8 @@ class MapService {
         return 'Outdoors 3D';
       case MapboxStyleType.satelliteStreets:
         return 'Hybrid 3D';
+      case MapboxStyleType.wike3D:
+        return 'Wike 3D';
     }
   }
 
