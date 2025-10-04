@@ -86,30 +86,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             AppLogger.map('3D Map using default zoom', data: {'mapbox_zoom': mapState.zoom});
           }
 
-          // Calculate camera from bounds or use center+zoom
-          // Note: For bounds, we'll use a center point and calculated zoom
-          // Mapbox camera doesn't directly support bounds in CameraOptions
-          final camera = hasBounds
+          // Use center+zoom for initial camera (bounds will be applied in _onMapCreated)
+          final camera = location != null
               ? CameraOptions(
-                  center: Point(coordinates: Position(
-                    (mapState.southWest!.longitude + mapState.northEast!.longitude) / 2,
-                    (mapState.southWest!.latitude + mapState.northEast!.latitude) / 2,
-                  )),
-                  zoom: mapState.zoom, // Use stored zoom as fallback
-                  pitch: _currentPitch,
+                  center: Point(
+                    coordinates: Position(
+                      location.longitude,
+                      location.latitude,
+                    ),
+                  ),
+                  zoom: mapState.zoom, // Use zoom from state (stored in Mapbox scale)
+                  pitch: _currentPitch, // Dynamic pitch angle
                 )
-              : location != null
-                  ? CameraOptions(
-                      center: Point(
-                        coordinates: Position(
-                          location.longitude,
-                          location.latitude,
-                        ),
-                      ),
-                      zoom: mapState.zoom, // Use zoom from state (stored in Mapbox scale)
-                      pitch: _currentPitch, // Dynamic pitch angle
-                    )
-                  : _getDefaultCamera();
+              : _getDefaultCamera();
 
           if (mounted) {
             setState(() {
@@ -1175,17 +1164,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     if (hasBounds) {
       // Use saved bounds from 2D map
       AppLogger.map('Fitting 3D map to saved bounds');
-      await mapboxMap.flyTo(
-        CameraOptions(
-          center: Point(coordinates: Position(
-            (mapState.southWest!.longitude + mapState.northEast!.longitude) / 2,
-            (mapState.southWest!.latitude + mapState.northEast!.latitude) / 2,
-          )),
-          zoom: mapState.zoom,
-          pitch: _currentPitch,
-        ),
-        MapAnimationOptions(duration: 1000),
+
+      // Create coordinate bounds from saved state
+      final coordinateBounds = CoordinateBounds(
+        southwest: Point(coordinates: Position(
+          mapState.southWest!.longitude,
+          mapState.southWest!.latitude,
+        )),
+        northeast: Point(coordinates: Position(
+          mapState.northEast!.longitude,
+          mapState.northEast!.latitude,
+        )),
+        infiniteBounds: false,
       );
+
+      // Calculate camera for bounds, then add pitch
+      final boundsCamera = await mapboxMap.cameraForCoordinateBounds(
+        coordinateBounds,
+        MbxEdgeInsets(top: 0, left: 0, bottom: 0, right: 0),
+        null, // bearing
+        _currentPitch, // pitch
+      );
+
+      // Apply the camera with animation
+      await mapboxMap.flyTo(boundsCamera, MapAnimationOptions(duration: 1000));
       hasCentered = true;
 
       await Future.delayed(const Duration(milliseconds: 500));
