@@ -495,7 +495,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       'ne': '${bounds.north.toStringAsFixed(4)},${bounds.east.toStringAsFixed(4)}'
     });
 
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => const MapboxMapScreenSimple(),

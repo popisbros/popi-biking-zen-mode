@@ -99,8 +99,8 @@ class MapState {
 
   factory MapState.initial() {
     final mapService = MapService();
-    final defaultLayer = MapLayerType.openCycleMap;
-    final defaultStyle = MapboxStyleType.streets; // Default to Streets 3D
+    final defaultLayer = mapService.current2DLayer;
+    final defaultStyle = mapService.current3DStyle;
 
     return MapState(
       current2DLayer: defaultLayer,

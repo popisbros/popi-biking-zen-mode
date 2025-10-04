@@ -50,7 +50,7 @@ class MapService {
   MapLayerType _current2DLayer = MapLayerType.openCycleMap;
 
   /// Current active 3D style
-  MapboxStyleType _current3DStyle = MapboxStyleType.streets;
+  MapboxStyleType _current3DStyle = MapboxStyleType.wike3D;
 
   /// Get current 2D layer type
   MapLayerType get current2DLayer => _current2DLayer;
