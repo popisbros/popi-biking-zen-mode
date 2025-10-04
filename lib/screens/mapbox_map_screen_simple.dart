@@ -1148,7 +1148,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             center: Point(
               coordinates: Position(location.longitude, location.latitude),
             ),
-            zoom: 15.0,
+            zoom: 16.0, // Mapbox zoom 16 = 2D zoom 15
             pitch: _currentPitch,
           ),
           MapAnimationOptions(duration: 1000),
@@ -1176,10 +1176,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     }
 
-    // Get initial camera state
-    final initialState = await mapboxMap.getCameraState();
-    _lastCameraCenter = initialState.center;
-    _lastCameraZoom = initialState.zoom;
+    // Get initial camera state (with error handling)
+    try {
+      final initialState = await mapboxMap.getCameraState();
+      _lastCameraCenter = initialState.center;
+      _lastCameraZoom = initialState.zoom;
+    } catch (e) {
+      AppLogger.warning('Could not get initial camera state: $e', tag: 'MAP');
+    }
 
     // Start periodic camera check to detect map movement
     _startCameraMonitoring();
@@ -1195,7 +1199,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               center: Point(
                 coordinates: Position(location.longitude, location.latitude),
               ),
-              zoom: 15.0,
+              zoom: 16.0, // Mapbox zoom 16 = 2D zoom 15
               pitch: _currentPitch,
             ),
             MapAnimationOptions(duration: 1000),
@@ -1481,13 +1485,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   /// Add POI and warning markers to the map
   /// All markers use emoji icon images with proper colors
   Future<void> _addMarkers() async {
-    if (_pointAnnotationManager == null) {
+    if (_pointAnnotationManager == null || !_isMapReady) {
       AppLogger.warning('Annotation managers not ready', tag: 'MAP');
       return;
     }
 
-    // Clear existing markers
-    await _pointAnnotationManager!.deleteAll();
+    // Clear existing markers (with error handling)
+    try {
+      await _pointAnnotationManager!.deleteAll();
+    } catch (e) {
+      AppLogger.warning('Could not delete existing markers: $e', tag: 'MAP');
+      // Continue anyway - might be first load
+    }
 
     final mapState = ref.read(mapProvider);
 
