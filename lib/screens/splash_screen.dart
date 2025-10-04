@@ -75,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         FadeTransition(
           opacity: _fadeAnimation,
           child: Container(
-            color: const Color(0xFF808080), // Grey background - will match image
+            color: const Color(0xFFD3D3D3), // Light grey background matching splash logo
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
