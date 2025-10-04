@@ -112,7 +112,7 @@ class MapState {
       showOSMPOIs: true,
       showWarnings: true,
       center: mapService.getDefaultCenter(),
-      zoom: 16.0, // Default: 3D uses 16.0, 2D uses 15.0 (when no bounds saved)
+      zoom: 17.0, // Default: Both 2D and 3D use 16.0 (when no bounds saved)
     );
   }
 

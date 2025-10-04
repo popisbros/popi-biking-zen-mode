@@ -1350,6 +1350,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // Compass rotation toggle button (Native only)
                 if (!kIsWeb)
                   FloatingActionButton(
+                    mini: true, // Match zoom button size
                     heroTag: 'compass_rotation_toggle_2d',
                     onPressed: () {
                       setState(() {
@@ -1367,9 +1368,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     tooltip: 'Toggle Compass Rotation',
                     child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
                   ),
-                if (!kIsWeb) const SizedBox(height: 16),
+                if (!kIsWeb) const SizedBox(height: 8), // Match zoom spacing
                 // GPS center button
                 FloatingActionButton(
+                  mini: true, // Match zoom button size
                   heroTag: 'my_location',
                   onPressed: () {
                     AppLogger.map('My location button pressed');
@@ -1386,9 +1388,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   tooltip: 'Center on Location',
                   child: const Icon(Icons.my_location),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8), // Match zoom spacing
                 // Reload POIs button
                 FloatingActionButton(
+                  mini: true, // Match zoom button size
                   heroTag: 'reload_pois_2d',
                   onPressed: () {
                     AppLogger.map('Manual POI reload requested (2D)');
@@ -1410,6 +1413,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               children: [
                 // Layer picker button (tiles selector)
                 FloatingActionButton(
+                  mini: true, // Match zoom button size
                   heroTag: 'layer_picker',
                   onPressed: _showLayerPicker,
                   backgroundColor: Colors.blue,
@@ -1418,8 +1422,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 // 3D Map button - only show on Native (not on web/PWA)
                 if (!kIsWeb) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8), // Match zoom spacing
                   FloatingActionButton(
+                    mini: true, // Match zoom button size
                     heroTag: '3d_map',
                     onPressed: _open3DMap,
                     backgroundColor: Colors.green,

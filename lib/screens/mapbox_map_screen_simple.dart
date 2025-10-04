@@ -1030,7 +1030,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 children: [
                   // Compass rotation toggle button
                   FloatingActionButton(
-                    mini: false,
+                    mini: true, // Match zoom button size
                     heroTag: 'compass_rotation_toggle',
                     onPressed: () {
                       setState(() {
@@ -1051,10 +1051,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Toggle Compass Rotation',
                     child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8), // Match zoom spacing
                   // GPS center button
                   FloatingActionButton(
-                    mini: false,
+                    mini: true, // Match zoom button size
                     heroTag: 'gps_center_button_3d',
                     onPressed: _centerOnUserLocation,
                     backgroundColor: AppColors.signalYellow,
@@ -1062,10 +1062,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Center on Location',
                     child: const Icon(Icons.my_location),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8), // Match zoom spacing
                   // Reload POIs button
                   FloatingActionButton(
-                    mini: false,
+                    mini: true, // Match zoom button size
                     heroTag: 'reload_pois_button',
                     onPressed: () async {
                       AppLogger.map('Manual POI reload requested');
@@ -1090,27 +1090,27 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 children: [
                   // Style picker button (tiles selector)
                   FloatingActionButton(
-                    mini: false,
+                    mini: true, // Match zoom button size
                     heroTag: 'style_picker_button',
                     onPressed: _showStylePicker,
                     backgroundColor: Colors.blue,
                     tooltip: 'Change Map Style',
                     child: const Icon(Icons.layers),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8), // Match zoom spacing
                   // Pitch selector button
                   FloatingActionButton(
-                    mini: false,
+                    mini: true, // Match zoom button size
                     heroTag: 'pitch_selector_button',
                     onPressed: _showPitchPicker,
                     backgroundColor: Colors.deepPurple,
                     tooltip: 'Change Pitch: ${_currentPitch.toInt()}°',
                     child: Text('${_currentPitch.toInt()}°', style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8), // Match zoom spacing
                   // Switch to 2D button
                   FloatingActionButton(
-                    mini: false,
+                    mini: true, // Match zoom button size
                     heroTag: 'switch_to_2d_button',
                     onPressed: _switchTo2DMap,
                     backgroundColor: Colors.green,
