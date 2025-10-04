@@ -112,7 +112,7 @@ class MapState {
       showOSMPOIs: true,
       showWarnings: true,
       center: mapService.getDefaultCenter(),
-      zoom: 17.0, // Mapbox zoom scale (2D map will use 16.0 by subtracting 1)
+      zoom: 16.0, // Default: 3D uses 16.0, 2D uses 15.0 (when no bounds saved)
     );
   }
 
