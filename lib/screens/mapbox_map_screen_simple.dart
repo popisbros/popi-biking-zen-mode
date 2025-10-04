@@ -46,6 +46,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Point? _lastCameraCenter;
   double? _lastCameraZoom;
 
+  // Compass rotation state
+  bool _compassRotationEnabled = false;
+  double? _lastBearing;
+  static const double _compassThreshold = 5.0; // Only rotate if change > 5°
+
   // Store POI data for tap handling
   final Map<String, OSMPOI> _osmPoiById = {};
   final Map<String, CyclingPOI> _communityPoiById = {};
@@ -769,16 +774,31 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     });
 
-    // Listen for compass changes to rotate the map
+    // Listen for compass changes to rotate the map (with toggle + threshold)
     ref.listen<double?>(compassNotifierProvider, (previous, next) {
-      if (next != null && _mapboxMap != null && _isMapReady) {
-        // Rotate map based on compass heading, keeping pitch locked at 70°
-        _mapboxMap!.setCamera(CameraOptions(
-          bearing: -next,
-          pitch: 70.0, // Maintain locked 3D angle
-        ));
-        AppLogger.debug('Map rotated to bearing', tag: 'Mapbox3D', data: {'bearing': -next});
+      if (!_compassRotationEnabled || next == null || _mapboxMap == null || !_isMapReady) {
+        return;
       }
+
+      // Only rotate if change is significant (debouncing)
+      if (_lastBearing != null) {
+        final diff = (next - _lastBearing!).abs();
+        if (diff < _compassThreshold) {
+          return; // Skip small changes
+        }
+      }
+
+      _lastBearing = next;
+
+      // Rotate map based on compass heading, keeping pitch locked at 70°
+      _mapboxMap!.setCamera(CameraOptions(
+        bearing: -next,
+        pitch: 70.0, // Maintain locked 3D angle
+      ));
+      AppLogger.debug('Map rotated to bearing', tag: 'Mapbox3D', data: {
+        'bearing': -next,
+        'threshold': _compassThreshold,
+      });
     });
 
     // Use cached initial camera or default
@@ -952,6 +972,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     child: const Icon(Icons.map),
                   ),
                   const SizedBox(height: 16),
+                  // Compass rotation toggle button
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'compass_rotation_toggle',
+                    onPressed: () {
+                      setState(() {
+                        _compassRotationEnabled = !_compassRotationEnabled;
+                        if (!_compassRotationEnabled) {
+                          // Reset map to north when disabling
+                          _mapboxMap?.setCamera(CameraOptions(
+                            bearing: 0,
+                            pitch: 70.0,
+                          ));
+                          _lastBearing = null;
+                        }
+                      });
+                      AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"}');
+                    },
+                    backgroundColor: _compassRotationEnabled ? Colors.purple : Colors.grey.shade300,
+                    foregroundColor: _compassRotationEnabled ? Colors.white : Colors.grey.shade600,
+                    tooltip: 'Toggle Compass Rotation',
+                    child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
+                  ),
+                  const SizedBox(height: 16),
                   // GPS center button (matching 2D map style)
                   FloatingActionButton(
                     mini: false,
@@ -1003,10 +1047,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     // Initialize annotation managers
-    // Use both PointAnnotation (for Community POIs with icons) and CircleAnnotation (for OSM/Warnings)
-    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    // Create CircleAnnotation first, then PointAnnotation so icons render on top
     _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
-    AppLogger.success('Annotation managers created (Point + Circle)', tag: 'MAP');
+    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    AppLogger.success('Annotation managers created (Circle + Point)', tag: 'MAP');
 
     // Center on user location if available
     final locationState = ref.read(locationNotifierProvider);
@@ -1296,15 +1340,25 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       // Get emoji for this POI type
       final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
+      AppLogger.debug('Creating icon for Community POI', tag: 'MAP', data: {
+        'type': poi.type,
+        'emoji': emoji,
+        'lat': poi.latitude,
+        'lng': poi.longitude,
+      });
 
       // Create icon image from emoji
       final iconImage = await _createEmojiIcon(emoji);
+      AppLogger.debug('Icon created', tag: 'MAP', data: {
+        'size': iconImage.length,
+        'bytes': '${iconImage.length} bytes',
+      });
 
       pointOptions.add(
         PointAnnotationOptions(
           geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
           image: iconImage,
-          iconSize: 0.5, // Scale down the icon
+          iconSize: 3.0, // Larger icon for better visibility
         ),
       );
     }
@@ -1312,6 +1366,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     if (pointOptions.isNotEmpty) {
       await _pointAnnotationManager!.createMulti(pointOptions);
       AppLogger.success('Added Community POI icons', tag: 'MAP', data: {'count': pointOptions.length});
+    } else {
+      AppLogger.warning('No Community POI icons to add', tag: 'MAP');
     }
   }
 
