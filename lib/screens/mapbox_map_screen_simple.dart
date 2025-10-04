@@ -742,21 +742,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for POI data changes and refresh markers
     ref.listen<AsyncValue<List<dynamic>>>(osmPOIsNotifierProvider, (previous, next) {
-      if (_isMapReady && _symbolAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
         AppLogger.debug('OSM POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(communityWarningsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _symbolAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
         AppLogger.debug('Warnings updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(cyclingPOIsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _symbolAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
         AppLogger.debug('Community POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
@@ -764,7 +764,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for map state changes (toggle buttons) and refresh markers INSTANTLY
     ref.listen<MapState>(mapProvider, (previous, next) {
-      if (_isMapReady && _symbolAnnotationManager != null) {
+      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
             previous?.showPOIs != next.showPOIs ||
             previous?.showWarnings != next.showWarnings) {
@@ -1061,12 +1061,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     );
     AppLogger.success('Click listeners added for annotations', tag: 'MAP');
 
-    // Center on user location if available
+    // Center on user location if available, then load POIs
     final locationState = ref.read(locationNotifierProvider);
-    locationState.whenData((location) {
+    bool hasCentered = false;
+
+    locationState.whenData((location) async {
       if (location != null && mounted) {
         AppLogger.map('Centering map on user location at startup');
-        mapboxMap.flyTo(
+        await mapboxMap.flyTo(
           CameraOptions(
             center: Point(
               coordinates: Position(location.longitude, location.latitude),
@@ -1076,20 +1078,33 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           ),
           MapAnimationOptions(duration: 1000),
         );
+        hasCentered = true;
+
+        // Wait a bit for camera to settle, then load POIs
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        AppLogger.map('Loading POIs after centering on user location');
+        await _loadAllPOIData();
+        _lastPOILoadTime = DateTime.now();
+        _addMarkers();
       }
     });
 
-    // Load POI data initially
-    await _loadAllPOIData();
-    _lastPOILoadTime = DateTime.now(); // Track initial load time
+    // If no location available, load POIs immediately at default position
+    if (!hasCentered) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (!hasCentered && mounted) {
+        AppLogger.map('Loading POIs at default location (no GPS)');
+        await _loadAllPOIData();
+        _lastPOILoadTime = DateTime.now();
+        _addMarkers();
+      }
+    }
 
     // Get initial camera state
     final initialState = await mapboxMap.getCameraState();
     _lastCameraCenter = initialState.center;
     _lastCameraZoom = initialState.zoom;
-
-    // Add markers after data is loaded
-    _addMarkers();
 
     // Start periodic camera check to detect map movement
     _startCameraMonitoring();
