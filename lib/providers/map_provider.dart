@@ -101,7 +101,7 @@ class MapState {
       showOSMPOIs: true,
       showWarnings: true,
       center: mapService.getDefaultCenter(),
-      zoom: 15.0,
+      zoom: 16.0, // Mapbox zoom scale (2D map will use 15.0 by subtracting 1)
     );
   }
 

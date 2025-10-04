@@ -168,7 +168,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 center: Point(
                   coordinates: Position(location.longitude, location.latitude),
                 ),
-                zoom: 15.0,
+                zoom: 16.0, // Mapbox zoom 16 = 2D zoom 15
                 pitch: _currentPitch, // Dynamic pitch angle
               ),
               MapAnimationOptions(duration: 1000),
@@ -301,8 +301,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final cameraState = await _mapboxMap?.getCameraState();
     if (cameraState != null) {
       final currentZoom = cameraState.zoom;
+      // Keep Mapbox zoom in state (will be converted when loading 2D map)
       ref.read(mapProvider.notifier).updateZoom(currentZoom);
-      AppLogger.map('Saved zoom for 2D map', data: {'zoom': currentZoom});
+      AppLogger.map('Saved zoom for 2D map', data: {'3d_zoom': currentZoom, '2d_zoom': currentZoom - 1.0});
     }
 
     Navigator.push(
