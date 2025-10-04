@@ -47,6 +47,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   double? _lastBearing;
   static const double _compassThreshold = 5.0; // Only rotate if change > 5°
 
+  // Pitch angle state
+  double _currentPitch = 60.0; // Default pitch
+  static const List<double> _pitchOptions = [40.0, 50.0, 60.0, 70.0, 80.0];
+
   // Store POI data for tap handling
   final Map<String, OSMPOI> _osmPoiById = {};
   final Map<String, CyclingPOI> _communityPoiById = {};
@@ -77,7 +81,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     ),
                   ),
                   zoom: 15.0,
-                  pitch: 80.0, // Locked 3D angle at 80°
+                  pitch: _currentPitch, // Dynamic pitch angle
                 )
               : _getDefaultCamera();
 
@@ -127,7 +131,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         coordinates: Position(5.826000, 40.643944), // Custom default location
       ),
       zoom: 15.0,
-      pitch: 80.0, // Locked 3D angle at 80°
+      pitch: _currentPitch, // Dynamic pitch angle
     );
   }
 
@@ -162,7 +166,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   coordinates: Position(location.longitude, location.latitude),
                 ),
                 zoom: 15.0,
-                pitch: 80.0, // Locked 3D angle at 80°
+                pitch: _currentPitch, // Dynamic pitch angle
               ),
               MapAnimationOptions(duration: 1000),
             );
@@ -228,6 +232,44 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   _addMarkers();
                   Navigator.pop(context);
                   setState(() => _debugMessage = 'Style changed to ${mapService.getStyleName(style)}');
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPitchPicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Choose Camera Pitch',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ..._pitchOptions.map((pitch) {
+              return ListTile(
+                leading: Icon(
+                  Icons.height,
+                  color: _currentPitch == pitch ? Colors.deepPurple : Colors.grey,
+                ),
+                title: Text('${pitch.toInt()}°'),
+                trailing: _currentPitch == pitch
+                    ? const Icon(Icons.check, color: Colors.deepPurple)
+                    : null,
+                onTap: () async {
+                  setState(() => _currentPitch = pitch);
+                  await _mapboxMap?.setCamera(CameraOptions(pitch: pitch));
+                  Navigator.pop(context);
+                  AppLogger.map('Pitch changed to $pitch°');
                 },
               );
             }),
@@ -784,7 +826,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Rotate map based on compass heading, keeping pitch locked at 80°
       _mapboxMap!.setCamera(CameraOptions(
         bearing: -next,
-        pitch: 80.0, // Maintain locked 3D angle
+        pitch: _currentPitch, // Maintain pitch angle
       ));
       AppLogger.debug('Map rotated to bearing', tag: 'Mapbox3D', data: {
         'bearing': -next,
@@ -909,7 +951,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       if (currentZoom != null) {
                         _mapboxMap?.setCamera(CameraOptions(
                           zoom: currentZoom + 1,
-                          pitch: 80.0, // Maintain locked 3D angle
+                          pitch: _currentPitch, // Maintain pitch angle
                         ));
                       }
                     },
@@ -927,7 +969,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       if (currentZoom != null) {
                         _mapboxMap?.setCamera(CameraOptions(
                           zoom: currentZoom - 1,
-                          pitch: 80.0, // Maintain locked 3D angle
+                          pitch: _currentPitch, // Maintain pitch angle
                         ));
                       }
                     },
@@ -937,20 +979,46 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
             ),
 
-            // Floating action buttons in bottom-right (matching 2D layout)
+            // Bottom-left controls: compass, center, reload
             Positioned(
               bottom: 16,
-              right: 16,
+              left: 16,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Style picker button
+                  // Compass rotation toggle button
                   FloatingActionButton(
                     mini: false,
-                    heroTag: 'style_picker_button',
-                    onPressed: _showStylePicker,
-                    backgroundColor: Colors.blue,
-                    child: const Icon(Icons.layers),
+                    heroTag: 'compass_rotation_toggle',
+                    onPressed: () {
+                      setState(() {
+                        _compassRotationEnabled = !_compassRotationEnabled;
+                        if (!_compassRotationEnabled) {
+                          // Reset map to north when disabling
+                          _mapboxMap?.setCamera(CameraOptions(
+                            bearing: 0,
+                            pitch: _currentPitch,
+                          ));
+                          _lastBearing = null;
+                        }
+                      });
+                      AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"}');
+                    },
+                    backgroundColor: _compassRotationEnabled ? Colors.purple : Colors.grey.shade300,
+                    foregroundColor: _compassRotationEnabled ? Colors.white : Colors.grey.shade600,
+                    tooltip: 'Toggle Compass Rotation',
+                    child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
+                  ),
+                  const SizedBox(height: 16),
+                  // GPS center button
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'gps_center_button_3d',
+                    onPressed: _centerOnUserLocation,
+                    backgroundColor: AppColors.signalYellow,
+                    foregroundColor: AppColors.urbanBlue,
+                    tooltip: 'Center on Location',
+                    child: const Icon(Icons.my_location),
                   ),
                   const SizedBox(height: 16),
                   // Reload POIs button
@@ -967,8 +1035,38 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Reload POIs',
                     child: const Icon(Icons.refresh),
                   ),
+                ],
+              ),
+            ),
+
+            // Bottom-right controls: tiles selector, pitch selector, 2D/3D switch
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Style picker button (tiles selector)
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'style_picker_button',
+                    onPressed: _showStylePicker,
+                    backgroundColor: Colors.blue,
+                    tooltip: 'Change Map Style',
+                    child: const Icon(Icons.layers),
+                  ),
                   const SizedBox(height: 16),
-                  // Switch to 2D button (matching 3D button style from 2D map)
+                  // Pitch selector button
+                  FloatingActionButton(
+                    mini: false,
+                    heroTag: 'pitch_selector_button',
+                    onPressed: _showPitchPicker,
+                    backgroundColor: Colors.deepPurple,
+                    tooltip: 'Change Pitch: ${_currentPitch.toInt()}°',
+                    child: Text('${_currentPitch.toInt()}°', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 16),
+                  // Switch to 2D button
                   FloatingActionButton(
                     mini: false,
                     heroTag: 'switch_to_2d_button',
@@ -976,40 +1074,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     backgroundColor: Colors.green,
                     tooltip: 'Switch to 2D Map',
                     child: const Icon(Icons.map),
-                  ),
-                  const SizedBox(height: 16),
-                  // Compass rotation toggle button
-                  FloatingActionButton(
-                    mini: false,
-                    heroTag: 'compass_rotation_toggle',
-                    onPressed: () {
-                      setState(() {
-                        _compassRotationEnabled = !_compassRotationEnabled;
-                        if (!_compassRotationEnabled) {
-                          // Reset map to north when disabling
-                          _mapboxMap?.setCamera(CameraOptions(
-                            bearing: 0,
-                            pitch: 80.0,
-                          ));
-                          _lastBearing = null;
-                        }
-                      });
-                      AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"}');
-                    },
-                    backgroundColor: _compassRotationEnabled ? Colors.purple : Colors.grey.shade300,
-                    foregroundColor: _compassRotationEnabled ? Colors.white : Colors.grey.shade600,
-                    tooltip: 'Toggle Compass Rotation',
-                    child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
-                  ),
-                  const SizedBox(height: 16),
-                  // GPS center button (matching 2D map style)
-                  FloatingActionButton(
-                    mini: false,
-                    heroTag: 'gps_center_button_3d',
-                    onPressed: _centerOnUserLocation,
-                    backgroundColor: AppColors.signalYellow,
-                    foregroundColor: AppColors.urbanBlue,
-                    child: const Icon(Icons.my_location),
                   ),
                 ],
               ),
@@ -1073,7 +1137,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               coordinates: Position(location.longitude, location.latitude),
             ),
             zoom: 15.0,
-            pitch: 80.0,
+            pitch: _currentPitch,
           ),
           MapAnimationOptions(duration: 1000),
         );
@@ -1120,7 +1184,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 coordinates: Position(location.longitude, location.latitude),
               ),
               zoom: 15.0,
-              pitch: 80.0,
+              pitch: _currentPitch,
             ),
             MapAnimationOptions(duration: 1000),
           );
@@ -1309,7 +1373,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Create user location marker icon matching 2D map style
-  /// White circle with grey border and navigation arrow (or my_location icon if no heading)
+  /// White circle with grey border and custom navigation arrow (inspired by arrow.png)
   Future<Uint8List> _createUserLocationIcon({double? heading, double size = 48}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -1342,28 +1406,56 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       canvas.translate(size / 2, size / 2);
       canvas.rotate(heading * 3.14159 / 180); // Convert to radians
       canvas.translate(-size / 2, -size / 2);
-    }
 
-    // Draw icon using TextPainter for Material Icons
-    final iconPainter = TextPainter(
-      text: TextSpan(
-        text: hasHeading ? String.fromCharCode(0xe569) : String.fromCharCode(0xe55c), // navigation : my_location
-        style: TextStyle(
-          fontSize: size * 0.6,
-          fontFamily: 'MaterialIcons',
-          color: borderColor,
+      // Draw custom arrow inspired by arrow.png (30% smaller)
+      final arrowSize = size * 0.42; // Reduced from 0.6 to 0.42 (30% smaller)
+      final arrowPaint = Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.fill;
+
+      // Arrow shape: triangular pointer with tail cutout
+      final arrowPath = Path();
+      final centerX = size / 2;
+      final centerY = size / 2;
+
+      // Top point of arrow
+      arrowPath.moveTo(centerX, centerY - arrowSize / 2);
+      // Right side
+      arrowPath.lineTo(centerX + arrowSize / 3, centerY + arrowSize / 4);
+      // Tail cutout right
+      arrowPath.lineTo(centerX + arrowSize / 8, centerY + arrowSize / 6);
+      // Bottom center (tail)
+      arrowPath.lineTo(centerX, centerY + arrowSize / 2);
+      // Tail cutout left
+      arrowPath.lineTo(centerX - arrowSize / 8, centerY + arrowSize / 6);
+      // Left side
+      arrowPath.lineTo(centerX - arrowSize / 3, centerY + arrowSize / 4);
+      // Close path
+      arrowPath.close();
+
+      canvas.drawPath(arrowPath, arrowPaint);
+    } else {
+      // Draw my_location icon when no heading
+      final iconPainter = TextPainter(
+        text: TextSpan(
+          text: String.fromCharCode(0xe55c), // my_location icon
+          style: TextStyle(
+            fontSize: size * 0.42, // Match the 30% smaller size
+            fontFamily: 'MaterialIcons',
+            color: borderColor,
+          ),
         ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    iconPainter.layout();
-    iconPainter.paint(
-      canvas,
-      Offset(
-        (size - iconPainter.width) / 2,
-        (size - iconPainter.height) / 2,
-      ),
-    );
+        textDirection: TextDirection.ltr,
+      );
+      iconPainter.layout();
+      iconPainter.paint(
+        canvas,
+        Offset(
+          (size - iconPainter.width) / 2,
+          (size - iconPainter.height) / 2,
+        ),
+      );
+    }
 
     // Restore canvas state
     canvas.restore();
