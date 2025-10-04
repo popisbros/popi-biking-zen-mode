@@ -484,9 +484,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _open3DMap() {
     AppLogger.map('Opening 3D map');
     // Save current zoom to state before switching
+    // Add +1 to compensate for Mapbox zoom scale difference
     final currentZoom = _mapController.camera.zoom;
-    ref.read(mapProvider.notifier).updateZoom(currentZoom);
-    AppLogger.map('Saved zoom for 3D map', data: {'zoom': currentZoom});
+    final mapboxZoom = currentZoom + 1.0; // Mapbox zoom is typically 1 level higher
+    ref.read(mapProvider.notifier).updateZoom(mapboxZoom);
+    AppLogger.map('Saved zoom for 3D map', data: {'2d_zoom': currentZoom, '3d_zoom': mapboxZoom});
 
     Navigator.push(
       context,
@@ -1155,7 +1157,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: LatLng(location.latitude, location.longitude),
-                  initialZoom: mapState.zoom, // Use zoom from state (synced with 3D map)
+                  initialZoom: mapState.zoom - 1.0, // Subtract 1 to convert from Mapbox zoom scale
                   onMapEvent: _onMapEvent,
                   onLongPress: _onMapLongPress,
                 ),
