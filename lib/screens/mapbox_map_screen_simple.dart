@@ -1307,14 +1307,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Create user location marker icon matching 2D map style
-  /// Blue circle with navigation arrow (or my_location icon if no heading)
+  /// White circle with grey border and navigation arrow (or my_location icon if no heading)
   Future<Uint8List> _createUserLocationIcon({double? heading, double size = 48}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Get colors from MarkerConfig
-    final fillColor = MarkerConfig.getFillColorForType(POIMarkerType.userLocation);
-    final borderColor = MarkerConfig.getBorderColorForType(POIMarkerType.userLocation);
+    // Use white background with grey border
+    final fillColor = Colors.white;
+    final borderColor = Colors.grey;
 
     // Draw filled circle background
     final circlePaint = Paint()
