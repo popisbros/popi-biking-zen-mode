@@ -74,6 +74,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         data: (location) {
           // Get zoom from state (synced with 2D map)
           final mapState = ref.read(mapProvider);
+          AppLogger.map('3D Map initializing', data: {'mapbox_zoom': mapState.zoom});
+
           final camera = location != null
               ? CameraOptions(
                   center: Point(
@@ -82,7 +84,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       location.latitude,
                     ),
                   ),
-                  zoom: mapState.zoom, // Use zoom from state (synced with 2D map)
+                  zoom: mapState.zoom, // Use zoom from state (stored in Mapbox scale)
                   pitch: _currentPitch, // Dynamic pitch angle
                 )
               : _getDefaultCamera();
