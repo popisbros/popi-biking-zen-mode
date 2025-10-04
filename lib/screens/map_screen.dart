@@ -1153,11 +1153,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 'lng': location.longitude,
               });
 
+              // Calculate 2D zoom from stored Mapbox zoom
+              final flutter2DZoom = mapState.zoom - 1.0;
+              AppLogger.map('2D Map initializing', data: {'mapbox_zoom': mapState.zoom, 'flutter_zoom': flutter2DZoom});
+
               return FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: LatLng(location.latitude, location.longitude),
-                  initialZoom: mapState.zoom - 1.0, // Subtract 1 to convert from Mapbox zoom scale
+                  initialZoom: flutter2DZoom, // Convert from Mapbox zoom scale
                   onMapEvent: _onMapEvent,
                   onLongPress: _onMapLongPress,
                 ),
