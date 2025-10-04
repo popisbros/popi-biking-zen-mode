@@ -1305,72 +1305,97 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ],
       ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
+      floatingActionButton: Stack(
         children: [
-          FloatingActionButton(
-            heroTag: 'layer_picker',
-            onPressed: _showLayerPicker,
-            backgroundColor: Colors.blue,
-            child: const Icon(Icons.layers),
-          ),
-          const SizedBox(height: 16), // Consistent spacing
-          // Reload POIs button (matching 3D map)
-          FloatingActionButton(
-            heroTag: 'reload_pois_2d',
-            onPressed: () {
-              AppLogger.map('Manual POI reload requested (2D)');
-              _loadAllMapDataWithBounds(forceReload: true);
-            },
-            backgroundColor: Colors.orange,
-            tooltip: 'Reload POIs',
-            child: const Icon(Icons.refresh),
-          ),
-          const SizedBox(height: 16), // Consistent spacing
-          // 3D Map button - only show on Native (not on web/PWA)
-          if (!kIsWeb) ...[
-            FloatingActionButton(
-              heroTag: '3d_map',
-              onPressed: _open3DMap,
-              backgroundColor: Colors.green,
-              tooltip: 'Switch to 3D Map',
-              child: const Icon(Icons.terrain),
+          // Bottom-left controls: compass, center, reload
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Compass rotation toggle button (Native only)
+                if (!kIsWeb)
+                  FloatingActionButton(
+                    heroTag: 'compass_rotation_toggle_2d',
+                    onPressed: () {
+                      setState(() {
+                        _compassRotationEnabled = !_compassRotationEnabled;
+                        if (!_compassRotationEnabled) {
+                          // Reset map to north when disabling
+                          _mapController.rotate(0);
+                          _lastBearing = null;
+                        }
+                      });
+                      AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"} (2D)');
+                    },
+                    backgroundColor: _compassRotationEnabled ? Colors.purple : Colors.grey.shade300,
+                    foregroundColor: _compassRotationEnabled ? Colors.white : Colors.grey.shade600,
+                    tooltip: 'Toggle Compass Rotation',
+                    child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
+                  ),
+                if (!kIsWeb) const SizedBox(height: 16),
+                // GPS center button
+                FloatingActionButton(
+                  heroTag: 'my_location',
+                  onPressed: () {
+                    AppLogger.map('My location button pressed');
+                    locationAsync.whenData((location) {
+                      if (location != null) {
+                        AppLogger.map('Centering on GPS location');
+                        _mapController.move(LatLng(location.latitude, location.longitude), 15);
+                        _loadAllMapDataWithBounds();
+                      }
+                    });
+                  },
+                  backgroundColor: AppColors.signalYellow,
+                  foregroundColor: AppColors.urbanBlue,
+                  tooltip: 'Center on Location',
+                  child: const Icon(Icons.my_location),
+                ),
+                const SizedBox(height: 16),
+                // Reload POIs button
+                FloatingActionButton(
+                  heroTag: 'reload_pois_2d',
+                  onPressed: () {
+                    AppLogger.map('Manual POI reload requested (2D)');
+                    _loadAllMapDataWithBounds(forceReload: true);
+                  },
+                  backgroundColor: Colors.orange,
+                  tooltip: 'Reload POIs',
+                  child: const Icon(Icons.refresh),
+                ),
+              ],
             ),
-            const SizedBox(height: 16), // Consistent spacing
-            // Compass rotation toggle button (Native only)
-            FloatingActionButton(
-              heroTag: 'compass_rotation_toggle_2d',
-              onPressed: () {
-                setState(() {
-                  _compassRotationEnabled = !_compassRotationEnabled;
-                  if (!_compassRotationEnabled) {
-                    // Reset map to north when disabling
-                    _mapController.rotate(0);
-                    _lastBearing = null;
-                  }
-                });
-                AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"} (2D)');
-              },
-              backgroundColor: _compassRotationEnabled ? Colors.purple : Colors.grey.shade300,
-              foregroundColor: _compassRotationEnabled ? Colors.white : Colors.grey.shade600,
-              tooltip: 'Toggle Compass Rotation',
-              child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
+          ),
+          // Bottom-right controls: tiles selector, 3D switch
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Layer picker button (tiles selector)
+                FloatingActionButton(
+                  heroTag: 'layer_picker',
+                  onPressed: _showLayerPicker,
+                  backgroundColor: Colors.blue,
+                  tooltip: 'Change Map Layer',
+                  child: const Icon(Icons.layers),
+                ),
+                // 3D Map button - only show on Native (not on web/PWA)
+                if (!kIsWeb) ...[
+                  const SizedBox(height: 16),
+                  FloatingActionButton(
+                    heroTag: '3d_map',
+                    onPressed: _open3DMap,
+                    backgroundColor: Colors.green,
+                    tooltip: 'Switch to 3D Map',
+                    child: const Icon(Icons.terrain),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 16), // Consistent spacing
-          ],
-          FloatingActionButton(
-            heroTag: 'my_location',
-            onPressed: () {
-              AppLogger.map('My location button pressed');
-              locationAsync.whenData((location) {
-                if (location != null) {
-                  AppLogger.map('Centering on GPS location');
-                  _mapController.move(LatLng(location.latitude, location.longitude), 15);
-                  _loadAllMapDataWithBounds();
-                }
-              });
-            },
-            child: const Icon(Icons.my_location),
           ),
         ],
       ),
