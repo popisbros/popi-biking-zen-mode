@@ -1052,6 +1052,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     AppLogger.success('Annotation managers created (Circle + Point)', tag: 'MAP');
 
+    // Add click listeners for tap handling
+    _circleAnnotationManager!.addOnCircleAnnotationClickListener(
+      _OnCircleClickListener(onTap: _handleMarkerTap),
+    );
+    _pointAnnotationManager!.addOnPointAnnotationClickListener(
+      _OnPointClickListener(onTap: _handleMarkerTap),
+    );
+    AppLogger.success('Click listeners added for annotations', tag: 'MAP');
+
     // Center on user location if available
     final locationState = ref.read(locationNotifierProvider);
     locationState.whenData((location) {
@@ -1398,5 +1407,32 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.success('Added Warning circles', tag: 'MAP', data: {'count': circleOptions.length});
     }
   }
+}
 
+/// Click listener for CircleAnnotations (OSM POIs and Warnings)
+class _OnCircleClickListener extends OnCircleAnnotationClickListener {
+  final void Function(double lat, double lng) onTap;
+
+  _OnCircleClickListener({required this.onTap});
+
+  @override
+  void onCircleAnnotationClick(CircleAnnotation annotation) {
+    final coords = annotation.geometry.coordinates;
+    AppLogger.map('Circle annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
+    onTap(coords.lat.toDouble(), coords.lng.toDouble());
+  }
+}
+
+/// Click listener for PointAnnotations (Community POI icons)
+class _OnPointClickListener extends OnPointAnnotationClickListener {
+  final void Function(double lat, double lng) onTap;
+
+  _OnPointClickListener({required this.onTap});
+
+  @override
+  void onPointAnnotationClick(PointAnnotation annotation) {
+    final coords = annotation.geometry.coordinates;
+    AppLogger.map('Point annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
+    onTap(coords.lat.toDouble(), coords.lng.toDouble());
+  }
 }
