@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../services/map_service.dart';
@@ -102,6 +103,9 @@ class MapState {
     final defaultLayer = mapService.current2DLayer;
     final defaultStyle = mapService.current3DStyle;
 
+    // Desktop web browser: zoom 15, Mobile/Native: zoom 16
+    final defaultZoom = kIsWeb ? 16.0 : 17.0; // 2D will subtract 1, giving 15 or 16
+
     return MapState(
       current2DLayer: defaultLayer,
       tileUrl: mapService.getTileUrl(defaultLayer),
@@ -112,7 +116,7 @@ class MapState {
       showOSMPOIs: true,
       showWarnings: true,
       center: mapService.getDefaultCenter(),
-      zoom: 17.0, // Default: Both 2D and 3D use 16.0 (when no bounds saved)
+      zoom: defaultZoom,
     );
   }
 
