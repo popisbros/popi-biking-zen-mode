@@ -779,15 +779,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       _lastBearing = next;
 
-      // Rotate map based on compass heading, keeping pitch locked at 70°
+      // Rotate map based on compass heading, keeping pitch locked at 80°
       _mapboxMap!.setCamera(CameraOptions(
         bearing: -next,
-        pitch: 70.0, // Maintain locked 3D angle
+        pitch: 80.0, // Maintain locked 3D angle
       ));
       AppLogger.debug('Map rotated to bearing', tag: 'Mapbox3D', data: {
         'bearing': -next,
         'threshold': _compassThreshold,
       });
+
+      // Update user location marker with new heading
+      _addMarkers();
+    });
+
+    // Listen for location changes to update user marker
+    ref.listen(locationNotifierProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        next.whenData((location) {
+          if (location != null) {
+            AppLogger.debug('Location updated, refreshing user marker', tag: 'MAP');
+            _addMarkers();
+          }
+        });
+      }
     });
 
     // Use cached initial camera or default
@@ -1022,17 +1037,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to disable pitch gestures', error: e);
     }
 
-    // Enable location component to show user position with bearing arrow
+    // Disable built-in location component - we'll use custom marker matching 2D map
     try {
       await mapboxMap.location.updateSettings(LocationComponentSettings(
-        enabled: true,
-        pulsingEnabled: false, // Disable pulsing for cleaner arrow display
-        showAccuracyRing: false,
-        puckBearingEnabled: true, // Enable bearing/heading indicator
+        enabled: false, // Disable to use custom marker
       ));
-      AppLogger.success('Location component enabled with bearing arrow', tag: 'MAP');
+      AppLogger.success('Built-in location component disabled (using custom marker)', tag: 'MAP');
     } catch (e) {
-      AppLogger.error('Failed to enable location component', error: e);
+      AppLogger.error('Failed to disable location component', error: e);
     }
 
     // Initialize annotation managers
@@ -1294,6 +1306,72 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return byteData!.buffer.asUint8List();
   }
 
+  /// Create user location marker icon matching 2D map style
+  /// Blue circle with navigation arrow (or my_location icon if no heading)
+  Future<Uint8List> _createUserLocationIcon({double? heading, double size = 48}) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Get colors from MarkerConfig
+    final fillColor = MarkerConfig.getFillColorForType(POIMarkerType.userLocation);
+    final borderColor = MarkerConfig.getBorderColorForType(POIMarkerType.userLocation);
+
+    // Draw filled circle background
+    final circlePaint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
+
+    // Draw border
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
+
+    // Draw navigation arrow or my_location icon
+    final hasHeading = heading != null && heading >= 0;
+
+    // Save canvas state before rotation
+    canvas.save();
+
+    if (hasHeading) {
+      // Rotate canvas around center for navigation arrow
+      canvas.translate(size / 2, size / 2);
+      canvas.rotate(heading * 3.14159 / 180); // Convert to radians
+      canvas.translate(-size / 2, -size / 2);
+    }
+
+    // Draw icon using TextPainter for Material Icons
+    final iconPainter = TextPainter(
+      text: TextSpan(
+        text: hasHeading ? String.fromCharCode(0xe569) : String.fromCharCode(0xe55c), // navigation : my_location
+        style: TextStyle(
+          fontSize: size * 0.6,
+          fontFamily: 'MaterialIcons',
+          color: borderColor,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    iconPainter.layout();
+    iconPainter.paint(
+      canvas,
+      Offset(
+        (size - iconPainter.width) / 2,
+        (size - iconPainter.height) / 2,
+      ),
+    );
+
+    // Restore canvas state
+    canvas.restore();
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
   /// Add POI and warning markers to the map
   /// All markers use emoji icon images with proper colors
   Future<void> _addMarkers() async {
@@ -1312,10 +1390,44 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _communityPoiById.clear();
     _warningById.clear();
 
-    // Add all markers as emoji icons
+    // Add user location marker (custom, matching 2D map style)
+    await _addUserLocationMarker();
+
+    // Add all POI markers as emoji icons
     await _addOSMPOIsAsIcons(mapState);
     await _addCommunityPOIsAsIcons(mapState);
     await _addWarningsAsIcons(mapState);
+  }
+
+  /// Add custom user location marker matching 2D map style
+  Future<void> _addUserLocationMarker() async {
+    final locationAsync = ref.read(locationNotifierProvider);
+    final compassHeading = ref.read(compassNotifierProvider);
+
+    await locationAsync.whenData((location) async {
+      if (location != null) {
+        // Use compass heading if available, otherwise GPS heading
+        final heading = compassHeading ?? location.heading;
+
+        AppLogger.debug('Adding user location marker', tag: 'MAP', data: {
+          'lat': location.latitude,
+          'lng': location.longitude,
+          'heading': heading,
+        });
+
+        // Create custom location icon matching 2D map
+        final userIcon = await _createUserLocationIcon(heading: heading);
+
+        final userMarker = PointAnnotationOptions(
+          geometry: Point(coordinates: Position(location.longitude, location.latitude)),
+          image: userIcon,
+          iconSize: 1.0, // Slightly smaller for user location
+        );
+
+        await _pointAnnotationManager!.create(userMarker);
+        AppLogger.success('User location marker added', tag: 'MAP');
+      }
+    });
   }
 
   /// Add OSM POIs as emoji icons
