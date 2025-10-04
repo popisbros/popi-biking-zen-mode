@@ -1383,7 +1383,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       }
                     });
                   },
-                  backgroundColor: AppColors.signalYellow,
+                  backgroundColor: Colors.white,
                   foregroundColor: AppColors.urbanBlue,
                   tooltip: 'Center on Location',
                   child: const Icon(Icons.my_location),
