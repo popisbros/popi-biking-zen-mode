@@ -49,7 +49,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
-  static const List<double> _pitchOptions = [40.0, 50.0, 60.0, 70.0, 80.0];
+  static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
 
   // Store POI data for tap handling
   final Map<String, OSMPOI> _osmPoiById = {};
@@ -72,6 +72,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       locationAsync.when(
         data: (location) {
+          // Get zoom from state (synced with 2D map)
+          final mapState = ref.read(mapProvider);
           final camera = location != null
               ? CameraOptions(
                   center: Point(
@@ -80,7 +82,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       location.latitude,
                     ),
                   ),
-                  zoom: 15.0,
+                  zoom: mapState.zoom, // Use zoom from state (synced with 2D map)
                   pitch: _currentPitch, // Dynamic pitch angle
                 )
               : _getDefaultCamera();
@@ -126,11 +128,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   CameraOptions _getDefaultCamera() {
+    final mapState = ref.read(mapProvider);
     return CameraOptions(
       center: Point(
         coordinates: Position(5.826000, 40.643944), // Custom default location
       ),
-      zoom: 15.0,
+      zoom: mapState.zoom, // Use zoom from state (synced with 2D map)
       pitch: _currentPitch, // Dynamic pitch angle
     );
   }
@@ -292,8 +295,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
   }
 
-  void _switchTo2DMap() {
+  void _switchTo2DMap() async {
     AppLogger.map('Switching to 2D map');
+    // Save current zoom to state before switching
+    final cameraState = await _mapboxMap?.getCameraState();
+    if (cameraState != null) {
+      final currentZoom = cameraState.zoom;
+      ref.read(mapProvider.notifier).updateZoom(currentZoom);
+      AppLogger.map('Saved zoom for 2D map', data: {'zoom': currentZoom});
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1408,7 +1419,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       canvas.translate(-size / 2, -size / 2);
 
       // Draw custom arrow inspired by arrow.png (30% smaller)
-      final arrowSize = size * 0.42; // Reduced from 0.6 to 0.42 (30% smaller)
+      final arrowSize = size * 0.30; // Reduced from 0.6 to 0.30 (50% smaller)
       final arrowPaint = Paint()
         ..color = borderColor
         ..style = PaintingStyle.fill;
