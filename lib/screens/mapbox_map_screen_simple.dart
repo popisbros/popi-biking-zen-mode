@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:latlong2/latlong.dart' as latlong;
 import '../constants/app_colors.dart';
 import '../providers/location_provider.dart';
 import '../providers/osm_poi_provider.dart';
@@ -72,22 +73,43 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       locationAsync.when(
         data: (location) {
-          // Get zoom from state (synced with 2D map)
+          // Get camera settings from state (synced with 2D map)
           final mapState = ref.read(mapProvider);
-          AppLogger.map('3D Map initializing', data: {'mapbox_zoom': mapState.zoom});
+          final hasBounds = mapState.southWest != null && mapState.northEast != null;
 
-          final camera = location != null
+          if (hasBounds) {
+            AppLogger.map('3D Map using saved bounds', data: {
+              'sw': '${mapState.southWest!.latitude},${mapState.southWest!.longitude}',
+              'ne': '${mapState.northEast!.latitude},${mapState.northEast!.longitude}'
+            });
+          } else {
+            AppLogger.map('3D Map using default zoom', data: {'mapbox_zoom': mapState.zoom});
+          }
+
+          // Calculate camera from bounds or use center+zoom
+          // Note: For bounds, we'll use a center point and calculated zoom
+          // Mapbox camera doesn't directly support bounds in CameraOptions
+          final camera = hasBounds
               ? CameraOptions(
-                  center: Point(
-                    coordinates: Position(
-                      location.longitude,
-                      location.latitude,
-                    ),
-                  ),
-                  zoom: mapState.zoom, // Use zoom from state (stored in Mapbox scale)
-                  pitch: _currentPitch, // Dynamic pitch angle
+                  center: Point(coordinates: Position(
+                    (mapState.southWest!.longitude + mapState.northEast!.longitude) / 2,
+                    (mapState.southWest!.latitude + mapState.northEast!.latitude) / 2,
+                  )),
+                  zoom: mapState.zoom, // Use stored zoom as fallback
+                  pitch: _currentPitch,
                 )
-              : _getDefaultCamera();
+              : location != null
+                  ? CameraOptions(
+                      center: Point(
+                        coordinates: Position(
+                          location.longitude,
+                          location.latitude,
+                        ),
+                      ),
+                      zoom: mapState.zoom, // Use zoom from state (stored in Mapbox scale)
+                      pitch: _currentPitch, // Dynamic pitch angle
+                    )
+                  : _getDefaultCamera();
 
           if (mounted) {
             setState(() {
@@ -299,13 +321,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   void _switchTo2DMap() async {
     AppLogger.map('Switching to 2D map');
-    // Save current zoom to state before switching
-    final cameraState = await _mapboxMap?.getCameraState();
-    if (cameraState != null) {
-      final currentZoom = cameraState.zoom;
-      // Keep Mapbox zoom in state (will be converted when loading 2D map)
-      ref.read(mapProvider.notifier).updateZoom(currentZoom);
-      AppLogger.map('Saved zoom for 2D map', data: {'3d_zoom': currentZoom, '2d_zoom': currentZoom - 1.0});
+
+    // Save current map bounds to state before switching
+    final cameraBounds = await _mapboxMap?.getBounds();
+    if (cameraBounds != null) {
+      final bounds = cameraBounds.bounds;
+      final southWest = latlong.LatLng(bounds.southwest.coordinates.lat.toDouble(), bounds.southwest.coordinates.lng.toDouble());
+      final northEast = latlong.LatLng(bounds.northeast.coordinates.lat.toDouble(), bounds.northeast.coordinates.lng.toDouble());
+
+      ref.read(mapProvider.notifier).updateBounds(southWest, northEast);
+      AppLogger.map('Saved bounds for 2D map', data: {
+        'sw': '${bounds.southwest.coordinates.lat.toStringAsFixed(4)},${bounds.southwest.coordinates.lng.toStringAsFixed(4)}',
+        'ne': '${bounds.northeast.coordinates.lat.toStringAsFixed(4)},${bounds.northeast.coordinates.lng.toStringAsFixed(4)}'
+      });
     }
 
     Navigator.push(
@@ -1138,34 +1166,58 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     );
     AppLogger.success('Click listener added for point annotations', tag: 'MAP');
 
-    // Center on user location if available, then load POIs
+    // Center on user location or fit to saved bounds, then load POIs
     final locationState = ref.read(locationNotifierProvider);
+    final mapState = ref.read(mapProvider);
+    final hasBounds = mapState.southWest != null && mapState.northEast != null;
     bool hasCentered = false;
 
-    locationState.whenData((location) async {
-      if (location != null && mounted) {
-        AppLogger.map('Centering map on user location at startup');
-        await mapboxMap.flyTo(
-          CameraOptions(
-            center: Point(
-              coordinates: Position(location.longitude, location.latitude),
+    if (hasBounds) {
+      // Use saved bounds from 2D map
+      AppLogger.map('Fitting 3D map to saved bounds');
+      await mapboxMap.flyTo(
+        CameraOptions(
+          center: Point(coordinates: Position(
+            (mapState.southWest!.longitude + mapState.northEast!.longitude) / 2,
+            (mapState.southWest!.latitude + mapState.northEast!.latitude) / 2,
+          )),
+          zoom: mapState.zoom,
+          pitch: _currentPitch,
+        ),
+        MapAnimationOptions(duration: 1000),
+      );
+      hasCentered = true;
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _loadAllPOIData();
+      _lastPOILoadTime = DateTime.now();
+      _addMarkers();
+    } else {
+      locationState.whenData((location) async {
+        if (location != null && mounted) {
+          AppLogger.map('Centering map on user location at startup');
+          await mapboxMap.flyTo(
+            CameraOptions(
+              center: Point(
+                coordinates: Position(location.longitude, location.latitude),
+              ),
+              zoom: 16.0, // Mapbox zoom 16 = 2D zoom 15
+              pitch: _currentPitch,
             ),
-            zoom: 16.0, // Mapbox zoom 16 = 2D zoom 15
-            pitch: _currentPitch,
-          ),
-          MapAnimationOptions(duration: 1000),
-        );
-        hasCentered = true;
+            MapAnimationOptions(duration: 1000),
+          );
+          hasCentered = true;
 
-        // Wait a bit for camera to settle, then load POIs
-        await Future.delayed(const Duration(milliseconds: 500));
+          // Wait a bit for camera to settle, then load POIs
+          await Future.delayed(const Duration(milliseconds: 500));
 
-        AppLogger.map('Loading POIs after centering on user location');
-        await _loadAllPOIData();
-        _lastPOILoadTime = DateTime.now();
-        _addMarkers();
-      }
-    });
+          AppLogger.map('Loading POIs after centering on user location');
+          await _loadAllPOIData();
+          _lastPOILoadTime = DateTime.now();
+          _addMarkers();
+        }
+      });
+    }
 
     // If no location available, load POIs immediately at default position
     if (!hasCentered) {

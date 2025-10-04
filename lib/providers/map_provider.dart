@@ -51,6 +51,11 @@ class MapNotifier extends StateNotifier<MapState> {
   void updateZoom(double zoom) {
     state = state.copyWith(zoom: zoom);
   }
+
+  /// Update map bounds for view synchronization
+  void updateBounds(LatLng southWest, LatLng northEast) {
+    state = state.copyWith(southWest: southWest, northEast: northEast);
+  }
 }
 
 /// Map state class
@@ -73,6 +78,10 @@ class MapState {
   final LatLng center;
   final double zoom;
 
+  // Map bounds for view synchronization
+  final LatLng? southWest;
+  final LatLng? northEast;
+
   const MapState({
     required this.current2DLayer,
     required this.tileUrl,
@@ -84,6 +93,8 @@ class MapState {
     required this.showWarnings,
     required this.center,
     required this.zoom,
+    this.southWest,
+    this.northEast,
   });
 
   factory MapState.initial() {
@@ -116,6 +127,8 @@ class MapState {
     bool? showWarnings,
     LatLng? center,
     double? zoom,
+    LatLng? southWest,
+    LatLng? northEast,
   }) {
     return MapState(
       current2DLayer: current2DLayer ?? this.current2DLayer,
@@ -128,6 +141,8 @@ class MapState {
       showWarnings: showWarnings ?? this.showWarnings,
       center: center ?? this.center,
       zoom: zoom ?? this.zoom,
+      southWest: southWest ?? this.southWest,
+      northEast: northEast ?? this.northEast,
     );
   }
 }

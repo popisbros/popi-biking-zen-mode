@@ -483,12 +483,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _open3DMap() {
     AppLogger.map('Opening 3D map');
-    // Save current zoom to state before switching
-    // Add +1 to compensate for Mapbox zoom scale difference
-    final currentZoom = _mapController.camera.zoom;
-    final mapboxZoom = currentZoom + 1.0; // Mapbox zoom is typically 1 level higher
-    ref.read(mapProvider.notifier).updateZoom(mapboxZoom);
-    AppLogger.map('Saved zoom for 3D map', data: {'2d_zoom': currentZoom, '3d_zoom': mapboxZoom});
+
+    // Save current map bounds to state before switching
+    final bounds = _mapController.camera.visibleBounds;
+    final southWest = LatLng(bounds.south, bounds.west);
+    final northEast = LatLng(bounds.north, bounds.east);
+
+    ref.read(mapProvider.notifier).updateBounds(southWest, northEast);
+    AppLogger.map('Saved bounds for 3D map', data: {
+      'sw': '${bounds.south.toStringAsFixed(4)},${bounds.west.toStringAsFixed(4)}',
+      'ne': '${bounds.north.toStringAsFixed(4)},${bounds.east.toStringAsFixed(4)}'
+    });
 
     Navigator.push(
       context,
@@ -1153,18 +1158,38 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 'lng': location.longitude,
               });
 
-              // Calculate 2D zoom from stored Mapbox zoom
-              final flutter2DZoom = mapState.zoom - 1.0;
-              AppLogger.map('2D Map initializing', data: {'mapbox_zoom': mapState.zoom, 'flutter_zoom': flutter2DZoom});
+              // Use saved bounds if available (from 3D map), otherwise use center+zoom
+              final hasBounds = mapState.southWest != null && mapState.northEast != null;
+
+              if (hasBounds) {
+                AppLogger.map('2D Map using saved bounds', data: {
+                  'sw': '${mapState.southWest!.latitude},${mapState.southWest!.longitude}',
+                  'ne': '${mapState.northEast!.latitude},${mapState.northEast!.longitude}'
+                });
+              } else {
+                final flutter2DZoom = mapState.zoom - 1.0;
+                AppLogger.map('2D Map using default zoom', data: {'flutter_zoom': flutter2DZoom});
+              }
+
+              final mapOptions = hasBounds
+                  ? MapOptions(
+                      initialCameraFit: CameraFit.bounds(
+                        bounds: LatLngBounds(mapState.southWest!, mapState.northEast!),
+                        padding: const EdgeInsets.all(0),
+                      ),
+                      onMapEvent: _onMapEvent,
+                      onLongPress: _onMapLongPress,
+                    )
+                  : MapOptions(
+                      initialCenter: LatLng(location.latitude, location.longitude),
+                      initialZoom: mapState.zoom - 1.0, // Convert from Mapbox zoom scale
+                      onMapEvent: _onMapEvent,
+                      onLongPress: _onMapLongPress,
+                    );
 
               return FlutterMap(
                 mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: LatLng(location.latitude, location.longitude),
-                  initialZoom: flutter2DZoom, // Convert from Mapbox zoom scale
-                  onMapEvent: _onMapEvent,
-                  onLongPress: _onMapLongPress,
-                ),
+                options: mapOptions,
                 children: [
                   TileLayer(
                     urlTemplate: mapState.tileUrl,
