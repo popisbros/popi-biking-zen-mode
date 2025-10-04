@@ -483,6 +483,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   void _open3DMap() {
     AppLogger.map('Opening 3D map');
+    // Save current zoom to state before switching
+    final currentZoom = _mapController.camera.zoom;
+    ref.read(mapProvider.notifier).updateZoom(currentZoom);
+    AppLogger.map('Saved zoom for 3D map', data: {'zoom': currentZoom});
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1150,7 +1155,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: LatLng(location.latitude, location.longitude),
-                  initialZoom: 15,
+                  initialZoom: mapState.zoom, // Use zoom from state (synced with 3D map)
                   onMapEvent: _onMapEvent,
                   onLongPress: _onMapLongPress,
                 ),
@@ -1303,10 +1308,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ],
             ),
           ),
-        ],
-      ),
-      floatingActionButton: Stack(
-        children: [
+
           // Bottom-left controls: compass, center, reload
           Positioned(
             bottom: 16,
@@ -1399,6 +1401,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ],
       ),
+      floatingActionButtonLocation: null,
     );
   }
 }
