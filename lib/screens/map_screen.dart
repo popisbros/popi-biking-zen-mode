@@ -45,6 +45,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   BoundingBox? _lastLoadedBounds;
   BoundingBox? _reloadTriggerBounds;
 
+  // Compass rotation state (Native only)
+  bool _compassRotationEnabled = false;
+  double? _lastBearing;
+  static const double _compassThreshold = 5.0; // Only rotate if change > 5°
+
   @override
   void initState() {
     super.initState();
@@ -982,20 +987,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       });
     });
 
-    // Listen for compass changes to rotate map (Native only)
+    // Listen for compass changes to rotate map (Native only, with toggle + threshold)
     if (!kIsWeb) {
       ref.listen<double?>(compassNotifierProvider, (previous, next) {
-        if (next != null && _isMapReady && !_isUserMoving) {
-          // Rotate map to match compass heading
-          // flutter_map rotation is counter-clockwise, compass is clockwise
-          // So we need to negate the heading
-          final rotation = -next;
-          AppLogger.debug('Rotating map', tag: 'COMPASS', data: {
-            'rotation': '${rotation.toStringAsFixed(1)}°',
-            'heading': '${next}°',
-          });
-          _mapController.rotate(rotation);
+        if (!_compassRotationEnabled || next == null || !_isMapReady || _isUserMoving) {
+          return;
         }
+
+        // Only rotate if change is significant (debouncing)
+        if (_lastBearing != null) {
+          final diff = (next - _lastBearing!).abs();
+          if (diff < _compassThreshold) {
+            return; // Skip small changes
+          }
+        }
+
+        _lastBearing = next;
+
+        // Rotate map to match compass heading
+        // flutter_map rotation is counter-clockwise, compass is clockwise
+        // So we need to negate the heading
+        final rotation = -next;
+        AppLogger.debug('Rotating map', tag: 'COMPASS', data: {
+          'rotation': '${rotation.toStringAsFixed(1)}°',
+          'heading': '${next}°',
+          'threshold': _compassThreshold,
+        });
+        _mapController.rotate(rotation);
       });
     }
 
@@ -1317,6 +1335,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               backgroundColor: Colors.green,
               tooltip: 'Switch to 3D Map',
               child: const Icon(Icons.terrain),
+            ),
+            const SizedBox(height: 16), // Consistent spacing
+            // Compass rotation toggle button (Native only)
+            FloatingActionButton(
+              heroTag: 'compass_rotation_toggle_2d',
+              onPressed: () {
+                setState(() {
+                  _compassRotationEnabled = !_compassRotationEnabled;
+                  if (!_compassRotationEnabled) {
+                    // Reset map to north when disabling
+                    _mapController.rotate(0);
+                    _lastBearing = null;
+                  }
+                });
+                AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"} (2D)');
+              },
+              backgroundColor: _compassRotationEnabled ? Colors.purple : Colors.grey.shade300,
+              foregroundColor: _compassRotationEnabled ? Colors.white : Colors.grey.shade600,
+              tooltip: 'Toggle Compass Rotation',
+              child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
             ),
             const SizedBox(height: 16), // Consistent spacing
           ],

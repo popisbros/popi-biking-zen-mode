@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../constants/app_colors.dart';
@@ -38,8 +36,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   CameraOptions? _initialCamera;
   String _debugMessage = 'Tap GPS button to test';
   PointAnnotationManager? _pointAnnotationManager;
-  CircleAnnotationManager? _circleAnnotationManager;
-  dynamic _symbolAnnotationManager; // Use dynamic for web compatibility
   Timer? _debounceTimer;
   DateTime? _lastPOILoadTime;
   Timer? _cameraCheckTimer;
@@ -81,7 +77,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     ),
                   ),
                   zoom: 15.0,
-                  pitch: 70.0, // Locked 3D angle at 70°
+                  pitch: 80.0, // Locked 3D angle at 80°
                 )
               : _getDefaultCamera();
 
@@ -131,7 +127,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         coordinates: Position(5.826000, 40.643944), // Custom default location
       ),
       zoom: 15.0,
-      pitch: 70.0, // Locked 3D angle at 70°
+      pitch: 80.0, // Locked 3D angle at 80°
     );
   }
 
@@ -166,7 +162,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   coordinates: Position(location.longitude, location.latitude),
                 ),
                 zoom: 15.0,
-                pitch: 70.0, // Locked 3D angle at 70°
+                pitch: 80.0, // Locked 3D angle at 80°
               ),
               MapAnimationOptions(duration: 1000),
             );
@@ -731,32 +727,25 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   @override
   Widget build(BuildContext context) {
     // Watch location updates to keep camera centered
-    final locationAsync = ref.watch(locationNotifierProvider);
     final mapState = ref.watch(mapProvider);
-    final compassHeading = ref.watch(compassNotifierProvider);
-
-    // Watch POI data changes and rebuild markers
-    final osmPOIs = ref.watch(osmPOIsNotifierProvider);
-    final communityPOIs = ref.watch(cyclingPOIsBoundsNotifierProvider);
-    final warnings = ref.watch(communityWarningsBoundsNotifierProvider);
 
     // Listen for POI data changes and refresh markers
     ref.listen<AsyncValue<List<dynamic>>>(osmPOIsNotifierProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
+      if (_isMapReady && _pointAnnotationManager != null) {
         AppLogger.debug('OSM POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(communityWarningsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
+      if (_isMapReady && _pointAnnotationManager != null) {
         AppLogger.debug('Warnings updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(cyclingPOIsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
+      if (_isMapReady && _pointAnnotationManager != null) {
         AppLogger.debug('Community POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
@@ -764,7 +753,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for map state changes (toggle buttons) and refresh markers INSTANTLY
     ref.listen<MapState>(mapProvider, (previous, next) {
-      if (_isMapReady && _circleAnnotationManager != null && _pointAnnotationManager != null) {
+      if (_isMapReady && _pointAnnotationManager != null) {
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
             previous?.showPOIs != next.showPOIs ||
             previous?.showWarnings != next.showWarnings) {
@@ -903,7 +892,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       if (currentZoom != null) {
                         _mapboxMap?.setCamera(CameraOptions(
                           zoom: currentZoom + 1,
-                          pitch: 70.0, // Maintain locked 3D angle
+                          pitch: 80.0, // Maintain locked 3D angle
                         ));
                       }
                     },
@@ -921,7 +910,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       if (currentZoom != null) {
                         _mapboxMap?.setCamera(CameraOptions(
                           zoom: currentZoom - 1,
-                          pitch: 70.0, // Maintain locked 3D angle
+                          pitch: 80.0, // Maintain locked 3D angle
                         ));
                       }
                     },
@@ -983,7 +972,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           // Reset map to north when disabling
                           _mapboxMap?.setCamera(CameraOptions(
                             bearing: 0,
-                            pitch: 70.0,
+                            pitch: 80.0,
                           ));
                           _lastBearing = null;
                         }
@@ -1028,7 +1017,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await mapboxMap.gestures.updateSettings(GesturesSettings(
         pitchEnabled: false, // Lock pitch - user cannot tilt the map
       ));
-      AppLogger.success('Pitch gestures disabled - locked at 70°', tag: 'MAP');
+      AppLogger.success('Pitch gestures disabled - locked at 80°', tag: 'MAP');
     } catch (e) {
       AppLogger.error('Failed to disable pitch gestures', error: e);
     }
@@ -1047,19 +1036,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     // Initialize annotation managers
-    // Create CircleAnnotation first, then PointAnnotation so icons render on top
-    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+    // All markers now use PointAnnotation with emoji icons
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
-    AppLogger.success('Annotation managers created (Circle + Point)', tag: 'MAP');
+    AppLogger.success('Point annotation manager created', tag: 'MAP');
 
-    // Add click listeners for tap handling
-    _circleAnnotationManager!.addOnCircleAnnotationClickListener(
-      _OnCircleClickListener(onTap: _handleMarkerTap),
-    );
+    // Add click listener for tap handling
     _pointAnnotationManager!.addOnPointAnnotationClickListener(
       _OnPointClickListener(onTap: _handleMarkerTap),
     );
-    AppLogger.success('Click listeners added for annotations', tag: 'MAP');
+    AppLogger.success('Click listener added for point annotations', tag: 'MAP');
 
     // Center on user location if available, then load POIs
     final locationState = ref.read(locationNotifierProvider);
@@ -1074,7 +1059,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               coordinates: Position(location.longitude, location.latitude),
             ),
             zoom: 15.0,
-            pitch: 70.0,
+            pitch: 80.0,
           ),
           MapAnimationOptions(duration: 1000),
         );
@@ -1121,7 +1106,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 coordinates: Position(location.longitude, location.latitude),
               ),
               zoom: 15.0,
-              pitch: 70.0,
+              pitch: 80.0,
             ),
             MapAnimationOptions(duration: 1000),
           );
@@ -1260,15 +1245,31 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Create an image from emoji text for use as marker icon
-  Future<Uint8List> _createEmojiIcon(String emoji, {double size = 48}) async {
+  /// Uses proper background and border colors matching the 2D map configuration
+  Future<Uint8List> _createEmojiIcon(
+    String emoji,
+    POIMarkerType markerType,
+    {double size = 48}
+  ) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Draw white circle background
+    // Get colors from MarkerConfig
+    final fillColor = MarkerConfig.getFillColorForType(markerType);
+    final borderColor = MarkerConfig.getBorderColorForType(markerType);
+
+    // Draw filled circle background
     final circlePaint = Paint()
-      ..color = Colors.white
+      ..color = fillColor
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
+
+    // Draw border
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
 
     // Draw emoji text
     final textPainter = TextPainter(
@@ -1294,16 +1295,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Add POI and warning markers to the map
-  /// Community POIs use icon images, OSM POIs and Warnings use colored circles
+  /// All markers use emoji icon images with proper colors
   Future<void> _addMarkers() async {
-    if (_pointAnnotationManager == null || _circleAnnotationManager == null) {
+    if (_pointAnnotationManager == null) {
       AppLogger.warning('Annotation managers not ready', tag: 'MAP');
       return;
     }
 
     // Clear existing markers
     await _pointAnnotationManager!.deleteAll();
-    await _circleAnnotationManager!.deleteAll();
 
     final mapState = ref.read(mapProvider);
 
@@ -1312,41 +1312,42 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _communityPoiById.clear();
     _warningById.clear();
 
-    // Add OSM POIs as circles
-    await _addOSMPOIsAsCircles(mapState);
-
-    // Add Community POIs as icons
+    // Add all markers as emoji icons
+    await _addOSMPOIsAsIcons(mapState);
     await _addCommunityPOIsAsIcons(mapState);
-
-    // Add Warnings as circles
-    await _addWarningsAsCircles(mapState);
+    await _addWarningsAsIcons(mapState);
   }
 
-  /// Add OSM POIs as colored circles
-  Future<void> _addOSMPOIsAsCircles(mapState) async {
+  /// Add OSM POIs as emoji icons
+  Future<void> _addOSMPOIsAsIcons(mapState) async {
     if (!mapState.showOSMPOIs) return;
 
     final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
-    List<CircleAnnotationOptions> circleOptions = [];
+    List<PointAnnotationOptions> pointOptions = [];
 
-    AppLogger.debug('Adding OSM POIs as circles', tag: 'MAP', data: {'count': osmPOIs.length});
+    AppLogger.debug('Adding OSM POIs as icons', tag: 'MAP', data: {'count': osmPOIs.length});
     for (var poi in osmPOIs) {
       final id = 'osm_${poi.latitude}_${poi.longitude}';
       _osmPoiById[id] = poi;
-      circleOptions.add(
-        CircleAnnotationOptions(
+
+      // Get emoji for this POI type
+      final emoji = POITypeConfig.getOSMPOIEmoji(poi.type);
+
+      // Create icon image from emoji with proper colors
+      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.osmPOI);
+
+      pointOptions.add(
+        PointAnnotationOptions(
           geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-          circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI),
-          circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.osmPOI),
-          circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-          circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.osmPOI),
+          image: iconImage,
+          iconSize: 1.5, // Optimized icon size
         ),
       );
     }
 
-    if (circleOptions.isNotEmpty) {
-      await _circleAnnotationManager!.createMulti(circleOptions);
-      AppLogger.success('Added OSM POI circles', tag: 'MAP', data: {'count': circleOptions.length});
+    if (pointOptions.isNotEmpty) {
+      await _pointAnnotationManager!.createMulti(pointOptions);
+      AppLogger.success('Added OSM POI icons', tag: 'MAP', data: {'count': pointOptions.length});
     }
   }
 
@@ -1364,25 +1365,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       // Get emoji for this POI type
       final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
-      AppLogger.debug('Creating icon for Community POI', tag: 'MAP', data: {
-        'type': poi.type,
-        'emoji': emoji,
-        'lat': poi.latitude,
-        'lng': poi.longitude,
-      });
 
-      // Create icon image from emoji
-      final iconImage = await _createEmojiIcon(emoji);
-      AppLogger.debug('Icon created', tag: 'MAP', data: {
-        'size': iconImage.length,
-        'bytes': '${iconImage.length} bytes',
-      });
+      // Create icon image from emoji with proper colors
+      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.communityPOI);
 
       pointOptions.add(
         PointAnnotationOptions(
           geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
           image: iconImage,
-          iconSize: 3.0, // Larger icon for better visibility
+          iconSize: 1.5, // Optimized icon size
         ),
       );
     }
@@ -1395,50 +1386,41 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
   }
 
-  /// Add Warnings as colored circles
-  Future<void> _addWarningsAsCircles(mapState) async {
+  /// Add Warnings as emoji icons
+  Future<void> _addWarningsAsIcons(mapState) async {
     if (!mapState.showWarnings) return;
 
     final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
-    List<CircleAnnotationOptions> circleOptions = [];
+    List<PointAnnotationOptions> pointOptions = [];
 
-    AppLogger.debug('Adding Warnings as circles', tag: 'MAP', data: {'count': warnings.length});
+    AppLogger.debug('Adding Warnings as icons', tag: 'MAP', data: {'count': warnings.length});
     for (var warning in warnings) {
       final id = 'warning_${warning.latitude}_${warning.longitude}';
       _warningById[id] = warning;
-      circleOptions.add(
-        CircleAnnotationOptions(
+
+      // Get emoji for this warning type
+      final emoji = POITypeConfig.getWarningEmoji(warning.type);
+
+      // Create icon image from emoji with proper colors
+      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.warning);
+
+      pointOptions.add(
+        PointAnnotationOptions(
           geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-          circleRadius: MarkerConfig.getRadiusForType(POIMarkerType.warning),
-          circleColor: MarkerConfig.getFillColorValueForType(POIMarkerType.warning),
-          circleStrokeWidth: MarkerConfig.circleStrokeWidth,
-          circleStrokeColor: MarkerConfig.getBorderColorValueForType(POIMarkerType.warning),
+          image: iconImage,
+          iconSize: 1.5, // Optimized icon size
         ),
       );
     }
 
-    if (circleOptions.isNotEmpty) {
-      await _circleAnnotationManager!.createMulti(circleOptions);
-      AppLogger.success('Added Warning circles', tag: 'MAP', data: {'count': circleOptions.length});
+    if (pointOptions.isNotEmpty) {
+      await _pointAnnotationManager!.createMulti(pointOptions);
+      AppLogger.success('Added Warning icons', tag: 'MAP', data: {'count': pointOptions.length});
     }
   }
 }
 
-/// Click listener for CircleAnnotations (OSM POIs and Warnings)
-class _OnCircleClickListener extends OnCircleAnnotationClickListener {
-  final void Function(double lat, double lng) onTap;
-
-  _OnCircleClickListener({required this.onTap});
-
-  @override
-  void onCircleAnnotationClick(CircleAnnotation annotation) {
-    final coords = annotation.geometry.coordinates;
-    AppLogger.map('Circle annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
-    onTap(coords.lat.toDouble(), coords.lng.toDouble());
-  }
-}
-
-/// Click listener for PointAnnotations (Community POI icons)
+/// Click listener for PointAnnotations (all POI icons)
 class _OnPointClickListener extends OnPointAnnotationClickListener {
   final void Function(double lat, double lng) onTap;
 
