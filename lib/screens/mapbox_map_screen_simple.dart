@@ -1421,7 +1421,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final userMarker = PointAnnotationOptions(
           geometry: Point(coordinates: Position(location.longitude, location.latitude)),
           image: userIcon,
-          iconSize: 1.0, // Slightly smaller for user location
+          iconSize: 3.0, // Increased size for better visibility
         );
 
         await _pointAnnotationManager!.create(userMarker);
