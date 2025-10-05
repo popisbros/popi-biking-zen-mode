@@ -88,12 +88,20 @@ class MarkerConfig {
 
   /// Get fill color value (int) for Mapbox
   static int getFillColorValueForType(POIMarkerType type) {
-    return getFillColorForType(type).value;
+    final color = getFillColorForType(type);
+    return ((color.a * 255).toInt() << 24) |
+           ((color.r * 255).toInt() << 16) |
+           ((color.g * 255).toInt() << 8) |
+           (color.b * 255).toInt();
   }
 
   /// Get border color value (int) for Mapbox
   static int getBorderColorValueForType(POIMarkerType type) {
-    return getBorderColorForType(type).value;
+    final color = getBorderColorForType(type);
+    return ((color.a * 255).toInt() << 24) |
+           ((color.r * 255).toInt() << 16) |
+           ((color.g * 255).toInt() << 8) |
+           (color.b * 255).toInt();
   }
 }
 
