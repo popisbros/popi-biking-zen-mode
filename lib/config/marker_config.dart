@@ -40,8 +40,8 @@ class MarkerConfig {
   static const Color warningBorderColor = Colors.red;
 
   /// User location marker colors
-  static const Color userLocationFillColor = Color(0x33448AFF); // blue.withOpacity(0.2)
-  static const Color userLocationBorderColor = Color(0xFF2196F3); // Colors.blue
+  static const Color userLocationFillColor = Color(0x33CE93D8); // purple.withOpacity(0.2)
+  static const Color userLocationBorderColor = Color(0xFF9C27B0); // Colors.purple
 
   /// Circle stroke color (outline) - white for better visibility
   static const Color circleStrokeColor = Colors.white;
