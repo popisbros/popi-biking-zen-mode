@@ -8,7 +8,12 @@
       "Bash(flutter:*)",
       "Read(//Users/sylvain/Cursor/PopiIsBikingZenMode/**)",
       "Bash(cat:*)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(git fetch:*)",
+      "Read(//Users/sylvain/.pub-cache/hosted/pub.dev/**)",
+      "Bash(xcodebuild clean:*)",
+      "Bash(git pull:*)",
+      "Bash(dart compile kernel:*)"
     ],
     "deny": [],
     "ask": []
