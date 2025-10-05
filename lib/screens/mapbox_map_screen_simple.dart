@@ -1046,7 +1046,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     mini: true, // Match zoom button size
                     heroTag: 'gps_center_button_3d',
                     onPressed: _centerOnUserLocation,
-                    backgroundColor: AppColors.signalYellow,
+                    backgroundColor: Colors.white,
                     foregroundColor: AppColors.urbanBlue,
                     tooltip: 'Center on Location',
                     child: const Icon(Icons.my_location),
