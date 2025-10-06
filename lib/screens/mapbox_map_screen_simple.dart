@@ -1184,6 +1184,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         MbxEdgeInsets(top: 0, left: 0, bottom: 0, right: 0),
         null, // bearing
         _currentPitch, // pitch
+        null, // maxZoom
+        null, // offset
       );
 
       // Apply the camera with animation
