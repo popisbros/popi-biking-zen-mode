@@ -29,4 +29,11 @@ class ApiKeys {
     'LOCATIONIQ_API_KEY',
     defaultValue: 'REMOVED_FROM_HISTORY', // From .env
   );
+
+  // Graphhopper API Key (for routing)
+  // Get at: https://www.graphhopper.com/
+  static const String graphhopperApiKey = String.fromEnvironment(
+    'GRAPHHOPPER_API_KEY',
+    defaultValue: '', // Add your key here for local development
+  );
 }
