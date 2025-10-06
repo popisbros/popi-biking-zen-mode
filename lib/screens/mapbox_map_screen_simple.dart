@@ -656,7 +656,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     final routingService = RoutingService();
-    final routes = await routingService.calculateMultipleRoutes(
+    // TODO: Temporarily using single route - will re-enable dual routes later
+    final routePoints = await routingService.calculateRoute(
       startLat: location!.latitude,
       startLon: location!.longitude,
       endLat: destLat,
@@ -668,12 +669,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
     }
 
-    if (routes == null || routes.isEmpty) {
+    if (routePoints == null || routePoints.isEmpty) {
       AppLogger.warning('Route calculation failed', tag: 'ROUTING');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Unable to calculate routes'),
+            content: Text('Unable to calculate route'),
             duration: Duration(seconds: 3),
           ),
         );
@@ -681,9 +682,36 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
-    // Show route selection dialog
+    // Display route directly (skip selection dialog)
+    _displayRoute(routePoints);
+  }
+
+  /// Display route directly (without selection dialog)
+  Future<void> _displayRoute(List<latlong.LatLng> routePoints) async {
+    // Store route in provider
+    ref.read(searchProvider.notifier).setRoute(routePoints);
+
+    // Toggle POIs: OSM OFF, Community OFF, Hazards ON
+    ref.read(mapProvider.notifier).setPOIVisibility(
+      showOSM: false,
+      showCommunity: false,
+      showHazards: true,
+    );
+
+    // Zoom map to fit the entire route
+    await _fitRouteBounds(routePoints);
+
+    AppLogger.success('Route displayed', tag: 'ROUTING', data: {
+      'points': routePoints.length,
+    });
+
     if (mounted) {
-      _showRouteSelectionDialog(routes);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Route calculated (${routePoints.length} points)'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
