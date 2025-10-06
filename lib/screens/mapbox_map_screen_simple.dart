@@ -17,7 +17,6 @@ import '../services/map_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../utils/app_logger.dart';
-import '../utils/marker_painter.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -1537,51 +1536,56 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ..strokeWidth = 3.0;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
 
-    // Draw navigation arrow (Icons.navigation) or my_location icon
+    // Draw navigation arrow or my_location icon
     // Match 2D map: icon size is 60% of marker size
     final iconSize = size * 0.6;
 
     if (hasHeading) {
-      // Draw navigation arrow using MaterialIcons font (Icons.navigation)
-      final iconPainter = TextPainter(
-        text: TextSpan(
-          text: String.fromCharCode(0xe55d), // Icons.navigation (0xe55d)
-          style: TextStyle(
-            fontSize: iconSize,
-            fontFamily: 'MaterialIcons',
-            color: borderColor,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      iconPainter.layout();
-      iconPainter.paint(
-        canvas,
-        Offset(
-          (size - iconPainter.width) / 2,
-          (size - iconPainter.height) / 2,
-        ),
-      );
+      // Draw navigation arrow (custom path matching Icons.navigation)
+      final arrowPaint = Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.fill;
+
+      // Create triangular navigation arrow pointing up
+      final arrowPath = Path();
+      final centerX = size / 2;
+      final centerY = size / 2;
+      final halfIcon = iconSize / 2;
+
+      // Top point (pointing up/north)
+      arrowPath.moveTo(centerX, centerY - halfIcon * 0.9);
+      // Bottom right
+      arrowPath.lineTo(centerX + halfIcon * 0.35, centerY + halfIcon * 0.9);
+      // Bottom center notch
+      arrowPath.lineTo(centerX, centerY + halfIcon * 0.5);
+      // Bottom left
+      arrowPath.lineTo(centerX - halfIcon * 0.35, centerY + halfIcon * 0.9);
+      // Back to top
+      arrowPath.close();
+
+      canvas.drawPath(arrowPath, arrowPaint);
     } else {
-      // Draw my_location icon (Icons.my_location)
-      final iconPainter = TextPainter(
-        text: TextSpan(
-          text: String.fromCharCode(0xe55c), // Icons.my_location (0xe55c)
-          style: TextStyle(
-            fontSize: iconSize,
-            fontFamily: 'MaterialIcons',
-            color: borderColor,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
+      // Draw my_location icon (concentric circles)
+      final iconPaint = Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+
+      // Outer ring
+      canvas.drawCircle(
+        Offset(size / 2, size / 2),
+        iconSize / 3,
+        iconPaint,
       );
-      iconPainter.layout();
-      iconPainter.paint(
-        canvas,
-        Offset(
-          (size - iconPainter.width) / 2,
-          (size - iconPainter.height) / 2,
-        ),
+
+      // Center dot
+      final dotPaint = Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        Offset(size / 2, size / 2),
+        iconSize / 6,
+        dotPaint,
       );
     }
 
@@ -1629,7 +1633,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     await _addSearchResultMarker();
   }
 
-  /// Add search result marker (teardrop with checkered flag)
+  /// Add search result marker (grey circle with + symbol)
   Future<void> _addSearchResultMarker() async {
     final searchState = ref.read(searchProvider);
     if (searchState.selectedLocation == null) return;
@@ -1640,19 +1644,70 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       'lon': selectedLoc.longitude,
     });
 
-    // Create checkered teardrop icon (2x OSM POI size)
-    // OSM POI radius is 10.0 (diameter 20.0), teardrop should be 2x = 40.0
-    final markerIcon = await MarkerPainter.createCheckeredTeardropMarker(size: 30);
+    // Create grey marker icon with + symbol (matching POI style)
+    final markerIcon = await _createSearchResultIcon();
 
     final searchMarker = PointAnnotationOptions(
       geometry: Point(coordinates: Position(selectedLoc.longitude, selectedLoc.latitude)),
       image: markerIcon,
-      iconSize: 1.0, // Normal size (marker is already sized correctly)
-      iconAnchor: IconAnchor.TOP, // Anchor at top (where tip of teardrop is)
+      iconSize: 1.5, // Match POI icon size
+      iconAnchor: IconAnchor.CENTER, // Center-aligned like other POIs
     );
 
     await _pointAnnotationManager!.create(searchMarker);
     AppLogger.success('Search result marker added', tag: 'MAP');
+  }
+
+  /// Create search result marker icon (grey circle with + symbol)
+  Future<Uint8List> _createSearchResultIcon({double size = 48}) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Grey colors matching POI style
+    final fillColor = Colors.grey.shade200;
+    final borderColor = Colors.grey.shade600;
+
+    // Draw filled circle background
+    final circlePaint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
+
+    // Draw border
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
+
+    // Draw + symbol
+    final plusPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0
+      ..strokeCap = StrokeCap.round;
+
+    final plusSize = size * 0.5;
+    final center = size / 2;
+
+    // Horizontal line of +
+    canvas.drawLine(
+      Offset(center - plusSize / 2, center),
+      Offset(center + plusSize / 2, center),
+      plusPaint,
+    );
+
+    // Vertical line of +
+    canvas.drawLine(
+      Offset(center, center - plusSize / 2),
+      Offset(center, center + plusSize / 2),
+      plusPaint,
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
   }
 
   /// Add custom user location marker matching 2D map style

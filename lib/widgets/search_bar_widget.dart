@@ -97,6 +97,9 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Safe area padding for iOS Dynamic Island / notch
+              SizedBox(height: MediaQuery.of(context).padding.top),
+
               // Search input row
               _buildSearchInput(context, searchState),
 
