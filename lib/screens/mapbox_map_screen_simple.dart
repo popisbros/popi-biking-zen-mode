@@ -18,6 +18,7 @@ import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
+import '../models/location_data.dart';
 import '../utils/app_logger.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
