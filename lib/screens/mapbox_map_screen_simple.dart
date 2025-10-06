@@ -455,8 +455,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               Positioned(
                 left: 20,
                 right: 20,
-                top: inMiddleThird ? null : MediaQuery.of(context).size.height * 0.25,
-                bottom: inMiddleThird ? MediaQuery.of(context).size.height * 0.15 : null,
+                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.67 : MediaQuery.of(context).size.height * 0.33,
                 child: AlertDialog(
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
                   content: Column(
@@ -471,7 +470,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "BOTTOM" : "TOP"}',
+                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "67%" : "33%"}',
                           style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
                         ),
                       ),
@@ -534,8 +533,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               Positioned(
                 left: 20,
                 right: 20,
-                top: inMiddleThird ? null : MediaQuery.of(context).size.height * 0.25,
-                bottom: inMiddleThird ? MediaQuery.of(context).size.height * 0.15 : null,
+                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.67 : MediaQuery.of(context).size.height * 0.33,
                 child: AlertDialog(
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
                   content: Column(
@@ -550,7 +548,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "BOTTOM" : "TOP"}',
+                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "67%" : "33%"}',
                           style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
                         ),
                       ),
