@@ -231,7 +231,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           children: [
             const Text(
               'Choose 3D Map Style',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...MapboxStyleType.values.map((style) {
@@ -240,7 +240,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   _getStyleIcon(style),
                   color: currentStyle == style ? Colors.green : Colors.grey,
                 ),
-                title: Text(mapService.getStyleName(style)),
+                title: Text(mapService.getStyleName(style), style: const TextStyle(fontSize: 12)),
                 trailing: currentStyle == style
                     ? const Icon(Icons.check, color: Colors.green)
                     : null,
@@ -273,7 +273,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           children: [
             const Text(
               'Choose Camera Pitch',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ..._pitchOptions.map((pitch) {
@@ -282,7 +282,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   Icons.height,
                   color: _currentPitch == pitch ? Colors.deepPurple : Colors.grey,
                 ),
-                title: Text('${pitch.toInt()}°'),
+                title: Text('${pitch.toInt()}°', style: const TextStyle(fontSize: 12)),
                 trailing: _currentPitch == pitch
                     ? const Icon(Icons.check, color: Colors.deepPurple)
                     : null,
@@ -437,7 +437,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Calculate smart dialog alignment based on marker position
     final alignmentData = await _calculateDialogAlignment(coordinates);
-    final alignment = alignmentData['alignment'] as Alignment;
 
     if (!mounted) return;
 
@@ -458,24 +457,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  // contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Debug info
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "60%" : "28%"}',
-                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                        ),
-                      ),
                       ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                         leading: Icon(Icons.add_location, color: Colors.green[700]),
@@ -520,7 +506,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Calculate smart dialog alignment based on marker position
     final alignmentData = await _calculateDialogAlignment(coordinates);
-    final alignment = alignmentData['alignment'] as Alignment;
 
     if (!mounted) return;
 
@@ -541,24 +526,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  // contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Debug info
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "60%" : "28%"}',
-                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                        ),
-                      ),
                       ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
@@ -869,7 +841,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       builder: (context) => AlertDialog(
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        // contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
         title: Text(poi.name, style: const TextStyle(fontSize: 14)),
         content: SingleChildScrollView(
@@ -939,7 +911,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       builder: (context) => AlertDialog(
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        // contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
         title: Text(warning.title, style: const TextStyle(fontSize: 14)),
         content: SingleChildScrollView(
@@ -1065,7 +1037,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       builder: (context) => AlertDialog(
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        // contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
         title: Text(poi.name, style: const TextStyle(fontSize: 14)),
         content: SingleChildScrollView(
