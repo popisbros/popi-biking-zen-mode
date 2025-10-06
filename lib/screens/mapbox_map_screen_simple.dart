@@ -443,54 +443,70 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     showDialog(
       context: context,
-      builder: (context) => Align(
-        alignment: alignment,
-        child: AlertDialog(
-          title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 18)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+      barrierColor: Colors.black54,
+      builder: (context) {
+        final inMiddleThird = alignmentData['inMiddleThird'] as bool;
+
+        return Material(
+          type: MaterialType.transparency,
+          child: Stack(
             children: [
-              // Debug info
-              Container(
-                padding: const EdgeInsets.all(8),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(4),
+              // Positioned dialog based on marker location
+              Positioned(
+                left: 20,
+                right: 20,
+                top: inMiddleThird ? null : MediaQuery.of(context).size.height * 0.25,
+                bottom: inMiddleThird ? MediaQuery.of(context).size.height * 0.15 : null,
+                child: AlertDialog(
+                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Debug info
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "BOTTOM" : "TOP"}',
+                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.add_location, color: Colors.green[700]),
+                        title: const Text('Add Community here', style: TextStyle(fontSize: 12)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showAddPOIDialog(lat, lng);
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.warning, color: Colors.orange[700]),
+                        title: const Text('Report Hazard here', style: TextStyle(fontSize: 12)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showReportHazardDialog(lat, lng);
+                        },
+                      ),
+                      ListTile(
+                        leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
+                        title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _calculateRouteTo(lat, lng);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-                child: Text(
-                  'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}',
-                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                ),
-              ),
-              ListTile(
-                leading: Icon(Icons.add_location, color: Colors.green[700]),
-                title: const Text('Add Community here', style: TextStyle(fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showAddPOIDialog(lat, lng);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.warning, color: Colors.orange[700]),
-                title: const Text('Report Hazard here', style: TextStyle(fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showReportHazardDialog(lat, lng);
-                },
-              ),
-              ListTile(
-                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
-                title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _calculateRouteTo(lat, lng);
-                },
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -506,38 +522,54 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     showDialog(
       context: context,
-      builder: (context) => Align(
-        alignment: alignment,
-        child: AlertDialog(
-          title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 18)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+      barrierColor: Colors.black54,
+      builder: (context) {
+        final inMiddleThird = alignmentData['inMiddleThird'] as bool;
+
+        return Material(
+          type: MaterialType.transparency,
+          child: Stack(
             children: [
-              // Debug info
-              Container(
-                padding: const EdgeInsets.all(8),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(4),
+              // Positioned dialog based on marker location
+              Positioned(
+                left: 20,
+                right: 20,
+                top: inMiddleThird ? null : MediaQuery.of(context).size.height * 0.25,
+                bottom: inMiddleThird ? MediaQuery.of(context).size.height * 0.15 : null,
+                child: AlertDialog(
+                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Debug info
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "BOTTOM" : "TOP"}',
+                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                        ),
+                      ),
+                      ListTile(
+                        leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
+                        title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _calculateRouteTo(lat, lng);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-                child: Text(
-                  'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}',
-                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                ),
-              ),
-              ListTile(
-                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
-                title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _calculateRouteTo(lat, lng);
-                },
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
