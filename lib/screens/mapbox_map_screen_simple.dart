@@ -352,6 +352,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Add search result marker at long-click position
     ref.read(searchProvider.notifier).setSelectedLocation(lat, lng, 'Long-click location');
 
+    // Toggle all POIs ON (OSM, Community, Hazards)
+    ref.read(mapProvider.notifier).setPOIVisibility(
+      showOSM: true,
+      showCommunity: true,
+      showHazards: true,
+    );
+
     _showContextMenu(coordinates);
   }
 
@@ -551,6 +558,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Store route in provider
     ref.read(searchProvider.notifier).setRoute(routePoints);
+
+    // Toggle POIs: OSM OFF, Community OFF, Hazards ON
+    ref.read(mapProvider.notifier).setPOIVisibility(
+      showOSM: false,
+      showCommunity: false,
+      showHazards: true,
+    );
 
     // Zoom map to fit the entire route
     await _fitRouteBounds(routePoints);
@@ -1339,6 +1353,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 });
                 // Set selected location to show marker
                 ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
+
+                // Toggle all POIs ON (OSM, Community, Hazards)
+                ref.read(mapProvider.notifier).setPOIVisibility(
+                  showOSM: true,
+                  showCommunity: true,
+                  showHazards: true,
+                );
+
                 if (_mapboxMap != null) {
                   await _mapboxMap!.flyTo(
                     CameraOptions(

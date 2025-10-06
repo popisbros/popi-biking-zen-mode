@@ -44,6 +44,15 @@ class MapNotifier extends Notifier<MapState> {
     state = state.copyWith(showWarnings: !state.showWarnings);
   }
 
+  /// Set POI visibility states
+  void setPOIVisibility({bool? showOSM, bool? showCommunity, bool? showHazards}) {
+    state = state.copyWith(
+      showOSMPOIs: showOSM ?? state.showOSMPOIs,
+      showPOIs: showCommunity ?? state.showPOIs,
+      showWarnings: showHazards ?? state.showWarnings,
+    );
+  }
+
   /// Update map center
   void updateCenter(LatLng center) {
     state = state.copyWith(center: center);

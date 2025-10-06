@@ -378,6 +378,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Add search result marker at long-click position
     ref.read(searchProvider.notifier).setSelectedLocation(point.latitude, point.longitude, 'Long-click location');
 
+    // Toggle all POIs ON (OSM, Community, Hazards)
+    ref.read(mapProvider.notifier).setPOIVisibility(
+      showOSM: true,
+      showCommunity: true,
+      showHazards: true,
+    );
+
     _showContextMenu(tapPosition, point);
   }
 
@@ -593,6 +600,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // Store route in provider
     ref.read(searchProvider.notifier).setRoute(routePoints);
+
+    // Toggle POIs: OSM OFF, Community OFF, Hazards ON
+    ref.read(mapProvider.notifier).setPOIVisibility(
+      showOSM: false,
+      showCommunity: false,
+      showHazards: true,
+    );
 
     // Zoom map to fit the entire route
     _fitRouteBounds(routePoints);
@@ -1706,6 +1720,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 });
                 // Set selected location to show marker
                 ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
+
+                // Toggle all POIs ON (OSM, Community, Hazards)
+                ref.read(mapProvider.notifier).setPOIVisibility(
+                  showOSM: true,
+                  showCommunity: true,
+                  showHazards: true,
+                );
+
                 // Navigate to location
                 _mapController.move(LatLng(lat, lon), 16.0);
                 _loadAllMapDataWithBounds();
