@@ -12,6 +12,7 @@ import '../providers/osm_poi_provider.dart';
 import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
+import '../providers/search_provider.dart';
 import '../services/map_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
@@ -19,6 +20,7 @@ import '../models/location_data.dart';
 import '../utils/app_logger.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
+import '../widgets/search_bar_widget.dart';
 // Conditional import for 3D map button - use stub on Web
 import 'mapbox_map_screen_simple.dart'
     if (dart.library.html) 'mapbox_map_screen_simple_stub.dart';
@@ -1133,6 +1135,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     AppLogger.map('Total markers on map', data: {'count': markers.length});
 
+    // Get map center for search
+    final mapCenter = _isMapReady
+        ? _mapController.camera.center
+        : (locationAsync.value != null
+            ? LatLng(locationAsync.value!.latitude, locationAsync.value!.longitude)
+            : const LatLng(0, 0));
+
     return Scaffold(
       body: Stack(
         children: [
@@ -1243,6 +1252,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
               );
             },
+          ),
+
+          // Search bar widget (slides down from top)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SearchBarWidget(
+              mapCenter: mapCenter,
+              onResultTap: (lat, lon) {
+                AppLogger.map('Search result tapped - navigating to location', data: {
+                  'lat': lat,
+                  'lon': lon,
+                });
+                _mapController.move(LatLng(lat, lon), 16.0);
+                _loadAllMapDataWithBounds();
+              },
+            ),
+          ),
+
+          // Search button (top-left, yellow)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            child: FloatingActionButton(
+              mini: true,
+              heroTag: 'search_button',
+              backgroundColor: const Color(0xFFFFEB3B), // Yellow
+              foregroundColor: Colors.black87,
+              onPressed: () {
+                AppLogger.map('Search button pressed');
+                ref.read(searchProvider.notifier).toggleSearchBar();
+              },
+              tooltip: 'Search',
+              child: const Icon(Icons.search),
+            ),
           ),
 
           // Toggle buttons on the right side
