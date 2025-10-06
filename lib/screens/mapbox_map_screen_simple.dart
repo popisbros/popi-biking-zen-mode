@@ -371,8 +371,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Calculate dialog alignment based on marker position on screen
-  Future<Alignment> _calculateDialogAlignment(Point coordinates) async {
-    if (_mapboxMap == null) return const Alignment(0.0, -0.33);
+  /// Returns alignment and debug info as a map
+  Future<Map<String, dynamic>> _calculateDialogAlignment(Point coordinates) async {
+    if (_mapboxMap == null) {
+      return {
+        'alignment': const Alignment(0.0, -0.33),
+        'screenY': 0.0,
+        'screenHeight': 0.0,
+        'normalizedY': 0.0,
+        'inMiddleThird': false,
+      };
+    }
 
     try {
       // Get screen coordinate for the map point
@@ -383,26 +392,41 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       // Calculate normalized position (0.0 to 1.0)
       final normalizedY = screenCoordinate.y / size.height;
+      final inMiddleThird = normalizedY >= 0.33 && normalizedY <= 0.67;
 
       AppLogger.debug('Dialog alignment calculation', tag: 'MAP', data: {
         'screenY': screenCoordinate.y,
         'screenHeight': size.height,
         'normalizedY': normalizedY,
-        'inMiddleThird': normalizedY >= 0.33 && normalizedY <= 0.67,
+        'inMiddleThird': inMiddleThird,
       });
 
       // If marker is in middle third (0.33 to 0.67), show dialog at bottom
-      if (normalizedY >= 0.33 && normalizedY <= 0.67) {
+      Alignment alignment;
+      if (inMiddleThird) {
         AppLogger.debug('Marker in middle third - showing dialog at bottom', tag: 'MAP');
-        return const Alignment(0.0, 0.6); // Position at bottom third
+        alignment = const Alignment(0.0, 0.6); // Position at bottom third
+      } else {
+        AppLogger.debug('Marker not in middle third - showing dialog centered', tag: 'MAP');
+        alignment = const Alignment(0.0, -0.33);
       }
 
-      // Otherwise, keep default centered position
-      AppLogger.debug('Marker not in middle third - showing dialog centered', tag: 'MAP');
-      return const Alignment(0.0, -0.33);
+      return {
+        'alignment': alignment,
+        'screenY': screenCoordinate.y,
+        'screenHeight': size.height,
+        'normalizedY': normalizedY,
+        'inMiddleThird': inMiddleThird,
+      };
     } catch (e) {
       AppLogger.warning('Failed to calculate dialog alignment: $e', tag: 'MAP');
-      return const Alignment(0.0, -0.33);
+      return {
+        'alignment': const Alignment(0.0, -0.33),
+        'screenY': 0.0,
+        'screenHeight': 0.0,
+        'normalizedY': 0.0,
+        'inMiddleThird': false,
+      };
     }
   }
 
@@ -412,7 +436,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final lng = coordinates.coordinates.lng.toDouble();
 
     // Calculate smart dialog alignment based on marker position
-    final alignment = await _calculateDialogAlignment(coordinates);
+    final alignmentData = await _calculateDialogAlignment(coordinates);
+    final alignment = alignmentData['alignment'] as Alignment;
 
     if (!mounted) return;
 
@@ -421,13 +446,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       builder: (context) => Align(
         alignment: alignment,
         child: AlertDialog(
-          title: const Text('Possible Actions for this Location'),
+          title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 18)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Debug info
+              Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}',
+                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                ),
+              ),
               ListTile(
                 leading: Icon(Icons.add_location, color: Colors.green[700]),
-                title: const Text('Add Community here'),
+                title: const Text('Add Community here', style: TextStyle(fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
                   _showAddPOIDialog(lat, lng);
@@ -435,15 +473,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
               ListTile(
                 leading: Icon(Icons.warning, color: Colors.orange[700]),
-                title: const Text('Report Hazard here'),
+                title: const Text('Report Hazard here', style: TextStyle(fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
                   _showReportHazardDialog(lat, lng);
                 },
               ),
               ListTile(
-                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 24)),
-                title: const Text('Calculate a route to'),
+                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
+                title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
                   _calculateRouteTo(lat, lng);
@@ -461,7 +499,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final coordinates = Point(coordinates: Position(lng, lat));
 
     // Calculate smart dialog alignment based on marker position
-    final alignment = await _calculateDialogAlignment(coordinates);
+    final alignmentData = await _calculateDialogAlignment(coordinates);
+    final alignment = alignmentData['alignment'] as Alignment;
 
     if (!mounted) return;
 
@@ -470,13 +509,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       builder: (context) => Align(
         alignment: alignment,
         child: AlertDialog(
-          title: const Text('Possible Actions for this Location'),
+          title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 18)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Debug info
+              Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}',
+                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                ),
+              ),
               ListTile(
-                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 24)),
-                title: const Text('Calculate a route to'),
+                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
+                title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
                 onTap: () {
                   Navigator.pop(context);
                   _calculateRouteTo(lat, lng);
