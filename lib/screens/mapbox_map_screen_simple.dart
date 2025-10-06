@@ -511,7 +511,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     AppLogger.map('Calculating route', data: {
-      'from': '${location.latitude},${location.longitude}',
+      'from': '${location!.latitude},${location.longitude}',
       'to': '$destLat,$destLon',
     });
 
