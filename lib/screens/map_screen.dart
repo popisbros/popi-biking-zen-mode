@@ -713,6 +713,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             const SizedBox(height: 16),
             ...MapLayerType.values.map((layer) {
               return ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 leading: Icon(
                   _getLayerIcon(layer),
                   color: currentLayer == layer ? Colors.green : Colors.grey,
