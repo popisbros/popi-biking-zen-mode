@@ -339,7 +339,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Handle long press on map to show context menu
-  void _onMapLongPress(Point coordinates) {
+  Future<void> _onMapLongPress(Point coordinates) async {
     final lat = coordinates.coordinates.lat.toDouble();
     final lng = coordinates.coordinates.lng.toDouble();
 
@@ -361,18 +361,53 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       showHazards: true,
     );
 
+    // Wait for marker to be added before showing dialog
+    await _addMarkers();
+
     _showContextMenu(coordinates);
   }
 
+  /// Calculate dialog alignment based on marker position on screen
+  Future<Alignment> _calculateDialogAlignment(Point coordinates) async {
+    if (_mapboxMap == null) return const Alignment(0.0, -0.33);
+
+    try {
+      // Get screen coordinate for the map point
+      final screenCoordinate = await _mapboxMap!.pixelForCoordinate(coordinates);
+
+      // Get screen size
+      final size = MediaQuery.of(context).size;
+
+      // Calculate normalized position (0.0 to 1.0)
+      final normalizedY = screenCoordinate.y / size.height;
+
+      // If marker is in middle third (0.33 to 0.67), show dialog at bottom
+      if (normalizedY >= 0.33 && normalizedY <= 0.67) {
+        return const Alignment(0.0, 0.6); // Position at bottom third
+      }
+
+      // Otherwise, keep default centered position
+      return const Alignment(0.0, -0.33);
+    } catch (e) {
+      AppLogger.warning('Failed to calculate dialog alignment: $e', tag: 'MAP');
+      return const Alignment(0.0, -0.33);
+    }
+  }
+
   /// Show context menu for adding Community POI or reporting hazard
-  void _showContextMenu(Point coordinates) {
+  Future<void> _showContextMenu(Point coordinates) async {
     final lat = coordinates.coordinates.lat.toDouble();
     final lng = coordinates.coordinates.lng.toDouble();
+
+    // Calculate smart dialog alignment based on marker position
+    final alignment = await _calculateDialogAlignment(coordinates);
+
+    if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (context) => Align(
-        alignment: const Alignment(0.0, -0.33), // Position at 2/3 from top (-1.0 is top, 1.0 is bottom)
+        alignment: alignment,
         child: AlertDialog(
           title: const Text('Possible Actions for this Location'),
           content: Column(
@@ -410,11 +445,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Show routing-only dialog (for search results)
-  void _showRoutingDialog(double lat, double lng) {
+  Future<void> _showRoutingDialog(double lat, double lng) async {
+    final coordinates = Point(coordinates: Position(lng, lat));
+
+    // Calculate smart dialog alignment based on marker position
+    final alignment = await _calculateDialogAlignment(coordinates);
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => Align(
-        alignment: const Alignment(0.0, -0.33), // Position at 2/3 from top (-1.0 is top, 1.0 is bottom)
+        alignment: alignment,
         child: AlertDialog(
           title: const Text('Possible Actions for this Location'),
           content: Column(
@@ -592,55 +634,47 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Future<void> _fitRouteBounds(List<latlong.LatLng> routePoints) async {
     if (routePoints.isEmpty || _mapboxMap == null) return;
 
-    // Calculate bounding box
-    double minLat = routePoints.first.latitude;
-    double maxLat = routePoints.first.latitude;
-    double minLon = routePoints.first.longitude;
-    double maxLon = routePoints.first.longitude;
+    try {
+      // Convert route points to Mapbox coordinates
+      final coordinates = routePoints.map((point) =>
+        Point(coordinates: Position(point.longitude, point.latitude))
+      ).toList();
 
-    for (final point in routePoints) {
-      if (point.latitude < minLat) minLat = point.latitude;
-      if (point.latitude > maxLat) maxLat = point.latitude;
-      if (point.longitude < minLon) minLon = point.longitude;
-      if (point.longitude > maxLon) maxLon = point.longitude;
+      // Get screen size for padding calculation
+      final size = MediaQuery.of(context).size;
+      final padding = EdgeInsets.all(size.width * 0.1); // 10% padding
+
+      // Use Mapbox's cameraForCoordinates to calculate optimal camera
+      final cameraOptions = await _mapboxMap!.cameraForCoordinates(
+        coordinates,
+        MbxEdgeInsets(
+          top: padding.top,
+          left: padding.left,
+          bottom: padding.bottom,
+          right: padding.right,
+        ),
+        null, // bearing
+        _currentPitch, // pitch
+      );
+
+      // Fly to the calculated camera position
+      await _mapboxMap!.flyTo(
+        CameraOptions(
+          center: cameraOptions.center,
+          zoom: cameraOptions.zoom,
+          pitch: _currentPitch,
+          bearing: cameraOptions.bearing,
+        ),
+        MapAnimationOptions(duration: 1500),
+      );
+
+      AppLogger.debug('Map fitted to route bounds', tag: 'ROUTING', data: {
+        'coordinates': coordinates.length,
+        'zoom': cameraOptions.zoom,
+      });
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to fit route bounds', tag: 'ROUTING', error: e, stackTrace: stackTrace);
     }
-
-    // Calculate center point
-    final centerLat = (minLat + maxLat) / 2;
-    final centerLon = (minLon + maxLon) / 2;
-
-    // Calculate appropriate zoom level based on bounds
-    // This is a simplified approach - adjust zoom based on latitude span
-    final latSpan = maxLat - minLat;
-    final lonSpan = maxLon - minLon;
-    final maxSpan = latSpan > lonSpan ? latSpan : lonSpan;
-
-    // Rough zoom calculation (Mapbox zoom levels)
-    double zoom = 16.0;
-    if (maxSpan > 0.5) zoom = 10.0;
-    else if (maxSpan > 0.2) zoom = 11.0;
-    else if (maxSpan > 0.1) zoom = 12.0;
-    else if (maxSpan > 0.05) zoom = 13.0;
-    else if (maxSpan > 0.02) zoom = 14.0;
-    else if (maxSpan > 0.01) zoom = 15.0;
-
-    // Fly to show entire route
-    await _mapboxMap!.flyTo(
-      CameraOptions(
-        center: Point(coordinates: Position(centerLon, centerLat)),
-        zoom: zoom,
-        pitch: _currentPitch,
-      ),
-      MapAnimationOptions(duration: 1500),
-    );
-
-    AppLogger.debug('Map fitted to route bounds', tag: 'ROUTING', data: {
-      'minLat': minLat,
-      'maxLat': maxLat,
-      'minLon': minLon,
-      'maxLon': maxLon,
-      'zoom': zoom,
-    });
   }
 
   /// Build toggle button with count badge (matching 2D map style)
