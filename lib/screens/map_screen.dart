@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,7 +18,6 @@ import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
 import '../utils/app_logger.dart';
-import '../utils/marker_painter.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -668,23 +666,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Marker _buildSearchResultMarker(double latitude, double longitude) {
-    // OSM POI radius is 10.0 (diameter 20.0), teardrop should be 2x = 40.0
-    // But marker size is the width, and height is 1.2x, so we use 30 to get ~40 total
-    const size = 30.0; // Width of the teardrop marker
+    // Match OSM POI style but with grey colors and + symbol
+    const size = 40.0; // Diameter of the marker
     return Marker(
       point: LatLng(latitude, longitude),
       width: size,
-      height: size * 1.2, // Teardrop is taller (height ~36)
-      alignment: Alignment.topCenter, // GPS point is at top of widget (where tip will be drawn)
-      child: FutureBuilder<Uint8List>(
-        future: MarkerPainter.createCheckeredTeardropMarker(size: size),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return Image.memory(snapshot.data!);
-          }
-          // Placeholder while loading
-          return const SizedBox();
-        },
+      height: size,
+      alignment: Alignment.center, // Center-aligned like other POIs
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200, // Light grey background
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.grey.shade600, // Dark grey border
+            width: 2.5,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.add,
+          color: Colors.grey.shade600,
+          size: size * 0.6,
+        ),
       ),
     );
   }
