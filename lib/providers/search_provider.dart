@@ -123,6 +123,41 @@ class SearchNotifier extends Notifier<SearchState> {
       results: const AsyncValue.data([]),
     );
   }
+
+  /// Set selected search result location
+  void setSelectedLocation(double latitude, double longitude, String label) {
+    AppLogger.debug('Setting selected search location', tag: 'SEARCH', data: {
+      'lat': latitude,
+      'lon': longitude,
+      'label': label,
+    });
+    state = state.copyWith(
+      selectedLocation: SearchResultLocation(
+        latitude: latitude,
+        longitude: longitude,
+        label: label,
+      ),
+    );
+  }
+
+  /// Clear selected search result location
+  void clearSelectedLocation() {
+    AppLogger.debug('Clearing selected search location', tag: 'SEARCH');
+    state = state.copyWith(clearSelectedLocation: true);
+  }
+}
+
+/// Represents a selected search result location to display on map
+class SearchResultLocation {
+  final double latitude;
+  final double longitude;
+  final String label;
+
+  const SearchResultLocation({
+    required this.latitude,
+    required this.longitude,
+    required this.label,
+  });
 }
 
 /// Search state class
@@ -130,11 +165,13 @@ class SearchState {
   final bool isVisible;
   final String query;
   final AsyncValue<List<SearchResult>> results;
+  final SearchResultLocation? selectedLocation; // Track selected search result
 
   const SearchState({
     required this.isVisible,
     required this.query,
     required this.results,
+    this.selectedLocation,
   });
 
   factory SearchState.initial() {
@@ -142,6 +179,7 @@ class SearchState {
       isVisible: false,
       query: '',
       results: AsyncValue.data([]),
+      selectedLocation: null,
     );
   }
 
@@ -149,11 +187,14 @@ class SearchState {
     bool? isVisible,
     String? query,
     AsyncValue<List<SearchResult>>? results,
+    SearchResultLocation? selectedLocation,
+    bool clearSelectedLocation = false,
   }) {
     return SearchState(
       isVisible: isVisible ?? this.isVisible,
       query: query ?? this.query,
       results: results ?? this.results,
+      selectedLocation: clearSelectedLocation ? null : (selectedLocation ?? this.selectedLocation),
     );
   }
 }

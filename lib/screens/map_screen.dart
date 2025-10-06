@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +19,7 @@ import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
 import '../utils/app_logger.dart';
+import '../utils/marker_painter.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -665,6 +667,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  Marker _buildSearchResultMarker(double latitude, double longitude) {
+    const size = 60.0; // Size of the teardrop marker
+    return Marker(
+      point: LatLng(latitude, longitude),
+      width: size,
+      height: size * 1.2, // Slightly taller for teardrop shape
+      alignment: Alignment.bottomCenter, // Anchor at the point of the teardrop
+      child: FutureBuilder<Uint8List>(
+        future: MarkerPainter.createCheckeredTeardropMarker(size: size),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Image.memory(snapshot.data!);
+          }
+          // Placeholder while loading
+          return const SizedBox();
+        },
+      ),
+    );
+  }
+
   void _showPOIDetails(OSMPOI poi) {
     final typeEmoji = POITypeConfig.getOSMPOIEmoji(poi.type);
     final typeLabel = POITypeConfig.getOSMPOILabel(poi.type);
@@ -1133,6 +1155,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       AppLogger.debug('Warnings hidden by toggle', tag: 'MAP');
     }
 
+    // Add search result marker if location is selected
+    final searchState = ref.watch(searchProvider);
+    if (searchState.selectedLocation != null) {
+      final selectedLoc = searchState.selectedLocation!;
+      AppLogger.map('Adding search result marker', data: {
+        'lat': selectedLoc.latitude,
+        'lon': selectedLoc.longitude,
+      });
+      markers.add(_buildSearchResultMarker(selectedLoc.latitude, selectedLoc.longitude));
+    }
+
     AppLogger.map('Total markers on map', data: {'count': markers.length});
 
     // Get map center for search
@@ -1252,42 +1285,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
               );
             },
-          ),
-
-          // Search bar widget (slides down from top)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SearchBarWidget(
-              mapCenter: mapCenter,
-              onResultTap: (lat, lon) {
-                AppLogger.map('Search result tapped - navigating to location', data: {
-                  'lat': lat,
-                  'lon': lon,
-                });
-                _mapController.move(LatLng(lat, lon), 16.0);
-                _loadAllMapDataWithBounds();
-              },
-            ),
-          ),
-
-          // Search button (top-left, yellow)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 16,
-            left: 16,
-            child: FloatingActionButton(
-              mini: true,
-              heroTag: 'search_button',
-              backgroundColor: const Color(0xFFFFEB3B), // Yellow
-              foregroundColor: Colors.black87,
-              onPressed: () {
-                AppLogger.map('Search button pressed');
-                ref.read(searchProvider.notifier).toggleSearchBar();
-              },
-              tooltip: 'Search',
-              child: const Icon(Icons.search),
-            ),
           ),
 
           // Toggle buttons on the right side
@@ -1478,6 +1475,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                 ],
               ],
+            ),
+          ),
+
+          // Search button (top-left, yellow) - rendered on top
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            child: FloatingActionButton(
+              mini: true,
+              heroTag: 'search_button',
+              backgroundColor: const Color(0xFFFFEB3B), // Yellow
+              foregroundColor: Colors.black87,
+              onPressed: () {
+                AppLogger.map('Search button pressed');
+                ref.read(searchProvider.notifier).toggleSearchBar();
+              },
+              tooltip: 'Search',
+              child: const Icon(Icons.search),
+            ),
+          ),
+
+          // Search bar widget (slides down from top) - rendered on top of everything
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SearchBarWidget(
+              mapCenter: mapCenter,
+              onResultTap: (lat, lon) {
+                AppLogger.map('Search result tapped - navigating to location', data: {
+                  'lat': lat,
+                  'lon': lon,
+                });
+                // Set selected location to show marker
+                ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
+                // Navigate to location
+                _mapController.move(LatLng(lat, lon), 16.0);
+                _loadAllMapDataWithBounds();
+              },
             ),
           ),
         ],
