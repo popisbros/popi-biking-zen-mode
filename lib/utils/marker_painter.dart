@@ -17,47 +17,48 @@ class MarkerPainter {
     final dropHeight = size * 1.2; // Total height including tail
     final circleRadius = dropWidth / 2; // Radius of the round part
 
-    // Calculate center for the round part
+    // Calculate positions - drawing with TIP at TOP
     final centerX = size / 2;
-    final centerY = circleRadius;
+    final tipY = 0.0; // Tip at the very top
+    final circleBottomY = dropHeight; // Circle at bottom
 
     // Save canvas state
     canvas.save();
 
-    // Draw teardrop shape using bezier curves for smoother appearance
+    // Draw teardrop shape using bezier curves - TIP AT TOP, CIRCLE AT BOTTOM
     final teardropPath = Path();
 
-    // Start at top center of circle
-    teardropPath.moveTo(centerX, 0);
+    // Start at tip (top center)
+    teardropPath.moveTo(centerX, tipY);
+
+    // Tip to bottom right of circle using quadratic bezier
+    teardropPath.quadraticBezierTo(
+      centerX + circleRadius * 0.7, // Control point X
+      tipY + (dropHeight - circleRadius * 2) * 0.5, // Control point Y
+      centerX + circleRadius, // End point X (right side of circle)
+      circleBottomY - circleRadius, // End point Y
+    );
 
     // Right semicircle using arc
     teardropPath.arcToPoint(
-      Offset(centerX + circleRadius, circleRadius),
+      Offset(centerX, circleBottomY),
       radius: Radius.circular(circleRadius),
       clockwise: true,
     );
 
-    // Bottom of circle to tip of teardrop using quadratic bezier
-    teardropPath.quadraticBezierTo(
-      centerX + circleRadius * 0.7, // Control point X
-      circleRadius + (dropHeight - circleRadius * 2) * 0.5, // Control point Y
-      centerX, // End point X
-      dropHeight, // End point Y (tip)
+    // Bottom semicircle to left side
+    teardropPath.arcToPoint(
+      Offset(centerX - circleRadius, circleBottomY - circleRadius),
+      radius: Radius.circular(circleRadius),
+      clockwise: true,
     );
 
-    // Tip back to bottom left of circle
+    // Left side of circle back to tip using quadratic bezier
     teardropPath.quadraticBezierTo(
       centerX - circleRadius * 0.7, // Control point X
-      circleRadius + (dropHeight - circleRadius * 2) * 0.5, // Control point Y
-      centerX - circleRadius, // End point X
-      circleRadius, // End point Y
-    );
-
-    // Left semicircle back to top
-    teardropPath.arcToPoint(
-      Offset(centerX, 0),
-      radius: Radius.circular(circleRadius),
-      clockwise: true,
+      tipY + (dropHeight - circleRadius * 2) * 0.5, // Control point Y
+      centerX, // End point X (back to tip)
+      tipY, // End point Y
     );
 
     teardropPath.close();

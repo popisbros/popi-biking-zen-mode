@@ -675,7 +675,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       point: LatLng(latitude, longitude),
       width: size,
       height: size * 1.2, // Teardrop is taller (height ~36)
-      alignment: Alignment.bottomCenter, // Anchor at bottom middle (tip of teardrop)
+      alignment: Alignment.topCenter, // GPS point is at top of widget (where tip will be drawn)
       child: FutureBuilder<Uint8List>(
         future: MarkerPainter.createCheckeredTeardropMarker(size: size),
         builder: (context, snapshot) {
