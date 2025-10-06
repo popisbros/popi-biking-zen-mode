@@ -14,6 +14,7 @@ import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../services/map_service.dart';
+import '../services/routing_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
@@ -374,6 +375,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Provide haptic feedback for mobile users
     HapticFeedback.mediumImpact();
 
+    // Add search result marker at long-click position
+    ref.read(searchProvider.notifier).setSelectedLocation(point.latitude, point.longitude, 'Long-click location');
+
     _showContextMenu(tapPosition, point);
   }
 
@@ -394,7 +398,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               Icon(Icons.add_location, color: Colors.green[700]),
               const SizedBox(width: 8),
-              const Text('Add Community POI', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const Text('Add Community here', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -404,7 +408,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               Icon(Icons.warning, color: Colors.orange[700]),
               const SizedBox(width: 8),
-              const Text('Report Hazard', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const Text('Report Hazard here', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'calculate_route',
+          child: Row(
+            children: [
+              const Text('🚴‍♂️', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              const Text('Calculate a route to', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -422,9 +436,35 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           case 'report_hazard':
             _showReportHazardDialog(point);
             break;
+          case 'calculate_route':
+            _calculateRouteTo(point.latitude, point.longitude);
+            break;
         }
       }
     });
+  }
+
+  /// Show routing-only dialog (for search results)
+  void _showRoutingDialog(LatLng point) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Possible Actions for this Location'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 24)),
+              title: const Text('Calculate a route to'),
+              onTap: () {
+                Navigator.pop(context);
+                _calculateRouteTo(point.latitude, point.longitude);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Navigate to Community POI management screen
@@ -472,6 +512,89 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     AppLogger.map('Returned from Warning screen, reloading map data');
     if (mounted && _isMapReady) {
       _loadAllMapDataWithBounds(forceReload: true);
+    }
+  }
+
+  /// Calculate route from current user location to destination
+  Future<void> _calculateRouteTo(double destLat, double destLon) async {
+    if (_lastGPSPosition == null) {
+      AppLogger.warning('Cannot calculate route - user location not available', tag: 'ROUTING');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to calculate route - location not available'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    AppLogger.map('Calculating route', data: {
+      'from': '${_lastGPSPosition!.latitude},${_lastGPSPosition!.longitude}',
+      'to': '$destLat,$destLon',
+    });
+
+    // Show loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              ),
+              SizedBox(width: 12),
+              Text('Calculating route...'),
+            ],
+          ),
+          duration: Duration(seconds: 30),
+        ),
+      );
+    }
+
+    final routingService = RoutingService();
+    final routePoints = await routingService.calculateRoute(
+      startLat: _lastGPSPosition!.latitude,
+      startLon: _lastGPSPosition!.longitude,
+      endLat: destLat,
+      endLon: destLon,
+    );
+
+    // Hide loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
+
+    if (routePoints == null || routePoints.isEmpty) {
+      AppLogger.warning('Route calculation failed', tag: 'ROUTING');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to calculate route'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Store route in provider
+    ref.read(searchProvider.notifier).setRoute(routePoints);
+
+    AppLogger.success('Route calculated and displayed', tag: 'ROUTING', data: {
+      'points': routePoints.length,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Route calculated (${routePoints.length} points)'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -1234,6 +1357,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       onLongPress: _onMapLongPress,
                     );
 
+              // Get route from search provider
+              final searchState = ref.watch(searchProvider);
+              final routePoints = searchState.routePoints;
+
               return FlutterMap(
                 mapController: _mapController,
                 options: mapOptions,
@@ -1243,6 +1370,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     userAgentPackageName: 'com.popibiking.popiBikingFresh',
                     subdomains: const ['a', 'b', 'c'],
                   ),
+                  // Route polyline layer (below markers)
+                  if (routePoints != null && routePoints.isNotEmpty)
+                    PolylineLayer(
+                      polylines: [
+                        Polyline(
+                          points: routePoints,
+                          strokeWidth: 4.0,
+                          color: AppColors.urbanBlue,
+                          borderStrokeWidth: 2.0,
+                          borderColor: Colors.white,
+                        ),
+                      ],
+                    ),
                   if (markers.isNotEmpty)
                     MarkerLayer(
                       markers: markers,
@@ -1518,6 +1658,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // Navigate to location
                 _mapController.move(LatLng(lat, lon), 16.0);
                 _loadAllMapDataWithBounds();
+
+                // Show routing-only dialog
+                _showRoutingDialog(LatLng(lat, lon));
               },
             ),
           ),
