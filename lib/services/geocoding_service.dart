@@ -60,6 +60,8 @@ class GeocodingService {
       'viewbox': viewbox,
       'bounded': '0', // Don't restrict to viewbox, just bias results
       'addressdetails': '1',
+      'postaladdress': '1', // Include postal address in results
+      'dedupe': '0', // Disable deduplication to get all results
     });
 
     AppLogger.api('LocationIQ request', data: {
