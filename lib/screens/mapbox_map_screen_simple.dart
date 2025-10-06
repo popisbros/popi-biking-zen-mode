@@ -1899,7 +1899,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final lineLayer = LineLayer(
         id: 'route-layer',
         sourceId: 'route-source',
-        lineColor: AppColors.urbanBlue.value,
+        lineColor: 0xFF85a78b,
         lineWidth: 4.0,
         lineCap: LineCap.ROUND,
         lineJoin: LineJoin.ROUND,

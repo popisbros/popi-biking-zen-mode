@@ -1377,7 +1377,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         Polyline(
                           points: routePoints,
                           strokeWidth: 4.0,
-                          color: AppColors.urbanBlue,
+                          color: const Color(0xFF85a78b),
                           borderStrokeWidth: 2.0,
                           borderColor: Colors.white,
                         ),

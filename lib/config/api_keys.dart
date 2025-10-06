@@ -34,6 +34,6 @@ class ApiKeys {
   // Get at: https://www.graphhopper.com/
   static const String graphhopperApiKey = String.fromEnvironment(
     'GRAPHHOPPER_API_KEY',
-    defaultValue: '', // Add your key here for local development
+    defaultValue: 'f0a2e753-e8a8-4c16-af98-b5a77b5dc34e', // Add your key here for local development
   );
 }
