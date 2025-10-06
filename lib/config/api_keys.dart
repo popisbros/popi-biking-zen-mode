@@ -29,4 +29,11 @@ class ApiKeys {
     'LOCATIONIQ_API_KEY',
     defaultValue: 'pk.1ffa72ff2e8c83a89e9da6a2c7e0e3e9', // From .env
   );
+
+  // Graphhopper API Key (for routing)
+  // Get at: https://www.graphhopper.com/
+  static const String graphhopperApiKey = String.fromEnvironment(
+    'GRAPHHOPPER_API_KEY',
+    defaultValue: '', // Add your key here for local development
+  );
 }
