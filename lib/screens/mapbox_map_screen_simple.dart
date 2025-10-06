@@ -364,6 +364,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Wait for marker to be added before showing dialog
     await _addMarkers();
 
+    // Small delay to ensure map has settled
+    await Future.delayed(const Duration(milliseconds: 100));
+
     _showContextMenu(coordinates);
   }
 
@@ -381,12 +384,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Calculate normalized position (0.0 to 1.0)
       final normalizedY = screenCoordinate.y / size.height;
 
+      AppLogger.debug('Dialog alignment calculation', tag: 'MAP', data: {
+        'screenY': screenCoordinate.y,
+        'screenHeight': size.height,
+        'normalizedY': normalizedY,
+        'inMiddleThird': normalizedY >= 0.33 && normalizedY <= 0.67,
+      });
+
       // If marker is in middle third (0.33 to 0.67), show dialog at bottom
       if (normalizedY >= 0.33 && normalizedY <= 0.67) {
+        AppLogger.debug('Marker in middle third - showing dialog at bottom', tag: 'MAP');
         return const Alignment(0.0, 0.6); // Position at bottom third
       }
 
       // Otherwise, keep default centered position
+      AppLogger.debug('Marker not in middle third - showing dialog centered', tag: 'MAP');
       return const Alignment(0.0, -0.33);
     } catch (e) {
       AppLogger.warning('Failed to calculate dialog alignment: $e', tag: 'MAP');
