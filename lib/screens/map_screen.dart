@@ -685,7 +685,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         alignment: Alignment.center,
         child: Icon(
           Icons.add,
-          color: Colors.grey.shade700,
+          color: Colors.red, // Red + symbol
           size: size * 0.6,
         ),
       ),

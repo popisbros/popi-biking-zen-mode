@@ -1650,7 +1650,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final searchMarker = PointAnnotationOptions(
       geometry: Point(coordinates: Position(selectedLoc.longitude, selectedLoc.latitude)),
       image: markerIcon,
-      iconSize: 1.5, // Match POI icon size
+      iconSize: 1.8, // Match user location marker size
       iconAnchor: IconAnchor.CENTER, // Center-aligned like other POIs
     );
 
@@ -1681,9 +1681,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ..strokeWidth = 3.0;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
 
-    // Draw + symbol
+    // Draw + symbol in red
     final plusPaint = Paint()
-      ..color = borderColor
+      ..color = Colors.red
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round;
