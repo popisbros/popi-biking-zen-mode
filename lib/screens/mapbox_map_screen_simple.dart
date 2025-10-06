@@ -455,8 +455,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               Positioned(
                 left: 20,
                 right: 20,
-                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.67 : MediaQuery.of(context).size.height * 0.33,
+                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
+                  titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -464,17 +466,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       // Debug info
                       Container(
                         padding: const EdgeInsets.all(8),
-                        margin: const EdgeInsets.only(bottom: 8),
+                        margin: const EdgeInsets.only(bottom: 4),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "67%" : "33%"}',
+                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "60%" : "28%"}',
                           style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
                         ),
                       ),
                       ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                         leading: Icon(Icons.add_location, color: Colors.green[700]),
                         title: const Text('Add Community here', style: TextStyle(fontSize: 12)),
                         onTap: () {
@@ -483,6 +486,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                       ),
                       ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                         leading: Icon(Icons.warning, color: Colors.orange[700]),
                         title: const Text('Report Hazard here', style: TextStyle(fontSize: 12)),
                         onTap: () {
@@ -491,6 +495,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                       ),
                       ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
                         title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
                         onTap: () {
@@ -533,8 +538,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               Positioned(
                 left: 20,
                 right: 20,
-                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.67 : MediaQuery.of(context).size.height * 0.33,
+                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
+                  titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -542,17 +549,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       // Debug info
                       Container(
                         padding: const EdgeInsets.all(8),
-                        margin: const EdgeInsets.only(bottom: 8),
+                        margin: const EdgeInsets.only(bottom: 4),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "67%" : "33%"}',
+                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "60%" : "28%"}',
                           style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
                         ),
                       ),
                       ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
                         title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
                         onTap: () {
@@ -860,7 +868,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(poi.name),
+        titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
+        title: Text(poi.name, style: const TextStyle(fontSize: 16)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -868,33 +879,33 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             children: [
               Row(
                 children: [
-                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
-                  Text(typeEmoji, style: const TextStyle(fontSize: 16)),
+                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                  Text(typeEmoji, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 4),
-                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                 ],
               ),
               const SizedBox(height: 4),
-              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}', style: const TextStyle(fontSize: 12)),
               if (poi.description != null && poi.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.description!),
+                const SizedBox(height: 6),
+                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.description!, style: const TextStyle(fontSize: 12)),
               ],
               if (poi.address != null && poi.address!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.address!),
+                const SizedBox(height: 6),
+                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.address!, style: const TextStyle(fontSize: 12)),
               ],
               if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.phone!),
+                const SizedBox(height: 6),
+                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.phone!, style: const TextStyle(fontSize: 12)),
               ],
               if (poi.website != null && poi.website!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.website!),
+                const SizedBox(height: 6),
+                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.website!, style: const TextStyle(fontSize: 12)),
               ],
             ],
           ),
@@ -902,7 +913,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE'),
+            child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
@@ -927,7 +938,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(warning.title),
+        titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
+        title: Text(warning.title, style: const TextStyle(fontSize: 16)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -936,9 +950,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               // Type with icon
               Row(
                 children: [
-                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.urbanBlue,
                       borderRadius: BorderRadius.circular(20),
@@ -946,14 +960,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(typeEmoji, style: const TextStyle(fontSize: 16)),
-                        const SizedBox(width: 4),
+                        Text(typeEmoji, style: const TextStyle(fontSize: 14)),
+                        const SizedBox(width: 3),
                         Text(
                           typeLabel,
                           style: const TextStyle(
                             color: AppColors.surface,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -961,13 +975,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               // Severity with colored badge
               Row(
                 children: [
-                  const Text('Severity: ', style: TextStyle(fontWeight: FontWeight.w500)),
+                  const Text('Severity: ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
                       color: severityColor,
                       borderRadius: BorderRadius.circular(20),
@@ -977,18 +991,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       style: const TextStyle(
                         color: AppColors.surface,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 12,
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
-              Text('Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
+              Text('Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}', style: const TextStyle(fontSize: 12)),
               if (warning.description.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(warning.description),
+                const SizedBox(height: 6),
+                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(warning.description, style: const TextStyle(fontSize: 12)),
               ],
             ],
           ),
@@ -1015,7 +1029,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 }
               });
             },
-            child: const Text('EDIT'),
+            child: const Text('EDIT', style: TextStyle(fontSize: 12)),
           ),
           TextButton(
             onPressed: () async {
@@ -1031,11 +1045,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('DELETE'),
+            child: const Text('DELETE', style: TextStyle(fontSize: 12)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE'),
+            child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
@@ -1050,7 +1064,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(poi.name),
+        titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
+        title: Text(poi.name, style: const TextStyle(fontSize: 16)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1058,33 +1075,33 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             children: [
               Row(
                 children: [
-                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
-                  Text(typeEmoji, style: const TextStyle(fontSize: 16)),
+                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                  Text(typeEmoji, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 4),
-                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
                 ],
               ),
               const SizedBox(height: 4),
-              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
+              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}', style: const TextStyle(fontSize: 12)),
               if (poi.description != null && poi.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.description!),
+                const SizedBox(height: 6),
+                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.description!, style: const TextStyle(fontSize: 12)),
               ],
               if (poi.address != null && poi.address!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.address!),
+                const SizedBox(height: 6),
+                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.address!, style: const TextStyle(fontSize: 12)),
               ],
               if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.phone!),
+                const SizedBox(height: 6),
+                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.phone!, style: const TextStyle(fontSize: 12)),
               ],
               if (poi.website != null && poi.website!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.website!),
+                const SizedBox(height: 6),
+                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+                Text(poi.website!, style: const TextStyle(fontSize: 12)),
               ],
             ],
           ),
@@ -1111,7 +1128,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 }
               });
             },
-            child: const Text('EDIT'),
+            child: const Text('EDIT', style: TextStyle(fontSize: 12)),
           ),
           TextButton(
             onPressed: () async {
@@ -1127,11 +1144,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('DELETE'),
+            child: const Text('DELETE', style: TextStyle(fontSize: 12)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE'),
+            child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
