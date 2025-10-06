@@ -17,6 +17,7 @@ import '../services/map_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../utils/app_logger.dart';
+import '../utils/marker_painter.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -934,57 +935,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
             ),
 
-          // Search bar widget (slides down from top)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SearchBarWidget(
-              mapCenter: latlong.LatLng(
-                (_lastCameraCenter?.coordinates.lat ?? 0.0).toDouble(),
-                (_lastCameraCenter?.coordinates.lng ?? 0.0).toDouble(),
-              ),
-              onResultTap: (lat, lon) async {
-                AppLogger.map('Search result tapped - navigating to location', data: {
-                  'lat': lat,
-                  'lon': lon,
-                });
-                if (_mapboxMap != null) {
-                  await _mapboxMap!.flyTo(
-                    CameraOptions(
-                      center: Point(coordinates: Position(lon, lat)),
-                      zoom: 16.0,
-                      pitch: _currentPitch,
-                    ),
-                    MapAnimationOptions(duration: 1000),
-                  );
-                  // Reload POIs after navigation
-                  await _loadAllPOIData();
-                  _addMarkers();
-                }
-              },
-            ),
-          ),
-
-          // Search button (top-left, yellow)
-          if (_isMapReady)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
-              left: 16,
-              child: FloatingActionButton(
-                mini: true,
-                heroTag: 'search_button_3d',
-                backgroundColor: const Color(0xFFFFEB3B), // Yellow
-                foregroundColor: Colors.black87,
-                onPressed: () {
-                  AppLogger.map('Search button pressed (3D)');
-                  ref.read(searchProvider.notifier).toggleSearchBar();
-                },
-                tooltip: 'Search',
-                child: const Icon(Icons.search),
-              ),
-            ),
-
           // Simple controls (only show when map is ready)
           if (_isMapReady) ...[
             // Toggle buttons and zoom controls on the right side
@@ -1163,6 +1113,59 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
             ),
           ],
+
+          // Search button (top-left, yellow) - rendered on top
+          if (_isMapReady)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              left: 16,
+              child: FloatingActionButton(
+                mini: true,
+                heroTag: 'search_button_3d',
+                backgroundColor: const Color(0xFFFFEB3B), // Yellow
+                foregroundColor: Colors.black87,
+                onPressed: () {
+                  AppLogger.map('Search button pressed (3D)');
+                  ref.read(searchProvider.notifier).toggleSearchBar();
+                },
+                tooltip: 'Search',
+                child: const Icon(Icons.search),
+              ),
+            ),
+
+          // Search bar widget (slides down from top) - rendered on top of everything
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SearchBarWidget(
+              mapCenter: latlong.LatLng(
+                (_lastCameraCenter?.coordinates.lat ?? 0.0).toDouble(),
+                (_lastCameraCenter?.coordinates.lng ?? 0.0).toDouble(),
+              ),
+              onResultTap: (lat, lon) async {
+                AppLogger.map('Search result tapped - navigating to location', data: {
+                  'lat': lat,
+                  'lon': lon,
+                });
+                // Set selected location to show marker
+                ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
+                if (_mapboxMap != null) {
+                  await _mapboxMap!.flyTo(
+                    CameraOptions(
+                      center: Point(coordinates: Position(lon, lat)),
+                      zoom: 16.0,
+                      pitch: _currentPitch,
+                    ),
+                    MapAnimationOptions(duration: 1000),
+                  );
+                  // Reload POIs after navigation
+                  await _loadAllPOIData();
+                  _addMarkers();
+                }
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -1621,6 +1624,34 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     await _addOSMPOIsAsIcons(mapState);
     await _addCommunityPOIsAsIcons(mapState);
     await _addWarningsAsIcons(mapState);
+
+    // Add search result marker if available
+    await _addSearchResultMarker();
+  }
+
+  /// Add search result marker (teardrop with checkered flag)
+  Future<void> _addSearchResultMarker() async {
+    final searchState = ref.read(searchProvider);
+    if (searchState.selectedLocation == null) return;
+
+    final selectedLoc = searchState.selectedLocation!;
+    AppLogger.debug('Adding search result marker', tag: 'MAP', data: {
+      'lat': selectedLoc.latitude,
+      'lon': selectedLoc.longitude,
+    });
+
+    // Create checkered teardrop icon
+    final markerIcon = await MarkerPainter.createCheckeredTeardropMarker(size: 60);
+
+    final searchMarker = PointAnnotationOptions(
+      geometry: Point(coordinates: Position(selectedLoc.longitude, selectedLoc.latitude)),
+      image: markerIcon,
+      iconSize: 1.5, // Slightly larger for visibility
+      iconAnchor: IconAnchor.BOTTOM, // Anchor at the tip of the teardrop
+    );
+
+    await _pointAnnotationManager!.create(searchMarker);
+    AppLogger.success('Search result marker added', tag: 'MAP');
   }
 
   /// Add custom user location marker matching 2D map style
