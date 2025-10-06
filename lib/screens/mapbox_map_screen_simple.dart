@@ -459,7 +459,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 child: AlertDialog(
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
+                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -542,7 +542,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 child: AlertDialog(
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 16)),
+                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -871,7 +871,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
         contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-        title: Text(poi.name, style: const TextStyle(fontSize: 16)),
+        title: Text(poi.name, style: const TextStyle(fontSize: 14)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -941,7 +941,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
         contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-        title: Text(warning.title, style: const TextStyle(fontSize: 16)),
+        title: Text(warning.title, style: const TextStyle(fontSize: 14)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1067,7 +1067,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
         contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-        title: Text(poi.name, style: const TextStyle(fontSize: 16)),
+        title: Text(poi.name, style: const TextStyle(fontSize: 14)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
