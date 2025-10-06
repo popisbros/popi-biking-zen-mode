@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -21,6 +22,18 @@ void main() async {
   };
 
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Set system UI overlay style (status bar and navigation bar)
+  // Use light grey matching splash screen background
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Color(0xFFF1F1F1), // Light grey matching splash screen
+      statusBarIconBrightness: Brightness.dark, // Dark icons on light background
+      statusBarBrightness: Brightness.light, // For iOS
+      systemNavigationBarColor: Color(0xFFF1F1F1), // Light grey for bottom nav bar
+      systemNavigationBarIconBrightness: Brightness.dark, // Dark icons
+    ),
+  );
 
   AppLogger.separator('App Starting');
   AppLogger.info('Platform: ${kIsWeb ? "WEB" : "MOBILE"}');
