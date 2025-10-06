@@ -238,6 +238,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
             ),
             child: ListView.builder(
               shrinkWrap: true,
+              padding: EdgeInsets.zero, // Remove default ListView padding
               itemCount: results.length,
               itemBuilder: (context, index) {
                 final result = results[index];
