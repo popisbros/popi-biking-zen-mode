@@ -511,7 +511,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     AppLogger.map('Calculating route', data: {
-      'from': '${location!.latitude},${location.longitude}',
+      'from': '${location!.latitude},${location!.longitude}',
       'to': '$destLat,$destLon',
     });
 
@@ -537,8 +537,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     final routingService = RoutingService();
     final routePoints = await routingService.calculateRoute(
-      startLat: location.latitude,
-      startLon: location.longitude,
+      startLat: location!.latitude,
+      startLon: location!.longitude,
       endLat: destLat,
       endLon: destLon,
     );
