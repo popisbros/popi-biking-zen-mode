@@ -651,7 +651,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
-        padding: const EdgeInsets.all(50), // Add padding around route
+        padding: const EdgeInsets.all(100), // Add padding around route
       ),
     );
 
