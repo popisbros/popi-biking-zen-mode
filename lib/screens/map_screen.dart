@@ -666,8 +666,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Marker _buildSearchResultMarker(double latitude, double longitude) {
-    // Match OSM POI style but with grey colors and + symbol
-    const size = 40.0; // Diameter of the marker
+    // Match user location marker size (12.0 radius = 24.0 diameter)
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.userLocation) * 2;
     return Marker(
       point: LatLng(latitude, longitude),
       width: size,
@@ -675,17 +675,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       alignment: Alignment.center, // Center-aligned like other POIs
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey.shade200, // Light grey background
+          color: const Color(0x33757575), // Grey with same transparency as user location (~20% opacity)
           shape: BoxShape.circle,
           border: Border.all(
-            color: Colors.grey.shade600, // Dark grey border
-            width: 2.5,
+            color: Colors.grey.shade700, // Dark grey border
+            width: MarkerConfig.circleStrokeWidth,
           ),
         ),
         alignment: Alignment.center,
         child: Icon(
           Icons.add,
-          color: Colors.grey.shade600,
+          color: Colors.grey.shade700,
           size: size * 0.6,
         ),
       ),

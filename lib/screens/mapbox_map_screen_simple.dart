@@ -1659,13 +1659,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Create search result marker icon (grey circle with + symbol)
+  /// Matches user location marker size and uses same transparency
   Future<Uint8List> _createSearchResultIcon({double size = 48}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Grey colors matching POI style
-    final fillColor = Colors.grey.shade200;
-    final borderColor = Colors.grey.shade600;
+    // Grey colors with transparency matching user location marker
+    final fillColor = const Color(0x33757575); // Grey with ~20% opacity (same as user location)
+    final borderColor = Colors.grey.shade700;
 
     // Draw filled circle background
     final circlePaint = Paint()

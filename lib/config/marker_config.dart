@@ -28,15 +28,15 @@ class MarkerConfig {
   // ============================================================================
 
   /// OSM POI colors (bike shops, water, toilets, etc.)
-  static const Color osmPoiFillColor = Color(0xFFBBDEFB); //blue.shade100
+  static const Color osmPoiFillColor = Color(0x33BBDEFB); // blue.shade100 with ~20% opacity
   static const Color osmPoiBorderColor = Colors.blue;
 
   /// Community POI colors (user-created points of interest)
-  static const Color communityPoiFillColor = Color(0xFFC8E6C9); // green.shade100
+  static const Color communityPoiFillColor = Color(0x33C8E6C9); // green.shade100 with ~20% opacity
   static const Color communityPoiBorderColor = Colors.green;
 
   /// Warning/Hazard colors (reported dangers, road closures, etc.)
-  static const Color warningFillColor = Color(0xFFFFCDD2); // red.shade100
+  static const Color warningFillColor = Color(0x33FFCDD2); // red.shade100 with ~20% opacity
   static const Color warningBorderColor = Colors.red;
 
   /// User location marker colors
