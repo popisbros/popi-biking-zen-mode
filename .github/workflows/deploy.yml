@@ -6,10 +6,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Prevent concurrent deployments
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,18 +38,31 @@ jobs:
           MAPTILER_API_KEY: ${{ secrets.MAPTILER_API_KEY }}
           MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
           LOCATIONIQ_API_KEY: ${{ secrets.LOCATIONIQ_API_KEY }}
+          GRAPHHOPPER_API_KEY: ${{ secrets.GRAPHHOPPER_API_KEY }}
         run: |
           flutter build web --release \
             --base-href="/popi-biking-zen-mode/" \
             --dart-define=THUNDERFOREST_API_KEY="${THUNDERFOREST_API_KEY}" \
             --dart-define=MAPTILER_API_KEY="${MAPTILER_API_KEY}" \
             --dart-define=MAPBOX_ACCESS_TOKEN="${MAPBOX_ACCESS_TOKEN}" \
-            --dart-define=LOCATIONIQ_API_KEY="${LOCATIONIQ_API_KEY}"
+            --dart-define=LOCATIONIQ_API_KEY="${LOCATIONIQ_API_KEY}" \
+            --dart-define=GRAPHHOPPER_API_KEY="${GRAPHHOPPER_API_KEY}"
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
-          publish_branch: gh-pages
-          force_orphan: true
+          path: ./build/web
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
