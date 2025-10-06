@@ -1640,14 +1640,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       'lon': selectedLoc.longitude,
     });
 
-    // Create checkered teardrop icon
-    final markerIcon = await MarkerPainter.createCheckeredTeardropMarker(size: 60);
+    // Create checkered teardrop icon (2x OSM POI size)
+    // OSM POI radius is 10.0 (diameter 20.0), teardrop should be 2x = 40.0
+    final markerIcon = await MarkerPainter.createCheckeredTeardropMarker(size: 30);
 
     final searchMarker = PointAnnotationOptions(
       geometry: Point(coordinates: Position(selectedLoc.longitude, selectedLoc.latitude)),
       image: markerIcon,
-      iconSize: 1.5, // Slightly larger for visibility
-      iconAnchor: IconAnchor.BOTTOM, // Anchor at the tip of the teardrop
+      iconSize: 1.0, // Normal size (marker is already sized correctly)
+      iconAnchor: IconAnchor.BOTTOM, // Anchor at bottom middle (tip of the teardrop)
     );
 
     await _pointAnnotationManager!.create(searchMarker);
