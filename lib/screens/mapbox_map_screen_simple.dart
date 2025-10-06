@@ -530,24 +530,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  // contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Debug info
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'DEBUG: Y=${alignmentData['screenY']?.toStringAsFixed(1)} / ${alignmentData['screenHeight']?.toStringAsFixed(1)} = ${alignmentData['normalizedY']?.toStringAsFixed(3)}, Middle=${alignmentData['inMiddleThird']}, Pos=${inMiddleThird ? "60%" : "28%"}',
-                          style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
-                        ),
-                      ),
                       ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
