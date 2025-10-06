@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -490,7 +491,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final locationAsync = ref.read(locationNotifierProvider);
 
     // Extract location from AsyncValue
-    final location = locationAsync.valueOrNull;
+    LocationData? location;
+    locationAsync.whenData((data) {
+      location = data;
+    });
 
     if (location == null) {
       AppLogger.warning('Cannot calculate route - user location not available', tag: 'ROUTING');
@@ -1966,10 +1970,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Create LineString geometry
       final lineString = LineString(coordinates: positions);
 
-      // Create GeoJSON source
+      // Create GeoJSON source with JSON string
       final geoJsonSource = GeoJsonSource(
         id: 'route-source',
-        data: lineString.toJson(),
+        data: jsonEncode(lineString.toJson()),
       );
 
       // Add source to map
