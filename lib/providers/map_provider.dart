@@ -4,8 +4,9 @@ import 'package:latlong2/latlong.dart';
 import '../services/map_service.dart';
 
 /// Provider for map state management
-class MapNotifier extends StateNotifier<MapState> {
-  MapNotifier() : super(MapState.initial());
+class MapNotifier extends Notifier<MapState> {
+  @override
+  MapState build() => MapState.initial();
 
   final MapService _mapService = MapService();
 
@@ -157,6 +158,4 @@ final mapServiceProvider = Provider<MapService>((ref) {
 });
 
 /// Provider for map state
-final mapProvider = StateNotifierProvider<MapNotifier, MapState>((ref) {
-  return MapNotifier();
-});
+final mapProvider = NotifierProvider<MapNotifier, MapState>(MapNotifier.new);
