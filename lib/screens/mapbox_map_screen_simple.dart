@@ -1500,14 +1500,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Create user location marker icon matching 2D map style
-  /// White circle with purple border and custom navigation arrow (inspired by arrow.png)
+  /// White circle with purple border and Icons.navigation arrow
   Future<Uint8List> _createUserLocationIcon({double? heading, double size = 48}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Use white background with purple border
+    // Use white background with purple border (matching 2D map)
     final fillColor = Colors.white;
     final borderColor = Colors.purple;
+
+    // Save canvas state for rotation
+    canvas.save();
+
+    // If we have a heading, rotate the entire marker
+    final hasHeading = heading != null && heading >= 0;
+    if (hasHeading) {
+      // Rotate around center
+      canvas.translate(size / 2, size / 2);
+      canvas.rotate(heading * 3.14159 / 180); // Convert to radians
+      canvas.translate(-size / 2, -size / 2);
+    }
 
     // Draw filled circle background
     final circlePaint = Paint()
@@ -1522,52 +1534,38 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ..strokeWidth = 3.0;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
 
-    // Draw navigation arrow or my_location icon
-    final hasHeading = heading != null && heading >= 0;
-
-    // Save canvas state before rotation
-    canvas.save();
+    // Draw navigation arrow (Icons.navigation) or my_location icon
+    // Match 2D map: icon size is 60% of marker size
+    final iconSize = size * 0.6;
 
     if (hasHeading) {
-      // Rotate canvas around center for navigation arrow
-      canvas.translate(size / 2, size / 2);
-      canvas.rotate(heading * 3.14159 / 180); // Convert to radians
-      canvas.translate(-size / 2, -size / 2);
-
-      // Draw custom arrow inspired by arrow.png (30% smaller)
-      final arrowSize = size * 0.30; // Reduced from 0.6 to 0.30 (50% smaller)
-      final arrowPaint = Paint()
-        ..color = borderColor
-        ..style = PaintingStyle.fill;
-
-      // Arrow shape: triangular pointer with tail cutout
-      final arrowPath = Path();
-      final centerX = size / 2;
-      final centerY = size / 2;
-
-      // Top point of arrow
-      arrowPath.moveTo(centerX, centerY - arrowSize / 2);
-      // Right side
-      arrowPath.lineTo(centerX + arrowSize / 3, centerY + arrowSize / 4);
-      // Tail cutout right
-      arrowPath.lineTo(centerX + arrowSize / 8, centerY + arrowSize / 6);
-      // Bottom center (tail)
-      arrowPath.lineTo(centerX, centerY + arrowSize / 2);
-      // Tail cutout left
-      arrowPath.lineTo(centerX - arrowSize / 8, centerY + arrowSize / 6);
-      // Left side
-      arrowPath.lineTo(centerX - arrowSize / 3, centerY + arrowSize / 4);
-      // Close path
-      arrowPath.close();
-
-      canvas.drawPath(arrowPath, arrowPaint);
-    } else {
-      // Draw my_location icon when no heading
+      // Draw navigation arrow using MaterialIcons font (Icons.navigation)
       final iconPainter = TextPainter(
         text: TextSpan(
-          text: String.fromCharCode(0xe55c), // my_location icon
+          text: String.fromCharCode(0xe55d), // Icons.navigation (0xe55d)
           style: TextStyle(
-            fontSize: size * 0.42, // Match the 30% smaller size
+            fontSize: iconSize,
+            fontFamily: 'MaterialIcons',
+            color: borderColor,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      iconPainter.layout();
+      iconPainter.paint(
+        canvas,
+        Offset(
+          (size - iconPainter.width) / 2,
+          (size - iconPainter.height) / 2,
+        ),
+      );
+    } else {
+      // Draw my_location icon (Icons.my_location)
+      final iconPainter = TextPainter(
+        text: TextSpan(
+          text: String.fromCharCode(0xe55c), // Icons.my_location (0xe55c)
+          style: TextStyle(
+            fontSize: iconSize,
             fontFamily: 'MaterialIcons',
             color: borderColor,
           ),
