@@ -22,10 +22,14 @@ class BoundingBox {
 }
 
 /// Notifier for OSM POIs with location-based loading
-class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
-  OSMPOIsNotifier(this._osmService) : super(const AsyncValue.data([]));
-  
-  final OSMService _osmService;
+class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
+  late final OSMService _osmService;
+
+  @override
+  AsyncValue<List<OSMPOI>> build() {
+    _osmService = ref.watch(osmServiceProvider);
+    return const AsyncValue.data([]);
+  }
   LatLng? _lastLoadedCenter;
   double _lastLoadedZoom = 0;
   
@@ -316,7 +320,4 @@ class OSMPOIsNotifier extends StateNotifier<AsyncValue<List<OSMPOI>>> {
 }
 
 /// Provider for OSM POIs notifier
-final osmPOIsNotifierProvider = StateNotifierProvider<OSMPOIsNotifier, AsyncValue<List<OSMPOI>>>((ref) {
-  final osmService = ref.watch(osmServiceProvider);
-  return OSMPOIsNotifier(osmService);
-});
+final osmPOIsNotifierProvider = NotifierProvider<OSMPOIsNotifier, AsyncValue<List<OSMPOI>>>(OSMPOIsNotifier.new);

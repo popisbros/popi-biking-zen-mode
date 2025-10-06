@@ -156,12 +156,14 @@ final cyclingPOIsProvider = StreamProvider<List<CyclingPOI>>((ref) {
 });
 
 /// Notifier for community warnings management
-class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityWarning>>> {
-  final FirebaseService _firebaseService;
-  final Ref _ref;
-  
-  CommunityWarningsNotifier(this._firebaseService, this._ref) : super(const AsyncValue.loading()) {
+class CommunityWarningsNotifier extends Notifier<AsyncValue<List<CommunityWarning>>> {
+  late final FirebaseService _firebaseService;
+
+  @override
+  AsyncValue<List<CommunityWarning>> build() {
+    _firebaseService = ref.watch(firebaseServiceProvider);
     _loadWarnings();
+    return const AsyncValue.loading();
   }
   
   Future<void> _loadWarnings() async {
@@ -250,7 +252,7 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
       // This will cause the map screen to reload all data
       AppLogger.firebase('Triggering global map data refresh after POI/Hazard operation');
 
-      final refreshNotifier = _ref.read(mapDataRefreshTriggerProvider.notifier);
+      final refreshNotifier = ref.read(mapDataRefreshTriggerProvider.notifier);
       refreshNotifier.triggerRefresh();
 
       AppLogger.success('Global map data refresh triggered');
@@ -262,18 +264,17 @@ class CommunityWarningsNotifier extends StateNotifier<AsyncValue<List<CommunityW
 }
 
 /// Provider for community warnings notifier
-final communityWarningsNotifierProvider = StateNotifierProvider<CommunityWarningsNotifier, AsyncValue<List<CommunityWarning>>>((ref) {
-  final firebaseService = ref.watch(firebaseServiceProvider);
-  return CommunityWarningsNotifier(firebaseService, ref);
-});
+final communityWarningsNotifierProvider = NotifierProvider<CommunityWarningsNotifier, AsyncValue<List<CommunityWarning>>>(CommunityWarningsNotifier.new);
 
 /// Notifier for cycling POIs management
-class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
-  final FirebaseService _firebaseService;
-  final Ref _ref;
-  
-  CyclingPOIsNotifier(this._firebaseService, this._ref) : super(const AsyncValue.loading()) {
+class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
+  late final FirebaseService _firebaseService;
+
+  @override
+  AsyncValue<List<CyclingPOI>> build() {
+    _firebaseService = ref.watch(firebaseServiceProvider);
     _loadPOIs();
+    return const AsyncValue.loading();
   }
   
   Future<void> _loadPOIs() async {
@@ -454,7 +455,7 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
       // This will cause the map screen to reload all data
       AppLogger.firebase('Triggering global map data refresh after POI/Hazard operation');
 
-      final refreshNotifier = _ref.read(mapDataRefreshTriggerProvider.notifier);
+      final refreshNotifier = ref.read(mapDataRefreshTriggerProvider.notifier);
       refreshNotifier.triggerRefresh();
 
       AppLogger.success('Global map data refresh triggered');
@@ -466,20 +467,21 @@ class CyclingPOIsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
 }
 
 /// Provider for cycling POIs notifier
-final cyclingPOIsNotifierProvider = StateNotifierProvider<CyclingPOIsNotifier, AsyncValue<List<CyclingPOI>>>((ref) {
-  final firebaseService = ref.watch(firebaseServiceProvider);
-  return CyclingPOIsNotifier(firebaseService, ref);
-});
+final cyclingPOIsNotifierProvider = NotifierProvider<CyclingPOIsNotifier, AsyncValue<List<CyclingPOI>>>(CyclingPOIsNotifier.new);
 
 // BoundingBox class is imported from osm_poi_provider.dart
 
 /// State notifier for bounds-based community warnings
-class CommunityWarningsBoundsNotifier extends StateNotifier<AsyncValue<List<CommunityWarning>>> {
-  final FirebaseService _firebaseService;
+class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<CommunityWarning>>> {
+  late final FirebaseService _firebaseService;
   final DebugService _debugService = DebugService();
   BoundingBox? _lastLoadedBounds;
 
-  CommunityWarningsBoundsNotifier(this._firebaseService) : super(const AsyncValue.loading());
+  @override
+  AsyncValue<List<CommunityWarning>> build() {
+    _firebaseService = ref.watch(firebaseServiceProvider);
+    return const AsyncValue.loading();
+  }
 
   /// Load warnings using actual map bounds
   Future<void> loadWarningsWithBounds(BoundingBox bounds) async {
@@ -550,12 +552,16 @@ class CommunityWarningsBoundsNotifier extends StateNotifier<AsyncValue<List<Comm
 }
 
 /// State notifier for bounds-based cycling POIs
-class CyclingPOIsBoundsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI>>> {
-  final FirebaseService _firebaseService;
+class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
+  late final FirebaseService _firebaseService;
   final DebugService _debugService = DebugService();
   BoundingBox? _lastLoadedBounds;
 
-  CyclingPOIsBoundsNotifier(this._firebaseService) : super(const AsyncValue.loading());
+  @override
+  AsyncValue<List<CyclingPOI>> build() {
+    _firebaseService = ref.watch(firebaseServiceProvider);
+    return const AsyncValue.loading();
+  }
 
   /// Load POIs using actual map bounds
   Future<void> loadPOIsWithBounds(BoundingBox bounds) async {
@@ -626,21 +632,16 @@ class CyclingPOIsBoundsNotifier extends StateNotifier<AsyncValue<List<CyclingPOI
 }
 
 /// Provider for bounds-based community warnings notifier
-final communityWarningsBoundsNotifierProvider = StateNotifierProvider<CommunityWarningsBoundsNotifier, AsyncValue<List<CommunityWarning>>>((ref) {
-  final firebaseService = ref.watch(firebaseServiceProvider);
-  return CommunityWarningsBoundsNotifier(firebaseService);
-});
+final communityWarningsBoundsNotifierProvider = NotifierProvider<CommunityWarningsBoundsNotifier, AsyncValue<List<CommunityWarning>>>(CommunityWarningsBoundsNotifier.new);
 
 /// Provider for bounds-based cycling POIs notifier
-final cyclingPOIsBoundsNotifierProvider = StateNotifierProvider<CyclingPOIsBoundsNotifier, AsyncValue<List<CyclingPOI>>>((ref) {
-  final firebaseService = ref.watch(firebaseServiceProvider);
-  return CyclingPOIsBoundsNotifier(firebaseService);
-});
+final cyclingPOIsBoundsNotifierProvider = NotifierProvider<CyclingPOIsBoundsNotifier, AsyncValue<List<CyclingPOI>>>(CyclingPOIsBoundsNotifier.new);
 
 /// Global refresh trigger for map data
-class MapDataRefreshTrigger extends StateNotifier<int> {
-  MapDataRefreshTrigger() : super(0);
-  
+class MapDataRefreshTrigger extends Notifier<int> {
+  @override
+  int build() => 0;
+
   void triggerRefresh() {
     state = state + 1;
     AppLogger.firebase('Map data refresh triggered', data: {'counter': state});
@@ -648,7 +649,5 @@ class MapDataRefreshTrigger extends StateNotifier<int> {
 }
 
 /// Provider for map data refresh trigger
-final mapDataRefreshTriggerProvider = StateNotifierProvider<MapDataRefreshTrigger, int>((ref) {
-  return MapDataRefreshTrigger();
-});
+final mapDataRefreshTriggerProvider = NotifierProvider<MapDataRefreshTrigger, int>(MapDataRefreshTrigger.new);
 

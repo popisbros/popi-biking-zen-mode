@@ -33,13 +33,16 @@ final locationServiceEnabledProvider = FutureProvider<bool>((ref) async {
 });
 
 /// Notifier for managing location state
-class LocationNotifier extends StateNotifier<AsyncValue<LocationData?>> {
-  final LocationService _locationService;
+class LocationNotifier extends Notifier<AsyncValue<LocationData?>> {
+  late final LocationService _locationService;
   StreamSubscription<LocationData>? _locationSubscription;
 
-  LocationNotifier(this._locationService) : super(const AsyncValue.loading()) {
-    AppLogger.location('Constructor called, initializing...');
+  @override
+  AsyncValue<LocationData?> build() {
+    AppLogger.location('Build called, initializing...');
+    _locationService = ref.watch(locationServiceProvider);
     _initializeLocation();
+    return const AsyncValue.loading();
   }
 
   Future<void> _initializeLocation() async {
@@ -208,18 +211,12 @@ class LocationNotifier extends StateNotifier<AsyncValue<LocationData?>> {
     }
   }
 
-  @override
-  void dispose() {
+  void disposeLocation() {
     AppLogger.location('Disposing LocationNotifier');
     _locationSubscription?.cancel();
     _locationService.dispose();
-    super.dispose();
   }
 }
 
 /// Provider for location notifier
-final locationNotifierProvider = StateNotifierProvider<LocationNotifier, AsyncValue<LocationData?>>((ref) {
-  AppLogger.location('Creating LocationNotifier instance');
-  final locationService = ref.watch(locationServiceProvider);
-  return LocationNotifier(locationService);
-});
+final locationNotifierProvider = NotifierProvider<LocationNotifier, AsyncValue<LocationData?>>(LocationNotifier.new);
