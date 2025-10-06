@@ -552,6 +552,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Store route in provider
     ref.read(searchProvider.notifier).setRoute(routePoints);
 
+    // Zoom map to fit the entire route
+    await _fitRouteBounds(routePoints);
+
     AppLogger.success('Route calculated and displayed', tag: 'ROUTING', data: {
       'points': routePoints.length,
     });
@@ -564,6 +567,61 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         ),
       );
     }
+  }
+
+  /// Fit map bounds to show entire route
+  Future<void> _fitRouteBounds(List<latlong.LatLng> routePoints) async {
+    if (routePoints.isEmpty || _mapboxMap == null) return;
+
+    // Calculate bounding box
+    double minLat = routePoints.first.latitude;
+    double maxLat = routePoints.first.latitude;
+    double minLon = routePoints.first.longitude;
+    double maxLon = routePoints.first.longitude;
+
+    for (final point in routePoints) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLon) minLon = point.longitude;
+      if (point.longitude > maxLon) maxLon = point.longitude;
+    }
+
+    // Calculate center point
+    final centerLat = (minLat + maxLat) / 2;
+    final centerLon = (minLon + maxLon) / 2;
+
+    // Calculate appropriate zoom level based on bounds
+    // This is a simplified approach - adjust zoom based on latitude span
+    final latSpan = maxLat - minLat;
+    final lonSpan = maxLon - minLon;
+    final maxSpan = latSpan > lonSpan ? latSpan : lonSpan;
+
+    // Rough zoom calculation (Mapbox zoom levels)
+    double zoom = 16.0;
+    if (maxSpan > 0.5) zoom = 10.0;
+    else if (maxSpan > 0.2) zoom = 11.0;
+    else if (maxSpan > 0.1) zoom = 12.0;
+    else if (maxSpan > 0.05) zoom = 13.0;
+    else if (maxSpan > 0.02) zoom = 14.0;
+    else if (maxSpan > 0.01) zoom = 15.0;
+
+    // Fly to show entire route
+    await _mapboxMap!.flyTo(
+      CameraOptions(
+        center: Point(coordinates: Position(centerLon, centerLat)),
+        zoom: zoom,
+        pitch: _currentPitch,
+      ),
+      MapAnimationOptions(duration: 1500),
+    );
+
+    AppLogger.debug('Map fitted to route bounds', tag: 'ROUTING', data: {
+      'minLat': minLat,
+      'maxLat': maxLat,
+      'minLon': minLon,
+      'maxLon': maxLon,
+      'zoom': zoom,
+    });
   }
 
   /// Build toggle button with count badge (matching 2D map style)

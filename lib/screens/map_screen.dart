@@ -594,6 +594,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Store route in provider
     ref.read(searchProvider.notifier).setRoute(routePoints);
 
+    // Zoom map to fit the entire route
+    _fitRouteBounds(routePoints);
+
     AppLogger.success('Route calculated and displayed', tag: 'ROUTING', data: {
       'points': routePoints.length,
     });
@@ -606,6 +609,44 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       );
     }
+  }
+
+  /// Fit map bounds to show entire route
+  void _fitRouteBounds(List<LatLng> routePoints) {
+    if (routePoints.isEmpty) return;
+
+    // Calculate bounding box
+    double minLat = routePoints.first.latitude;
+    double maxLat = routePoints.first.latitude;
+    double minLon = routePoints.first.longitude;
+    double maxLon = routePoints.first.longitude;
+
+    for (final point in routePoints) {
+      if (point.latitude < minLat) minLat = point.latitude;
+      if (point.latitude > maxLat) maxLat = point.latitude;
+      if (point.longitude < minLon) minLon = point.longitude;
+      if (point.longitude > maxLon) maxLon = point.longitude;
+    }
+
+    // Create LatLngBounds and fit to map with padding
+    final bounds = LatLngBounds(
+      LatLng(minLat, minLon),
+      LatLng(maxLat, maxLon),
+    );
+
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.all(50), // Add padding around route
+      ),
+    );
+
+    AppLogger.debug('Map fitted to route bounds', tag: 'ROUTING', data: {
+      'minLat': minLat,
+      'maxLat': maxLat,
+      'minLon': minLon,
+      'maxLon': maxLon,
+    });
   }
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
