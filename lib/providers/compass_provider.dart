@@ -29,11 +29,13 @@ final compassHeadingProvider = StreamProvider<double?>((ref) {
 });
 
 /// Notifier for managing compass state
-class CompassNotifier extends StateNotifier<double?> {
+class CompassNotifier extends Notifier<double?> {
   StreamSubscription<CompassEvent>? _compassSubscription;
 
-  CompassNotifier() : super(null) {
+  @override
+  double? build() {
     _initializeCompass();
+    return null;
   }
 
   void _initializeCompass() {
@@ -66,16 +68,11 @@ class CompassNotifier extends StateNotifier<double?> {
     AppLogger.success('Compass initialized', tag: 'COMPASS');
   }
 
-  @override
-  void dispose() {
+  void disposeCompass() {
     AppLogger.debug('Disposing compass', tag: 'COMPASS');
     _compassSubscription?.cancel();
-    super.dispose();
   }
 }
 
 /// Provider for compass notifier
-final compassNotifierProvider = StateNotifierProvider<CompassNotifier, double?>((ref) {
-  AppLogger.debug('Creating CompassNotifier instance', tag: 'COMPASS');
-  return CompassNotifier();
-});
+final compassNotifierProvider = NotifierProvider<CompassNotifier, double?>(CompassNotifier.new);
