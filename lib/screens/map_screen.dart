@@ -668,12 +668,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Marker _buildSearchResultMarker(double latitude, double longitude) {
-    const size = 60.0; // Size of the teardrop marker
+    // OSM POI radius is 10.0 (diameter 20.0), teardrop should be 2x = 40.0
+    // But marker size is the width, and height is 1.2x, so we use 30 to get ~40 total
+    const size = 30.0; // Width of the teardrop marker
     return Marker(
       point: LatLng(latitude, longitude),
       width: size,
-      height: size * 1.2, // Slightly taller for teardrop shape
-      alignment: Alignment.bottomCenter, // Anchor at the point of the teardrop
+      height: size * 1.2, // Teardrop is taller (height ~36)
+      alignment: Alignment.bottomCenter, // Anchor at bottom middle (tip of teardrop)
       child: FutureBuilder<Uint8List>(
         future: MarkerPainter.createCheckeredTeardropMarker(size: size),
         builder: (context, snapshot) {
