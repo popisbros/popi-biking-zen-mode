@@ -145,6 +145,20 @@ class SearchNotifier extends Notifier<SearchState> {
     AppLogger.debug('Clearing selected search location', tag: 'SEARCH');
     state = state.copyWith(clearSelectedLocation: true);
   }
+
+  /// Set calculated route
+  void setRoute(List<LatLng> routePoints) {
+    AppLogger.debug('Setting route', tag: 'SEARCH', data: {
+      'points': routePoints.length,
+    });
+    state = state.copyWith(routePoints: routePoints);
+  }
+
+  /// Clear calculated route
+  void clearRoute() {
+    AppLogger.debug('Clearing route', tag: 'SEARCH');
+    state = state.copyWith(clearRoute: true);
+  }
 }
 
 /// Represents a selected search result location to display on map
@@ -166,12 +180,14 @@ class SearchState {
   final String query;
   final AsyncValue<List<SearchResult>> results;
   final SearchResultLocation? selectedLocation; // Track selected search result
+  final List<LatLng>? routePoints; // Track calculated route
 
   const SearchState({
     required this.isVisible,
     required this.query,
     required this.results,
     this.selectedLocation,
+    this.routePoints,
   });
 
   factory SearchState.initial() {
@@ -180,6 +196,7 @@ class SearchState {
       query: '',
       results: AsyncValue.data([]),
       selectedLocation: null,
+      routePoints: null,
     );
   }
 
@@ -189,12 +206,15 @@ class SearchState {
     AsyncValue<List<SearchResult>>? results,
     SearchResultLocation? selectedLocation,
     bool clearSelectedLocation = false,
+    List<LatLng>? routePoints,
+    bool clearRoute = false,
   }) {
     return SearchState(
       isVisible: isVisible ?? this.isVisible,
       query: query ?? this.query,
       results: results ?? this.results,
       selectedLocation: clearSelectedLocation ? null : (selectedLocation ?? this.selectedLocation),
+      routePoints: clearRoute ? null : (routePoints ?? this.routePoints),
     );
   }
 }

@@ -14,6 +14,7 @@ import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../services/map_service.dart';
+import '../services/routing_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../utils/app_logger.dart';
@@ -337,13 +338,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Handle long press on map to show context menu
   void _onMapLongPress(Point coordinates) {
+    final lat = coordinates.coordinates.lat.toDouble();
+    final lng = coordinates.coordinates.lng.toDouble();
+
     AppLogger.map('Map long-pressed', data: {
-      'lat': coordinates.coordinates.lat,
-      'lng': coordinates.coordinates.lng,
+      'lat': lat,
+      'lng': lng,
     });
 
     // Provide haptic feedback for mobile users
     HapticFeedback.mediumImpact();
+
+    // Add search result marker at long-click position
+    ref.read(searchProvider.notifier).setSelectedLocation(lat, lng, 'Long-click location');
 
     _showContextMenu(coordinates);
   }
@@ -355,28 +362,65 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add to Map'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.add_location, color: Colors.green[700]),
-              title: const Text('Add Community POI'),
-              onTap: () {
-                Navigator.pop(context);
-                _showAddPOIDialog(lat, lng);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.warning, color: Colors.orange[700]),
-              title: const Text('Report Hazard'),
-              onTap: () {
-                Navigator.pop(context);
-                _showReportHazardDialog(lat, lng);
-              },
-            ),
-          ],
+      builder: (context) => Align(
+        alignment: const Alignment(0.0, -0.33), // Position at 2/3 from top (-1.0 is top, 1.0 is bottom)
+        child: AlertDialog(
+          title: const Text('Possible Actions for this Location'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.add_location, color: Colors.green[700]),
+                title: const Text('Add Community here'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAddPOIDialog(lat, lng);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.warning, color: Colors.orange[700]),
+                title: const Text('Report Hazard here'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showReportHazardDialog(lat, lng);
+                },
+              ),
+              ListTile(
+                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 24)),
+                title: const Text('Calculate a route to'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _calculateRouteTo(lat, lng);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Show routing-only dialog (for search results)
+  void _showRoutingDialog(double lat, double lng) {
+    showDialog(
+      context: context,
+      builder: (context) => Align(
+        alignment: const Alignment(0.0, -0.33), // Position at 2/3 from top (-1.0 is top, 1.0 is bottom)
+        child: AlertDialog(
+          title: const Text('Possible Actions for this Location'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 24)),
+                title: const Text('Calculate a route to'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _calculateRouteTo(lat, lng);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -431,6 +475,94 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await _loadAllPOIData();
       // Refresh markers on map
       _addMarkers();
+    }
+  }
+
+  /// Calculate route from current user location to destination
+  Future<void> _calculateRouteTo(double destLat, double destLon) async {
+    final locationAsync = ref.read(locationNotifierProvider);
+
+    // Extract location from AsyncValue
+    final location = locationAsync.valueOrNull;
+
+    if (location == null) {
+      AppLogger.warning('Cannot calculate route - user location not available', tag: 'ROUTING');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to calculate route - location not available'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    AppLogger.map('Calculating route', data: {
+      'from': '${location.latitude},${location.longitude}',
+      'to': '$destLat,$destLon',
+    });
+
+    // Show loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              ),
+              SizedBox(width: 12),
+              Text('Calculating route...'),
+            ],
+          ),
+          duration: Duration(seconds: 30),
+        ),
+      );
+    }
+
+    final routingService = RoutingService();
+    final routePoints = await routingService.calculateRoute(
+      startLat: location.latitude,
+      startLon: location.longitude,
+      endLat: destLat,
+      endLon: destLon,
+    );
+
+    // Hide loading indicator
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
+
+    if (routePoints == null || routePoints.isEmpty) {
+      AppLogger.warning('Route calculation failed', tag: 'ROUTING');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to calculate route'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Store route in provider
+    ref.read(searchProvider.notifier).setRoute(routePoints);
+
+    AppLogger.success('Route calculated and displayed', tag: 'ROUTING', data: {
+      'points': routePoints.length,
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Route calculated (${routePoints.length} points)'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -1161,6 +1293,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   // Reload POIs after navigation
                   await _loadAllPOIData();
                   _addMarkers();
+
+                  // Show routing-only dialog
+                  _showRoutingDialog(lat, lon);
                 }
               },
             ),
@@ -1631,6 +1766,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Add search result marker if available
     await _addSearchResultMarker();
+
+    // Add route polyline if available
+    await _addRoutePolyline();
   }
 
   /// Add search result marker (grey circle with + symbol)
@@ -1709,6 +1847,71 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final image = await picture.toImage(size.toInt(), size.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     return byteData!.buffer.asUint8List();
+  }
+
+  /// Add route polyline to map
+  Future<void> _addRoutePolyline() async {
+    final searchState = ref.read(searchProvider);
+    final routePoints = searchState.routePoints;
+
+    if (routePoints == null || routePoints.isEmpty) {
+      // Clear any existing route layer
+      try {
+        await _mapboxMap?.style.removeStyleLayer('route-layer');
+        await _mapboxMap?.style.removeStyleSource('route-source');
+      } catch (e) {
+        // Layer/source doesn't exist, that's fine
+      }
+      return;
+    }
+
+    AppLogger.debug('Adding route polyline', tag: 'MAP', data: {
+      'points': routePoints.length,
+    });
+
+    try {
+      // Remove existing route layer and source if they exist
+      try {
+        await _mapboxMap?.style.removeStyleLayer('route-layer');
+        await _mapboxMap?.style.removeStyleSource('route-source');
+      } catch (e) {
+        // Layer/source doesn't exist yet
+      }
+
+      // Convert LatLng points to Mapbox Position list
+      final positions = routePoints.map((point) =>
+        Position(point.longitude, point.latitude)
+      ).toList();
+
+      // Create LineString geometry
+      final lineString = LineString(coordinates: positions);
+
+      // Create GeoJSON source
+      final geoJsonSource = GeoJsonSource(
+        id: 'route-source',
+        data: lineString.toJson(),
+      );
+
+      // Add source to map
+      await _mapboxMap?.style.addSource(geoJsonSource);
+
+      // Create line layer for the route
+      final lineLayer = LineLayer(
+        id: 'route-layer',
+        sourceId: 'route-source',
+        lineColor: AppColors.urbanBlue.value,
+        lineWidth: 4.0,
+        lineCap: LineCap.ROUND,
+        lineJoin: LineJoin.ROUND,
+      );
+
+      // Add layer to map (below POI labels if they exist)
+      await _mapboxMap?.style.addLayer(lineLayer);
+
+      AppLogger.success('Route polyline added', tag: 'MAP');
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to add route polyline', tag: 'MAP', error: e, stackTrace: stackTrace);
+    }
   }
 
   /// Add custom user location marker matching 2D map style
