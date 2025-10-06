@@ -713,7 +713,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             const SizedBox(height: 16),
             ...MapLayerType.values.map((layer) {
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 leading: Icon(
                   _getLayerIcon(layer),
                   color: currentLayer == layer ? Colors.green : Colors.grey,
@@ -975,7 +975,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 children: [
                   const Text('Severity: ', style: TextStyle(fontWeight: FontWeight.w500)),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                     decoration: BoxDecoration(
                       color: severityColor,
                       borderRadius: BorderRadius.circular(20),

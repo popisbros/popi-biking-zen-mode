@@ -236,7 +236,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             const SizedBox(height: 16),
             ...MapboxStyleType.values.map((style) {
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 leading: Icon(
                   _getStyleIcon(style),
                   color: currentStyle == style ? Colors.green : Colors.grey,
@@ -279,7 +279,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             const SizedBox(height: 16),
             ..._pitchOptions.map((pitch) {
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 leading: Icon(
                   Icons.height,
                   color: _currentPitch == pitch ? Colors.deepPurple : Colors.grey,
@@ -466,7 +466,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: Icon(Icons.add_location, color: Colors.green[700]),
                         title: const Text('Add Community here', style: TextStyle(fontSize: 12)),
                         onTap: () {
@@ -475,7 +475,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                       ),
                       ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: Icon(Icons.warning, color: Colors.orange[700]),
                         title: const Text('Report Hazard here', style: TextStyle(fontSize: 12)),
                         onTap: () {
@@ -484,7 +484,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                       ),
                       ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
                         title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
                         onTap: () {
@@ -549,7 +549,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         ),
                       ),
                       ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
                         title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
                         onTap: () {
