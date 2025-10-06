@@ -445,26 +445,36 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// Show routing-only dialog (for search results)
-  void _showRoutingDialog(LatLng point) {
-    showDialog(
+  void _showRoutingDialog(TapPosition tapPosition, LatLng point) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    showMenu<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Possible Actions for this Location'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 24)),
-              title: const Text('Calculate a route to'),
-              onTap: () {
-                Navigator.pop(context);
-                _calculateRouteTo(point.latitude, point.longitude);
-              },
-            ),
-          ],
-        ),
+      position: RelativeRect.fromRect(
+        tapPosition.global & Size.zero,
+        Offset.zero & overlay.size,
       ),
-    );
+      items: [
+        PopupMenuItem<String>(
+          value: 'calculate_route',
+          child: Row(
+            children: [
+              const Text('🚴‍♂️', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              const Text('Calculate a route to', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+      ],
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ).then((String? selectedValue) {
+      if (selectedValue == 'calculate_route') {
+        _calculateRouteTo(point.latitude, point.longitude);
+      }
+    });
   }
 
   /// Navigate to Community POI management screen
@@ -1659,8 +1669,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 _mapController.move(LatLng(lat, lon), 16.0);
                 _loadAllMapDataWithBounds();
 
-                // Show routing-only dialog
-                _showRoutingDialog(LatLng(lat, lon));
+                // Show routing-only dialog at center of screen
+                // Calculate center position after a short delay to let map move
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    final RenderBox? box = context.findRenderObject() as RenderBox?;
+                    if (box != null) {
+                      final size = box.size;
+                      final center = Offset(size.width / 2, size.height / 2);
+                      final tapPosition = TapPosition(center, center);
+                      _showRoutingDialog(tapPosition, LatLng(lat, lon));
+                    }
+                  }
+                });
               },
             ),
           ),
