@@ -1648,7 +1648,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       geometry: Point(coordinates: Position(selectedLoc.longitude, selectedLoc.latitude)),
       image: markerIcon,
       iconSize: 1.0, // Normal size (marker is already sized correctly)
-      iconAnchor: IconAnchor.BOTTOM, // Anchor at bottom middle (tip of the teardrop)
+      iconAnchor: IconAnchor.TOP, // Anchor at top (where tip of teardrop is)
     );
 
     await _pointAnnotationManager!.create(searchMarker);
