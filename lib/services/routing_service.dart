@@ -101,23 +101,30 @@ class RoutingService {
         type: type,
       );
 
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: type == RouteType.safest ? _getSafestCustomModel() : null,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Request timed out after 10 seconds');
-        },
-      );
+      final response = type == RouteType.safest
+          ? await http.post(
+              uri,
+              headers: {'Content-Type': 'application/json'},
+              body: _getSafestCustomModel(),
+            ).timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                throw Exception('Request timed out after 10 seconds');
+              },
+            )
+          : await http.get(uri).timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                throw Exception('Request timed out after 10 seconds');
+              },
+            );
 
       stopwatch.stop();
 
       // Log API call to Firestore (production + debug)
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
-        method: 'POST',
+        method: type == RouteType.safest ? 'POST' : 'GET',
         url: uri.toString(),
         parameters: {
           'start': '$startLat,$startLon',
@@ -180,7 +187,7 @@ class RoutingService {
       // Log error to Firestore
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
-        method: 'POST',
+        method: type == RouteType.safest ? 'POST' : 'GET',
         url: 'Error before request',
         parameters: {
           'start': '$startLat,$startLon',
