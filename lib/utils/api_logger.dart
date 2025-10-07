@@ -91,9 +91,7 @@ class ApiLogger {
   }
 
   static Future<void> logInfo(String message, {String? tag, Map<String, dynamic>? data}) async {
-    // Log search results in both debug and production modes
-    // Other info logs only in debug mode
-    if (kDebugMode || tag == 'SEARCH_RESULTS') {
+    if (kDebugMode) {
       await _logToFirestore(
         type: 'info',
         level: 'info',
