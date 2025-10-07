@@ -656,8 +656,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     final routingService = RoutingService();
-    // TODO: Temporarily using single route - will re-enable dual routes later
-    final routePoints = await routingService.calculateRoute(
+    final routes = await routingService.calculateMultipleRoutes(
       startLat: location!.latitude,
       startLon: location!.longitude,
       endLat: destLat,
@@ -669,12 +668,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
     }
 
-    if (routePoints == null || routePoints.isEmpty) {
+    if (routes == null || routes.isEmpty) {
       AppLogger.warning('Route calculation failed', tag: 'ROUTING');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Unable to calculate route'),
+            content: Text('Unable to calculate routes'),
             duration: Duration(seconds: 3),
           ),
         );
@@ -682,11 +681,88 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
-    // Display route directly (skip selection dialog)
-    _displayRoute(routePoints);
+    // Show route selection dialog
+    if (mounted) {
+      _showRouteSelectionDialog(routes);
+    }
   }
 
-  /// Display route directly (without selection dialog)
+  /// Show dialog to select between multiple routes
+  void _showRouteSelectionDialog(List<RouteResult> routes) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
+        title: const Text('Choose Your Route', style: TextStyle(fontSize: 14)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: routes.map((route) {
+            final isFastest = route.type == RouteType.fastest;
+            final icon = isFastest ? Icons.speed : Icons.shield;
+            final color = isFastest ? Colors.blue : Colors.green;
+            final label = isFastest ? 'Fastest Route' : 'Safest Route';
+            final description = isFastest
+                ? 'Optimized for speed'
+                : 'Prioritizes cycle lanes & quiet roads';
+
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              leading: Icon(icon, color: color, size: 28),
+              title: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(description, style: const TextStyle(fontSize: 11)),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${route.distanceKm} km • ${route.durationMin} min',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _displaySelectedRoute(route);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Display the selected route on the map
+  Future<void> _displaySelectedRoute(RouteResult route) async {
+    // Store route in provider
+    ref.read(searchProvider.notifier).setRoute(route.points);
+
+    // Toggle POIs: OSM OFF, Community OFF, Hazards ON
+    ref.read(mapProvider.notifier).setPOIVisibility(
+      showOSM: false,
+      showCommunity: false,
+      showHazards: true,
+    );
+
+    // Zoom map to fit the entire route
+    await _fitRouteBounds(route.points);
+
+    AppLogger.success('Route displayed', tag: 'ROUTING', data: {
+      'type': route.type.name,
+      'points': route.points.length,
+      'distance': route.distanceKm,
+      'duration': route.durationMin,
+    });
+  }
+
+  /// Display route directly (without selection dialog) - legacy method
   Future<void> _displayRoute(List<latlong.LatLng> routePoints) async {
     // Store route in provider
     ref.read(searchProvider.notifier).setRoute(routePoints);

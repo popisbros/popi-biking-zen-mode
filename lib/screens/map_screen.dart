@@ -573,8 +573,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     final routingService = RoutingService();
-    // TODO: Temporarily using single route - will re-enable dual routes later
-    final routePoints = await routingService.calculateRoute(
+    final routes = await routingService.calculateMultipleRoutes(
       startLat: _lastGPSPosition!.latitude,
       startLon: _lastGPSPosition!.longitude,
       endLat: destLat,
@@ -586,12 +585,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
     }
 
-    if (routePoints == null || routePoints.isEmpty) {
+    if (routes == null || routes.isEmpty) {
       AppLogger.warning('Route calculation failed', tag: 'ROUTING');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Unable to calculate route'),
+            content: Text('Unable to calculate routes'),
             duration: Duration(seconds: 3),
           ),
         );
@@ -599,11 +598,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
-    // Display route directly (skip selection dialog)
-    _displayRoute(routePoints);
+    // Show route selection dialog
+    if (mounted) {
+      _showRouteSelectionDialog(routes);
+    }
   }
 
-  /// Display route directly (without selection dialog)
+  /// Display route directly (without selection dialog) - legacy method
   void _displayRoute(List<LatLng> routePoints) {
     // Store route in provider
     ref.read(searchProvider.notifier).setRoute(routePoints);
