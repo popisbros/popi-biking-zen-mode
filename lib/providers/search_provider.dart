@@ -252,15 +252,28 @@ class SearchNotifier extends Notifier<SearchState> {
   }) async {
     try {
       // Convert results to loggable format
-      final resultsData = results.map((result) => {
-        'id': result.id,
-        'title': result.title,
-        'subtitle': result.subtitle,
-        'latitude': result.latitude,
-        'longitude': result.longitude,
-        'type': result.type.name,
-        'distance': result.distance,
-        'hasIcon': result.iconUrl != null && result.iconUrl!.isNotEmpty,
+      final resultsData = results.map((result) {
+        // Extract postal_address from metadata if available
+        String? postalAddress;
+        if (result.metadata is Map<String, dynamic>) {
+          final metadata = result.metadata as Map<String, dynamic>;
+          if (metadata['address'] is Map<String, dynamic>) {
+            postalAddress = metadata['address']['postal_address']?.toString();
+          }
+        }
+
+        return {
+          'id': result.id,
+          'title': result.title,
+          'subtitle': result.subtitle,
+          'latitude': result.latitude,
+          'longitude': result.longitude,
+          'type': result.type.name,
+          'distance': result.distance,
+          'iconUrl': result.iconUrl,
+          'postalAddress': postalAddress,
+          'hasIcon': result.iconUrl != null && result.iconUrl!.isNotEmpty,
+        };
       }).toList();
 
       await ApiLogger.logInfo(
