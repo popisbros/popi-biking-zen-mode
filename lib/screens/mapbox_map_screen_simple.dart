@@ -308,8 +308,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         return Icons.map;
       case MapboxStyleType.outdoors:
         return Icons.terrain;
-      case MapboxStyleType.satelliteStreets:
-        return Icons.satellite_alt;
       case MapboxStyleType.wike3D:
         return Icons.directions_bike;
     }
