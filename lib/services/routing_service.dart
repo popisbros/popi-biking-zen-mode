@@ -149,26 +149,27 @@ class RoutingService {
       // Get request body for logging
       String? requestBodyForLog;
       if (type == RouteType.safest) {
-        final customModel = {
-          "priority": [
-            {"if": "road_class == CYCLEWAY", "multiply_by": 1.5},
-            {"if": "road_class == PATH", "multiply_by": 1.3},
-            {"if": "road_class == RESIDENTIAL", "multiply_by": 1.2},
-            {"if": "road_class == TERTIARY", "multiply_by": 1.1},
-            {"if": "road_class == PRIMARY", "multiply_by": 0.5},
-            {"if": "road_class == TRUNK", "multiply_by": 0.3},
-            {"if": "road_class == MOTORWAY", "multiply_by": 0.1},
-            {"if": "bike_network != MISSING", "multiply_by": 1.3},
-          ],
-          "speed": [
-            {"if": "road_class == PRIMARY", "limit_to": 12},
-            {"if": "road_class == SECONDARY", "limit_to": 15},
-          ]
-        };
+//        final customModel = {
+//          "priority": [
+//            {"if": "road_class == CYCLEWAY", "multiply_by": 1.5},
+//            {"if": "road_class == PATH", "multiply_by": 1.3},
+//            {"if": "road_class == RESIDENTIAL", "multiply_by": 1.2},
+//            {"if": "road_class == TERTIARY", "multiply_by": 1.1},
+//            {"if": "road_class == PRIMARY", "multiply_by": 0.5},
+//            {"if": "road_class == TRUNK", "multiply_by": 0.3},
+//            {"if": "road_class == MOTORWAY", "multiply_by": 0.1},
+//            {"if": "bike_network != MISSING", "multiply_by": 1.3},
+//          ],
+//          "speed": [
+//            {"if": "road_class == PRIMARY", "limit_to": 12},
+//            {"if": "road_class == SECONDARY", "limit_to": 15},
+//          ]
+//        };
         requestBodyForLog = jsonEncode({
           "points": [[startLon, startLat], [endLon, endLat]],
-          "profile": "bike",
-          "custom_model": customModel,
+          "profile": "foot",
+//        "ch.disable": true,
+//          "custom_model": customModel,
         });
       }
 
@@ -346,7 +347,7 @@ class RoutingService {
         [startLon, startLat],
         [endLon, endLat],
       ],
-      "profile": "car",
+      "profile": "foot",
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
