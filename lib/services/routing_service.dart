@@ -310,6 +310,7 @@ class RoutingService {
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
+      "ch.disable": true,
       "custom_model": customModel,
     });
 
