@@ -130,12 +130,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           final newPosition = LatLng(location.latitude, location.longitude);
           AppLogger.map('Moving map to user location');
 
-          _mapController.move(newPosition, 15.0);
-          AppLogger.success('Map moved', tag: 'MAP', data: {
-            'lat': newPosition.latitude,
-            'lng': newPosition.longitude,
-            'zoom': 15.0,
-          });
+          // Only move map if it's ready (prevents FlutterMap exception)
+          if (_isMapReady) {
+            _mapController.move(newPosition, 15.0);
+            AppLogger.success('Map moved', tag: 'MAP', data: {
+              'lat': newPosition.latitude,
+              'lng': newPosition.longitude,
+              'zoom': 15.0,
+            });
+          } else {
+            AppLogger.debug('Map not ready yet, will center on first render', tag: 'MAP');
+          }
 
           // Initialize GPS position tracking
           _lastGPSPosition = newPosition;
@@ -322,7 +327,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'lng': location.longitude,
         });
 
-        _mapController.move(newGPSPosition, 15.0);
+        // Only move map if it's ready
+        if (_isMapReady) {
+          _mapController.move(newGPSPosition, 15.0);
+        }
         _originalGPSReference = newGPSPosition;
         _lastGPSPosition = newGPSPosition;
 
