@@ -242,6 +242,12 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
               itemCount: results.length,
               itemBuilder: (context, index) {
                 final result = results[index];
+
+                // Special handling for "expand search" trigger
+                if (result.type == SearchResultType.expandSearch) {
+                  return _buildExpandSearchTile(context);
+                }
+
                 return SearchResultTile(
                   result: result,
                   onTap: () {
@@ -277,6 +283,49 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                   color: Colors.red[700],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandSearchTile(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        ref.read(searchProvider.notifier).expandSearch(widget.mapCenter);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          border: Border(
+            top: BorderSide(color: Colors.grey[300]!, width: 1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.expand_circle_down_outlined,
+              color: Colors.blue[700],
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Not finding your location? Extend the search',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.blue[700],
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.blue[700],
+              size: 14,
             ),
           ],
         ),

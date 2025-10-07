@@ -12,25 +12,26 @@ class GeocodingService {
   static const String _locationiqBaseUrl = 'https://us1.locationiq.com/v1';
   static const String _nominatimBaseUrl = 'https://nominatim.openstreetmap.org';
 
-  /// Search for addresses/places using LocationIQ API
+  /// Search for addresses/places using LocationIQ API (bounded to viewbox)
   /// Falls back to Nominatim if LocationIQ fails
   Future<List<SearchResult>> searchAddress(String query, LatLng mapCenter) async {
-    AppLogger.api('Searching for address', data: {
+    AppLogger.api('Searching for address (bounded)', data: {
       'query': query,
       'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
+      'bounded': '1',
     });
 
     try {
-      // Try LocationIQ first
-      final results = await _searchLocationIQ(query, mapCenter);
+      // Try LocationIQ first with bounded=1
+      final results = await _searchLocationIQ(query, mapCenter, bounded: '1');
       if (results.isNotEmpty) {
-        AppLogger.success('LocationIQ search successful', tag: 'GEOCODING', data: {
+        AppLogger.success('LocationIQ bounded search successful', tag: 'GEOCODING', data: {
           'results': results.length,
         });
         return results;
       }
     } catch (e) {
-      AppLogger.warning('LocationIQ search failed, trying Nominatim', tag: 'GEOCODING', data: {
+      AppLogger.warning('LocationIQ bounded search failed, trying Nominatim', tag: 'GEOCODING', data: {
         'error': e.toString(),
       });
     }
@@ -48,8 +49,33 @@ class GeocodingService {
     }
   }
 
+  /// Search for addresses/places using LocationIQ API (unbounded - search everywhere)
+  /// Used when user clicks "Extend the search"
+  /// Requests 20 results (limit=20) to ensure we get ~10 unique results after deduplication
+  Future<List<SearchResult>> searchAddressUnbounded(String query, LatLng mapCenter) async {
+    AppLogger.api('Searching for address (unbounded)', data: {
+      'query': query,
+      'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
+      'bounded': '0',
+      'limit': 20,
+    });
+
+    try {
+      final results = await _searchLocationIQ(query, mapCenter, bounded: '0', limit: 20);
+      AppLogger.success('LocationIQ unbounded search successful', tag: 'GEOCODING', data: {
+        'results': results.length,
+      });
+      return results;
+    } catch (e) {
+      AppLogger.error('LocationIQ unbounded search failed', tag: 'GEOCODING', error: e);
+      return [];
+    }
+  }
+
   /// Search using LocationIQ API
-  Future<List<SearchResult>> _searchLocationIQ(String query, LatLng mapCenter) async {
+  /// [bounded] parameter: '1' = restrict to viewbox, '0' = search everywhere but bias to viewbox
+  /// [limit] parameter: number of results to return (default: 10)
+  Future<List<SearchResult>> _searchLocationIQ(String query, LatLng mapCenter, {required String bounded, int limit = 10}) async {
     final stopwatch = Stopwatch()..start();
 
     // Calculate viewbox (50km radius around map center)
@@ -59,9 +85,9 @@ class GeocodingService {
       'key': ApiKeys.locationiqApiKey,
       'q': query,
       'format': 'json',
-      'limit': '10',
+      'limit': limit.toString(),
       'viewbox': viewbox,
-      'bounded': '0', // Don't restrict to viewbox, just bias results
+      'bounded': bounded, // '1' = restrict to viewbox, '0' = search everywhere
       'addressdetails': '1',
       'postaladdress': '1', // Include postal address in results
       'dedupe': '0', // Disable deduplication to get all results
@@ -84,7 +110,8 @@ class GeocodingService {
           'query': query,
           'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
           'viewbox': viewbox,
-          'limit': 10,
+          'bounded': bounded,
+          'limit': limit,
         },
         statusCode: response.statusCode,
         responseBody: response.body,
