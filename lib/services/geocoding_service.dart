@@ -90,7 +90,7 @@ class GeocodingService {
       'bounded': bounded, // '1' = restrict to viewbox, '0' = search everywhere
       'addressdetails': '1',
       'postaladdress': '1', // Include postal address in results
-      'dedupe': '0', // Disable deduplication to get all results
+      'dedupe': '1', // Enable deduplication to get nice results
       'normalizeaddress': '1', // Normalize addresses to improve consistency
     });
 

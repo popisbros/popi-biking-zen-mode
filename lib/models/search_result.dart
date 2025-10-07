@@ -50,7 +50,7 @@ class SearchResult {
 
     return SearchResult(
       id: json['place_id']?.toString() ?? json['osm_id']?.toString() ?? '',
-      title: addressText.split(',').first.trim(),
+      title: displayName.split(',').first.trim(),
       subtitle: addressText,
       latitude: double.tryParse(json['lat']?.toString() ?? '0') ?? 0.0,
       longitude: double.tryParse(json['lon']?.toString() ?? '0') ?? 0.0,
