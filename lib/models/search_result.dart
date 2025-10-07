@@ -14,6 +14,7 @@ class SearchResult {
   final double longitude;
   final SearchResultType type;
   final double? distance;       // Distance from search center in km
+  final String? iconUrl;        // LocationIQ icon URL
   final dynamic metadata;       // Store original API response for debugging
 
   const SearchResult({
@@ -24,6 +25,7 @@ class SearchResult {
     required this.type,
     this.subtitle,
     this.distance,
+    this.iconUrl,
     this.metadata,
   });
 
@@ -49,6 +51,7 @@ class SearchResult {
       longitude: double.tryParse(json['lon']?.toString() ?? '0') ?? 0.0,
       type: SearchResultType.address,
       distance: distanceFromCenter,
+      iconUrl: json['icon']?.toString(), // Extract icon URL from LocationIQ response
       metadata: json,
     );
   }
@@ -93,6 +96,7 @@ class SearchResult {
     double? longitude,
     SearchResultType? type,
     double? distance,
+    String? iconUrl,
     dynamic metadata,
   }) {
     return SearchResult(
@@ -103,6 +107,7 @@ class SearchResult {
       longitude: longitude ?? this.longitude,
       type: type ?? this.type,
       distance: distance ?? this.distance,
+      iconUrl: iconUrl ?? this.iconUrl,
       metadata: metadata ?? this.metadata,
     );
   }
