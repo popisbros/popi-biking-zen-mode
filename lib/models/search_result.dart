@@ -43,8 +43,8 @@ class SearchResult {
     Map<String, dynamic> json, {
     double? distanceFromCenter,
   }) {
-    // Use postal_address from address object if available, otherwise use display_name
-    final postalAddress = json['address']?['postal_address']?.toString();
+    // postal_address is at root level of LocationIQ response (not inside address object)
+    final postalAddress = json['postal_address']?.toString();
     final displayName = json['display_name']?.toString() ?? '';
     final addressText = postalAddress ?? displayName;
 

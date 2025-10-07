@@ -253,13 +253,11 @@ class SearchNotifier extends Notifier<SearchState> {
     try {
       // Convert results to loggable format
       final resultsData = results.map((result) {
-        // Extract postal_address from metadata if available
+        // Extract postal_address from metadata (it's at root level, not inside address)
         String? postalAddress;
         if (result.metadata is Map<String, dynamic>) {
           final metadata = result.metadata as Map<String, dynamic>;
-          if (metadata['address'] is Map<String, dynamic>) {
-            postalAddress = metadata['address']['postal_address']?.toString();
-          }
+          postalAddress = metadata['postal_address']?.toString();
         }
 
         return {
