@@ -89,51 +89,14 @@ class SearchResultTile extends StatelessWidget {
   }
 
   Widget _buildIcon() {
-    // Use LocationIQ icon if available
+    // Map LocationIQ icon URL to Material icon
+    // LocationIQ icons are blocked by CORS, so we use Material icons based on the icon type
     if (result.iconUrl != null && result.iconUrl!.isNotEmpty) {
-      return SizedBox(
-        width: 20,
-        height: 20,
-        child: Image.network(
-          result.iconUrl!,
-          width: 20,
-          height: 20,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            // Fallback to default icon on error
-            print('Icon load error for ${result.iconUrl}: $error');
-            return Icon(
-              result.type == SearchResultType.coordinates
-                  ? Icons.my_location
-                  : Icons.location_on,
-              color: Colors.grey[600],
-              size: 20,
-            );
-          },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) {
-              print('Icon loaded successfully: ${result.iconUrl}');
-              return child;
-            }
-            return SizedBox(
-              width: 20,
-              height: 20,
-              child: Center(
-                child: SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                        : null,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+      final icon = _getIconFromUrl(result.iconUrl!);
+      return Icon(
+        icon,
+        color: Colors.grey[600],
+        size: 20,
       );
     }
 
@@ -145,5 +108,42 @@ class SearchResultTile extends StatelessWidget {
       color: Colors.grey[600],
       size: 20,
     );
+  }
+
+  /// Map LocationIQ icon URL to Material icon based on icon type
+  IconData _getIconFromUrl(String iconUrl) {
+    // Extract icon type from URL (e.g., food_restaurant, lodging, etc.)
+    if (iconUrl.contains('food_') || iconUrl.contains('restaurant')) {
+      return Icons.restaurant;
+    } else if (iconUrl.contains('lodging') || iconUrl.contains('hotel')) {
+      return Icons.hotel;
+    } else if (iconUrl.contains('cafe') || iconUrl.contains('coffee')) {
+      return Icons.local_cafe;
+    } else if (iconUrl.contains('bar') || iconUrl.contains('pub')) {
+      return Icons.local_bar;
+    } else if (iconUrl.contains('shopping') || iconUrl.contains('mall')) {
+      return Icons.shopping_bag;
+    } else if (iconUrl.contains('transport') || iconUrl.contains('station')) {
+      return Icons.directions_transit;
+    } else if (iconUrl.contains('airport')) {
+      return Icons.flight;
+    } else if (iconUrl.contains('hospital') || iconUrl.contains('health')) {
+      return Icons.local_hospital;
+    } else if (iconUrl.contains('education') || iconUrl.contains('school')) {
+      return Icons.school;
+    } else if (iconUrl.contains('attraction') || iconUrl.contains('tourism')) {
+      return Icons.attractions;
+    } else if (iconUrl.contains('parking')) {
+      return Icons.local_parking;
+    } else if (iconUrl.contains('bank') || iconUrl.contains('atm')) {
+      return Icons.account_balance;
+    } else if (iconUrl.contains('gas') || iconUrl.contains('fuel')) {
+      return Icons.local_gas_station;
+    } else if (iconUrl.contains('worship') || iconUrl.contains('church')) {
+      return Icons.church;
+    }
+
+    // Default location icon
+    return Icons.place;
   }
 }
