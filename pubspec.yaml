@@ -2,7 +2,7 @@ name: popi_biking_fresh
 description: "Popi Is Biking - Fresh start with working GPS"
 publish_to: 'none'
 
-version: 1.3.4+1
+version: 1.3.5+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

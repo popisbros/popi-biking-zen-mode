@@ -43,26 +43,18 @@ class SearchResult {
     Map<String, dynamic> json, {
     double? distanceFromCenter,
   }) {
-    // Prefer postal_address over display_name for better formatting
-    final postalAddress = json['address']?['postal_address']?.toString();
-    final displayName = json['display_name']?.toString();
-    final addressText = postalAddress ?? displayName ?? '';
-
-    // Extract and upgrade icon URL from HTTP to HTTPS
-    String? iconUrl = json['icon']?.toString();
-    if (iconUrl != null && iconUrl.startsWith('http://')) {
-      iconUrl = iconUrl.replaceFirst('http://', 'https://');
-    }
+    // display_name contains the postal address when postaladdress=1 is set in API
+    final displayName = json['display_name']?.toString() ?? '';
 
     return SearchResult(
       id: json['place_id']?.toString() ?? json['osm_id']?.toString() ?? '',
-      title: addressText.split(',').first.trim(),
-      subtitle: addressText,
+      title: displayName.split(',').first.trim(),
+      subtitle: displayName,
       latitude: double.tryParse(json['lat']?.toString() ?? '0') ?? 0.0,
       longitude: double.tryParse(json['lon']?.toString() ?? '0') ?? 0.0,
       type: SearchResultType.address,
       distance: distanceFromCenter,
-      iconUrl: iconUrl, // Icon URL upgraded to HTTPS if needed
+      iconUrl: json['icon']?.toString(), // Use icon URL directly from LocationIQ
       metadata: json,
     );
   }
