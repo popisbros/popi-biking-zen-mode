@@ -115,6 +115,33 @@ class RoutingService {
 
       stopwatch.stop();
 
+      // Get request body for logging
+      String? requestBodyForLog;
+      if (type == RouteType.safest) {
+        final customModel = {
+          "priority": [
+            {"if": "road_class == CYCLEWAY", "multiply_by": 1.5},
+            {"if": "road_class == PATH", "multiply_by": 1.3},
+            {"if": "road_class == RESIDENTIAL", "multiply_by": 1.2},
+            {"if": "road_class == TERTIARY", "multiply_by": 1.1},
+            {"if": "road_class == PRIMARY", "multiply_by": 0.5},
+            {"if": "road_class == TRUNK", "multiply_by": 0.3},
+            {"if": "road_class == MOTORWAY", "multiply_by": 0.1},
+            {"if": "bike_network != MISSING", "multiply_by": 1.3},
+            {"if": "road_gradient > 10", "multiply_by": 0.8},
+          ],
+          "speed": [
+            {"if": "road_class == PRIMARY", "limit_to": 12},
+            {"if": "road_class == SECONDARY", "limit_to": 15},
+          ]
+        };
+        requestBodyForLog = jsonEncode({
+          "points": [[startLon, startLat], [endLon, endLat]],
+          "profile": "bike",
+          "custom_model": customModel,
+        });
+      }
+
       // Log API call to Firestore (production + debug)
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
@@ -126,6 +153,7 @@ class RoutingService {
           'profile': 'bike',
           'routeType': type.name,
           'customModel': type == RouteType.safest ? 'safest' : 'default',
+          if (requestBodyForLog != null) 'requestBody': requestBodyForLog,
         },
         statusCode: response.statusCode,
         responseBody: response.body,
