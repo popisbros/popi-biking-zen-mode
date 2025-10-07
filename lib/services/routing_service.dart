@@ -47,12 +47,18 @@ class RoutingService {
       return null;
     }
 
+    print('🚴 CALCULATING DUAL ROUTES');
+    print('Start: $startLat, $startLon');
+    print('End: $endLat, $endLon');
+
     AppLogger.api('Calculating multiple routes (fastest & safest)', data: {
       'from': '$startLat,$startLon',
       'to': '$endLat,$endLon',
     });
 
     // Calculate both routes in parallel
+    print('⚡ Calling FASTEST route...');
+    print('🛡️ Calling SAFEST route...');
     final results = await Future.wait([
       _calculateSingleRoute(
         startLat: startLat,
@@ -279,10 +285,13 @@ class RoutingService {
       "custom_model": customModel,
     });
 
-    // Log request body for debugging
+    // Log request body for debugging (console output)
+    print('🛡️ SAFEST ROUTE REQUEST:');
+    print('URL: $uri');
+    print('Body: $requestBody');
     AppLogger.debug('Safest route request body: $requestBody', tag: 'ROUTING');
 
-    return await http.post(
+    final response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: requestBody,
@@ -292,6 +301,12 @@ class RoutingService {
         throw Exception('Request timed out after 10 seconds');
       },
     );
+
+    print('🛡️ SAFEST ROUTE RESPONSE:');
+    print('Status: ${response.statusCode}');
+    print('Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
+
+    return response;
   }
 
 
