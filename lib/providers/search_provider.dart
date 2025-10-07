@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../models/search_result.dart';
 import '../services/geocoding_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/api_logger.dart';
 
 /// Provider for geocoding service
 final geocodingServiceProvider = Provider<GeocodingService>((ref) {
@@ -103,6 +104,9 @@ class SearchNotifier extends Notifier<SearchState> {
         'results': results.length,
       });
 
+      // Log search results to Firestore
+      await _logSearchResults(query, results, mapCenter);
+
       // If we have bounded results, add the "expand search" trigger
       if (results.isNotEmpty) {
         final resultsWithExpand = [...results, SearchResult.expandSearchTrigger()];
@@ -164,6 +168,9 @@ class SearchNotifier extends Notifier<SearchState> {
 
       // Combine bounded + unbounded results
       final combinedResults = [...resultsWithoutTrigger, ...newResults];
+
+      // Log expanded search results to Firestore
+      await _logSearchResults(query, combinedResults, mapCenter, isExpanded: true);
 
       state = state.copyWith(
         results: AsyncValue.data(combinedResults),
@@ -234,6 +241,47 @@ class SearchNotifier extends Notifier<SearchState> {
   void clearRoute() {
     AppLogger.debug('Clearing route', tag: 'SEARCH');
     state = state.copyWith(clearRoute: true);
+  }
+
+  /// Log search results to Firestore for analytics
+  Future<void> _logSearchResults(
+    String query,
+    List<SearchResult> results,
+    LatLng mapCenter, {
+    bool isExpanded = false,
+  }) async {
+    try {
+      // Convert results to loggable format
+      final resultsData = results.map((result) => {
+        'id': result.id,
+        'title': result.title,
+        'subtitle': result.subtitle,
+        'latitude': result.latitude,
+        'longitude': result.longitude,
+        'type': result.type.name,
+        'distance': result.distance,
+        'hasIcon': result.iconUrl != null && result.iconUrl!.isNotEmpty,
+      }).toList();
+
+      await ApiLogger.logInfo(
+        isExpanded ? 'Search expanded results' : 'Search results',
+        tag: 'SEARCH_RESULTS',
+        data: {
+          'query': query,
+          'mapCenter': {
+            'latitude': mapCenter.latitude,
+            'longitude': mapCenter.longitude,
+          },
+          'isExpanded': isExpanded,
+          'resultsCount': results.length,
+          'results': resultsData,
+        },
+      );
+    } catch (e) {
+      AppLogger.debug('Failed to log search results', tag: 'SEARCH', data: {
+        'error': e.toString(),
+      });
+    }
   }
 }
 
