@@ -91,6 +91,7 @@ class GeocodingService {
       'addressdetails': '1',
       'postaladdress': '1', // Include postal address in results
       'dedupe': '0', // Disable deduplication to get all results
+      'normalizeaddress': '1', // Normalize addresses to improve consistency
     });
 
     AppLogger.api('LocationIQ request', data: {
@@ -112,6 +113,7 @@ class GeocodingService {
           'viewbox': viewbox,
           'bounded': bounded,
           'limit': limit,
+          'normalizeaddress': '1',
         },
         statusCode: response.statusCode,
         responseBody: response.body,
