@@ -102,7 +102,26 @@ class RoutingService {
     print('🚀 Making ${type.name} route request...');
     print('   Start: $startLat,$startLon');
     print('   End: $endLat,$endLon');
-    AppLogger.api('Starting ${type.name} route calculation', data: {
+
+    // Log PRE-REQUEST to Firestore
+    await ApiLogger.logApiCall(
+      endpoint: 'graphhopper/route',
+      method: 'POST',
+      url: '$_graphhopperBaseUrl/route',
+      parameters: {
+        'stage': 'PRE-REQUEST',
+        'routeType': type.name,
+        'start': '$startLat,$startLon',
+        'end': '$endLat,$endLon',
+        'profile': 'bike',
+      },
+      statusCode: 0,
+      responseBody: 'Request not sent yet',
+      error: null,
+      durationMs: 0,
+    );
+
+    AppLogger.api('PRE-REQUEST: Starting ${type.name} route calculation', data: {
       'start': '$startLat,$startLon',
       'end': '$endLat,$endLon',
     });
@@ -154,12 +173,13 @@ class RoutingService {
         });
       }
 
-      // Log API call to Firestore (production + debug)
+      // Log API call to Firestore (production + debug) - POST-REQUEST
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
         method: 'POST',
         url: '$_graphhopperBaseUrl/route',
         parameters: {
+          'stage': 'POST-REQUEST (Response received)',
           'start': '$startLat,$startLon',
           'end': '$endLat,$endLon',
           'profile': 'bike',
@@ -227,15 +247,17 @@ class RoutingService {
       print('   💥 Exception caught: $e');
       print('   Stack trace: ${stackTrace.toString().substring(0, stackTrace.toString().length > 300 ? 300 : stackTrace.toString().length)}');
 
-      // Log error to Firestore
+      // Log error to Firestore - EXCEPTION
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
         method: 'POST',
-        url: 'Error before request',
+        url: 'EXCEPTION during request',
         parameters: {
+          'stage': 'EXCEPTION',
           'start': '$startLat,$startLon',
           'end': '$endLat,$endLon',
           'routeType': type.name,
+          'exceptionType': e.runtimeType.toString(),
         },
         statusCode: 0,
         responseBody: '',
