@@ -91,12 +91,9 @@ class SearchResultTile extends StatelessWidget {
   Widget _buildIcon() {
     // Use LocationIQ icon if available
     if (result.iconUrl != null && result.iconUrl!.isNotEmpty) {
-      return Container(
+      return SizedBox(
         width: 20,
         height: 20,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-        ),
         child: Image.network(
           result.iconUrl!,
           width: 20,
@@ -104,6 +101,7 @@ class SearchResultTile extends StatelessWidget {
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
             // Fallback to default icon on error
+            print('Icon load error for ${result.iconUrl}: $error');
             return Icon(
               result.type == SearchResultType.coordinates
                   ? Icons.my_location
@@ -113,7 +111,10 @@ class SearchResultTile extends StatelessWidget {
             );
           },
           loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
+            if (loadingProgress == null) {
+              print('Icon loaded successfully: ${result.iconUrl}');
+              return child;
+            }
             return SizedBox(
               width: 20,
               height: 20,
