@@ -159,7 +159,6 @@ class RoutingService {
             {"if": "road_class == TRUNK", "multiply_by": 0.3},
             {"if": "road_class == MOTORWAY", "multiply_by": 0.1},
             {"if": "bike_network != MISSING", "multiply_by": 1.3},
-            {"if": "road_gradient > 10", "multiply_by": 0.8},
           ],
           "speed": [
             {"if": "road_class == PRIMARY", "limit_to": 12},
@@ -334,9 +333,6 @@ class RoutingService {
 
         // Prefer routes with bike lanes
         {"if": "bike_network != MISSING", "multiply_by": 1.3},
-
-        // Slightly avoid steep hills for safety
-        {"if": "road_gradient > 10", "multiply_by": 0.8},
       ],
       "speed": [
         // Reduce speed on busy roads to account for safety
