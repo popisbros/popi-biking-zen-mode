@@ -41,7 +41,12 @@ class SearchNotifier extends Notifier<SearchState> {
       'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
     });
 
-    state = state.copyWith(query: query);
+    state = state.copyWith(
+      query: query,
+      // Reset expand flags when query changes
+      hasBoundedResults: false,
+      isExpandedSearch: false,
+    );
 
     // Cancel existing timer
     _debounceTimer?.cancel();
@@ -73,7 +78,11 @@ class SearchNotifier extends Notifier<SearchState> {
       'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
     });
 
-    state = state.copyWith(results: const AsyncValue.loading());
+    state = state.copyWith(
+      results: const AsyncValue.loading(),
+      hasBoundedResults: false,
+      isExpandedSearch: false,
+    );
 
     try {
       // First, try to parse as coordinates
@@ -87,18 +96,85 @@ class SearchNotifier extends Notifier<SearchState> {
         return;
       }
 
-      // If not coordinates, search via geocoding APIs
+      // If not coordinates, search via geocoding APIs (bounded first)
       final results = await _geocodingService.searchAddress(query, mapCenter);
 
       AppLogger.success('Search completed', tag: 'SEARCH', data: {
         'results': results.length,
       });
 
-      state = state.copyWith(results: AsyncValue.data(results));
+      // If we have bounded results, add the "expand search" trigger
+      if (results.isNotEmpty) {
+        final resultsWithExpand = [...results, SearchResult.expandSearchTrigger()];
+        state = state.copyWith(
+          results: AsyncValue.data(resultsWithExpand),
+          hasBoundedResults: true,
+          isExpandedSearch: false,
+        );
+      } else {
+        state = state.copyWith(results: AsyncValue.data(results));
+      }
     } catch (e, stackTrace) {
       AppLogger.error('Search failed', tag: 'SEARCH', error: e);
       state = state.copyWith(
         results: AsyncValue.error(e, stackTrace),
+      );
+    }
+  }
+
+  /// Expand search beyond viewbox (called when user clicks "Extend the search")
+  Future<void> expandSearch(LatLng mapCenter) async {
+    final query = state.query.trim();
+    if (query.isEmpty || state.isExpandedSearch) {
+      return;
+    }
+
+    AppLogger.api('Expanding search', data: {
+      'query': query,
+      'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
+    });
+
+    // Get current results (without the expand trigger)
+    final currentResults = state.results.value ?? [];
+    final resultsWithoutTrigger = currentResults
+        .where((r) => r.type != SearchResultType.expandSearch)
+        .toList();
+
+    // Show loading state while keeping existing results
+    state = state.copyWith(results: const AsyncValue.loading());
+
+    try {
+      // Search unbounded (gets 20 results from API)
+      final unboundedResults = await _geocodingService.searchAddressUnbounded(query, mapCenter);
+
+      AppLogger.success('Expanded search completed', tag: 'SEARCH', data: {
+        'unboundedResults': unboundedResults.length,
+      });
+
+      // Remove duplicates by place_id and take max 10 new results
+      final existingIds = resultsWithoutTrigger.map((r) => r.id).toSet();
+      final newResults = unboundedResults
+          .where((r) => !existingIds.contains(r.id))
+          .take(10) // Max 10 extra results
+          .toList();
+
+      AppLogger.debug('Added unique results', tag: 'SEARCH', data: {
+        'newResults': newResults.length,
+      });
+
+      // Combine bounded + unbounded results
+      final combinedResults = [...resultsWithoutTrigger, ...newResults];
+
+      state = state.copyWith(
+        results: AsyncValue.data(combinedResults),
+        isExpandedSearch: true,
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Expand search failed', tag: 'SEARCH', error: e);
+      // On error, restore previous results without trigger
+      state = state.copyWith(
+        results: AsyncValue.data(resultsWithoutTrigger),
+        isExpandedSearch: false,
       );
     }
   }
@@ -181,6 +257,8 @@ class SearchState {
   final AsyncValue<List<SearchResult>> results;
   final SearchResultLocation? selectedLocation; // Track selected search result
   final List<LatLng>? routePoints; // Track calculated route
+  final bool hasBoundedResults; // Track if initial bounded search returned results
+  final bool isExpandedSearch; // Track if we've already expanded the search
 
   const SearchState({
     required this.isVisible,
@@ -188,6 +266,8 @@ class SearchState {
     required this.results,
     this.selectedLocation,
     this.routePoints,
+    this.hasBoundedResults = false,
+    this.isExpandedSearch = false,
   });
 
   factory SearchState.initial() {
@@ -208,6 +288,8 @@ class SearchState {
     bool clearSelectedLocation = false,
     List<LatLng>? routePoints,
     bool clearRoute = false,
+    bool? hasBoundedResults,
+    bool? isExpandedSearch,
   }) {
     return SearchState(
       isVisible: isVisible ?? this.isVisible,
@@ -215,6 +297,8 @@ class SearchState {
       results: results ?? this.results,
       selectedLocation: clearSelectedLocation ? null : (selectedLocation ?? this.selectedLocation),
       routePoints: clearRoute ? null : (routePoints ?? this.routePoints),
+      hasBoundedResults: hasBoundedResults ?? this.hasBoundedResults,
+      isExpandedSearch: isExpandedSearch ?? this.isExpandedSearch,
     );
   }
 }

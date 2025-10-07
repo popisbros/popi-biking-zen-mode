@@ -2,6 +2,7 @@
 enum SearchResultType {
   address,      // Location from geocoding API
   coordinates,  // Parsed GPS coordinates
+  expandSearch, // Trigger to expand search beyond viewbox
 }
 
 /// Unified search result model
@@ -67,6 +68,19 @@ class SearchResult {
       longitude: lon,
       type: SearchResultType.coordinates,
       distance: distanceFromCenter,
+    );
+  }
+
+  /// Factory for creating the "expand search" trigger
+  factory SearchResult.expandSearchTrigger() {
+    return const SearchResult(
+      id: 'expand_search_trigger',
+      title: 'Not finding your location? Extend the search',
+      subtitle: null,
+      latitude: 0.0,
+      longitude: 0.0,
+      type: SearchResultType.expandSearch,
+      distance: null,
     );
   }
 
