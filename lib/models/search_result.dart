@@ -48,6 +48,12 @@ class SearchResult {
     final displayName = json['display_name']?.toString();
     final addressText = postalAddress ?? displayName ?? '';
 
+    // Extract and upgrade icon URL from HTTP to HTTPS
+    String? iconUrl = json['icon']?.toString();
+    if (iconUrl != null && iconUrl.startsWith('http://')) {
+      iconUrl = iconUrl.replaceFirst('http://', 'https://');
+    }
+
     return SearchResult(
       id: json['place_id']?.toString() ?? json['osm_id']?.toString() ?? '',
       title: addressText.split(',').first.trim(),
@@ -56,7 +62,7 @@ class SearchResult {
       longitude: double.tryParse(json['lon']?.toString() ?? '0') ?? 0.0,
       type: SearchResultType.address,
       distance: distanceFromCenter,
-      iconUrl: json['icon']?.toString(), // Extract icon URL from LocationIQ response
+      iconUrl: iconUrl, // Icon URL upgraded to HTTPS if needed
       metadata: json,
     );
   }
