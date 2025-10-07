@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/api_keys.dart';
 import '../utils/app_logger.dart';
+import '../utils/api_logger.dart';
 
 /// Route type enumeration
 enum RouteType {
@@ -89,6 +90,8 @@ class RoutingService {
     required double endLon,
     required RouteType type,
   }) async {
+    final stopwatch = Stopwatch()..start();
+
     try {
       final uri = _buildUri(
         startLat: startLat,
@@ -107,6 +110,26 @@ class RoutingService {
         onTimeout: () {
           throw Exception('Request timed out after 10 seconds');
         },
+      );
+
+      stopwatch.stop();
+
+      // Log API call to Firestore (production + debug)
+      await ApiLogger.logApiCall(
+        endpoint: 'graphhopper/route',
+        method: 'POST',
+        url: uri.toString(),
+        parameters: {
+          'start': '$startLat,$startLon',
+          'end': '$endLat,$endLon',
+          'vehicle': 'bike',
+          'routeType': type.name,
+          'customModel': type == RouteType.safest ? 'safest' : 'default',
+        },
+        statusCode: response.statusCode,
+        responseBody: response.body,
+        error: response.statusCode != 200 ? 'HTTP ${response.statusCode}' : null,
+        durationMs: stopwatch.elapsedMilliseconds,
       );
 
       if (response.statusCode != 200) {
@@ -152,6 +175,24 @@ class RoutingService {
         durationMillis: duration,
       );
     } catch (e, stackTrace) {
+      stopwatch.stop();
+
+      // Log error to Firestore
+      await ApiLogger.logApiCall(
+        endpoint: 'graphhopper/route',
+        method: 'POST',
+        url: 'Error before request',
+        parameters: {
+          'start': '$startLat,$startLon',
+          'end': '$endLat,$endLon',
+          'routeType': type.name,
+        },
+        statusCode: 0,
+        responseBody: '',
+        error: e.toString(),
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+
       AppLogger.error('Failed to calculate ${type.name} route', tag: 'ROUTING', error: e, stackTrace: stackTrace);
       return null;
     }
@@ -242,12 +283,33 @@ class RoutingService {
       'vehicle': 'bike',
     });
 
+    final stopwatch = Stopwatch()..start();
+
     try {
       final response = await http.get(uri).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           throw Exception('Request timed out after 10 seconds');
         },
+      );
+
+      stopwatch.stop();
+
+      // Log API call to Firestore (production + debug)
+      await ApiLogger.logApiCall(
+        endpoint: 'graphhopper/route',
+        method: 'GET',
+        url: uri.toString(),
+        parameters: {
+          'start': '$startLat,$startLon',
+          'end': '$endLat,$endLon',
+          'vehicle': 'bike',
+          'routeType': 'fastest',
+        },
+        statusCode: response.statusCode,
+        responseBody: response.body,
+        error: response.statusCode != 200 ? 'HTTP ${response.statusCode}' : null,
+        durationMs: stopwatch.elapsedMilliseconds,
       );
 
       if (response.statusCode != 200) {
@@ -290,6 +352,23 @@ class RoutingService {
 
       return routePoints;
     } catch (e, stackTrace) {
+      stopwatch.stop();
+
+      // Log error to Firestore
+      await ApiLogger.logApiCall(
+        endpoint: 'graphhopper/route',
+        method: 'GET',
+        url: 'Error before request',
+        parameters: {
+          'start': '$startLat,$startLon',
+          'end': '$endLat,$endLon',
+        },
+        statusCode: 0,
+        responseBody: '',
+        error: e.toString(),
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+
       AppLogger.error('Failed to calculate route', tag: 'ROUTING', error: e, stackTrace: stackTrace);
       return null;
     }
