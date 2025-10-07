@@ -234,35 +234,8 @@ class RoutingService {
   }) async {
     final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
 
-    final requestBody = jsonEncode({
-      "points": [
-        [startLon, startLat],
-        [endLon, endLat],
-      ],
-      "profile": "bike",
-      "locale": "en",
-      "points_encoded": false,
-      "elevation": false,
-      "custom_model": jsonDecode(_getSafestCustomModel()!),
-    });
-
-    return await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: requestBody,
-    ).timeout(
-      const Duration(seconds: 10),
-      onTimeout: () {
-        throw Exception('Request timed out after 10 seconds');
-      },
-    );
-  }
-
-  /// Get custom model JSON for safest route
-  /// Prioritizes: cycle lanes, residential streets, low traffic
-  /// Avoids: primary roads, high traffic, unsafe areas
-  String? _getSafestCustomModel() {
-    return jsonEncode({
+    // Build custom model as a map (not JSON string)
+    final customModel = {
       "priority": [
         // Strongly prefer dedicated cycle infrastructure
         {"if": "road_class == CYCLEWAY", "multiply_by": 1.5},
@@ -288,8 +261,32 @@ class RoutingService {
         {"if": "road_class == PRIMARY", "limit_to": 12},
         {"if": "road_class == SECONDARY", "limit_to": 15},
       ]
+    };
+
+    final requestBody = jsonEncode({
+      "points": [
+        [startLon, startLat],
+        [endLon, endLat],
+      ],
+      "profile": "bike",
+      "locale": "en",
+      "points_encoded": false,
+      "elevation": false,
+      "custom_model": customModel,
     });
+
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: requestBody,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Request timed out after 10 seconds');
+      },
+    );
   }
+
 
   /// Calculate a cycling route from start to end location (legacy method)
   ///
