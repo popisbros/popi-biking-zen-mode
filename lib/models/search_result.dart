@@ -43,10 +43,15 @@ class SearchResult {
     Map<String, dynamic> json, {
     double? distanceFromCenter,
   }) {
+    // Prefer postal_address over display_name for better formatting
+    final postalAddress = json['address']?['postal_address']?.toString();
+    final displayName = json['display_name']?.toString();
+    final addressText = postalAddress ?? displayName ?? '';
+
     return SearchResult(
       id: json['place_id']?.toString() ?? json['osm_id']?.toString() ?? '',
-      title: json['display_name']?.toString().split(',').first ?? 'Unknown Location',
-      subtitle: json['display_name']?.toString() ?? '',
+      title: addressText.split(',').first.trim(),
+      subtitle: addressText,
       latitude: double.tryParse(json['lat']?.toString() ?? '0') ?? 0.0,
       longitude: double.tryParse(json['lon']?.toString() ?? '0') ?? 0.0,
       type: SearchResultType.address,
