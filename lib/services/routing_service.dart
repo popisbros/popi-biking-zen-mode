@@ -238,7 +238,7 @@ class RoutingService {
     required double endLat,
     required double endLon,
   }) async {
-    final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
+    final uri = Uri.parse('$_graphhopperBaseUrl/route');
 
     final requestBody = jsonEncode({
       "points": [
@@ -249,6 +249,7 @@ class RoutingService {
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
+      "key": ApiKeys.graphhopperApiKey,
     });
 
     return await http.post(
@@ -270,7 +271,7 @@ class RoutingService {
     required double endLat,
     required double endLon,
   }) async {
-    final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
+    final uri = Uri.parse('$_graphhopperBaseUrl/route');
 
     // Build custom model as a map (not JSON string)
     final customModel = {
@@ -311,6 +312,7 @@ class RoutingService {
       "points_encoded": false,
       "elevation": false,
       "custom_model": customModel,
+      "key": ApiKeys.graphhopperApiKey,
     });
 
     // Log request body for debugging (console output)
