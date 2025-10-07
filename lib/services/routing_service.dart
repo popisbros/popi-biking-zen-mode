@@ -93,30 +93,18 @@ class RoutingService {
     final stopwatch = Stopwatch()..start();
 
     try {
-      final uri = _buildUri(
-        startLat: startLat,
-        startLon: startLon,
-        endLat: endLat,
-        endLon: endLon,
-        type: type,
-      );
-
       final response = type == RouteType.safest
-          ? await http.post(
-              uri,
-              headers: {'Content-Type': 'application/json'},
-              body: _getSafestCustomModel(),
-            ).timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                throw Exception('Request timed out after 10 seconds');
-              },
+          ? await _calculateWithCustomModel(
+              startLat: startLat,
+              startLon: startLon,
+              endLat: endLat,
+              endLon: endLon,
             )
-          : await http.get(uri).timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                throw Exception('Request timed out after 10 seconds');
-              },
+          : await _calculateStandardRoute(
+              startLat: startLat,
+              startLon: startLon,
+              endLat: endLat,
+              endLon: endLon,
             );
 
       stopwatch.stop();
@@ -125,7 +113,7 @@ class RoutingService {
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
         method: type == RouteType.safest ? 'POST' : 'GET',
-        url: uri.toString(),
+        url: '$_graphhopperBaseUrl/route',
         parameters: {
           'start': '$startLat,$startLon',
           'end': '$endLat,$endLon',
@@ -205,24 +193,63 @@ class RoutingService {
     }
   }
 
-  /// Build URI for route request
-  Uri _buildUri({
+  /// Calculate standard route using GET with query parameters
+  Future<http.Response> _calculateStandardRoute({
     required double startLat,
     required double startLon,
     required double endLat,
     required double endLon,
-    required RouteType type,
-  }) {
-    final baseUrl = '$_graphhopperBaseUrl/route?'
-        'key=${ApiKeys.graphhopperApiKey}&'
-        'point=$startLat,$startLon&'
-        'point=$endLat,$endLon&'
-        'vehicle=bike&'
-        'locale=en&'
-        'points_encoded=false&'
-        'elevation=false';
+  }) async {
+    final uri = Uri.parse(
+      '$_graphhopperBaseUrl/route?'
+      'key=${ApiKeys.graphhopperApiKey}&'
+      'point=$startLat,$startLon&'
+      'point=$endLat,$endLon&'
+      'vehicle=bike&'
+      'locale=en&'
+      'points_encoded=false&'
+      'elevation=false'
+    );
 
-    return Uri.parse(baseUrl);
+    return await http.get(uri).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Request timed out after 10 seconds');
+      },
+    );
+  }
+
+  /// Calculate route with custom model using POST with JSON body
+  Future<http.Response> _calculateWithCustomModel({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+  }) async {
+    final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
+
+    final requestBody = jsonEncode({
+      "points": [
+        [startLon, startLat],
+        [endLon, endLat],
+      ],
+      "profile": "bike",
+      "locale": "en",
+      "points_encoded": false,
+      "elevation": false,
+      "custom_model": jsonDecode(_getSafestCustomModel()!),
+    });
+
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: requestBody,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Request timed out after 10 seconds');
+      },
+    );
   }
 
   /// Get custom model JSON for safest route
