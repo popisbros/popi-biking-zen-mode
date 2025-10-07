@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../config/api_keys.dart';
 import '../models/search_result.dart';
 import '../utils/app_logger.dart';
+import '../utils/api_logger.dart';
 
 /// Service for geocoding and coordinate parsing
 class GeocodingService {
@@ -49,6 +50,8 @@ class GeocodingService {
 
   /// Search using LocationIQ API
   Future<List<SearchResult>> _searchLocationIQ(String query, LatLng mapCenter) async {
+    final stopwatch = Stopwatch()..start();
+
     // Calculate viewbox (50km radius around map center)
     final viewbox = _calculateViewbox(mapCenter, radiusKm: 50);
 
@@ -68,18 +71,59 @@ class GeocodingService {
       'url': uri.toString(),
     });
 
-    final response = await http.get(uri).timeout(const Duration(seconds: 10));
+    try {
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      stopwatch.stop();
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return _parseGeocodingResults(data, mapCenter);
-    } else {
-      throw Exception('LocationIQ API error: ${response.statusCode}');
+      // Log API call to Firestore (production + debug)
+      await ApiLogger.logApiCall(
+        endpoint: 'locationiq/search',
+        method: 'GET',
+        url: uri.toString(),
+        parameters: {
+          'query': query,
+          'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
+          'viewbox': viewbox,
+          'limit': 10,
+        },
+        statusCode: response.statusCode,
+        responseBody: response.body,
+        error: response.statusCode != 200 ? 'HTTP ${response.statusCode}' : null,
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return _parseGeocodingResults(data, mapCenter);
+      } else {
+        throw Exception('LocationIQ API error: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+
+      // Log error to Firestore
+      await ApiLogger.logApiCall(
+        endpoint: 'locationiq/search',
+        method: 'GET',
+        url: 'Error before request',
+        parameters: {
+          'query': query,
+          'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
+        },
+        statusCode: 0,
+        responseBody: '',
+        error: e.toString(),
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+
+      rethrow;
     }
   }
 
   /// Search using Nominatim API (fallback)
   Future<List<SearchResult>> _searchNominatim(String query, LatLng mapCenter) async {
+    final stopwatch = Stopwatch()..start();
+
     // Calculate viewbox (50km radius around map center)
     final viewbox = _calculateViewbox(mapCenter, radiusKm: 50);
 
@@ -96,18 +140,58 @@ class GeocodingService {
       'url': uri.toString(),
     });
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'User-Agent': 'PopiIsBiking/1.0 (contact@popiisbiking.com)', // Required by Nominatim usage policy
-      },
-    ).timeout(const Duration(seconds: 10));
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          'User-Agent': 'PopiIsBiking/1.0 (contact@popiisbiking.com)', // Required by Nominatim usage policy
+        },
+      ).timeout(const Duration(seconds: 10));
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return _parseGeocodingResults(data, mapCenter);
-    } else {
-      throw Exception('Nominatim API error: ${response.statusCode}');
+      stopwatch.stop();
+
+      // Log API call to Firestore (production + debug)
+      await ApiLogger.logApiCall(
+        endpoint: 'nominatim/search',
+        method: 'GET',
+        url: uri.toString(),
+        parameters: {
+          'query': query,
+          'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
+          'viewbox': viewbox,
+          'limit': 10,
+        },
+        statusCode: response.statusCode,
+        responseBody: response.body,
+        error: response.statusCode != 200 ? 'HTTP ${response.statusCode}' : null,
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return _parseGeocodingResults(data, mapCenter);
+      } else {
+        throw Exception('Nominatim API error: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+
+      // Log error to Firestore
+      await ApiLogger.logApiCall(
+        endpoint: 'nominatim/search',
+        method: 'GET',
+        url: 'Error before request',
+        parameters: {
+          'query': query,
+          'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
+        },
+        statusCode: 0,
+        responseBody: '',
+        error: e.toString(),
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+
+      rethrow;
     }
   }
 
