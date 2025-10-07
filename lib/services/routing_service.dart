@@ -316,42 +316,42 @@ class RoutingService {
     final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
 
     // Build custom model as a map (not JSON string)
-    final customModel = {
-      "priority": [
-        // Strongly prefer dedicated cycle infrastructure
-        {"if": "road_class == CYCLEWAY", "multiply_by": 1.5},
-        {"if": "road_class == PATH", "multiply_by": 1.3},
-
-        // Prefer residential and tertiary roads (quieter)
-        {"if": "road_class == RESIDENTIAL", "multiply_by": 1.2},
-        {"if": "road_class == TERTIARY", "multiply_by": 1.1},
-
-        // Avoid busy roads
-        {"if": "road_class == PRIMARY", "multiply_by": 0.5},
-        {"if": "road_class == TRUNK", "multiply_by": 0.3},
-        {"if": "road_class == MOTORWAY", "multiply_by": 0.1},
-
-        // Prefer routes with bike lanes
-        {"if": "bike_network != MISSING", "multiply_by": 1.3},
-      ],
-      "speed": [
-        // Reduce speed on busy roads to account for safety
-        {"if": "road_class == PRIMARY", "limit_to": 12},
-        {"if": "road_class == SECONDARY", "limit_to": 15},
-      ]
-    };
+//    final customModel = {
+//      "priority": [
+//        // Strongly prefer dedicated cycle infrastructure
+//        {"if": "road_class == CYCLEWAY", "multiply_by": 1.5},
+//        {"if": "road_class == PATH", "multiply_by": 1.3},
+//
+//        // Prefer residential and tertiary roads (quieter)
+//        {"if": "road_class == RESIDENTIAL", "multiply_by": 1.2},
+//        {"if": "road_class == TERTIARY", "multiply_by": 1.1},
+//
+//        // Avoid busy roads
+//        {"if": "road_class == PRIMARY", "multiply_by": 0.5},
+//        {"if": "road_class == TRUNK", "multiply_by": 0.3},
+//        {"if": "road_class == MOTORWAY", "multiply_by": 0.1},
+//
+//        // Prefer routes with bike lanes
+//        {"if": "bike_network != MISSING", "multiply_by": 1.3},
+//      ],
+//      "speed": [
+//        // Reduce speed on busy roads to account for safety
+//        {"if": "road_class == PRIMARY", "limit_to": 12},
+//        {"if": "road_class == SECONDARY", "limit_to": 15},
+//      ]
+//    };
 
     final requestBody = jsonEncode({
       "points": [
         [startLon, startLat],
         [endLon, endLat],
       ],
-      "profile": "bike",
+      "profile": "car",
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
-      "ch.disable": true,
-      "custom_model": customModel,
+//      "ch.disable": true,
+//      "custom_model": customModel,
     });
 
     // Log request body for debugging (console output)
