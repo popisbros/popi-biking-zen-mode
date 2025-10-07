@@ -98,6 +98,13 @@ class RoutingService {
   }) async {
     final stopwatch = Stopwatch()..start();
 
+    // Log BEFORE making request to ensure we capture it even if it fails
+    print('🚀 Making ${type.name} route request...');
+    AppLogger.api('Starting ${type.name} route calculation', data: {
+      'start': '$startLat,$startLon',
+      'end': '$endLat,$endLon',
+    });
+
     try {
       final response = type == RouteType.safest
           ? await _calculateWithCustomModel(

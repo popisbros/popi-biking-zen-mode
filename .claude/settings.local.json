@@ -1,20 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter build:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(flutter:*)",
-      "Read(//Users/sylvain/Cursor/PopiIsBikingZenMode/**)",
-      "Bash(cat:*)",
-      "Bash(gh run list:*)",
-      "Bash(git fetch:*)",
-      "Read(//Users/sylvain/.pub-cache/hosted/pub.dev/**)",
-      "Bash(xcodebuild clean:*)",
-      "Bash(git pull:*)",
-      "Bash(dart compile kernel:*)",
-      "Bash(git tag -a v1.2 -m \"$(cat <<''EOF''\n🚴‍♂️ VERSION 1.2 - Enhanced Routing & UI Polish\n\nMajor Features:\n- 🗺️ Dual route calculation (fastest vs safest) with custom Graphhopper profiles\n- 🎯 \"Route To\" button in all POI detail dialogs (OSM & Community)\n- 🎨 Ultra-compact UI with reduced padding throughout\n- 📏 Standardized font sizes (title: 14px, content: 12px)\n- 🔧 Smart dialog positioning on 3D map based on marker location\n\nRouting Improvements:\n- Parallel route calculation for fastest and safest options\n- Custom model for safest route (prioritizes bike lanes, quiet roads)\n- Single route mode temporarily enabled for testing\n- Route calculation from any POI location\n\nUI/UX Enhancements:\n- Compact ListTile padding across all dialogs and menus\n- All 4 buttons aligned on same line in Community POI dialogs\n- Removed debug elements for cleaner production code\n- Consistent styling across 2D and 3D maps\n\nTechnical:\n- Fixed dialog positioning with Stack + Positioned\n- Commented out contentPadding for dialog optimization\n- GitHub Actions single deployment workflow\n\n🤖 Generated with Claude Code\nEOF\n)\")"
+      "Bash(git log:*)",
+      "Bash(git tag:*)",
+      "Bash(firebase firestore:query:*)",
+      "Bash(firebase firestore:get:*)"
     ],
     "deny": [],
     "ask": []
