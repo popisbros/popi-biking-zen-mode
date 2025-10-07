@@ -132,6 +132,10 @@ class RoutingService {
           'statusCode': response.statusCode,
           'body': response.body,
         });
+        // Extra debug logging for safest route
+        if (type == RouteType.safest) {
+          AppLogger.debug('Safest route failed with ${response.statusCode}: ${response.body}', tag: 'ROUTING');
+        }
         return null;
       }
 
@@ -274,6 +278,9 @@ class RoutingService {
       "elevation": false,
       "custom_model": customModel,
     });
+
+    // Log request body for debugging
+    AppLogger.debug('Safest route request body: $requestBody', tag: 'ROUTING');
 
     return await http.post(
       uri,
