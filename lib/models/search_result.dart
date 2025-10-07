@@ -43,18 +43,20 @@ class SearchResult {
     Map<String, dynamic> json, {
     double? distanceFromCenter,
   }) {
-    // display_name contains the postal address when postaladdress=1 is set in API
+    // Use postal_address from address object if available, otherwise use display_name
+    final postalAddress = json['address']?['postal_address']?.toString();
     final displayName = json['display_name']?.toString() ?? '';
+    final addressText = postalAddress ?? displayName;
 
     return SearchResult(
       id: json['place_id']?.toString() ?? json['osm_id']?.toString() ?? '',
-      title: displayName.split(',').first.trim(),
-      subtitle: displayName,
+      title: addressText.split(',').first.trim(),
+      subtitle: addressText,
       latitude: double.tryParse(json['lat']?.toString() ?? '0') ?? 0.0,
       longitude: double.tryParse(json['lon']?.toString() ?? '0') ?? 0.0,
       type: SearchResultType.address,
       distance: distanceFromCenter,
-      iconUrl: json['icon']?.toString(), // Use icon URL directly from LocationIQ
+      iconUrl: json['icon']?.toString(), // Use icon URL directly as provided by LocationIQ
       metadata: json,
     );
   }
