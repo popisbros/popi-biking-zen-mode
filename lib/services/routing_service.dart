@@ -100,12 +100,15 @@ class RoutingService {
 
     // Log BEFORE making request to ensure we capture it even if it fails
     print('🚀 Making ${type.name} route request...');
+    print('   Start: $startLat,$startLon');
+    print('   End: $endLat,$endLon');
     AppLogger.api('Starting ${type.name} route calculation', data: {
       'start': '$startLat,$startLon',
       'end': '$endLat,$endLon',
     });
 
     try {
+      print('   Calling ${type == RouteType.safest ? '_calculateWithCustomModel' : '_calculateStandardRoute'}...');
       final response = type == RouteType.safest
           ? await _calculateWithCustomModel(
               startLat: startLat,
@@ -119,6 +122,8 @@ class RoutingService {
               endLat: endLat,
               endLon: endLon,
             );
+
+      print('   Got response with status: ${response.statusCode}');
 
       stopwatch.stop();
 
@@ -169,6 +174,8 @@ class RoutingService {
       );
 
       if (response.statusCode != 200) {
+        print('   ❌ HTTP ${response.statusCode} error');
+        print('   Response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
         AppLogger.error('Graphhopper API error for ${type.name} route', tag: 'ROUTING', data: {
           'statusCode': response.statusCode,
           'body': response.body,
@@ -217,6 +224,9 @@ class RoutingService {
     } catch (e, stackTrace) {
       stopwatch.stop();
 
+      print('   💥 Exception caught: $e');
+      print('   Stack trace: ${stackTrace.toString().substring(0, stackTrace.toString().length > 300 ? 300 : stackTrace.toString().length)}');
+
       // Log error to Firestore
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
@@ -257,6 +267,11 @@ class RoutingService {
       "points_encoded": false,
       "elevation": false,
     });
+
+    // Log request body for debugging (console output)
+    print('⚡ FASTEST ROUTE REQUEST:');
+    print('URL: $uri');
+    print('Body: $requestBody');
 
     return await http.post(
       uri,
