@@ -1201,60 +1201,65 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _calculateRouteTo(poi.latitude, poi.longitude);
-            },
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
-                SizedBox(width: 4),
-                Text('ROUTE TO', style: TextStyle(fontSize: 12)),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to edit screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => POIManagementScreenWithLocation(
-                    initialLatitude: poi.latitude,
-                    initialLongitude: poi.longitude,
-                    editingPOIId: poi.id,
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _calculateRouteTo(poi.latitude, poi.longitude);
+                },
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
+                    SizedBox(width: 4),
+                    Text('ROUTE TO', style: TextStyle(fontSize: 12)),
+                  ],
                 ),
-              ).then((_) {
-                // Reload map data after edit
-                if (mounted && _isMapReady) {
-                  _loadAllMapDataWithBounds(forceReload: true);
-                }
-              });
-            },
-            child: const Text('EDIT', style: TextStyle(fontSize: 12)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              if (poi.id != null) {
-                AppLogger.map('Deleting POI', data: {'id': poi.id});
-                await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
-                // Reload map data
-                if (mounted && _isMapReady) {
-                  _loadAllMapDataWithBounds(forceReload: true);
-                }
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('DELETE', style: TextStyle(fontSize: 12)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Navigate to edit screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => POIManagementScreenWithLocation(
+                        initialLatitude: poi.latitude,
+                        initialLongitude: poi.longitude,
+                        editingPOIId: poi.id,
+                      ),
+                    ),
+                  ).then((_) {
+                    // Reload map data after edit
+                    if (mounted && _isMapReady) {
+                      _loadAllMapDataWithBounds(forceReload: true);
+                    }
+                  });
+                },
+                child: const Text('EDIT', style: TextStyle(fontSize: 12)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  if (poi.id != null) {
+                    AppLogger.map('Deleting POI', data: {'id': poi.id});
+                    await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
+                    // Reload map data
+                    if (mounted && _isMapReady) {
+                      _loadAllMapDataWithBounds(forceReload: true);
+                    }
+                  }
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('DELETE', style: TextStyle(fontSize: 12)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
+              ),
+            ],
           ),
         ],
       ),
