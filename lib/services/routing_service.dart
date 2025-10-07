@@ -112,12 +112,12 @@ class RoutingService {
       // Log API call to Firestore (production + debug)
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
-        method: type == RouteType.safest ? 'POST' : 'GET',
+        method: 'POST',
         url: '$_graphhopperBaseUrl/route',
         parameters: {
           'start': '$startLat,$startLon',
           'end': '$endLat,$endLon',
-          'vehicle': 'bike',
+          'profile': 'bike',
           'routeType': type.name,
           'customModel': type == RouteType.safest ? 'safest' : 'default',
         },
@@ -175,7 +175,7 @@ class RoutingService {
       // Log error to Firestore
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
-        method: type == RouteType.safest ? 'POST' : 'GET',
+        method: 'POST',
         url: 'Error before request',
         parameters: {
           'start': '$startLat,$startLon',
@@ -193,25 +193,31 @@ class RoutingService {
     }
   }
 
-  /// Calculate standard route using GET with query parameters
+  /// Calculate standard route using POST with JSON body (uniform with custom model)
   Future<http.Response> _calculateStandardRoute({
     required double startLat,
     required double startLon,
     required double endLat,
     required double endLon,
   }) async {
-    final uri = Uri.parse(
-      '$_graphhopperBaseUrl/route?'
-      'key=${ApiKeys.graphhopperApiKey}&'
-      'point=$startLat,$startLon&'
-      'point=$endLat,$endLon&'
-      'vehicle=bike&'
-      'locale=en&'
-      'points_encoded=false&'
-      'elevation=false'
-    );
+    final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
 
-    return await http.get(uri).timeout(
+    final requestBody = jsonEncode({
+      "points": [
+        [startLon, startLat],
+        [endLon, endLat],
+      ],
+      "profile": "bike",
+      "locale": "en",
+      "points_encoded": false,
+      "elevation": false,
+    });
+
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: requestBody,
+    ).timeout(
       const Duration(seconds: 10),
       onTimeout: () {
         throw Exception('Request timed out after 10 seconds');
