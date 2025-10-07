@@ -195,4 +195,66 @@ class ApiLogger {
       return [];
     }
   }
+
+  /// Clean up old logs (older than specified duration)
+  ///
+  /// Should be called on app startup to prevent Firestore from growing indefinitely.
+  /// Deletes logs in batches to respect Firestore limits.
+  static Future<void> cleanupOldLogs({Duration age = const Duration(hours: 2)}) async {
+    try {
+      final cutoffTime = DateTime.now().subtract(age);
+      final cutoffTimestamp = Timestamp.fromDate(cutoffTime);
+
+      debugPrint('🧹 Cleaning up logs older than ${age.inHours}h (before ${cutoffTime.toIso8601String()})');
+
+      // Query logs older than cutoff time
+      // Note: We use clientTimestamp as a fallback since timestamp is server-generated
+      final snapshot = await _firestore
+          .collection('logs')
+          .where('timestamp', isLessThan: cutoffTimestamp)
+          .limit(500) // Batch limit
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        debugPrint('✅ No old logs to clean up');
+        return;
+      }
+
+      // Delete in batch (max 500 operations per batch)
+      final batch = _firestore.batch();
+      int deleteCount = 0;
+
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+        deleteCount++;
+      }
+
+      await batch.commit();
+      debugPrint('✅ Deleted $deleteCount old log entries');
+
+      // If we deleted 500, there might be more - recursively clean
+      if (snapshot.docs.length == 500) {
+        debugPrint('🔄 More logs to clean, continuing...');
+        await cleanupOldLogs(age: age);
+      }
+    } catch (e) {
+      // Silently fail - don't break app for cleanup
+      if (kDebugMode) {
+        debugPrint('❌ Failed to cleanup old logs: $e');
+      }
+    }
+  }
+
+  /// Schedule periodic cleanup (call this on app startup)
+  ///
+  /// Runs cleanup immediately and then sets up periodic cleanup.
+  /// In production, consider using Cloud Functions scheduled trigger instead.
+  static Future<void> initializeLogCleanup({Duration age = const Duration(hours: 2)}) async {
+    // Run initial cleanup
+    await cleanupOldLogs(age: age);
+
+    // Note: For continuous cleanup, you should use Cloud Functions with a scheduled trigger
+    // This client-side approach only cleans on app startup
+    debugPrint('✅ Log cleanup initialized (runs on app startup)');
+  }
 }

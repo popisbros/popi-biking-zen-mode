@@ -13,6 +13,7 @@ import 'screens/splash_screen.dart';
 import 'screens/mapbox_map_screen_simple.dart'
     if (dart.library.html) 'screens/mapbox_map_screen_simple_stub.dart';
 import 'utils/app_logger.dart';
+import 'utils/api_logger.dart';
 
 void main() async {
   // Catch all errors
@@ -55,6 +56,10 @@ void main() async {
     AppLogger.success('Firebase initialized successfully', tag: 'FIREBASE', data: {
       'platform': kIsWeb ? "WEB" : "MOBILE",
     });
+
+    // Initialize log cleanup (runs on app startup)
+    AppLogger.info('Initializing log cleanup (2h retention)', tag: 'FIREBASE');
+    unawaited(ApiLogger.initializeLogCleanup(age: const Duration(hours: 2)));
   } catch (e, stackTrace) {
     AppLogger.error('Firebase initialization FAILED', tag: 'FIREBASE', error: e, stackTrace: stackTrace);
     AppLogger.warning('Continuing anyway - Firebase not critical for map display', tag: 'FIREBASE');
