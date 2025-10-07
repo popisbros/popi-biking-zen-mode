@@ -980,6 +980,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         ),
         actions: [
           TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _calculateRouteTo(poi.latitude, poi.longitude);
+            },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
+                SizedBox(width: 4),
+                Text('ROUTE TO', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+          TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
           ),
@@ -1175,6 +1189,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _calculateRouteTo(poi.latitude, poi.longitude);
+            },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
+                SizedBox(width: 4),
+                Text('ROUTE TO', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
