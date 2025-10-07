@@ -112,7 +112,22 @@ class SearchNotifier extends Notifier<SearchState> {
           isExpandedSearch: false,
         );
       } else {
-        state = state.copyWith(results: AsyncValue.data(results));
+        // No bounded results - automatically perform extended search
+        AppLogger.api('No bounded results, performing extended search', data: {
+          'query': query,
+        });
+
+        final unboundedResults = await _geocodingService.searchAddressUnbounded(query, mapCenter);
+
+        AppLogger.success('Extended search completed', tag: 'SEARCH', data: {
+          'results': unboundedResults.length,
+        });
+
+        state = state.copyWith(
+          results: AsyncValue.data(unboundedResults),
+          hasBoundedResults: false,
+          isExpandedSearch: true,
+        );
       }
     } catch (e, stackTrace) {
       AppLogger.error('Search failed', tag: 'SEARCH', error: e);
