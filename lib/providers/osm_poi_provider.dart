@@ -156,11 +156,21 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
 
       AppLogger.success('Loaded ${newPOIs.length} POIs in background');
 
-      // Merge with existing data to avoid duplicates
+      // Filter existing POIs to keep only those within the new bounds
       final currentPOIs = state.value ?? [];
-      final mergedPOIs = _mergePOIs(currentPOIs, newPOIs);
+      final filteredCurrentPOIs = currentPOIs.where((poi) {
+        return poi.latitude >= bounds.south &&
+               poi.latitude <= bounds.north &&
+               poi.longitude >= bounds.west &&
+               poi.longitude <= bounds.east;
+      }).toList();
 
-      AppLogger.success('Merged ${currentPOIs.length} existing + ${newPOIs.length} new = ${mergedPOIs.length} total POIs');
+      AppLogger.success('Filtered ${currentPOIs.length} existing POIs to ${filteredCurrentPOIs.length} within bounds');
+
+      // Merge filtered existing data with new POIs to avoid duplicates
+      final mergedPOIs = _mergePOIs(filteredCurrentPOIs, newPOIs);
+
+      AppLogger.success('Merged ${filteredCurrentPOIs.length} existing + ${newPOIs.length} new = ${mergedPOIs.length} total POIs');
       state = AsyncValue.data(mergedPOIs);
 
       // Store the bounds center and calculate zoom for future reference
