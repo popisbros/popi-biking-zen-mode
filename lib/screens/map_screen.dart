@@ -606,6 +606,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
+    // Set preview routes in state (to display both on map)
+    if (routes.length == 2) {
+      final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
+      final safest = routes.firstWhere((r) => r.type == RouteType.safest);
+      ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
+    }
+
     // Show route selection dialog
     if (mounted) {
       _showRouteSelectionDialog(routes);
@@ -657,7 +664,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             final isFastest = route.type == RouteType.fastest;
             final icon = isFastest ? Icons.speed : Icons.shield;
             final color = isFastest ? Colors.blue : Colors.green;
-            final label = isFastest ? 'Fastest Route' : 'Safest Route';
+            final label = isFastest ? 'Fastest Route (bike)' : 'Safest Route (foot)';
             final description = isFastest
                 ? 'Optimized for speed'
                 : 'Prioritizes cycle lanes & quiet roads';
@@ -679,6 +686,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
               onTap: () {
                 Navigator.pop(context);
+                // Clear preview routes before showing selected route
+                ref.read(searchProvider.notifier).clearPreviewRoutes();
                 _displaySelectedRoute(route);
               },
             );
@@ -686,7 +695,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              // Clear preview routes when canceling
+              ref.read(searchProvider.notifier).clearPreviewRoutes();
+            },
             child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
           ),
         ],
@@ -1570,8 +1583,30 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     userAgentPackageName: 'com.popibiking.popiBikingFresh',
                     subdomains: const ['a', 'b', 'c'],
                   ),
-                  // Route polyline layer (below markers)
-                  if (routePoints != null && routePoints.isNotEmpty)
+                  // Preview routes layer (shown during route selection)
+                  if (searchState.previewFastestRoute != null && searchState.previewSafestRoute != null)
+                    PolylineLayer(
+                      polylines: [
+                        // Fastest route in blue
+                        Polyline(
+                          points: searchState.previewFastestRoute!,
+                          strokeWidth: 4.0,
+                          color: Colors.blue,
+                          borderStrokeWidth: 2.0,
+                          borderColor: Colors.white,
+                        ),
+                        // Safest route in green
+                        Polyline(
+                          points: searchState.previewSafestRoute!,
+                          strokeWidth: 4.0,
+                          color: Colors.green,
+                          borderStrokeWidth: 2.0,
+                          borderColor: Colors.white,
+                        ),
+                      ],
+                    ),
+                  // Selected route polyline layer (below markers)
+                  if (routePoints != null && routePoints.isNotEmpty && searchState.previewFastestRoute == null)
                     PolylineLayer(
                       polylines: [
                         Polyline(

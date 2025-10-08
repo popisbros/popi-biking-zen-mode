@@ -679,6 +679,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
+    // Set preview routes in state (to display both on map)
+    if (routes.length == 2) {
+      final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
+      final safest = routes.firstWhere((r) => r.type == RouteType.safest);
+      ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
+    }
+
     // Show route selection dialog
     if (mounted) {
       _showRouteSelectionDialog(routes);
@@ -700,7 +707,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             final isFastest = route.type == RouteType.fastest;
             final icon = isFastest ? Icons.speed : Icons.shield;
             final color = isFastest ? Colors.blue : Colors.green;
-            final label = isFastest ? 'Fastest Route' : 'Safest Route';
+            final label = isFastest ? 'Fastest Route (bike)' : 'Safest Route (foot)';
             final description = isFastest
                 ? 'Optimized for speed'
                 : 'Prioritizes cycle lanes & quiet roads';
@@ -722,6 +729,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
               onTap: () {
                 Navigator.pop(context);
+                // Clear preview routes before showing selected route
+                ref.read(searchProvider.notifier).clearPreviewRoutes();
                 _displaySelectedRoute(route);
               },
             );
@@ -729,7 +738,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              // Clear preview routes when canceling
+              ref.read(searchProvider.notifier).clearPreviewRoutes();
+            },
             child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
           ),
         ],
@@ -805,7 +818,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             final isFastest = route.type == RouteType.fastest;
             final icon = isFastest ? Icons.speed : Icons.shield;
             final color = isFastest ? Colors.blue : Colors.green;
-            final label = isFastest ? 'Fastest Route' : 'Safest Route';
+            final label = isFastest ? 'Fastest Route (bike)' : 'Safest Route (foot)';
             final description = isFastest
                 ? 'Optimized for speed'
                 : 'Prioritizes cycle lanes & quiet roads';
@@ -827,6 +840,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
               onTap: () {
                 Navigator.pop(context);
+                // Clear preview routes before showing selected route
+                ref.read(searchProvider.notifier).clearPreviewRoutes();
                 _displaySelectedRoute(route);
               },
             );
@@ -834,7 +849,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              // Clear preview routes when canceling
+              ref.read(searchProvider.notifier).clearPreviewRoutes();
+            },
             child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
           ),
         ],
