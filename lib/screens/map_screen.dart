@@ -698,27 +698,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           ? 'Optimized for speed'
                           : 'Prioritizes cycle lanes & quiet roads';
 
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
-                        leading: Icon(icon, color: color, size: 28),
-                        title: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(description, style: const TextStyle(fontSize: 11)),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${route.distanceKm} km • ${route.durationMin} min',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
+                      return InkWell(
                         onTap: () {
                           Navigator.pop(context);
                           // Clear preview routes before showing selected route
                           ref.read(searchProvider.notifier).clearPreviewRoutes();
                           _displaySelectedRoute(route);
                         },
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                          leading: Icon(icon, color: color, size: 28),
+                          title: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(description, style: const TextStyle(fontSize: 11)),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${route.distanceKm} km • ${route.durationMin} min',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     }).toList(),
                     // Cancel button
