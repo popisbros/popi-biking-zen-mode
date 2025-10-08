@@ -1888,32 +1888,52 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         return;
       }
 
-      final center = cameraState.center;
-      final zoom = cameraState.zoom;
+      // Get actual visible coordinate bounds from camera
+      final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+        CameraOptions(
+          center: cameraState.center,
+          zoom: cameraState.zoom,
+          pitch: cameraState.pitch,
+          bearing: cameraState.bearing,
+        )
+      );
 
-      // Calculate bounds based on zoom level
-      // At zoom 15, roughly 0.01 degrees = ~1km
-      final latDelta = 0.05 / (zoom / 10);
-      final lngDelta = 0.05 / (zoom / 10);
+      if (coordinateBounds == null) {
+        AppLogger.warning('Could not calculate coordinate bounds', tag: 'MAP');
+        return;
+      }
 
-      final south = center.coordinates.lat - latDelta;
-      final north = center.coordinates.lat + latDelta;
-      final west = center.coordinates.lng - lngDelta;
-      final east = center.coordinates.lng + lngDelta;
+      // Extract bounds from CoordinateBounds
+      final south = coordinateBounds.southwest.coordinates.lat;
+      final west = coordinateBounds.southwest.coordinates.lng;
+      final north = coordinateBounds.northeast.coordinates.lat;
+      final east = coordinateBounds.northeast.coordinates.lng;
 
-      AppLogger.map('Loading POIs for bounds', data: {
-        'south': south.toStringAsFixed(4),
-        'north': north.toStringAsFixed(4),
-        'west': west.toStringAsFixed(4),
-        'east': east.toStringAsFixed(4),
-        'zoom': zoom.toStringAsFixed(1),
+      // Calculate extended bounds (2x in each direction, same as 2D map)
+      final latDiff = north - south;
+      final lngDiff = east - west;
+      final extendedSouth = south - latDiff;
+      final extendedNorth = north + latDiff;
+      final extendedWest = west - lngDiff;
+      final extendedEast = east + lngDiff;
+
+      AppLogger.map('Loading POIs for extended bounds', data: {
+        'visible_S': south.toStringAsFixed(4),
+        'visible_N': north.toStringAsFixed(4),
+        'visible_W': west.toStringAsFixed(4),
+        'visible_E': east.toStringAsFixed(4),
+        'extended_S': extendedSouth.toStringAsFixed(4),
+        'extended_N': extendedNorth.toStringAsFixed(4),
+        'extended_W': extendedWest.toStringAsFixed(4),
+        'extended_E': extendedEast.toStringAsFixed(4),
+        'zoom': cameraState.zoom.toStringAsFixed(1),
       });
 
       final bounds = BoundingBox(
-        south: south,
-        west: west,
-        north: north,
-        east: east,
+        south: extendedSouth,
+        west: extendedWest,
+        north: extendedNorth,
+        east: extendedEast,
       );
 
       final mapState = ref.read(mapProvider);
@@ -2840,7 +2860,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _activeRoute = null;
     });
 
-    AppLogger.map('Navigation stopped - route cleared');
+    // Refresh markers to remove route from map
+    _addMarkers();
+
+    AppLogger.map('Navigation stopped - route cleared from map');
   }
 }
 
