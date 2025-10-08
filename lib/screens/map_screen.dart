@@ -1606,17 +1606,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     required VoidCallback onPressed,
     required String tooltip,
     bool showFullCount = false, // If true, shows actual count. If false, shows "99+" for counts > 99
+    bool enabled = true, // If false, button is disabled (greyed out)
   }) {
     return Tooltip(
-      message: tooltip,
+      message: enabled ? tooltip : '$tooltip (disabled at zoom ≤ 10)',
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           FloatingActionButton(
             mini: true,
-            backgroundColor: isActive ? activeColor : Colors.grey.shade300,
-            foregroundColor: Colors.white,
-            onPressed: onPressed,
+            backgroundColor: enabled
+                ? (isActive ? activeColor : Colors.grey.shade300)
+                : Colors.grey.shade200,
+            foregroundColor: enabled ? Colors.white : Colors.grey.shade400,
+            onPressed: enabled ? onPressed : null,
             heroTag: tooltip,
             child: Icon(icon),
           ),
@@ -1988,61 +1991,76 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             right: 16,
             child: Column(
               children: [
-                // OSM POI toggle with count (no limit)
-                _buildToggleButton(
-                  isActive: mapState.showOSMPOIs,
-                  icon: Icons.public,
-                  activeColor: Colors.blue,
-                  count: poisAsync.value?.length ?? 0,
-                  showFullCount: true, // Show actual count, not 99+
-                  onPressed: () {
-                    AppLogger.map('OSM POI toggle pressed');
-                    final wasOff = !mapState.showOSMPOIs;
-                    ref.read(mapProvider.notifier).toggleOSMPOIs();
-                    // If turning ON, load data immediately
-                    if (wasOff) {
-                      _loadAllMapDataWithBounds(forceReload: true);
-                    }
-                  },
-                  tooltip: 'Toggle OSM POIs',
-                ),
-                const SizedBox(height: 12),
+                // Check zoom level - disable toggles if zoom <= 10
+                Builder(
+                  builder: (context) {
+                    final currentZoom = _isMapReady ? _mapController.camera.zoom : 15.0;
+                    final togglesEnabled = currentZoom > 10.0;
 
-                // Community POI toggle with count
-                _buildToggleButton(
-                  isActive: mapState.showPOIs,
-                  icon: Icons.location_on,
-                  activeColor: Colors.green,
-                  count: communityPOIsAsync.value?.length ?? 0,
-                  onPressed: () {
-                    AppLogger.map('Community POI toggle pressed');
-                    final wasOff = !mapState.showPOIs;
-                    ref.read(mapProvider.notifier).togglePOIs();
-                    // If turning ON, load data immediately
-                    if (wasOff) {
-                      _loadAllMapDataWithBounds(forceReload: true);
-                    }
-                  },
-                  tooltip: 'Toggle Community POIs',
-                ),
-                const SizedBox(height: 12),
+                    return Column(
+                      children: [
+                        // OSM POI toggle with count (no limit)
+                        _buildToggleButton(
+                          isActive: mapState.showOSMPOIs,
+                          icon: Icons.public,
+                          activeColor: Colors.blue,
+                          count: poisAsync.value?.length ?? 0,
+                          showFullCount: true, // Show actual count, not 99+
+                          enabled: togglesEnabled,
+                          onPressed: () {
+                            AppLogger.map('OSM POI toggle pressed');
+                            final wasOff = !mapState.showOSMPOIs;
+                            ref.read(mapProvider.notifier).toggleOSMPOIs();
+                            // If turning ON, load data immediately
+                            if (wasOff) {
+                              _loadAllMapDataWithBounds(forceReload: true);
+                            }
+                          },
+                          tooltip: 'Toggle OSM POIs',
+                        ),
+                        const SizedBox(height: 12),
 
-                // Warning toggle with count
-                _buildToggleButton(
-                  isActive: mapState.showWarnings,
-                  icon: Icons.warning,
-                  activeColor: Colors.orange,
-                  count: warningsAsync.value?.length ?? 0,
-                  onPressed: () {
-                    AppLogger.map('Warning toggle pressed');
-                    final wasOff = !mapState.showWarnings;
-                    ref.read(mapProvider.notifier).toggleWarnings();
-                    // If turning ON, load data immediately
-                    if (wasOff) {
-                      _loadAllMapDataWithBounds(forceReload: true);
-                    }
+                        // Community POI toggle with count
+                        _buildToggleButton(
+                          isActive: mapState.showPOIs,
+                          icon: Icons.location_on,
+                          activeColor: Colors.green,
+                          count: communityPOIsAsync.value?.length ?? 0,
+                          enabled: togglesEnabled,
+                          onPressed: () {
+                            AppLogger.map('Community POI toggle pressed');
+                            final wasOff = !mapState.showPOIs;
+                            ref.read(mapProvider.notifier).togglePOIs();
+                            // If turning ON, load data immediately
+                            if (wasOff) {
+                              _loadAllMapDataWithBounds(forceReload: true);
+                            }
+                          },
+                          tooltip: 'Toggle Community POIs',
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Warning toggle with count
+                        _buildToggleButton(
+                          isActive: mapState.showWarnings,
+                          icon: Icons.warning,
+                          activeColor: Colors.orange,
+                          count: warningsAsync.value?.length ?? 0,
+                          enabled: togglesEnabled,
+                          onPressed: () {
+                            AppLogger.map('Warning toggle pressed');
+                            final wasOff = !mapState.showWarnings;
+                            ref.read(mapProvider.notifier).toggleWarnings();
+                            // If turning ON, load data immediately
+                            if (wasOff) {
+                              _loadAllMapDataWithBounds(forceReload: true);
+                            }
+                          },
+                          tooltip: 'Toggle Warnings',
+                        ),
+                      ],
+                    );
                   },
-                  tooltip: 'Toggle Warnings',
                 ),
                 const SizedBox(height: 24),
 
@@ -2098,15 +2116,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onPressed: () {
                     AppLogger.map('Zoom out pressed');
                     final currentZoom = _mapController.camera.zoom;
+                    final newZoom = currentZoom - 1;
                     _mapController.move(
                       _mapController.camera.center,
-                      currentZoom - 1,
+                      newZoom,
                     );
                     AppLogger.map('Zoom changed', data: {
                       'from': currentZoom,
-                      'to': currentZoom - 1,
+                      'to': newZoom,
                     });
-                    setState(() {}); // Refresh to update zoom display
+
+                    // Auto-turn OFF all POI toggles if zooming to <= 10
+                    if (newZoom <= 10.0) {
+                      final mapState = ref.read(mapProvider);
+                      if (mapState.showOSMPOIs) {
+                        ref.read(mapProvider.notifier).toggleOSMPOIs();
+                      }
+                      if (mapState.showPOIs) {
+                        ref.read(mapProvider.notifier).togglePOIs();
+                      }
+                      if (mapState.showWarnings) {
+                        ref.read(mapProvider.notifier).toggleWarnings();
+                      }
+                      AppLogger.map('Auto-disabled all POI toggles at zoom <= 10');
+                    }
+
+                    setState(() {}); // Refresh to update zoom display and toggles
                   },
                   child: const Icon(Icons.remove),
                 ),
