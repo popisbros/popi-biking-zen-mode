@@ -58,8 +58,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   final List<_LocationBreadcrumb> _breadcrumbs = [];
   double? _lastNavigationBearing; // Smoothed bearing for navigation mode
   static const int _maxBreadcrumbs = 5;
-  static const double _minBreadcrumbDistance = 15.0; // meters
-  static const Duration _breadcrumbMaxAge = Duration(seconds: 10);
+  static const double _minBreadcrumbDistance = 5.0; // meters - responsive at cycling speeds
+  static const Duration _breadcrumbMaxAge = Duration(seconds: 20); // 20s window for stable tracking
 
   @override
   void initState() {
@@ -1031,8 +1031,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       end.latitude, end.longitude,
     );
 
-    // Need at least 15m total movement
-    if (totalDistance < 15) return null;
+    // Need at least 8m total movement (slightly more than GPS accuracy)
+    if (totalDistance < 8) return null;
 
     final bearing = _calculateBearing(start, end);
 
