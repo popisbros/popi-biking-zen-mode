@@ -399,6 +399,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
+      color: Colors.white.withOpacity(0.5),
       items: [
         PopupMenuItem<String>(
           value: 'add_poi',
@@ -462,6 +463,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
+      color: Colors.white.withOpacity(0.5),
       items: [
         PopupMenuItem<String>(
           value: 'calculate_route',
