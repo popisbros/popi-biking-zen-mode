@@ -536,7 +536,71 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
       state = AsyncValue.error(error, stackTrace);
     }
   }
-  
+
+  /// Load warnings in background without clearing existing data
+  Future<void> loadWarningsInBackground(BoundingBox bounds) async {
+    AppLogger.firebase('Loading warnings in background with bounds', data: {
+      'south': bounds.south,
+      'north': bounds.north,
+      'west': bounds.west,
+      'east': bounds.east,
+    });
+    // Don't set loading state - keep existing data visible
+
+    try {
+      final newWarnings = await _firebaseService.getWarningsInBounds(
+        south: bounds.south,
+        west: bounds.west,
+        north: bounds.north,
+        east: bounds.east,
+      );
+
+      AppLogger.success('Loaded ${newWarnings.length} warnings in background');
+
+      // Filter existing warnings to keep only those within the new bounds
+      final currentWarnings = state.value ?? [];
+      final filteredCurrentWarnings = currentWarnings.where((warning) {
+        return warning.latitude >= bounds.south &&
+               warning.latitude <= bounds.north &&
+               warning.longitude >= bounds.west &&
+               warning.longitude <= bounds.east;
+      }).toList();
+
+      AppLogger.success('Filtered ${currentWarnings.length} existing warnings to ${filteredCurrentWarnings.length} within bounds');
+
+      // Merge filtered existing data with new warnings to avoid duplicates
+      final mergedWarnings = _mergeWarnings(filteredCurrentWarnings, newWarnings);
+
+      AppLogger.success('Merged ${filteredCurrentWarnings.length} existing + ${newWarnings.length} new = ${mergedWarnings.length} total warnings');
+      state = AsyncValue.data(mergedWarnings);
+      _lastLoadedBounds = bounds;
+    } catch (e) {
+      AppLogger.error('Error loading warnings in background', error: e);
+      // Don't change state on error - keep existing data
+    }
+  }
+
+  /// Merge warnings to avoid duplicates
+  List<CommunityWarning> _mergeWarnings(List<CommunityWarning> existing, List<CommunityWarning> newWarnings) {
+    final Map<String, CommunityWarning> mergedMap = {};
+
+    // Add existing warnings
+    for (final warning in existing) {
+      if (warning.id != null) {
+        mergedMap[warning.id!] = warning;
+      }
+    }
+
+    // Add new warnings (will overwrite duplicates)
+    for (final warning in newWarnings) {
+      if (warning.id != null) {
+        mergedMap[warning.id!] = warning;
+      }
+    }
+
+    return mergedMap.values.toList();
+  }
+
   /// Force reload warnings using the last known bounds
   Future<void> forceReload() async {
     if (_lastLoadedBounds != null) {
@@ -616,7 +680,71 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
       state = AsyncValue.error(error, stackTrace);
     }
   }
-  
+
+  /// Load POIs in background without clearing existing data
+  Future<void> loadPOIsInBackground(BoundingBox bounds) async {
+    AppLogger.firebase('Loading POIs in background with bounds', data: {
+      'south': bounds.south,
+      'north': bounds.north,
+      'west': bounds.west,
+      'east': bounds.east,
+    });
+    // Don't set loading state - keep existing data visible
+
+    try {
+      final newPOIs = await _firebaseService.getPOIsInBounds(
+        south: bounds.south,
+        west: bounds.west,
+        north: bounds.north,
+        east: bounds.east,
+      );
+
+      AppLogger.success('Loaded ${newPOIs.length} POIs in background');
+
+      // Filter existing POIs to keep only those within the new bounds
+      final currentPOIs = state.value ?? [];
+      final filteredCurrentPOIs = currentPOIs.where((poi) {
+        return poi.latitude >= bounds.south &&
+               poi.latitude <= bounds.north &&
+               poi.longitude >= bounds.west &&
+               poi.longitude <= bounds.east;
+      }).toList();
+
+      AppLogger.success('Filtered ${currentPOIs.length} existing POIs to ${filteredCurrentPOIs.length} within bounds');
+
+      // Merge filtered existing data with new POIs to avoid duplicates
+      final mergedPOIs = _mergePOIs(filteredCurrentPOIs, newPOIs);
+
+      AppLogger.success('Merged ${filteredCurrentPOIs.length} existing + ${newPOIs.length} new = ${mergedPOIs.length} total POIs');
+      state = AsyncValue.data(mergedPOIs);
+      _lastLoadedBounds = bounds;
+    } catch (e) {
+      AppLogger.error('Error loading POIs in background', error: e);
+      // Don't change state on error - keep existing data
+    }
+  }
+
+  /// Merge POIs to avoid duplicates
+  List<CyclingPOI> _mergePOIs(List<CyclingPOI> existing, List<CyclingPOI> newPOIs) {
+    final Map<String, CyclingPOI> mergedMap = {};
+
+    // Add existing POIs
+    for (final poi in existing) {
+      if (poi.id != null) {
+        mergedMap[poi.id!] = poi;
+      }
+    }
+
+    // Add new POIs (will overwrite duplicates)
+    for (final poi in newPOIs) {
+      if (poi.id != null) {
+        mergedMap[poi.id!] = poi;
+      }
+    }
+
+    return mergedMap.values.toList();
+  }
+
   /// Force reload POIs using the last known bounds
   Future<void> forceReload() async {
     if (_lastLoadedBounds != null) {

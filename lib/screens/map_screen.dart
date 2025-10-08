@@ -303,7 +303,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (mapState.showPOIs) {
       final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
       AppLogger.debug('Calling community POIs background load', tag: 'MAP');
-      communityPOIsNotifier.loadPOIsWithBounds(extendedBounds);
+      communityPOIsNotifier.loadPOIsInBackground(extendedBounds);
       loadTypes.add('Community POIs');
     }
 
@@ -311,7 +311,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (mapState.showWarnings) {
       final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
       AppLogger.debug('Calling community warnings background load', tag: 'MAP');
-      warningsNotifier.loadWarningsWithBounds(extendedBounds);
+      warningsNotifier.loadWarningsInBackground(extendedBounds);
       loadTypes.add('Warnings');
     }
 
