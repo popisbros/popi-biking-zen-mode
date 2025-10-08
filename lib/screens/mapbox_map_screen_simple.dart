@@ -979,7 +979,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             heroTag: tooltip,
             child: Icon(icon),
           ),
-          if (count > 0)
+          // Only show count when toggle is active AND count > 0
+          if (isActive && count > 0)
             Positioned(
               right: -4,
               top: -4,
@@ -1489,7 +1490,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     activeColor: Colors.blue,
                     count: ref.watch(osmPOIsNotifierProvider).value?.length ?? 0,
                     showFullCount: true,
-                    onPressed: () => ref.read(mapProvider.notifier).toggleOSMPOIs(),
+                    onPressed: () {
+                      final wasOff = !mapState.showOSMPOIs;
+                      ref.read(mapProvider.notifier).toggleOSMPOIs();
+                      // If turning ON, load data immediately
+                      if (wasOff) {
+                        _loadAllPOIData();
+                        _addMarkers();
+                      }
+                    },
                     tooltip: 'Toggle OSM POIs',
                   ),
                   const SizedBox(height: 12),
@@ -1499,7 +1508,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     icon: Icons.location_on,
                     activeColor: Colors.green,
                     count: ref.watch(cyclingPOIsBoundsNotifierProvider).value?.length ?? 0,
-                    onPressed: () => ref.read(mapProvider.notifier).togglePOIs(),
+                    onPressed: () {
+                      final wasOff = !mapState.showPOIs;
+                      ref.read(mapProvider.notifier).togglePOIs();
+                      // If turning ON, load data immediately
+                      if (wasOff) {
+                        _loadAllPOIData();
+                        _addMarkers();
+                      }
+                    },
                     tooltip: 'Toggle Community POIs',
                   ),
                   const SizedBox(height: 12),
@@ -1509,7 +1526,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     icon: Icons.warning,
                     activeColor: Colors.orange,
                     count: ref.watch(communityWarningsBoundsNotifierProvider).value?.length ?? 0,
-                    onPressed: () => ref.read(mapProvider.notifier).toggleWarnings(),
+                    onPressed: () {
+                      final wasOff = !mapState.showWarnings;
+                      ref.read(mapProvider.notifier).toggleWarnings();
+                      // If turning ON, load data immediately
+                      if (wasOff) {
+                        _loadAllPOIData();
+                        _addMarkers();
+                      }
+                    },
                     tooltip: 'Toggle Warnings',
                   ),
                   const SizedBox(height: 24),
@@ -1906,15 +1931,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'zoom': zoom.toStringAsFixed(1),
       });
 
-      // Load OSM POIs
-      final osmNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-      await osmNotifier.loadPOIsWithBounds(BoundingBox(
-        south: south,
-        west: west,
-        north: north,
-        east: east,
-      ));
-
       final bounds = BoundingBox(
         south: south,
         west: west,
@@ -1922,15 +1938,33 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         east: east,
       );
 
-      // Load Community Warnings
-      final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
-      await warningsNotifier.loadWarningsWithBounds(bounds);
+      final mapState = ref.read(mapProvider);
+      final loadTypes = <String>[];
 
-      // Load Community POIs
-      final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-      await communityPOIsNotifier.loadPOIsWithBounds(bounds);
+      // Only load OSM POIs if toggle is ON
+      if (mapState.showOSMPOIs) {
+        final osmNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+        await osmNotifier.loadPOIsWithBounds(bounds);
+        loadTypes.add('OSM POIs');
+      }
 
-      AppLogger.success('All POI data loaded', tag: 'MAP');
+      // Only load Community POIs if toggle is ON
+      if (mapState.showPOIs) {
+        final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+        await communityPOIsNotifier.loadPOIsWithBounds(bounds);
+        loadTypes.add('Community POIs');
+      }
+
+      // Only load Community Warnings if toggle is ON
+      if (mapState.showWarnings) {
+        final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
+        await warningsNotifier.loadWarningsWithBounds(bounds);
+        loadTypes.add('Warnings');
+      }
+
+      AppLogger.success('POI data loaded', tag: 'MAP', data: {
+        'types': loadTypes.isEmpty ? 'None (all toggles OFF)' : loadTypes.join(', '),
+      });
     } catch (e) {
       AppLogger.error('Failed to load POI data', error: e);
     }

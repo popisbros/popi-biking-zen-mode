@@ -288,23 +288,35 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       'E': extendedBounds.east.toStringAsFixed(4),
     });
 
-    // Load OSM POIs in background
-    final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-    AppLogger.debug('Calling OSM POI background load', tag: 'MAP');
-    osmPOIsNotifier.loadPOIsInBackground(extendedBounds);
+    final mapState = ref.read(mapProvider);
+    final loadTypes = <String>[];
 
-    // Load Community POIs in background
-    final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-    AppLogger.debug('Calling community POIs background load', tag: 'MAP');
-    communityPOIsNotifier.loadPOIsWithBounds(extendedBounds);
+    // Only load OSM POIs if toggle is ON
+    if (mapState.showOSMPOIs) {
+      final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+      AppLogger.debug('Calling OSM POI background load', tag: 'MAP');
+      osmPOIsNotifier.loadPOIsInBackground(extendedBounds);
+      loadTypes.add('OSM POIs');
+    }
 
-    // Load Warnings in background
-    final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
-    AppLogger.debug('Calling community warnings background load', tag: 'MAP');
-    warningsNotifier.loadWarningsWithBounds(extendedBounds);
+    // Only load Community POIs if toggle is ON
+    if (mapState.showPOIs) {
+      final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+      AppLogger.debug('Calling community POIs background load', tag: 'MAP');
+      communityPOIsNotifier.loadPOIsWithBounds(extendedBounds);
+      loadTypes.add('Community POIs');
+    }
+
+    // Only load Warnings if toggle is ON
+    if (mapState.showWarnings) {
+      final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
+      AppLogger.debug('Calling community warnings background load', tag: 'MAP');
+      warningsNotifier.loadWarningsWithBounds(extendedBounds);
+      loadTypes.add('Warnings');
+    }
 
     AppLogger.success('Background loading calls completed', tag: 'MAP', data: {
-      'types': 'OSM POIs, Community POIs, Warnings',
+      'types': loadTypes.isEmpty ? 'None (all toggles OFF)' : loadTypes.join(', '),
     });
   }
 
@@ -1608,7 +1620,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             heroTag: tooltip,
             child: Icon(icon),
           ),
-          if (count > 0)
+          // Only show count when toggle is active AND count > 0
+          if (isActive && count > 0)
             Positioned(
               right: -4,
               top: -4,
@@ -1984,7 +1997,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   showFullCount: true, // Show actual count, not 99+
                   onPressed: () {
                     AppLogger.map('OSM POI toggle pressed');
+                    final wasOff = !mapState.showOSMPOIs;
                     ref.read(mapProvider.notifier).toggleOSMPOIs();
+                    // If turning ON, load data immediately
+                    if (wasOff) {
+                      _loadAllMapDataWithBounds(forceReload: true);
+                    }
                   },
                   tooltip: 'Toggle OSM POIs',
                 ),
@@ -1998,7 +2016,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   count: communityPOIsAsync.value?.length ?? 0,
                   onPressed: () {
                     AppLogger.map('Community POI toggle pressed');
+                    final wasOff = !mapState.showPOIs;
                     ref.read(mapProvider.notifier).togglePOIs();
+                    // If turning ON, load data immediately
+                    if (wasOff) {
+                      _loadAllMapDataWithBounds(forceReload: true);
+                    }
                   },
                   tooltip: 'Toggle Community POIs',
                 ),
@@ -2012,7 +2035,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   count: warningsAsync.value?.length ?? 0,
                   onPressed: () {
                     AppLogger.map('Warning toggle pressed');
+                    final wasOff = !mapState.showWarnings;
                     ref.read(mapProvider.notifier).toggleWarnings();
+                    // If turning ON, load data immediately
+                    if (wasOff) {
+                      _loadAllMapDataWithBounds(forceReload: true);
+                    }
                   },
                   tooltip: 'Toggle Warnings',
                 ),
