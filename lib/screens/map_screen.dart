@@ -2063,10 +2063,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       'from': currentZoom,
                       'to': currentZoom + 1,
                     });
+                    setState(() {}); // Refresh to update zoom display
                   },
                   child: const Icon(Icons.add),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
+
+                // Zoom level display
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _mapController.camera.zoom.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
 
                 // Zoom out button
                 FloatingActionButton(
@@ -2085,6 +2104,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       'from': currentZoom,
                       'to': currentZoom - 1,
                     });
+                    setState(() {}); // Refresh to update zoom display
                   },
                   child: const Icon(Icons.remove),
                 ),

@@ -69,6 +69,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
   static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
 
+  // Zoom level state
+  double _currentZoom = 15.0; // Default zoom
+
   // Store POI data for tap handling
   final Map<String, OSMPOI> _osmPoiById = {};
   final Map<String, CyclingPOI> _communityPoiById = {};
@@ -1548,15 +1551,38 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     onPressed: () async {
                       final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
                       if (currentZoom != null) {
-                        _mapboxMap?.setCamera(CameraOptions(
-                          zoom: currentZoom + 1,
+                        final newZoom = currentZoom + 1;
+                        await _mapboxMap?.setCamera(CameraOptions(
+                          zoom: newZoom,
                           pitch: _currentPitch, // Maintain pitch angle
                         ));
+                        setState(() {
+                          _currentZoom = newZoom;
+                        });
                       }
                     },
                     child: const Icon(Icons.add),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
+
+                  // Zoom level display
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _currentZoom.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
                   // Zoom out
                   FloatingActionButton(
                     mini: true,
@@ -1566,10 +1592,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     onPressed: () async {
                       final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
                       if (currentZoom != null) {
-                        _mapboxMap?.setCamera(CameraOptions(
-                          zoom: currentZoom - 1,
+                        final newZoom = currentZoom - 1;
+                        await _mapboxMap?.setCamera(CameraOptions(
+                          zoom: newZoom,
                           pitch: _currentPitch, // Maintain pitch angle
                         ));
+                        setState(() {
+                          _currentZoom = newZoom;
+                        });
                       }
                     },
                     child: const Icon(Icons.remove),
@@ -1750,8 +1780,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _mapboxMap = mapboxMap;
     AppLogger.map('Mapbox map created');
 
+    // Initialize current zoom from camera
+    final cameraState = await mapboxMap.getCameraState();
     setState(() {
       _isMapReady = true;
+      _currentZoom = cameraState.zoom;
     });
 
     // Disable pitch gestures to lock the 3D angle at 70°
