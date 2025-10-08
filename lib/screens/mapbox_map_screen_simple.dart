@@ -66,6 +66,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
+  double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
   static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
 
   // Store POI data for tap handling
@@ -699,6 +700,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await _fitRouteBounds(allPoints);
     }
 
+    // Store current pitch and set to 10° before showing route selection dialog
+    _pitchBeforeRouteCalculation = _currentPitch;
+    if (_mapboxMap != null) {
+      await _mapboxMap!.easeTo(
+        CameraOptions(pitch: 10.0),
+        MapAnimationOptions(duration: 500),
+      );
+      _currentPitch = 10.0;
+    }
+
     // Show route selection dialog
     if (mounted) {
       _showRouteSelectionDialog(routes);
@@ -791,6 +802,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             Navigator.pop(context);
                             // Clear preview routes when canceling
                             ref.read(searchProvider.notifier).clearPreviewRoutes();
+                            // Refresh markers to remove preview routes from map
+                            _addMarkers();
+                            // Restore previous pitch
+                            if (_pitchBeforeRouteCalculation != null) {
+                              _mapboxMap?.easeTo(
+                                CameraOptions(pitch: _pitchBeforeRouteCalculation!),
+                                MapAnimationOptions(duration: 500),
+                              );
+                              _currentPitch = _pitchBeforeRouteCalculation!;
+                              _pitchBeforeRouteCalculation = null;
+                            }
                           },
                           child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
                         ),
@@ -824,13 +846,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _activeRoute = route;
     });
 
-    // Set camera pitch to 10°
-    if (_mapboxMap != null) {
+    // Restore previous pitch (pitch was already set to 10° before dialog)
+    if (_mapboxMap != null && _pitchBeforeRouteCalculation != null) {
       await _mapboxMap!.easeTo(
-        CameraOptions(pitch: 10.0),
+        CameraOptions(pitch: _pitchBeforeRouteCalculation!),
         MapAnimationOptions(duration: 500),
       );
-      _currentPitch = 10.0;
+      _currentPitch = _pitchBeforeRouteCalculation!;
+      _pitchBeforeRouteCalculation = null;
     }
 
     // Zoom map to fit the entire route
