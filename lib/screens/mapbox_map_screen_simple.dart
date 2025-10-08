@@ -684,6 +684,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
       final safest = routes.firstWhere((r) => r.type == RouteType.safest);
       ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
+
+      // Auto-zoom to fit both routes on screen
+      final allPoints = [...fastest.points, ...safest.points];
+      await _fitRouteBounds(allPoints);
     }
 
     // Show route selection dialog
@@ -2277,15 +2281,78 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Future<void> _addRoutePolyline() async {
     final searchState = ref.read(searchProvider);
     final routePoints = searchState.routePoints;
+    final previewFastest = searchState.previewFastestRoute;
+    final previewSafest = searchState.previewSafestRoute;
 
-    if (routePoints == null || routePoints.isEmpty) {
-      // Clear any existing route layer
+    // Clear all route layers first
+    try {
+      await _mapboxMap?.style.removeStyleLayer('route-layer');
+      await _mapboxMap?.style.removeStyleSource('route-source');
+      await _mapboxMap?.style.removeStyleLayer('preview-fastest-layer');
+      await _mapboxMap?.style.removeStyleSource('preview-fastest-source');
+      await _mapboxMap?.style.removeStyleLayer('preview-safest-layer');
+      await _mapboxMap?.style.removeStyleSource('preview-safest-source');
+    } catch (e) {
+      // Layers/sources don't exist, that's fine
+    }
+
+    // Show preview routes if both exist
+    if (previewFastest != null && previewSafest != null) {
+      AppLogger.debug('Adding preview route polylines', tag: 'MAP', data: {
+        'fastest': previewFastest.length,
+        'safest': previewSafest.length,
+      });
+
       try {
-        await _mapboxMap?.style.removeStyleLayer('route-layer');
-        await _mapboxMap?.style.removeStyleSource('route-source');
-      } catch (e) {
-        // Layer/source doesn't exist, that's fine
+        // Add fastest route (blue)
+        final fastestPositions = previewFastest.map((point) =>
+          Position(point.longitude, point.latitude)
+        ).toList();
+        final fastestLineString = LineString(coordinates: fastestPositions);
+        final fastestSource = GeoJsonSource(
+          id: 'preview-fastest-source',
+          data: jsonEncode(fastestLineString.toJson()),
+        );
+        await _mapboxMap?.style.addSource(fastestSource);
+        final fastestLayer = LineLayer(
+          id: 'preview-fastest-layer',
+          sourceId: 'preview-fastest-source',
+          lineColor: 0xFF2196F3, // Blue
+          lineWidth: 8.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        );
+        await _mapboxMap?.style.addLayer(fastestLayer);
+
+        // Add safest route (green)
+        final safestPositions = previewSafest.map((point) =>
+          Position(point.longitude, point.latitude)
+        ).toList();
+        final safestLineString = LineString(coordinates: safestPositions);
+        final safestSource = GeoJsonSource(
+          id: 'preview-safest-source',
+          data: jsonEncode(safestLineString.toJson()),
+        );
+        await _mapboxMap?.style.addSource(safestSource);
+        final safestLayer = LineLayer(
+          id: 'preview-safest-layer',
+          sourceId: 'preview-safest-source',
+          lineColor: 0xFF4CAF50, // Green
+          lineWidth: 8.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        );
+        await _mapboxMap?.style.addLayer(safestLayer);
+
+        AppLogger.success('Preview route polylines added', tag: 'MAP');
+      } catch (e, stackTrace) {
+        AppLogger.error('Failed to add preview route polylines', tag: 'MAP', error: e, stackTrace: stackTrace);
       }
+      return;
+    }
+
+    // Show selected route if it exists and no preview routes
+    if (routePoints == null || routePoints.isEmpty) {
       return;
     }
 
@@ -2294,14 +2361,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
 
     try {
-      // Remove existing route layer and source if they exist
-      try {
-        await _mapboxMap?.style.removeStyleLayer('route-layer');
-        await _mapboxMap?.style.removeStyleSource('route-source');
-      } catch (e) {
-        // Layer/source doesn't exist yet
-      }
-
       // Convert LatLng points to Mapbox Position list
       final positions = routePoints.map((point) =>
         Position(point.longitude, point.latitude)
@@ -2324,7 +2383,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         id: 'route-layer',
         sourceId: 'route-source',
         lineColor: 0xFF85a78b,
-        lineWidth: 4.0,
+        lineWidth: 6.0,
         lineCap: LineCap.ROUND,
         lineJoin: LineJoin.ROUND,
       );
