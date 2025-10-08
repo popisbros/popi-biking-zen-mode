@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import '../providers/location_provider.dart';
 import '../providers/osm_poi_provider.dart';
 import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
+import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../services/map_service.dart';
@@ -48,14 +50,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Point? _lastCameraCenter;
   double? _lastCameraZoom;
 
+  // Navigation mode: GPS breadcrumb tracking for map rotation
+  final List<_LocationBreadcrumb> _breadcrumbs = [];
+  double? _lastNavigationBearing; // Smoothed bearing for navigation mode
+  static const int _maxBreadcrumbs = 5;
+  static const double _minBreadcrumbDistance = 5.0; // meters - responsive at cycling speeds
+  static const Duration _breadcrumbMaxAge = Duration(seconds: 20); // 20s window for stable tracking
+
+  // GPS auto-center tracking
+  latlong.LatLng? _originalGPSReference;
+  latlong.LatLng? _lastGPSPosition;
+
   // Active route for persistent navigation sheet
   RouteResult? _activeRoute;
 
-  // Mapbox LocationComponent handles puck automatically (no viewport states needed)
-
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
-  double? _pitchBeforeRoute; // Store pitch before route calculation to restore later
   static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
 
   // Store POI data for tap handling
@@ -681,22 +691,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final safest = routes.firstWhere((r) => r.type == RouteType.safest);
       ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
 
-      // Refresh markers to show preview routes
+      // Refresh markers to show preview routes on map
       _addMarkers();
 
       // Auto-zoom to fit both routes on screen
       final allPoints = [...fastest.points, ...safest.points];
       await _fitRouteBounds(allPoints);
-    }
-
-    // Save current pitch and set to 10° before showing dialog
-    _pitchBeforeRoute = _currentPitch;
-    if (_mapboxMap != null) {
-      await _mapboxMap!.easeTo(
-        CameraOptions(pitch: 10.0),
-        MapAnimationOptions(duration: 500),
-      );
-      _currentPitch = 10.0;
     }
 
     // Show route selection dialog
@@ -787,23 +787,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () async {
+                          onPressed: () {
                             Navigator.pop(context);
                             // Clear preview routes when canceling
                             ref.read(searchProvider.notifier).clearPreviewRoutes();
-
-                            // Restore previous pitch
-                            if (_pitchBeforeRoute != null && _mapboxMap != null) {
-                              await _mapboxMap!.easeTo(
-                                CameraOptions(pitch: _pitchBeforeRoute),
-                                MapAnimationOptions(duration: 500),
-                              );
-                              _currentPitch = _pitchBeforeRoute!;
-                              _pitchBeforeRoute = null;
-                            }
-
-                            // Refresh markers to remove route lines
-                            _addMarkers();
                           },
                           child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
                         ),
@@ -837,14 +824,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _activeRoute = route;
     });
 
-    // Restore previous pitch (pitch is already at 10° from dialog setup)
-    if (_pitchBeforeRoute != null && _mapboxMap != null) {
+    // Set camera pitch to 10°
+    if (_mapboxMap != null) {
       await _mapboxMap!.easeTo(
-        CameraOptions(pitch: _pitchBeforeRoute),
+        CameraOptions(pitch: 10.0),
         MapAnimationOptions(duration: 500),
       );
-      _currentPitch = _pitchBeforeRoute!;
-      _pitchBeforeRoute = null;
+      _currentPitch = 10.0;
     }
 
     // Zoom map to fit the entire route
@@ -971,8 +957,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             heroTag: tooltip,
             child: Icon(icon),
           ),
-          // Only show count when toggle is active AND count > 0
-          if (isActive && count > 0)
+          if (count > 0)
             Positioned(
               right: -4,
               top: -4,
@@ -1403,8 +1388,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Listen for compass changes to rotate the map (with toggle + threshold)
     // Compass listener removed - navigation mode uses GPS-based rotation instead
 
-    // Navigation mode changes handled by LocationComponent automatically
-    // (PuckBearing.COURSE handles rotation, no manual viewport switching needed)
+    // Listen for location changes to update user marker
+    ref.listen(locationNotifierProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        next.whenData((location) {
+          if (location != null) {
+            AppLogger.debug('Location updated, refreshing user marker', tag: 'MAP');
+            _handleGPSLocationChange(location);
+          }
+        });
+      }
+    });
 
     // Use cached initial camera or default
     final initialCamera = _initialCamera ?? _getDefaultCamera();
@@ -1473,15 +1467,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     activeColor: Colors.blue,
                     count: ref.watch(osmPOIsNotifierProvider).value?.length ?? 0,
                     showFullCount: true,
-                    onPressed: () {
-                      final wasOff = !mapState.showOSMPOIs;
-                      ref.read(mapProvider.notifier).toggleOSMPOIs();
-                      // If turning ON, load data immediately
-                      if (wasOff) {
-                        _loadAllPOIData();
-                        _addMarkers();
-                      }
-                    },
+                    onPressed: () => ref.read(mapProvider.notifier).toggleOSMPOIs(),
                     tooltip: 'Toggle OSM POIs',
                   ),
                   const SizedBox(height: 12),
@@ -1491,15 +1477,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     icon: Icons.location_on,
                     activeColor: Colors.green,
                     count: ref.watch(cyclingPOIsBoundsNotifierProvider).value?.length ?? 0,
-                    onPressed: () {
-                      final wasOff = !mapState.showPOIs;
-                      ref.read(mapProvider.notifier).togglePOIs();
-                      // If turning ON, load data immediately
-                      if (wasOff) {
-                        _loadAllPOIData();
-                        _addMarkers();
-                      }
-                    },
+                    onPressed: () => ref.read(mapProvider.notifier).togglePOIs(),
                     tooltip: 'Toggle Community POIs',
                   ),
                   const SizedBox(height: 12),
@@ -1509,15 +1487,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     icon: Icons.warning,
                     activeColor: Colors.orange,
                     count: ref.watch(communityWarningsBoundsNotifierProvider).value?.length ?? 0,
-                    onPressed: () {
-                      final wasOff = !mapState.showWarnings;
-                      ref.read(mapProvider.notifier).toggleWarnings();
-                      // If turning ON, load data immediately
-                      if (wasOff) {
-                        _loadAllPOIData();
-                        _addMarkers();
-                      }
-                    },
+                    onPressed: () => ref.read(mapProvider.notifier).toggleWarnings(),
                     tooltip: 'Toggle Warnings',
                   ),
                   const SizedBox(height: 24),
@@ -1746,25 +1716,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to disable pitch gestures', error: e);
     }
 
-    // Enable built-in location component with custom puck (Mapbox native)
+    // Disable built-in location component - we'll use custom marker matching 2D map
     try {
       await mapboxMap.location.updateSettings(LocationComponentSettings(
-        enabled: true,
-        locationPuck: LocationPuck(
-          locationPuck2D: LocationPuck2D(
-            topImage: await _createLocationPuckImage(),
-            bearingImage: await _createLocationPuckArrowImage(),
-            shadowImage: null,
-            scaleExpression: null,
-            opacity: 1.0,
-          ),
-        ),
-        puckBearing: PuckBearing.COURSE, // GPS-based bearing (direction of travel)
-        puckBearingEnabled: true,
+        enabled: false, // Disable to use custom marker
       ));
-      AppLogger.success('Location component enabled with custom puck', tag: 'MAP');
+      AppLogger.success('Built-in location component disabled (using custom marker)', tag: 'MAP');
     } catch (e) {
-      AppLogger.error('Failed to enable location component', error: e);
+      AppLogger.error('Failed to disable location component', error: e);
     }
 
     // Initialize annotation managers
@@ -1925,6 +1884,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'zoom': zoom.toStringAsFixed(1),
       });
 
+      // Load OSM POIs
+      final osmNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+      await osmNotifier.loadPOIsWithBounds(BoundingBox(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+      ));
+
       final bounds = BoundingBox(
         south: south,
         west: west,
@@ -1932,33 +1900,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         east: east,
       );
 
-      final mapState = ref.read(mapProvider);
-      final loadTypes = <String>[];
+      // Load Community Warnings
+      final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
+      await warningsNotifier.loadWarningsWithBounds(bounds);
 
-      // Only load OSM POIs if toggle is ON
-      if (mapState.showOSMPOIs) {
-        final osmNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-        await osmNotifier.loadPOIsWithBounds(bounds);
-        loadTypes.add('OSM POIs');
-      }
+      // Load Community POIs
+      final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+      await communityPOIsNotifier.loadPOIsWithBounds(bounds);
 
-      // Only load Community POIs if toggle is ON
-      if (mapState.showPOIs) {
-        final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-        await communityPOIsNotifier.loadPOIsWithBounds(bounds);
-        loadTypes.add('Community POIs');
-      }
-
-      // Only load Community Warnings if toggle is ON
-      if (mapState.showWarnings) {
-        final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
-        await warningsNotifier.loadWarningsWithBounds(bounds);
-        loadTypes.add('Warnings');
-      }
-
-      AppLogger.success('POI data loaded', tag: 'MAP', data: {
-        'types': loadTypes.isEmpty ? 'None (all toggles OFF)' : loadTypes.join(', '),
-      });
+      AppLogger.success('All POI data loaded', tag: 'MAP');
     } catch (e) {
       AppLogger.error('Failed to load POI data', error: e);
     }
@@ -2142,26 +2092,36 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       canvas.drawPath(arrowPath, arrowPaint);
     } else {
-      // Draw my_location icon (concentric circles)
-      final iconPaint = Paint()
-        ..color = borderColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0;
+      // Exploration mode: Purple dot inside purple circle with grey transparent background
 
-      // Outer ring
+      // Large grey transparent circle (background)
+      final greyBgPaint = Paint()
+        ..color = Colors.grey.withOpacity(0.1)
+        ..style = PaintingStyle.fill;
       canvas.drawCircle(
         Offset(size / 2, size / 2),
-        iconSize / 3,
-        iconPaint,
+        size / 2 - 1, // Almost full size
+        greyBgPaint,
       );
 
-      // Center dot
+      // Purple outer circle (border)
+      final purpleCirclePaint = Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0;
+      canvas.drawCircle(
+        Offset(size / 2, size / 2),
+        iconSize / 2.5, // Medium circle
+        purpleCirclePaint,
+      );
+
+      // Purple center dot (filled)
       final dotPaint = Paint()
         ..color = borderColor
         ..style = PaintingStyle.fill;
       canvas.drawCircle(
         Offset(size / 2, size / 2),
-        iconSize / 6,
+        iconSize / 5, // Small dot
         dotPaint,
       );
     }
@@ -2177,73 +2137,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Add POI and warning markers to the map
   /// All markers use emoji icon images with proper colors
-  /// Create location puck image (purple circle for base)
-  Future<Uint8List> _createLocationPuckImage({double size = 48}) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // Purple circle (matching 2D map)
-    final circlePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
-
-    // Purple border
-    final borderPaint = Paint()
-      ..color = Colors.purple
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
-
-  /// Create location puck arrow image (purple navigation arrow)
-  Future<Uint8List> _createLocationPuckArrowImage({double size = 48}) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // White circle background
-    final circlePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
-
-    // Purple border
-    final borderPaint = Paint()
-      ..color = Colors.purple
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
-
-    // Purple navigation arrow pointing up
-    final arrowPaint = Paint()
-      ..color = Colors.purple
-      ..style = PaintingStyle.fill;
-
-    final iconSize = size * 0.6;
-    final centerX = size / 2;
-    final centerY = size / 2;
-    final halfIcon = iconSize / 2;
-
-    final arrowPath = Path();
-    arrowPath.moveTo(centerX, centerY - halfIcon * 0.9); // Top point
-    arrowPath.lineTo(centerX + halfIcon * 0.35, centerY + halfIcon * 0.9); // Bottom right
-    arrowPath.lineTo(centerX, centerY + halfIcon * 0.5); // Bottom center notch
-    arrowPath.lineTo(centerX - halfIcon * 0.35, centerY + halfIcon * 0.9); // Bottom left
-    arrowPath.close();
-
-    canvas.drawPath(arrowPath, arrowPaint);
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
-
   Future<void> _addMarkers() async {
     if (_pointAnnotationManager == null || !_isMapReady) {
       AppLogger.warning('Annotation managers not ready', tag: 'MAP');
@@ -2265,7 +2158,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _communityPoiById.clear();
     _warningById.clear();
 
-    // User location now handled by built-in LocationComponent (no manual marker)
+    // Add user location marker (custom, matching 2D map style)
+    await _addUserLocationMarker();
 
     // Add all POI markers as emoji icons
     await _addOSMPOIsAsIcons(mapState);
@@ -2477,7 +2371,44 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
   }
 
-  // User location marker removed - now handled by Mapbox LocationComponent
+  /// Add custom user location marker matching 2D map style
+  Future<void> _addUserLocationMarker() async {
+    final locationAsync = ref.read(locationNotifierProvider);
+    final compassHeading = ref.read(compassNotifierProvider);
+    final navState = ref.read(navigationModeProvider);
+    final isNavigationMode = navState.mode == NavMode.navigation;
+
+    await locationAsync.whenData((location) async {
+      if (location != null) {
+        // Use compass heading if available, otherwise GPS heading
+        final heading = compassHeading ?? location.heading;
+        final hasHeading = heading != null && heading >= 0;
+
+        AppLogger.debug('Adding user location marker', tag: 'MAP', data: {
+          'lat': location.latitude,
+          'lng': location.longitude,
+          'heading': heading,
+          'navMode': isNavigationMode,
+        });
+
+        // Create custom location icon matching 2D map
+        // In navigation mode with heading: show arrow
+        // Otherwise: show dot
+        final userIcon = await _createUserLocationIcon(
+          heading: (isNavigationMode && hasHeading) ? heading : null,
+        );
+
+        final userMarker = PointAnnotationOptions(
+          geometry: Point(coordinates: Position(location.longitude, location.latitude)),
+          image: userIcon,
+          iconSize: 1.8, // Match 2D map ratio (12:10 = 1.2, so 1.5 * 1.2 = 1.8)
+        );
+
+        await _pointAnnotationManager!.create(userMarker);
+        AppLogger.success('User location marker added', tag: 'MAP');
+      }
+    });
+  }
 
   /// Add OSM POIs as emoji icons
   Future<void> _addOSMPOIsAsIcons(mapState) async {
@@ -2581,14 +2512,197 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   // ============================================================================
-  // NAVIGATION MODE (Mapbox LocationComponent with automatic puck rotation)
+  // NAVIGATION MODE METHODS (GPS-based rotation, auto-center, breadcrumbs)
   // ============================================================================
 
-  // Navigation mode simplified with Mapbox LocationComponent:
-  // - LocationPuck automatically rotates with PuckBearing.COURSE (GPS direction)
-  // - No manual breadcrumb tracking, bearing calculation, or marker updates
-  // - Hardware-accelerated, smoother animation
-  // - ~200 lines of code removed
+  /// Handle GPS location changes for navigation mode
+  void _handleGPSLocationChange(LocationData location) async {
+    if (!_isMapReady || _mapboxMap == null) return;
+
+    final newGPSPosition = latlong.LatLng(location.latitude, location.longitude);
+    final navState = ref.read(navigationModeProvider);
+    final isNavigationMode = navState.mode == NavMode.navigation;
+
+    // Add breadcrumb for navigation mode
+    if (isNavigationMode) {
+      _addBreadcrumb(location);
+    }
+
+    // Auto-center logic (threshold: navigation 3m, exploration 25m)
+    if (_originalGPSReference != null) {
+      final distance = _calculateDistance(
+        _originalGPSReference!.latitude,
+        _originalGPSReference!.longitude,
+        newGPSPosition.latitude,
+        newGPSPosition.longitude,
+      );
+
+      final threshold = isNavigationMode ? 3.0 : 25.0;
+
+      // Auto-center if user moved > threshold
+      if (distance > threshold) {
+        // Navigation mode: continuous tracking with dynamic zoom + rotation
+        if (isNavigationMode) {
+          final navZoom = _calculateNavigationZoom(location.speed);
+
+          // Rotate map based on travel direction (keep last rotation if stationary)
+          final travelBearing = _calculateTravelDirection();
+          if (travelBearing != null) {
+            await _mapboxMap!.easeTo(
+              CameraOptions(
+                center: Point(coordinates: Position(location.longitude, location.latitude)),
+                zoom: navZoom,
+                bearing: -travelBearing, // Negative: up = direction of travel
+                pitch: _currentPitch,
+              ),
+              MapAnimationOptions(duration: 300),
+            );
+            _lastNavigationBearing = travelBearing;
+          } else if (_lastNavigationBearing != null) {
+            // Keep last bearing when stationary
+            await _mapboxMap!.easeTo(
+              CameraOptions(
+                center: Point(coordinates: Position(location.longitude, location.latitude)),
+                zoom: navZoom,
+                bearing: -_lastNavigationBearing!,
+                pitch: _currentPitch,
+              ),
+              MapAnimationOptions(duration: 300),
+            );
+          } else {
+            // No bearing yet, just center
+            await _mapboxMap!.easeTo(
+              CameraOptions(
+                center: Point(coordinates: Position(location.longitude, location.latitude)),
+                zoom: navZoom,
+                pitch: _currentPitch,
+              ),
+              MapAnimationOptions(duration: 300),
+            );
+          }
+        } else {
+          // Exploration mode: simple auto-center, keep zoom and rotation
+          final currentCamera = await _mapboxMap!.getCameraState();
+          await _mapboxMap!.easeTo(
+            CameraOptions(
+              center: Point(coordinates: Position(location.longitude, location.latitude)),
+              zoom: currentCamera.zoom,
+              bearing: currentCamera.bearing,
+              pitch: currentCamera.pitch,
+            ),
+            MapAnimationOptions(duration: 500),
+          );
+        }
+
+        await _loadAllPOIData();
+        _originalGPSReference = newGPSPosition;
+      }
+    } else {
+      // First GPS fix - set reference
+      _originalGPSReference = newGPSPosition;
+    }
+
+    _lastGPSPosition = newGPSPosition;
+
+    // Update marker
+    _addMarkers();
+  }
+
+  /// Add breadcrumb for navigation mode rotation
+  void _addBreadcrumb(LocationData location) {
+    final now = DateTime.now();
+    final newPosition = latlong.LatLng(location.latitude, location.longitude);
+
+    // Remove old breadcrumbs
+    _breadcrumbs.removeWhere((b) => now.difference(b.timestamp) > _breadcrumbMaxAge);
+
+    // Only add if moved significant distance from last breadcrumb
+    if (_breadcrumbs.isNotEmpty) {
+      final lastPos = _breadcrumbs.last.position;
+      final distance = _calculateDistance(
+        lastPos.latitude, lastPos.longitude,
+        newPosition.latitude, newPosition.longitude,
+      );
+      if (distance < _minBreadcrumbDistance) return; // Too close, skip
+    }
+
+    _breadcrumbs.add(_LocationBreadcrumb(
+      position: newPosition,
+      timestamp: now,
+      speed: location.speed,
+    ));
+
+    // Keep only recent breadcrumbs
+    if (_breadcrumbs.length > _maxBreadcrumbs) {
+      _breadcrumbs.removeAt(0);
+    }
+  }
+
+  /// Calculate travel direction from breadcrumbs with smoothing
+  double? _calculateTravelDirection() {
+    if (_breadcrumbs.length < 2) return null;
+
+    final start = _breadcrumbs.first.position;
+    final end = _breadcrumbs.last.position;
+
+    final totalDistance = _calculateDistance(
+      start.latitude, start.longitude,
+      end.latitude, end.longitude,
+    );
+
+    // Need at least 8m total movement (slightly more than GPS accuracy)
+    if (totalDistance < 8) return null;
+
+    final bearing = _calculateBearing(start, end);
+
+    // Smooth bearing with last value (70% new, 30% old) - 3x more responsive
+    if (_lastNavigationBearing != null) {
+      final diff = (bearing - _lastNavigationBearing!).abs();
+      if (diff < 180) {
+        return bearing * 0.7 + _lastNavigationBearing! * 0.3;
+      }
+    }
+
+    return bearing;
+  }
+
+  /// Calculate dynamic zoom based on speed
+  double _calculateNavigationZoom(double? speedMps) {
+    if (speedMps == null || speedMps < 0.5) return 17.0; // Stationary
+    if (speedMps < 2.8) return 17.0;  // 0-10 km/h
+    if (speedMps < 5.6) return 16.0;  // 10-20 km/h
+    if (speedMps < 8.3) return 15.0;  // 20-30 km/h
+    return 14.5;                       // 30+ km/h
+  }
+
+  /// Calculate bearing between two points (0-360°, 0=North, 90=East)
+  double _calculateBearing(latlong.LatLng start, latlong.LatLng end) {
+    final lat1 = start.latitude * math.pi / 180;
+    final lat2 = end.latitude * math.pi / 180;
+    final dLon = (end.longitude - start.longitude) * math.pi / 180;
+
+    final y = math.sin(dLon) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) -
+              math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+
+    final bearing = math.atan2(y, x) * 180 / math.pi;
+    return (bearing + 360) % 360; // Normalize to 0-360
+  }
+
+  /// Calculate distance between two GPS coordinates in meters
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const earthRadius = 6371000.0; // meters
+    final dLat = (lat2 - lat1) * math.pi / 180;
+    final dLon = (lon2 - lon1) * math.pi / 180;
+
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+              math.cos(lat1 * math.pi / 180) *
+              math.cos(lat2 * math.pi / 180) *
+              math.sin(dLon / 2) * math.sin(dLon / 2);
+
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
+  }
 
   /// Build persistent route navigation sheet widget
   Widget _buildRouteNavigationSheet(RouteResult route) {
@@ -2678,16 +2792,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Clear route from provider
     ref.read(searchProvider.notifier).clearRoute();
 
-    // Exit navigation mode (this will trigger viewport switch to idle via listener)
+    // Exit navigation mode
     ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+
+    // Keep current map rotation (don't reset to north)
+
+    // Clear breadcrumbs
+    _breadcrumbs.clear();
+    _lastNavigationBearing = null;
 
     // Clear active route sheet
     setState(() {
       _activeRoute = null;
     });
-
-    // Refresh markers to remove route polyline from map
-    _addMarkers();
 
     AppLogger.map('Navigation stopped - route cleared');
   }
