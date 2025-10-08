@@ -899,7 +899,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Fit map bounds to show entire route
   Future<void> _fitRouteBounds(List<latlong.LatLng> routePoints) async {
-    if (routePoints.isEmpty || _mapboxMap == null) return;
+    if (routePoints.isEmpty || _mapboxMap == null || !_isMapReady) {
+      if (!_isMapReady) {
+        AppLogger.warning('Cannot fit route bounds - map not ready yet', tag: 'ROUTING');
+      }
+      return;
+    }
 
     try {
       // Convert route points to Mapbox coordinates

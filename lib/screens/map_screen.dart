@@ -745,7 +745,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Fit map bounds to show entire route
   void _fitRouteBounds(List<LatLng> routePoints) {
-    if (routePoints.isEmpty) return;
+    if (routePoints.isEmpty || !_isMapReady) {
+      if (!_isMapReady) {
+        AppLogger.warning('Cannot fit route bounds - map not ready yet', tag: 'ROUTING');
+      }
+      return;
+    }
 
     // Calculate bounding box
     double minLat = routePoints.first.latitude;
