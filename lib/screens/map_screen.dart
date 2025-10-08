@@ -2070,22 +2070,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 const SizedBox(height: 4),
 
                 // Zoom level display
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _mapController.camera.zoom.toStringAsFixed(1),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue,
+                if (_isMapReady)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _mapController.camera.zoom.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
+                if (_isMapReady)
+                  const SizedBox(height: 4),
 
                 // Zoom out button
                 FloatingActionButton(
