@@ -354,13 +354,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Add search result marker at long-click position
     ref.read(searchProvider.notifier).setSelectedLocation(lat, lng, 'Long-click location');
 
-    // Toggle all POIs ON (OSM, Community, Hazards)
-    ref.read(mapProvider.notifier).setPOIVisibility(
-      showOSM: true,
-      showCommunity: true,
-      showHazards: true,
-    );
-
     // Wait for marker to be added before showing dialog
     await _addMarkers();
 
@@ -457,6 +450,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
+                  backgroundColor: Colors.white.withOpacity(0.9),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
@@ -527,6 +521,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
+                  backgroundColor: Colors.white.withOpacity(0.9),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
@@ -714,7 +709,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 maxWidth: 400, // Maximum width
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8), // 80% opacity
+                color: Colors.white.withOpacity(0.9), // 90% opacity
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -988,6 +983,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withOpacity(0.9),
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
         contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
@@ -1072,6 +1068,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withOpacity(0.9),
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
         contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
@@ -1198,6 +1195,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withOpacity(0.9),
         titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
         contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
         actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
@@ -1656,13 +1654,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 });
                 // Set selected location to show marker
                 ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
-
-                // Toggle all POIs ON (OSM, Community, Hazards)
-                ref.read(mapProvider.notifier).setPOIVisibility(
-                  showOSM: true,
-                  showCommunity: true,
-                  showHazards: true,
-                );
 
                 if (_mapboxMap != null) {
                   await _mapboxMap!.flyTo(
