@@ -689,6 +689,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
+      barrierColor: Colors.transparent,
       builder: (context) => Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
@@ -825,6 +826,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
+      barrierColor: Colors.transparent,
       backgroundColor: Colors.white.withOpacity(0.95),
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
@@ -1077,6 +1079,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     showModalBottomSheet(
       context: context,
+      barrierColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1264,6 +1267,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     showDialog(
       context: context,
+      barrierColor: Colors.transparent,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white.withOpacity(0.5),
         title: Text(poi.name),
@@ -1345,6 +1349,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     showDialog(
       context: context,
+      barrierColor: Colors.transparent,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white.withOpacity(0.5),
         title: Text(warning.title),
@@ -1447,6 +1452,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     showDialog(
       context: context,
+      barrierColor: Colors.transparent,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white.withOpacity(0.5),
         title: Text(poi.name),
