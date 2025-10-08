@@ -1609,7 +1609,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     bool enabled = true, // If false, button is disabled (greyed out)
   }) {
     return Tooltip(
-      message: enabled ? tooltip : '$tooltip (disabled at zoom ≤ 10)',
+      message: enabled ? tooltip : '$tooltip (disabled at zoom ≤ 11)',
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -1991,11 +1991,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             right: 16,
             child: Column(
               children: [
-                // Check zoom level - disable toggles if zoom <= 10
+                // Check zoom level - disable toggles if zoom <= 11
                 Builder(
                   builder: (context) {
                     final currentZoom = _isMapReady ? _mapController.camera.zoom : 15.0;
-                    final togglesEnabled = currentZoom > 10.0;
+                    final togglesEnabled = currentZoom > 11.0;
 
                     return Column(
                       children: [
@@ -2126,8 +2126,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       'to': newZoom,
                     });
 
-                    // Auto-turn OFF all POI toggles if zooming to <= 10
-                    if (newZoom <= 10.0) {
+                    // Auto-turn OFF all POI toggles if zooming to <= 11
+                    if (newZoom <= 11.0) {
                       final mapState = ref.read(mapProvider);
                       if (mapState.showOSMPOIs) {
                         ref.read(mapProvider.notifier).toggleOSMPOIs();
@@ -2138,7 +2138,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       if (mapState.showWarnings) {
                         ref.read(mapProvider.notifier).toggleWarnings();
                       }
-                      AppLogger.map('Auto-disabled all POI toggles at zoom <= 10');
+                      AppLogger.map('Auto-disabled all POI toggles at zoom <= 11');
                     }
 
                     setState(() {}); // Refresh to update zoom display and toggles
