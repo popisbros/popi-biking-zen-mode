@@ -61,6 +61,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   static const double _minBreadcrumbDistance = 5.0; // meters - responsive at cycling speeds
   static const Duration _breadcrumbMaxAge = Duration(seconds: 20); // 20s window for stable tracking
 
+  // Active route for persistent navigation sheet
+  RouteResult? _activeRoute;
+
   @override
   void initState() {
     super.initState();
@@ -825,82 +828,90 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Show persistent bottom sheet for active route navigation
   void _showRouteNavigationModal(RouteResult route) {
+    setState(() {
+      _activeRoute = route;
+    });
+  }
+
+  /// Build route navigation sheet widget
+  Widget _buildRouteNavigationSheet(RouteResult route) {
     final routeTypeLabel = route.type == RouteType.fastest ? 'Fastest' : 'Safest';
     final routeIcon = route.type == RouteType.fastest ? '🚴' : '🛡️';
 
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      barrierColor: Colors.transparent,
-      backgroundColor: Colors.white.withOpacity(0.95),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Route type badge
-            Text(
-              '$routeIcon $routeTypeLabel Route',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Route type badge
+          Text(
+            '$routeIcon $routeTypeLabel Route',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
 
-            // Route stats
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _RouteStatWidget(
-                  icon: Icons.straighten,
-                  label: 'Distance',
-                  value: '${route.distanceKm} km',
-                ),
-                _RouteStatWidget(
-                  icon: Icons.schedule,
-                  label: 'Est. Time',
-                  value: '${route.durationMin} min',
-                ),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final locationAsync = ref.watch(locationNotifierProvider);
-                    return locationAsync.when(
-                      data: (location) {
-                        final speed = location?.speed;
-                        final kmh = speed != null ? (speed * 3.6).toStringAsFixed(1) : '--';
-                        return _RouteStatWidget(
-                          icon: Icons.speed,
-                          label: 'Speed',
-                          value: '$kmh km/h',
-                        );
-                      },
-                      loading: () => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
-                      error: (_, __) => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
-                    );
-                  },
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Stop button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: () {
-                  _stopNavigation();
-                  Navigator.pop(context);
-                },
-                child: const Text('STOP ROUTE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          // Route stats
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _RouteStatWidget(
+                icon: Icons.straighten,
+                label: 'Distance',
+                value: '${route.distanceKm} km',
               ),
+              _RouteStatWidget(
+                icon: Icons.schedule,
+                label: 'Est. Time',
+                value: '${route.durationMin} min',
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final locationAsync = ref.watch(locationNotifierProvider);
+                  return locationAsync.when(
+                    data: (location) {
+                      final speed = location?.speed;
+                      final kmh = speed != null ? (speed * 3.6).toStringAsFixed(1) : '--';
+                      return _RouteStatWidget(
+                        icon: Icons.speed,
+                        label: 'Speed',
+                        value: '$kmh km/h',
+                      );
+                    },
+                    loading: () => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
+                    error: (_, __) => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
+                  );
+                },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Stop button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: _stopNavigation,
+              child: const Text('STOP ROUTE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -921,6 +932,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Clear breadcrumbs
     _breadcrumbs.clear();
     _lastNavigationBearing = null;
+
+    // Clear active route sheet
+    setState(() {
+      _activeRoute = null;
+    });
 
     AppLogger.map('Navigation stopped - route cleared');
   }
@@ -2178,6 +2194,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               child: const Icon(Icons.search),
             ),
           ),
+
+          // Route navigation sheet (persistent bottom sheet, non-modal)
+          if (_activeRoute != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildRouteNavigationSheet(_activeRoute!),
+            ),
 
           // Search bar widget (slides down from top) - rendered on top of everything
           Positioned(
