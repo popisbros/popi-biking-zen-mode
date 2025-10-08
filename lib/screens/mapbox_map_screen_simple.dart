@@ -450,7 +450,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundColor: Colors.white.withOpacity(0.5),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
@@ -521,7 +521,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundColor: Colors.white.withOpacity(0.5),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
@@ -709,7 +709,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 maxWidth: 400, // Maximum width
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1), // 90% transparency (10% opacity)
+                color: Colors.white.withOpacity(0.5), // 50% transparency (50% opacity)
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
