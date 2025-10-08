@@ -47,18 +47,12 @@ class RoutingService {
       return null;
     }
 
-    print('🚴 CALCULATING DUAL ROUTES');
-    print('Start: $startLat, $startLon');
-    print('End: $endLat, $endLon');
-
     AppLogger.api('Calculating multiple routes (fastest & safest)', data: {
       'from': '$startLat,$startLon',
       'to': '$endLat,$endLon',
     });
 
     // Calculate both routes in parallel
-    print('⚡ Calling FASTEST route...');
-    print('🛡️ Calling SAFEST route...');
     final results = await Future.wait([
       _calculateSingleRoute(
         startLat: startLat,
@@ -98,36 +92,7 @@ class RoutingService {
   }) async {
     final stopwatch = Stopwatch()..start();
 
-    // Log BEFORE making request to ensure we capture it even if it fails
-    print('🚀 Making ${type.name} route request...');
-    print('   Start: $startLat,$startLon');
-    print('   End: $endLat,$endLon');
-
-    // Log PRE-REQUEST to Firestore
-    await ApiLogger.logApiCall(
-      endpoint: 'graphhopper/route',
-      method: 'POST',
-      url: '$_graphhopperBaseUrl/route',
-      parameters: {
-        'stage': 'PRE-REQUEST',
-        'routeType': type.name,
-        'start': '$startLat,$startLon',
-        'end': '$endLat,$endLon',
-        'profile': 'bike',
-      },
-      statusCode: 0,
-      responseBody: 'Request not sent yet',
-      error: null,
-      durationMs: 0,
-    );
-
-    AppLogger.api('PRE-REQUEST: Starting ${type.name} route calculation', data: {
-      'start': '$startLat,$startLon',
-      'end': '$endLat,$endLon',
-    });
-
     try {
-      print('   Calling ${type == RouteType.safest ? '_calculateWithCustomModel' : '_calculateStandardRoute'}...');
       final response = type == RouteType.safest
           ? await _calculateWithCustomModel(
               startLat: startLat,
@@ -142,50 +107,18 @@ class RoutingService {
               endLon: endLon,
             );
 
-      print('   Got response with status: ${response.statusCode}');
-
       stopwatch.stop();
 
-      // Get request body for logging
-      String? requestBodyForLog;
-      if (type == RouteType.safest) {
-//        final customModel = {
-//          "priority": [
-//            {"if": "road_class == CYCLEWAY", "multiply_by": 1.5},
-//            {"if": "road_class == PATH", "multiply_by": 1.3},
-//            {"if": "road_class == RESIDENTIAL", "multiply_by": 1.2},
-//            {"if": "road_class == TERTIARY", "multiply_by": 1.1},
-//            {"if": "road_class == PRIMARY", "multiply_by": 0.5},
-//            {"if": "road_class == TRUNK", "multiply_by": 0.3},
-//            {"if": "road_class == MOTORWAY", "multiply_by": 0.1},
-//            {"if": "bike_network != MISSING", "multiply_by": 1.3},
-//          ],
-//          "speed": [
-//            {"if": "road_class == PRIMARY", "limit_to": 12},
-//            {"if": "road_class == SECONDARY", "limit_to": 15},
-//          ]
-//        };
-        requestBodyForLog = jsonEncode({
-          "points": [[startLon, startLat], [endLon, endLat]],
-          "profile": "foot",
-//        "ch.disable": true,
-//          "custom_model": customModel,
-        });
-      }
-
-      // Log API call to Firestore (production + debug) - POST-REQUEST
+      // Log API call to Firestore (production + debug)
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
         method: 'POST',
         url: '$_graphhopperBaseUrl/route',
         parameters: {
-          'stage': 'POST-REQUEST (Response received)',
           'start': '$startLat,$startLon',
           'end': '$endLat,$endLon',
           'profile': 'bike',
           'routeType': type.name,
-          'customModel': type == RouteType.safest ? 'safest' : 'default',
-          if (requestBodyForLog != null) 'requestBody': requestBodyForLog,
         },
         statusCode: response.statusCode,
         responseBody: response.body,
@@ -194,16 +127,10 @@ class RoutingService {
       );
 
       if (response.statusCode != 200) {
-        print('   ❌ HTTP ${response.statusCode} error');
-        print('   Response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
         AppLogger.error('Graphhopper API error for ${type.name} route', tag: 'ROUTING', data: {
           'statusCode': response.statusCode,
           'body': response.body,
         });
-        // Extra debug logging for safest route
-        if (type == RouteType.safest) {
-          AppLogger.debug('Safest route failed with ${response.statusCode}: ${response.body}', tag: 'ROUTING');
-        }
         return null;
       }
 
@@ -244,27 +171,6 @@ class RoutingService {
     } catch (e, stackTrace) {
       stopwatch.stop();
 
-      print('   💥 Exception caught: $e');
-      print('   Stack trace: ${stackTrace.toString().substring(0, stackTrace.toString().length > 300 ? 300 : stackTrace.toString().length)}');
-
-      // Log error to Firestore - EXCEPTION
-      await ApiLogger.logApiCall(
-        endpoint: 'graphhopper/route',
-        method: 'POST',
-        url: 'EXCEPTION during request',
-        parameters: {
-          'stage': 'EXCEPTION',
-          'start': '$startLat,$startLon',
-          'end': '$endLat,$endLon',
-          'routeType': type.name,
-          'exceptionType': e.runtimeType.toString(),
-        },
-        statusCode: 0,
-        responseBody: '',
-        error: e.toString(),
-        durationMs: stopwatch.elapsedMilliseconds,
-      );
-
       AppLogger.error('Failed to calculate ${type.name} route', tag: 'ROUTING', error: e, stackTrace: stackTrace);
       return null;
     }
@@ -289,11 +195,6 @@ class RoutingService {
       "points_encoded": false,
       "elevation": false,
     });
-
-    // Log request body for debugging (console output)
-    print('⚡ FASTEST ROUTE REQUEST:');
-    print('URL: $uri');
-    print('Body: $requestBody');
 
     return await http.post(
       uri,
@@ -355,13 +256,7 @@ class RoutingService {
 //      "custom_model": customModel,
     });
 
-    // Log request body for debugging (console output)
-    print('🛡️ SAFEST ROUTE REQUEST:');
-    print('URL: $uri');
-    print('Body: $requestBody');
-    AppLogger.debug('Safest route request body: $requestBody', tag: 'ROUTING');
-
-    final response = await http.post(
+    return await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: requestBody,
@@ -371,12 +266,6 @@ class RoutingService {
         throw Exception('Request timed out after 10 seconds');
       },
     );
-
-    print('🛡️ SAFEST ROUTE RESPONSE:');
-    print('Status: ${response.statusCode}');
-    print('Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
-
-    return response;
   }
 
 

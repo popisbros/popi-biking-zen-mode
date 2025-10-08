@@ -250,6 +250,24 @@ class SearchNotifier extends Notifier<SearchState> {
     AppLogger.debug('Clearing route', tag: 'SEARCH');
     state = state.copyWith(clearRoute: true);
   }
+
+  /// Set preview routes for route selection
+  void setPreviewRoutes(List<LatLng> fastestRoute, List<LatLng> safestRoute) {
+    AppLogger.debug('Setting preview routes', tag: 'SEARCH', data: {
+      'fastest': fastestRoute.length,
+      'safest': safestRoute.length,
+    });
+    state = state.copyWith(
+      previewFastestRoute: fastestRoute,
+      previewSafestRoute: safestRoute,
+    );
+  }
+
+  /// Clear preview routes
+  void clearPreviewRoutes() {
+    AppLogger.debug('Clearing preview routes', tag: 'SEARCH');
+    state = state.copyWith(clearPreviewRoutes: true);
+  }
 }
 
 /// Represents a selected search result location to display on map
@@ -272,6 +290,8 @@ class SearchState {
   final AsyncValue<List<SearchResult>> results;
   final SearchResultLocation? selectedLocation; // Track selected search result
   final List<LatLng>? routePoints; // Track calculated route
+  final List<LatLng>? previewFastestRoute; // Preview route for fastest option
+  final List<LatLng>? previewSafestRoute; // Preview route for safest option
   final bool hasBoundedResults; // Track if initial bounded search returned results
   final bool isExpandedSearch; // Track if we've already expanded the search
 
@@ -281,6 +301,8 @@ class SearchState {
     required this.results,
     this.selectedLocation,
     this.routePoints,
+    this.previewFastestRoute,
+    this.previewSafestRoute,
     this.hasBoundedResults = false,
     this.isExpandedSearch = false,
   });
@@ -303,6 +325,9 @@ class SearchState {
     bool clearSelectedLocation = false,
     List<LatLng>? routePoints,
     bool clearRoute = false,
+    List<LatLng>? previewFastestRoute,
+    List<LatLng>? previewSafestRoute,
+    bool clearPreviewRoutes = false,
     bool? hasBoundedResults,
     bool? isExpandedSearch,
   }) {
@@ -312,6 +337,8 @@ class SearchState {
       results: results ?? this.results,
       selectedLocation: clearSelectedLocation ? null : (selectedLocation ?? this.selectedLocation),
       routePoints: clearRoute ? null : (routePoints ?? this.routePoints),
+      previewFastestRoute: clearPreviewRoutes ? null : (previewFastestRoute ?? this.previewFastestRoute),
+      previewSafestRoute: clearPreviewRoutes ? null : (previewSafestRoute ?? this.previewSafestRoute),
       hasBoundedResults: hasBoundedResults ?? this.hasBoundedResults,
       isExpandedSearch: isExpandedSearch ?? this.isExpandedSearch,
     );
