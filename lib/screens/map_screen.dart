@@ -386,13 +386,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Add search result marker at long-click position
     ref.read(searchProvider.notifier).setSelectedLocation(point.latitude, point.longitude, 'Long-click location');
 
-    // Toggle all POIs ON (OSM, Community, Hazards)
-    ref.read(mapProvider.notifier).setPOIVisibility(
-      showOSM: true,
-      showCommunity: true,
-      showHazards: true,
-    );
-
     _showContextMenu(tapPosition, point);
   }
 
@@ -670,7 +663,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 maxWidth: 400, // Maximum width
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.8), // 80% opacity
+                color: Colors.white.withOpacity(0.9), // 90% opacity
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -1051,6 +1044,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withOpacity(0.9),
         title: Text(poi.name),
         content: SingleChildScrollView(
           child: Column(
@@ -1131,6 +1125,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withOpacity(0.9),
         title: Text(warning.title),
         content: SingleChildScrollView(
           child: Column(
@@ -1232,6 +1227,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withOpacity(0.9),
         title: Text(poi.name),
         content: SingleChildScrollView(
           child: Column(
@@ -1939,13 +1935,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 });
                 // Set selected location to show marker
                 ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
-
-                // Toggle all POIs ON (OSM, Community, Hazards)
-                ref.read(mapProvider.notifier).setPOIVisibility(
-                  showOSM: true,
-                  showCommunity: true,
-                  showHazards: true,
-                );
 
                 // Navigate to location
                 _mapController.move(LatLng(lat, lon), 16.0);
