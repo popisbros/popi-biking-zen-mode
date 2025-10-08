@@ -13,6 +13,7 @@ import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
+import '../providers/navigation_mode_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../models/cycling_poi.dart';
@@ -52,6 +53,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _compassRotationEnabled = false;
   double? _lastBearing;
   static const double _compassThreshold = 5.0; // Only rotate if change > 5°
+
+  // Navigation mode: GPS breadcrumb tracking for map rotation
+  final List<_LocationBreadcrumb> _breadcrumbs = [];
+  double? _lastNavigationBearing; // Smoothed bearing for navigation mode
+  static const int _maxBreadcrumbs = 5;
+  static const double _minBreadcrumbDistance = 15.0; // meters
+  static const Duration _breadcrumbMaxAge = Duration(seconds: 10);
 
   @override
   void initState() {
@@ -318,6 +326,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _handleGPSLocationChange(LocationData? location) {
     if (location != null && _isMapReady) {
       final newGPSPosition = LatLng(location.latitude, location.longitude);
+      final navState = ref.read(navigationModeProvider);
+      final isNavigationMode = navState.mode == NavMode.navigation;
 
       // CRITICAL: If this is the first time we have location and haven't loaded POIs yet, do it now!
       if (!_hasTriggeredInitialPOILoad) {
@@ -347,7 +357,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         return;
       }
 
-      // Normal auto-center logic for subsequent location updates
+      // Add breadcrumb for navigation mode
+      if (isNavigationMode) {
+        _addBreadcrumb(location);
+      }
+
+      // Auto-center logic (threshold: 10m)
       if (_originalGPSReference != null) {
         final distance = _calculateDistance(
           _originalGPSReference!.latitude,
@@ -356,12 +371,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           newGPSPosition.longitude,
         );
 
-        // Auto-center if user moved > 50m
-        if (distance > 50) {
+        // Auto-center if user moved > 10m
+        if (distance > 10) {
+          // Navigation mode: continuous tracking with dynamic zoom
+          if (isNavigationMode) {
+            final navZoom = _calculateNavigationZoom(location.speed);
+            _mapController.move(newGPSPosition, navZoom);
+
+            // Rotate map based on travel direction
+            final travelBearing = _calculateTravelDirection();
+            if (travelBearing != null) {
+              _mapController.rotate(-travelBearing); // Negative: up = direction of travel
+              _lastNavigationBearing = travelBearing;
+
+              AppLogger.map('Navigation rotation', data: {
+                'bearing': '${travelBearing.toStringAsFixed(1)}°',
+                'breadcrumbs': _breadcrumbs.length,
+              });
+            }
+          } else {
+            // Exploration mode: simple auto-center, keep zoom
+            _mapController.move(newGPSPosition, _mapController.camera.zoom);
+          }
+
           AppLogger.location('GPS moved, auto-centering', data: {
             'distance': '${distance.toStringAsFixed(1)}m',
+            'mode': navState.mode.name,
           });
-          _mapController.move(newGPSPosition, _mapController.camera.zoom);
+
           _loadAllMapDataWithBounds();
           _originalGPSReference = newGPSPosition;
         }
@@ -760,6 +797,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       showHazards: true,
     );
 
+    // Activate navigation mode automatically
+    ref.read(navigationModeProvider.notifier).startRouteNavigation();
+
     // Zoom map to fit the entire route
     _fitRouteBounds(route.points);
 
@@ -770,14 +810,111 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       'duration': route.durationMin,
     });
 
+    // Show persistent navigation modal
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$routeTypeLabel route: ${route.distanceKm} km, ${route.durationMin} min'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      _showRouteNavigationModal(route);
     }
+  }
+
+  /// Show persistent bottom sheet for active route navigation
+  void _showRouteNavigationModal(RouteResult route) {
+    final routeTypeLabel = route.type == RouteType.fastest ? 'Fastest' : 'Safest';
+    final routeIcon = route.type == RouteType.fastest ? '🚴' : '🛡️';
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.white.withOpacity(0.95),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Route type badge
+            Text(
+              '$routeIcon $routeTypeLabel Route',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+
+            // Route stats
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _RouteStatWidget(
+                  icon: Icons.straighten,
+                  label: 'Distance',
+                  value: '${route.distanceKm} km',
+                ),
+                _RouteStatWidget(
+                  icon: Icons.schedule,
+                  label: 'Est. Time',
+                  value: '${route.durationMin} min',
+                ),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final locationAsync = ref.watch(locationNotifierProvider);
+                    return locationAsync.when(
+                      data: (location) {
+                        final speed = location?.speed;
+                        final kmh = speed != null ? (speed * 3.6).toStringAsFixed(1) : '--';
+                        return _RouteStatWidget(
+                          icon: Icons.speed,
+                          label: 'Speed',
+                          value: '$kmh km/h',
+                        );
+                      },
+                      loading: () => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
+                      error: (_, __) => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
+                    );
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Stop button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () {
+                  _stopNavigation();
+                  Navigator.pop(context);
+                },
+                child: const Text('STOP ROUTE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Stop navigation and clear route
+  void _stopNavigation() {
+    // Clear route from provider
+    ref.read(searchProvider.notifier).clearRoute();
+
+    // Exit navigation mode
+    ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+
+    // Reset map rotation
+    if (_isMapReady) {
+      _mapController.rotate(0);
+    }
+
+    // Clear breadcrumbs
+    _breadcrumbs.clear();
+    _lastNavigationBearing = null;
+
+    AppLogger.map('Navigation stopped - route cleared');
   }
 
   /// Fit map bounds to show entire route
@@ -829,6 +966,86 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         math.cos((lat2 - lat1) * p) / 2 +
         math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2;
     return 12742000 * math.asin(math.sqrt(a)); // 2 * R * asin, R = 6371km
+  }
+
+  /// Calculate bearing between two points (returns degrees, 0° = North)
+  double _calculateBearing(LatLng start, LatLng end) {
+    final lat1 = start.latitude * math.pi / 180;
+    final lat2 = end.latitude * math.pi / 180;
+    final dLon = (end.longitude - start.longitude) * math.pi / 180;
+
+    final y = math.sin(dLon) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+    final bearing = math.atan2(y, x) * 180 / math.pi;
+
+    return (bearing + 360) % 360; // Normalize to 0-360
+  }
+
+  /// Add GPS breadcrumb for navigation mode rotation
+  void _addBreadcrumb(LocationData location) {
+    final now = DateTime.now();
+    final newPosition = LatLng(location.latitude, location.longitude);
+
+    // Remove old breadcrumbs
+    _breadcrumbs.removeWhere((b) => now.difference(b.timestamp) > _breadcrumbMaxAge);
+
+    // Only add if moved significant distance from last breadcrumb
+    if (_breadcrumbs.isNotEmpty) {
+      final lastPos = _breadcrumbs.last.position;
+      final distance = _calculateDistance(
+        lastPos.latitude, lastPos.longitude,
+        newPosition.latitude, newPosition.longitude,
+      );
+      if (distance < _minBreadcrumbDistance) return; // Too close, skip
+    }
+
+    _breadcrumbs.add(_LocationBreadcrumb(
+      position: newPosition,
+      timestamp: now,
+      speed: location.speed,
+    ));
+
+    // Keep only recent breadcrumbs
+    if (_breadcrumbs.length > _maxBreadcrumbs) {
+      _breadcrumbs.removeAt(0);
+    }
+  }
+
+  /// Calculate travel direction from breadcrumbs (returns null if insufficient data)
+  double? _calculateTravelDirection() {
+    if (_breadcrumbs.length < 2) return null;
+
+    final start = _breadcrumbs.first.position;
+    final end = _breadcrumbs.last.position;
+
+    final totalDistance = _calculateDistance(
+      start.latitude, start.longitude,
+      end.latitude, end.longitude,
+    );
+
+    // Need at least 15m total movement
+    if (totalDistance < 15) return null;
+
+    final bearing = _calculateBearing(start, end);
+
+    // Smooth bearing with last value (30% new, 70% old)
+    if (_lastNavigationBearing != null) {
+      final diff = (bearing - _lastNavigationBearing!).abs();
+      if (diff < 180) {
+        return _lastNavigationBearing! * 0.7 + bearing * 0.3;
+      }
+    }
+
+    return bearing;
+  }
+
+  /// Calculate dynamic zoom based on speed (navigation mode)
+  double _calculateNavigationZoom(double? speedMps) {
+    if (speedMps == null || speedMps < 0.5) return 17.0; // Stationary
+    if (speedMps < 2.8) return 17.0;  // 0-10 km/h
+    if (speedMps < 5.6) return 16.0;  // 10-20 km/h
+    if (speedMps < 8.3) return 15.0;  // 20-30 km/h
+    return 14.5;                       // 30+ km/h
   }
 
   void _open3DMap() {
@@ -1449,9 +1666,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Add user location marker with direction indicator
     locationAsync.whenData((location) {
       if (location != null) {
+        final navState = ref.read(navigationModeProvider);
+        final isNavigationMode = navState.mode == NavMode.navigation;
+
         AppLogger.map('Adding user location marker', data: {
           'lat': location.latitude,
           'lng': location.longitude,
+          'navMode': navState.mode.name,
         });
 
         // Use compass heading on Native, or GPS heading as fallback
@@ -1461,6 +1682,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         AppLogger.map('Marker heading', data: {
           'heading': heading?.toStringAsFixed(1),
           'hasHeading': hasHeading,
+          'isNavigationMode': isNavigationMode,
         });
 
         final userSize = MarkerConfig.getRadiusForType(POIMarkerType.userLocation) * 2;
@@ -1471,7 +1693,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             height: userSize,
             alignment: Alignment.center,
             child: Transform.rotate(
-              angle: hasHeading ? (heading * math.pi / 180) : 0, // Convert to radians
+              angle: (isNavigationMode && hasHeading) ? (heading * math.pi / 180) : 0, // Rotate only in nav mode
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -1486,8 +1708,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ),
                     ),
                   ),
-                  // Direction arrow (only if we have heading)
-                  if (hasHeading)
+                  // Icon: Arrow in navigation mode, dot in exploration mode
+                  if (isNavigationMode && hasHeading)
                     Icon(
                       Icons.navigation,
                       color: MarkerConfig.getBorderColorForType(POIMarkerType.userLocation),
@@ -1495,9 +1717,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     )
                   else
                     Icon(
-                      Icons.my_location,
+                      Icons.circle,
                       color: MarkerConfig.getBorderColorForType(POIMarkerType.userLocation),
-                      size: userSize * 0.6,
+                      size: userSize * 0.4, // Smaller dot for exploration mode
                     ),
                 ],
               ),
@@ -1811,13 +2033,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // Bottom-left controls: compass, center, reload
+          // Bottom-left controls: navigation mode, compass, center, reload
           Positioned(
             bottom: 16,
             left: 16,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                // Navigation mode toggle button
+                Consumer(
+                  builder: (context, ref, child) {
+                    final navState = ref.watch(navigationModeProvider);
+                    final isNavigationMode = navState.mode == NavMode.navigation;
+
+                    return FloatingActionButton(
+                      mini: true,
+                      heroTag: 'navigation_mode_toggle',
+                      onPressed: () {
+                        ref.read(navigationModeProvider.notifier).toggleMode();
+                      },
+                      backgroundColor: isNavigationMode ? Colors.purple : Colors.grey.shade300,
+                      foregroundColor: isNavigationMode ? Colors.white : Colors.grey.shade600,
+                      tooltip: isNavigationMode ? 'Exit Navigation Mode' : 'Enter Navigation Mode',
+                      child: Icon(isNavigationMode ? Icons.navigation : Icons.navigation_outlined),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
                 // Compass rotation toggle button (Native only)
                 if (!kIsWeb)
                   FloatingActionButton(
@@ -1963,6 +2205,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ],
       ),
       floatingActionButtonLocation: null,
+    );
+  }
+}
+
+/// Helper class for tracking GPS breadcrumbs (navigation mode)
+class _LocationBreadcrumb {
+  final LatLng position;
+  final DateTime timestamp;
+  final double? speed; // m/s
+
+  _LocationBreadcrumb({
+    required this.position,
+    required this.timestamp,
+    this.speed,
+  });
+}
+
+/// Route stat widget for navigation modal
+class _RouteStatWidget extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _RouteStatWidget({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, size: 24, color: Colors.blue),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }
