@@ -371,7 +371,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         _addBreadcrumb(location);
       }
 
-      // Auto-center logic (threshold: navigation 10m, exploration 25m)
+      // Auto-center logic (threshold: navigation 3m, exploration 25m)
       if (_originalGPSReference != null) {
         final distance = _calculateDistance(
           _originalGPSReference!.latitude,
@@ -380,7 +380,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           newGPSPosition.longitude,
         );
 
-        final threshold = isNavigationMode ? 10.0 : 25.0;
+        final threshold = isNavigationMode ? 3.0 : 25.0;
 
         // Auto-center if user moved > threshold
         if (distance > threshold) {
@@ -451,7 +451,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
-      color: Colors.white.withOpacity(0.5),
+      color: Colors.white.withOpacity(0.6),
       items: [
         PopupMenuItem<String>(
           value: 'add_poi',
@@ -515,7 +515,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
-      color: Colors.white.withOpacity(0.5),
+      color: Colors.white.withOpacity(0.6),
       items: [
         PopupMenuItem<String>(
           value: 'calculate_route',
@@ -718,7 +718,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 maxWidth: 400, // Maximum width
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5), // 50% transparency (50% opacity)
+                color: Colors.white.withOpacity(0.6), // 50% transparency (50% opacity)
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -930,10 +930,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Exit navigation mode
     ref.read(navigationModeProvider.notifier).stopRouteNavigation();
 
-    // Reset map rotation
-    if (_isMapReady) {
-      _mapController.rotate(0);
-    }
+    // Keep current map rotation (don't reset to north)
 
     // Clear breadcrumbs
     _breadcrumbs.clear();
@@ -1058,11 +1055,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final bearing = _calculateBearing(start, end);
 
-    // Smooth bearing with last value (30% new, 70% old)
+    // Smooth bearing with last value (70% new, 30% old) - 3x more responsive
     if (_lastNavigationBearing != null) {
       final diff = (bearing - _lastNavigationBearing!).abs();
       if (diff < 180) {
-        return _lastNavigationBearing! * 0.7 + bearing * 0.3;
+        return bearing * 0.7 + _lastNavigationBearing! * 0.3;
       }
     }
 
@@ -1297,7 +1294,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context: context,
       barrierColor: Colors.transparent,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.6),
         title: Text(poi.name),
         content: SingleChildScrollView(
           child: Column(
@@ -1379,7 +1376,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context: context,
       barrierColor: Colors.transparent,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.6),
         title: Text(warning.title),
         content: SingleChildScrollView(
           child: Column(
@@ -1482,7 +1479,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context: context,
       barrierColor: Colors.transparent,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.5),
+        backgroundColor: Colors.white.withOpacity(0.6),
         title: Text(poi.name),
         content: SingleChildScrollView(
           child: Column(
