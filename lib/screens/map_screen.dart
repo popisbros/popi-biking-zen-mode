@@ -663,7 +663,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 maxWidth: 400, // Maximum width
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9), // 90% opacity
+                color: Colors.white.withOpacity(0.1), // 90% transparency (10% opacity)
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -1044,7 +1044,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.9),
+        backgroundColor: Colors.white.withOpacity(0.1),
         title: Text(poi.name),
         content: SingleChildScrollView(
           child: Column(
@@ -1125,7 +1125,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.9),
+        backgroundColor: Colors.white.withOpacity(0.1),
         title: Text(warning.title),
         content: SingleChildScrollView(
           child: Column(
@@ -1227,7 +1227,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.9),
+        backgroundColor: Colors.white.withOpacity(0.1),
         title: Text(poi.name),
         content: SingleChildScrollView(
           child: Column(

@@ -450,7 +450,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withOpacity(0.9),
+                  backgroundColor: Colors.white.withOpacity(0.1),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
@@ -521,7 +521,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withOpacity(0.9),
+                  backgroundColor: Colors.white.withOpacity(0.1),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
@@ -709,7 +709,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 maxWidth: 400, // Maximum width
               ),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9), // 90% opacity
+                color: Colors.white.withOpacity(0.1), // 90% transparency (10% opacity)
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -802,6 +802,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       showHazards: true,
     );
 
+    // Set camera pitch to 10°
+    if (_mapboxMap != null) {
+      await _mapboxMap!.easeTo(
+        CameraOptions(pitch: 10.0),
+        MapAnimationOptions(duration: 500),
+      );
+      _currentPitch = 10.0;
+    }
+
     // Zoom map to fit the entire route
     await _fitRouteBounds(route.points);
 
@@ -824,6 +833,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       showCommunity: false,
       showHazards: true,
     );
+
+    // Set camera pitch to 10°
+    if (_mapboxMap != null) {
+      await _mapboxMap!.easeTo(
+        CameraOptions(pitch: 10.0),
+        MapAnimationOptions(duration: 500),
+      );
+      _currentPitch = 10.0;
+    }
 
     // Zoom map to fit the entire route
     await _fitRouteBounds(routePoints);
