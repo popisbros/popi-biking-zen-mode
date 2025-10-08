@@ -611,6 +611,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
       final safest = routes.firstWhere((r) => r.type == RouteType.safest);
       ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
+
+      // Auto-zoom to fit both routes on screen
+      final allPoints = [...fastest.points, ...safest.points];
+      _fitRouteBounds(allPoints);
     }
 
     // Show route selection dialog
@@ -1590,17 +1594,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         // Fastest route in blue
                         Polyline(
                           points: searchState.previewFastestRoute!,
-                          strokeWidth: 4.0,
+                          strokeWidth: 8.0,
                           color: Colors.blue,
-                          borderStrokeWidth: 2.0,
+                          borderStrokeWidth: 3.0,
                           borderColor: Colors.white,
                         ),
                         // Safest route in green
                         Polyline(
                           points: searchState.previewSafestRoute!,
-                          strokeWidth: 4.0,
+                          strokeWidth: 8.0,
                           color: Colors.green,
-                          borderStrokeWidth: 2.0,
+                          borderStrokeWidth: 3.0,
                           borderColor: Colors.white,
                         ),
                       ],
@@ -1611,7 +1615,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       polylines: [
                         Polyline(
                           points: routePoints,
-                          strokeWidth: 4.0,
+                          strokeWidth: 6.0,
                           color: const Color(0xFF85a78b),
                           borderStrokeWidth: 2.0,
                           borderColor: Colors.white,
