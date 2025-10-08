@@ -681,6 +681,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final safest = routes.firstWhere((r) => r.type == RouteType.safest);
       ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
 
+      // Refresh markers to show preview routes
+      _addMarkers();
+
       // Auto-zoom to fit both routes on screen
       final allPoints = [...fastest.points, ...safest.points];
       await _fitRouteBounds(allPoints);
