@@ -662,14 +662,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         child: Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).size.height * 0.05, // 5% from bottom
-            left: 16,
-            right: 16,
           ),
           child: Material(
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.transparent,
             child: Container(
+              constraints: const BoxConstraints(
+                maxWidth: 400, // Maximum width
+              ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withOpacity(0.8), // 80% opacity
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -679,67 +680,69 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Title
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                    child: const Text(
-                      'Choose Your Route',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              child: IntrinsicWidth(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Title
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                      child: const Text(
+                        'Choose Your Route',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                     ),
-                  ),
-                  // Routes list
-                  ...routes.map((route) {
-                    final isFastest = route.type == RouteType.fastest;
-                    final icon = isFastest ? Icons.speed : Icons.shield;
-                    final color = isFastest ? Colors.blue : Colors.green;
-                    final label = isFastest ? 'Fastest Route (bike)' : 'Safest Route (foot)';
-                    final description = isFastest
-                        ? 'Optimized for speed'
-                        : 'Prioritizes cycle lanes & quiet roads';
+                    // Routes list
+                    ...routes.map((route) {
+                      final isFastest = route.type == RouteType.fastest;
+                      final icon = isFastest ? Icons.speed : Icons.shield;
+                      final color = isFastest ? Colors.blue : Colors.green;
+                      final label = isFastest ? 'Fastest Route (bike)' : 'Safest Route (foot)';
+                      final description = isFastest
+                          ? 'Optimized for speed'
+                          : 'Prioritizes cycle lanes & quiet roads';
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
-                      leading: Icon(icon, color: color, size: 28),
-                      title: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(description, style: const TextStyle(fontSize: 11)),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${route.distanceKm} km • ${route.durationMin} min',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        // Clear preview routes before showing selected route
-                        ref.read(searchProvider.notifier).clearPreviewRoutes();
-                        _displaySelectedRoute(route);
-                      },
-                    );
-                  }).toList(),
-                  // Cancel button
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                        leading: Icon(icon, color: color, size: 28),
+                        title: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(description, style: const TextStyle(fontSize: 11)),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${route.distanceKm} km • ${route.durationMin} min',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                        onTap: () {
                           Navigator.pop(context);
-                          // Clear preview routes when canceling
+                          // Clear preview routes before showing selected route
                           ref.read(searchProvider.notifier).clearPreviewRoutes();
+                          _displaySelectedRoute(route);
                         },
-                        child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
+                      );
+                    }).toList(),
+                    // Cancel button
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            // Clear preview routes when canceling
+                            ref.read(searchProvider.notifier).clearPreviewRoutes();
+                          },
+                          child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
