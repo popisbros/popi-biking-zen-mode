@@ -362,7 +362,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         _addBreadcrumb(location);
       }
 
-      // Auto-center logic (threshold: 10m)
+      // Auto-center logic (threshold: navigation 10m, exploration 25m)
       if (_originalGPSReference != null) {
         final distance = _calculateDistance(
           _originalGPSReference!.latitude,
@@ -371,14 +371,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           newGPSPosition.longitude,
         );
 
-        // Auto-center if user moved > 10m
-        if (distance > 10) {
-          // Navigation mode: continuous tracking with dynamic zoom
+        final threshold = isNavigationMode ? 10.0 : 25.0;
+
+        // Auto-center if user moved > threshold
+        if (distance > threshold) {
+          // Navigation mode: continuous tracking with dynamic zoom + rotation
           if (isNavigationMode) {
             final navZoom = _calculateNavigationZoom(location.speed);
             _mapController.move(newGPSPosition, navZoom);
 
-            // Rotate map based on travel direction
+            // Rotate map based on travel direction (keep last rotation if stationary)
             final travelBearing = _calculateTravelDirection();
             if (travelBearing != null) {
               _mapController.rotate(-travelBearing); // Negative: up = direction of travel
@@ -388,15 +390,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 'bearing': '${travelBearing.toStringAsFixed(1)}°',
                 'breadcrumbs': _breadcrumbs.length,
               });
+            } else if (_lastNavigationBearing != null) {
+              // Keep last bearing when stationary
+              _mapController.rotate(-_lastNavigationBearing!);
             }
           } else {
-            // Exploration mode: simple auto-center, keep zoom
+            // Exploration mode: simple auto-center, keep zoom and rotation
             _mapController.move(newGPSPosition, _mapController.camera.zoom);
           }
 
           AppLogger.location('GPS moved, auto-centering', data: {
             'distance': '${distance.toStringAsFixed(1)}m',
             'mode': navState.mode.name,
+            'threshold': '${threshold}m',
           });
 
           _loadAllMapDataWithBounds();
