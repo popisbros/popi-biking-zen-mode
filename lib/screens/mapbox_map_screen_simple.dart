@@ -66,6 +66,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
+  double? _pitchBeforeRoute; // Store pitch before route calculation to restore later
   static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
 
   // Store POI data for tap handling
@@ -696,6 +697,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await _fitRouteBounds(allPoints);
     }
 
+    // Save current pitch and set to 10° before showing dialog
+    _pitchBeforeRoute = _currentPitch;
+    if (_mapboxMap != null) {
+      await _mapboxMap!.easeTo(
+        CameraOptions(pitch: 10.0),
+        MapAnimationOptions(duration: 500),
+      );
+      _currentPitch = 10.0;
+    }
+
     // Show route selection dialog
     if (mounted) {
       _showRouteSelectionDialog(routes);
@@ -784,10 +795,23 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {
+                          onPressed: () async {
                             Navigator.pop(context);
                             // Clear preview routes when canceling
                             ref.read(searchProvider.notifier).clearPreviewRoutes();
+
+                            // Restore previous pitch
+                            if (_pitchBeforeRoute != null && _mapboxMap != null) {
+                              await _mapboxMap!.easeTo(
+                                CameraOptions(pitch: _pitchBeforeRoute),
+                                MapAnimationOptions(duration: 500),
+                              );
+                              _currentPitch = _pitchBeforeRoute!;
+                              _pitchBeforeRoute = null;
+                            }
+
+                            // Refresh markers to remove route lines
+                            _addMarkers();
                           },
                           child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
                         ),
@@ -821,13 +845,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _activeRoute = route;
     });
 
-    // Set camera pitch to 10°
-    if (_mapboxMap != null) {
+    // Restore previous pitch (pitch is already at 10° from dialog setup)
+    if (_pitchBeforeRoute != null && _mapboxMap != null) {
       await _mapboxMap!.easeTo(
-        CameraOptions(pitch: 10.0),
+        CameraOptions(pitch: _pitchBeforeRoute),
         MapAnimationOptions(duration: 500),
       );
-      _currentPitch = 10.0;
+      _currentPitch = _pitchBeforeRoute!;
+      _pitchBeforeRoute = null;
     }
 
     // Zoom map to fit the entire route
@@ -2792,6 +2817,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     setState(() {
       _activeRoute = null;
     });
+
+    // Refresh markers to remove route polyline from map
+    _addMarkers();
 
     AppLogger.map('Navigation stopped - route cleared');
   }
