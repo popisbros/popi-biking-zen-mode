@@ -72,10 +72,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       'timestamp': DateTime.now().toIso8601String(),
     });
 
+    // REMOVED: Don't call _onMapReady() prematurely - let GPS trigger natural init
     // Initialize map when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AppLogger.ios('PostFrameCallback executing', data: {'screen': 'MapScreen'});
-      _onMapReady();
 
       // CRITICAL FIX: Manually trigger location handler for initial load
       // The ref.listen() in build() only fires on CHANGES, not initial value
@@ -310,6 +310,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Handle map events
   void _onMapEvent(MapEvent mapEvent) {
+    // Set map ready on first event (after FlutterMap fully rendered)
+    if (!_isMapReady) {
+      AppLogger.success('Map rendered - setting ready flag', tag: 'MAP');
+      _onMapReady();
+    }
+
     if (mapEvent is MapEventMove || mapEvent is MapEventMoveStart || mapEvent is MapEventMoveEnd) {
       _isUserMoving = true;
 
@@ -2199,8 +2205,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           if (_activeRoute != null)
             Positioned(
               bottom: 0,
-              left: 0,
-              right: 0,
+              left: 80, // Leave space for bottom-left controls
+              right: 80, // Leave space for bottom-right controls
               child: _buildRouteNavigationSheet(_activeRoute!),
             ),
 
