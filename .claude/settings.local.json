@@ -11,7 +11,13 @@
       "Bash(git push:*)",
       "Bash(firebase deploy:*)",
       "Bash(flutter analyze:*)",
-      "Bash(flutter:*)"
+      "Bash(flutter:*)",
+      "Bash(cat:*)",
+      "Bash(curl -s \"https://api.github.com/repos/popisbros/popi-biking-zen-mode/actions/runs?per_page=5\")",
+      "Bash(python3:*)",
+      "Bash(curl -s \"https://api.github.com/repos/popisbros/popi-biking-zen-mode/actions/runs?per_page=10\")",
+      "Bash(git show:*)",
+      "Bash(curl -s \"https://api.github.com/repos/popisbros/popi-biking-zen-mode/actions/runs?per_page=3\")"
     ],
     "deny": [],
     "ask": []
