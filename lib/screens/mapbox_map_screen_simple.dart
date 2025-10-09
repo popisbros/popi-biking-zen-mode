@@ -72,6 +72,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Zoom level state
   double _currentZoom = 15.0; // Default zoom
 
+  // Smooth auto-zoom state
+  DateTime? _lastZoomChangeTime;
+  double? _currentAutoZoom;
+  double? _targetAutoZoom;
+  static const Duration _zoomChangeInterval = Duration(seconds: 3);
+  static const double _minZoomChangeThreshold = 0.5;
+
   // Store POI data for tap handling
   final Map<String, OSMPOI> _osmPoiById = {};
   final Map<String, CyclingPOI> _communityPoiById = {};
@@ -2686,7 +2693,43 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       if (distance > threshold) {
         // Navigation mode: continuous tracking with dynamic zoom + rotation
         if (isNavigationMode) {
-          final navZoom = _calculateNavigationZoom(location.speed);
+          // Calculate target zoom (only if auto-zoom enabled)
+          final mapState = ref.read(mapProvider);
+          final targetZoom = _calculateNavigationZoom(location.speed);
+          _targetAutoZoom = targetZoom;
+
+          // Determine actual zoom to use (with throttling if auto-zoom enabled)
+          final currentCamera = await _mapboxMap!.getCameraState();
+          double actualZoom = currentCamera.zoom;
+
+          if (mapState.autoZoomEnabled) {
+            final now = DateTime.now();
+            final canChangeZoom = _lastZoomChangeTime == null ||
+                now.difference(_lastZoomChangeTime!) >= _zoomChangeInterval;
+
+            if (canChangeZoom) {
+              final currentZoom = _currentAutoZoom ?? currentCamera.zoom;
+              final zoomDifference = (targetZoom - currentZoom).abs();
+
+              // Only change zoom if difference >= 0.5
+              if (zoomDifference >= _minZoomChangeThreshold) {
+                _currentAutoZoom = targetZoom;
+                _lastZoomChangeTime = now;
+                actualZoom = targetZoom;
+
+                AppLogger.map('Auto-zoom change', data: {
+                  'from': currentZoom.toStringAsFixed(1),
+                  'to': targetZoom.toStringAsFixed(1),
+                  'speed': '${(location.speed ?? 0) * 3.6}km/h',
+                });
+              } else {
+                actualZoom = currentZoom;
+              }
+            } else {
+              // Keep current auto-zoom during throttle period
+              actualZoom = _currentAutoZoom ?? currentCamera.zoom;
+            }
+          }
 
           // Rotate map based on travel direction (keep last rotation if stationary)
           final travelBearing = _calculateTravelDirection();
@@ -2694,11 +2737,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             await _mapboxMap!.easeTo(
               CameraOptions(
                 center: Point(coordinates: Position(location.longitude, location.latitude)),
-                zoom: navZoom,
+                zoom: actualZoom,
                 bearing: -travelBearing, // Negative: up = direction of travel
                 pitch: _currentPitch,
               ),
-              MapAnimationOptions(duration: 300),
+              MapAnimationOptions(duration: 500), // 500ms smooth animation
             );
             _lastNavigationBearing = travelBearing;
           } else if (_lastNavigationBearing != null) {
@@ -2706,21 +2749,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             await _mapboxMap!.easeTo(
               CameraOptions(
                 center: Point(coordinates: Position(location.longitude, location.latitude)),
-                zoom: navZoom,
+                zoom: actualZoom,
                 bearing: -_lastNavigationBearing!,
                 pitch: _currentPitch,
               ),
-              MapAnimationOptions(duration: 300),
+              MapAnimationOptions(duration: 500),
             );
           } else {
             // No bearing yet, just center
             await _mapboxMap!.easeTo(
               CameraOptions(
                 center: Point(coordinates: Position(location.longitude, location.latitude)),
-                zoom: navZoom,
+                zoom: actualZoom,
                 pitch: _currentPitch,
               ),
-              MapAnimationOptions(duration: 300),
+              MapAnimationOptions(duration: 500),
             );
           }
         } else {
@@ -2809,13 +2852,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return bearing;
   }
 
-  /// Calculate dynamic zoom based on speed
+  /// Calculate dynamic zoom based on speed (navigation mode)
+  /// Optimized for walking/biking with 0.5 zoom steps
   double _calculateNavigationZoom(double? speedMps) {
-    if (speedMps == null || speedMps < 0.5) return 17.0; // Stationary
-    if (speedMps < 2.8) return 17.0;  // 0-10 km/h
-    if (speedMps < 5.6) return 16.0;  // 10-20 km/h
-    if (speedMps < 8.3) return 15.0;  // 20-30 km/h
-    return 14.5;                       // 30+ km/h
+    if (speedMps == null || speedMps < 0.28) return 18.0; // Stationary (< 1 km/h)
+    if (speedMps < 1.39) return 17.5;  // 1-5 km/h (walking)
+    if (speedMps < 2.78) return 17.0;  // 5-10 km/h (slow biking)
+    if (speedMps < 4.17) return 16.5;  // 10-15 km/h (normal biking)
+    if (speedMps < 5.56) return 16.0;  // 15-20 km/h (fast biking)
+    if (speedMps < 6.94) return 15.5;  // 20-25 km/h (very fast)
+    if (speedMps < 8.33) return 15.0;  // 25-30 km/h (racing)
+    if (speedMps < 11.11) return 14.5; // 30-40 km/h (electric bike)
+    return 14.0;                       // 40+ km/h (crazy fast!)
   }
 
   /// Calculate bearing between two points (0-360°, 0=North, 90=East)

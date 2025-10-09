@@ -53,6 +53,11 @@ class MapNotifier extends Notifier<MapState> {
     );
   }
 
+  /// Toggle auto-zoom in navigation mode
+  void toggleAutoZoom() {
+    state = state.copyWith(autoZoomEnabled: !state.autoZoomEnabled);
+  }
+
   /// Update map center
   void updateCenter(LatLng center) {
     state = state.copyWith(center: center);
@@ -85,6 +90,9 @@ class MapState {
   final bool showOSMPOIs;
   final bool showWarnings;
 
+  // Navigation settings
+  final bool autoZoomEnabled;
+
   // Camera settings
   final LatLng center;
   final double zoom;
@@ -102,6 +110,7 @@ class MapState {
     required this.showPOIs,
     required this.showOSMPOIs,
     required this.showWarnings,
+    required this.autoZoomEnabled,
     required this.center,
     required this.zoom,
     this.southWest,
@@ -125,6 +134,7 @@ class MapState {
       showPOIs: false,
       showOSMPOIs: false,
       showWarnings: true,
+      autoZoomEnabled: true, // Auto-zoom enabled by default
       center: mapService.getDefaultCenter(),
       zoom: defaultZoom,
     );
@@ -139,6 +149,7 @@ class MapState {
     bool? showPOIs,
     bool? showOSMPOIs,
     bool? showWarnings,
+    bool? autoZoomEnabled,
     LatLng? center,
     double? zoom,
     LatLng? southWest,
@@ -153,6 +164,7 @@ class MapState {
       showPOIs: showPOIs ?? this.showPOIs,
       showOSMPOIs: showOSMPOIs ?? this.showOSMPOIs,
       showWarnings: showWarnings ?? this.showWarnings,
+      autoZoomEnabled: autoZoomEnabled ?? this.autoZoomEnabled,
       center: center ?? this.center,
       zoom: zoom ?? this.zoom,
       southWest: southWest ?? this.southWest,

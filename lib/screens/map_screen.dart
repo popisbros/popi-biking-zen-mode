@@ -61,6 +61,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   static const double _minBreadcrumbDistance = 5.0; // meters - responsive at cycling speeds
   static const Duration _breadcrumbMaxAge = Duration(seconds: 20); // 20s window for stable tracking
 
+  // Smooth auto-zoom state
+  DateTime? _lastZoomChangeTime;
+  double? _currentAutoZoom;
+  double? _targetAutoZoom;
+  static const Duration _zoomChangeInterval = Duration(seconds: 3);
+  static const double _minZoomChangeThreshold = 0.5;
+
   // Active route for persistent navigation sheet
   RouteResult? _activeRoute;
 
@@ -398,8 +405,44 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         if (distance > threshold) {
           // Navigation mode: continuous tracking with dynamic zoom + rotation
           if (isNavigationMode) {
-            final navZoom = _calculateNavigationZoom(location.speed);
-            _mapController.move(newGPSPosition, navZoom);
+            // Calculate target zoom (only if auto-zoom enabled)
+            final mapState = ref.read(mapProvider);
+            final targetZoom = _calculateNavigationZoom(location.speed);
+            _targetAutoZoom = targetZoom;
+
+            // Determine actual zoom to use (with throttling if auto-zoom enabled)
+            double actualZoom = _mapController.camera.zoom;
+
+            if (mapState.autoZoomEnabled) {
+              final now = DateTime.now();
+              final canChangeZoom = _lastZoomChangeTime == null ||
+                  now.difference(_lastZoomChangeTime!) >= _zoomChangeInterval;
+
+              if (canChangeZoom) {
+                final currentZoom = _currentAutoZoom ?? _mapController.camera.zoom;
+                final zoomDifference = (targetZoom - currentZoom).abs();
+
+                // Only change zoom if difference >= 0.5
+                if (zoomDifference >= _minZoomChangeThreshold) {
+                  _currentAutoZoom = targetZoom;
+                  _lastZoomChangeTime = now;
+                  actualZoom = targetZoom;
+
+                  AppLogger.map('Auto-zoom change', data: {
+                    'from': currentZoom.toStringAsFixed(1),
+                    'to': targetZoom.toStringAsFixed(1),
+                    'speed': '${(location.speed ?? 0) * 3.6}km/h',
+                  });
+                } else {
+                  actualZoom = currentZoom;
+                }
+              } else {
+                // Keep current auto-zoom during throttle period
+                actualZoom = _currentAutoZoom ?? _mapController.camera.zoom;
+              }
+            }
+
+            _mapController.move(newGPSPosition, actualZoom);
 
             // Rotate map based on travel direction (keep last rotation if stationary)
             final travelBearing = _calculateTravelDirection();
@@ -1079,12 +1122,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// Calculate dynamic zoom based on speed (navigation mode)
+  /// Optimized for walking/biking with 0.5 zoom steps
   double _calculateNavigationZoom(double? speedMps) {
-    if (speedMps == null || speedMps < 0.5) return 17.0; // Stationary
-    if (speedMps < 2.8) return 17.0;  // 0-10 km/h
-    if (speedMps < 5.6) return 16.0;  // 10-20 km/h
-    if (speedMps < 8.3) return 15.0;  // 20-30 km/h
-    return 14.5;                       // 30+ km/h
+    if (speedMps == null || speedMps < 0.28) return 18.0; // Stationary (< 1 km/h)
+    if (speedMps < 1.39) return 17.5;  // 1-5 km/h (walking)
+    if (speedMps < 2.78) return 17.0;  // 5-10 km/h (slow biking)
+    if (speedMps < 4.17) return 16.5;  // 10-15 km/h (normal biking)
+    if (speedMps < 5.56) return 16.0;  // 15-20 km/h (fast biking)
+    if (speedMps < 6.94) return 15.5;  // 20-25 km/h (very fast)
+    if (speedMps < 8.33) return 15.0;  // 25-30 km/h (racing)
+    if (speedMps < 11.11) return 14.5; // 30-40 km/h (electric bike)
+    return 14.0;                       // 40+ km/h (crazy fast!)
   }
 
   void _open3DMap() {
