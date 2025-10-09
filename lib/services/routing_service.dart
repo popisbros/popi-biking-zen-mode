@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import '../config/api_keys.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
@@ -43,7 +43,7 @@ class RoutingService {
     required double startLon,
     required double endLat,
     required double endLon,
-    WidgetRef? ref,
+    Ref? ref,
   }) async {
     if (ApiKeys.graphhopperApiKey.isEmpty) {
       AppLogger.error('Graphhopper API key not configured', tag: 'ROUTING');
@@ -287,7 +287,7 @@ class RoutingService {
     required double startLon,
     required double endLat,
     required double endLon,
-    WidgetRef? ref,
+    Ref? ref,
   }) async {
     if (ApiKeys.graphhopperApiKey.isEmpty) {
       AppLogger.error('Graphhopper API key not configured', tag: 'ROUTING');

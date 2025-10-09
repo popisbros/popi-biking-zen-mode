@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 import '../config/api_keys.dart';
 import '../models/search_result.dart';
 import '../utils/app_logger.dart';
@@ -16,7 +16,7 @@ class GeocodingService {
 
   /// Search for addresses/places using LocationIQ API (bounded to viewbox)
   /// Falls back to Nominatim if LocationIQ fails
-  Future<List<SearchResult>> searchAddress(String query, LatLng mapCenter, {WidgetRef? ref}) async {
+  Future<List<SearchResult>> searchAddress(String query, LatLng mapCenter, {Ref? ref}) async {
     AppLogger.api('Searching for address (bounded)', data: {
       'query': query,
       'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
