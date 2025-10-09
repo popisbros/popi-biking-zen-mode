@@ -117,7 +117,7 @@ class SearchNotifier extends Notifier<SearchState> {
           'query': query,
         });
 
-        final unboundedResults = await _geocodingService.searchAddressUnbounded(query, mapCenter);
+        final unboundedResults = await _geocodingService.searchAddressUnbounded(query, mapCenter, ref: ref);
 
         AppLogger.success('Extended search completed', tag: 'SEARCH', data: {
           'results': unboundedResults.length,
@@ -160,7 +160,7 @@ class SearchNotifier extends Notifier<SearchState> {
 
     try {
       // Search unbounded (gets 20 results from API)
-      final unboundedResults = await _geocodingService.searchAddressUnbounded(query, mapCenter);
+      final unboundedResults = await _geocodingService.searchAddressUnbounded(query, mapCenter, ref: ref);
 
       AppLogger.success('Expanded search completed', tag: 'SEARCH', data: {
         'unboundedResults': unboundedResults.length,

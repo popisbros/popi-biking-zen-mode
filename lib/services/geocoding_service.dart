@@ -61,7 +61,7 @@ class GeocodingService {
   /// Search for addresses/places using LocationIQ API (unbounded - search everywhere)
   /// Used when user clicks "Extend the search"
   /// Requests 20 results (limit=20) to ensure we get ~10 unique results after deduplication
-  Future<List<SearchResult>> searchAddressUnbounded(String query, LatLng mapCenter) async {
+  Future<List<SearchResult>> searchAddressUnbounded(String query, LatLng mapCenter, {Ref? ref}) async {
     AppLogger.api('Searching for address (unbounded)', data: {
       'query': query,
       'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
@@ -69,11 +69,18 @@ class GeocodingService {
       'limit': 20,
     });
 
+    ref?.read(debugProvider.notifier).addDebugMessage(
+      'API: LocationIQ EXTENDED search "$query" (unbounded)'
+    );
+
     try {
       final results = await _searchLocationIQ(query, mapCenter, bounded: '0', limit: 20);
       AppLogger.success('LocationIQ unbounded search successful', tag: 'GEOCODING', data: {
         'results': results.length,
       });
+      ref?.read(debugProvider.notifier).addDebugMessage(
+        'API: Got ${results.length} extended search results'
+      );
       return results;
     } catch (e) {
       AppLogger.error('LocationIQ unbounded search failed', tag: 'GEOCODING', error: e);
