@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../models/cycling_poi.dart';
 import '../services/osm_service.dart';
 import '../utils/app_logger.dart';
+import 'debug_provider.dart';
 
 /// Provider for OSM service
 final osmServiceProvider = Provider<OSMService>((ref) {
@@ -113,6 +114,10 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
     state = const AsyncValue.loading();
 
     try {
+      ref.read(debugProvider.notifier).addDebugMessage(
+        'API: Fetching OSM POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+      );
+
       final pois = await _osmService.getPOIsInBounds(
         south: bounds.south,
         west: bounds.west,
@@ -120,6 +125,7 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
         east: bounds.east,
       );
 
+      ref.read(debugProvider.notifier).addDebugMessage('API: Got ${pois.length} OSM POIs');
       AppLogger.success('Loaded ${pois.length} POIs with actual bounds');
       state = AsyncValue.data(pois);
 

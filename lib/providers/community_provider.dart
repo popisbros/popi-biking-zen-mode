@@ -7,6 +7,7 @@ import '../services/firebase_service.dart';
 import '../services/debug_service.dart';
 import '../utils/app_logger.dart';
 import 'osm_poi_provider.dart'; // Import BoundingBox
+import 'debug_provider.dart';
 
 /// Provider for Firebase service
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -494,6 +495,10 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
     state = const AsyncValue.loading();
 
     try {
+      ref.read(debugProvider.notifier).addDebugMessage(
+        'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+      );
+
       final warnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
         west: bounds.west,
@@ -528,6 +533,7 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
       }).toList();
       */
 
+      ref.read(debugProvider.notifier).addDebugMessage('API: Got ${warnings.length} warnings');
       AppLogger.success('Loaded ${warnings.length} warnings with bounds');
       state = AsyncValue.data(warnings);
       _lastLoadedBounds = bounds;
@@ -638,6 +644,10 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
     state = const AsyncValue.loading();
 
     try {
+      ref.read(debugProvider.notifier).addDebugMessage(
+        'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+      );
+
       final pois = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
         west: bounds.west,
@@ -672,6 +682,7 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
       }).toList();
       */
 
+      ref.read(debugProvider.notifier).addDebugMessage('API: Got ${pois.length} POIs');
       AppLogger.success('Loaded ${pois.length} POIs with bounds');
       state = AsyncValue.data(pois);
       _lastLoadedBounds = bounds;

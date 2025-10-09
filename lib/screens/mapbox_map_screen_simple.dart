@@ -25,6 +25,8 @@ import '../utils/app_logger.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
+import '../widgets/debug_overlay.dart';
+import '../providers/debug_provider.dart';
 import 'map_screen.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
@@ -1730,6 +1732,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Reload POIs',
                     child: const Icon(Icons.refresh),
                   ),
+                  const SizedBox(height: 8),
+                  // Debug toggle button
+                  FloatingActionButton(
+                    mini: true,
+                    heroTag: 'debug_toggle_3d',
+                    onPressed: () {
+                      ref.read(debugProvider.notifier).toggleVisibility();
+                    },
+                    backgroundColor: Colors.red,
+                    tooltip: 'Debug Tracking',
+                    child: const Icon(Icons.bug_report),
+                  ),
                 ],
               ),
             ),
@@ -1840,6 +1854,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               right: 80, // Leave space for bottom-right controls
               child: _buildRouteNavigationSheet(_activeRoute!),
             ),
+
+          // Debug overlay - on top of everything
+          const DebugOverlay(),
         ],
       ),
     );
