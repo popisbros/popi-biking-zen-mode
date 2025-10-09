@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -18,6 +19,7 @@ import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
+import '../services/ios_navigation_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
@@ -1747,6 +1749,37 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
+                  const SizedBox(height: 8),
+                  // iOS Native Navigation Test Button (Phase 1)
+                  if (Platform.isIOS)
+                    FloatingActionButton(
+                      mini: true,
+                      heroTag: 'test_ios_nav',
+                      onPressed: () async {
+                        // Test button for Phase 1, Step 1.1
+                        AppLogger.map('Testing iOS native navigation channel');
+                        final navService = IOSNavigationService();
+
+                        // Create dummy route for testing
+                        final testRoute = [
+                          const latlong.LatLng(48.8566, 2.3522), // Paris
+                          const latlong.LatLng(48.8606, 2.3376), // Eiffel Tower
+                        ];
+
+                        try {
+                          await navService.startNavigation(
+                            routePoints: testRoute,
+                            destinationName: 'Test Destination',
+                          );
+                        } catch (e) {
+                          AppLogger.error('Navigation test failed', error: e);
+                        }
+                      },
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      tooltip: 'Test iOS Navigation',
+                      child: const Icon(Icons.navigation),
+                    ),
                 ],
               ),
             ),
