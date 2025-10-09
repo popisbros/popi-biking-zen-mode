@@ -16,7 +16,7 @@ class DebugOverlay extends ConsumerWidget {
     return Positioned.fill(
       child: IgnorePointer(
         child: Container(
-          color: Colors.transparent,
+          color: Colors.white.withOpacity(0.2),
           padding: const EdgeInsets.all(16),
           child: Align(
             alignment: Alignment.topLeft,
