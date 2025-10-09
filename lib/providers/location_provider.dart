@@ -87,10 +87,13 @@ class LocationNotifier extends Notifier<AsyncValue<LocationData?>> {
               'acc': '${location.accuracy?.toStringAsFixed(1) ?? 'unknown'}m'
             });
             // Visible debug for GPS location
+            final headingStr = location.heading != null ? '${location.heading!.toStringAsFixed(0)}°' : 'N/A';
+            final speedStr = location.speed != null ? '${(location.speed! * 3.6).toStringAsFixed(1)}km/h' : '0km/h';
             ref.read(debugProvider.notifier).addDebugMessage(
-              'GPS: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)} '
-              '±${location.accuracy?.toStringAsFixed(1) ?? '?'}m '
-              '${location.speed != null ? "${(location.speed! * 3.6).toStringAsFixed(1)}km/h" : "0km/h"}'
+              'GPS: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)} | '
+              'Acc: ±${location.accuracy?.toStringAsFixed(1) ?? '?'}m | '
+              'Speed: $speedStr | '
+              'Heading: $headingStr'
             );
             state = AsyncValue.data(location);
           },
