@@ -22,14 +22,21 @@ class DebugNotifier extends Notifier<DebugState> {
   DebugState build() => const DebugState();
 
   void toggleVisibility() {
+    final newVisibility = !state.isVisible;
+    print('[toggleVisibility] Changing from ${state.isVisible} to $newVisibility');
     state = state.copyWith(
-      isVisible: !state.isVisible,
+      isVisible: newVisibility,
       messages: state.isVisible ? '' : state.messages, // Clear when closing
     );
   }
 
   void addDebugMessage(String message) {
-    if (!state.isVisible) return; // Only collect when sheet is open
+    print('[addDebugMessage] Called with: $message, isVisible: ${state.isVisible}');
+
+    if (!state.isVisible) {
+      print('[addDebugMessage] Skipped - overlay not visible');
+      return; // Only collect when sheet is open
+    }
 
     final timestamp = DateTime.now().toIso8601String().substring(11, 23);
     final newMessage = '[$timestamp] $message\n';
@@ -40,6 +47,7 @@ class DebugNotifier extends Notifier<DebugState> {
       updatedMessages = updatedMessages.substring(0, 10000);
     }
 
+    print('[addDebugMessage] Adding message, current length: ${state.messages.length}, new length: ${updatedMessages.length}');
     state = state.copyWith(messages: updatedMessages);
   }
 
