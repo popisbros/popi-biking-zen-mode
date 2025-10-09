@@ -860,6 +860,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _activeRoute = route;
     });
 
+    // Refresh map to show selected route and clear preview routes
+    _addMarkers();
+
     // Restore previous pitch (pitch was already set to 10° before dialog)
     if (_mapboxMap != null && _pitchBeforeRouteCalculation != null) {
       await _mapboxMap!.easeTo(
