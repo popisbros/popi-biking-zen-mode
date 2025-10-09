@@ -690,7 +690,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       startLon: _lastGPSPosition!.longitude,
       endLat: destLat,
       endLon: destLon,
-      ref: ref,
+      ref: ref as Ref,
     );
 
     // Hide loading indicator

@@ -678,7 +678,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       startLon: location!.longitude,
       endLat: destLat,
       endLon: destLon,
-      ref: ref,
+      ref: ref as Ref,
     );
 
     // Hide loading indicator
