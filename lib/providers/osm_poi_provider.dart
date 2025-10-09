@@ -168,12 +168,26 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
     // Don't set loading state - keep existing data visible
 
     try {
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage(
+          'API: Fetching OSM POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+        );
+      } catch (e) {
+        print('[DEBUG] OSM POI background fetch debug message failed: $e');
+      }
+
       final newPOIs = await _osmService.getPOIsInBounds(
         south: bounds.south,
         west: bounds.west,
         north: bounds.north,
         east: bounds.east,
       );
+
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${newPOIs.length} OSM POIs');
+      } catch (e) {
+        print('[DEBUG] OSM POI background result debug message failed: $e');
+      }
 
       AppLogger.success('Loaded ${newPOIs.length} POIs in background');
 
