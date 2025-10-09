@@ -119,7 +119,8 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
           'API: Fetching OSM POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
         );
       } catch (e) {
-        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
+        // Print works in release mode
+        print('[DEBUG] OSM POI fetch debug message failed: $e');
       }
 
       final pois = await _osmService.getPOIsInBounds(
@@ -132,7 +133,7 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
       try {
         ref.read(debugProvider.notifier).addDebugMessage('API: Got ${pois.length} OSM POIs');
       } catch (e) {
-        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
+        print('[DEBUG] OSM POI result debug message failed: $e');
       }
       AppLogger.success('Loaded ${pois.length} POIs with actual bounds');
       state = AsyncValue.data(pois);
