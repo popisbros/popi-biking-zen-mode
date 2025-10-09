@@ -1750,34 +1750,57 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  // iOS Native Navigation Test Button (Phase 1)
+                  // iOS Native Navigation Test Button (Phase 1, Step 1.2)
                   if (Platform.isIOS)
                     FloatingActionButton(
                       mini: true,
                       heroTag: 'test_ios_nav',
                       onPressed: () async {
-                        // Test button for Phase 1, Step 1.1
-                        AppLogger.map('Testing iOS native navigation channel');
-                        final navService = IOSNavigationService();
+                        AppLogger.map('Testing iOS native navigation with real route data');
 
-                        // Create dummy route for testing
-                        final testRoute = [
-                          const latlong.LatLng(48.8566, 2.3522), // Paris
-                          const latlong.LatLng(48.8606, 2.3376), // Eiffel Tower
-                        ];
+                        // Check if we have an active route
+                        if (_activeRoute == null) {
+                          AppLogger.warning('No route available - please calculate a route first');
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please calculate a route first (tap a POI → Calculate Route)'),
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                          return;
+                        }
+
+                        AppLogger.map('Using active route', data: {
+                          'type': _activeRoute!.type.toString(),
+                          'points': _activeRoute!.points.length,
+                          'distance': _activeRoute!.distanceKm,
+                          'duration': _activeRoute!.durationMin,
+                        });
+
+                        final navService = IOSNavigationService();
 
                         try {
                           await navService.startNavigation(
-                            routePoints: testRoute,
-                            destinationName: 'Test Destination',
+                            routePoints: _activeRoute!.points,
+                            destinationName: 'Route Destination (${_activeRoute!.distanceKm}km)',
                           );
                         } catch (e) {
                           AppLogger.error('Navigation test failed', error: e);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Navigation failed: $e'),
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
                         }
                       },
                       backgroundColor: Colors.purple,
                       foregroundColor: Colors.white,
-                      tooltip: 'Test iOS Navigation',
+                      tooltip: 'Test iOS Navigation (Step 1.2)',
                       child: const Icon(Icons.navigation),
                     ),
                 ],

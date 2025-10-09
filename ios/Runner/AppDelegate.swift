@@ -28,7 +28,26 @@ import UIKit
   private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "startNavigation":
-      result("Navigation not implemented yet")
+      // Parse arguments
+      guard let args = call.arguments as? [String: Any],
+            let points = args["points"] as? [[String: Double]],
+            let destination = args["destination"] as? String else {
+        result(FlutterError(code: "INVALID_ARGS",
+                           message: "Missing points or destination",
+                           details: nil))
+        return
+      }
+
+      // Log received data
+      print("📍 Received \(points.count) route points to: \(destination)")
+      points.enumerated().forEach { index, point in
+        if let lat = point["latitude"], let lon = point["longitude"] {
+          print("  Point \(index): \(lat), \(lon)")
+        }
+      }
+
+      result("Received route with \(points.count) points to \(destination)")
+
     default:
       result(FlutterMethodNotImplemented)
     }
