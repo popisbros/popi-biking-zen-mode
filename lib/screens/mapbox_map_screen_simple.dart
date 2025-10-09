@@ -1675,6 +1675,36 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     },
                   ),
                   const SizedBox(height: 8), // Match zoom spacing
+                  // Auto-zoom toggle button (only show in navigation mode)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationModeProvider);
+                      final isNavigationMode = navState.mode == NavMode.navigation;
+                      final mapState = ref.watch(mapProvider);
+
+                      if (!isNavigationMode) return const SizedBox.shrink();
+
+                      return FloatingActionButton(
+                        mini: true,
+                        heroTag: 'auto_zoom_toggle_3d',
+                        onPressed: () {
+                          ref.read(mapProvider.notifier).toggleAutoZoom();
+                          AppLogger.map('Auto-zoom ${mapState.autoZoomEnabled ? "disabled" : "enabled"} (3D)');
+                        },
+                        backgroundColor: mapState.autoZoomEnabled ? Colors.blue : Colors.grey.shade300,
+                        foregroundColor: mapState.autoZoomEnabled ? Colors.white : Colors.grey.shade600,
+                        tooltip: mapState.autoZoomEnabled ? 'Disable Auto-Zoom' : 'Enable Auto-Zoom',
+                        child: Icon(mapState.autoZoomEnabled ? Icons.zoom_out_map : Icons.zoom_out_map_outlined),
+                      );
+                    },
+                  ),
+                  // Spacing after auto-zoom button (only in navigation mode)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationModeProvider);
+                      return navState.mode == NavMode.navigation ? const SizedBox(height: 8) : const SizedBox.shrink();
+                    },
+                  ),
                   // GPS center button
                   FloatingActionButton(
                     mini: true, // Match zoom button size
