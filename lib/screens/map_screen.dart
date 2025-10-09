@@ -329,6 +329,54 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
+  /// Load OSM POIs only if data doesn't exist or bounds changed significantly
+  void _loadOSMPOIsIfNeeded() {
+    final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+    final currentData = ref.read(osmPOIsNotifierProvider).value;
+
+    // If no data exists, load it
+    if (currentData == null || currentData.isEmpty) {
+      AppLogger.map('OSM POIs: No data, loading...');
+      final camera = _mapController.camera;
+      final bounds = _calculateExtendedBounds(camera.visibleBounds);
+      osmPOIsNotifier.loadPOIsInBackground(bounds);
+    } else {
+      AppLogger.map('OSM POIs: Data exists (${currentData.length} items), showing without reload');
+    }
+  }
+
+  /// Load Community POIs only if data doesn't exist
+  void _loadCommunityPOIsIfNeeded() {
+    final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+    final currentData = ref.read(cyclingPOIsBoundsNotifierProvider).value;
+
+    // If no data exists, load it
+    if (currentData == null || currentData.isEmpty) {
+      AppLogger.map('Community POIs: No data, loading...');
+      final camera = _mapController.camera;
+      final bounds = _calculateExtendedBounds(camera.visibleBounds);
+      communityPOIsNotifier.loadPOIsInBackground(bounds);
+    } else {
+      AppLogger.map('Community POIs: Data exists (${currentData.length} items), showing without reload');
+    }
+  }
+
+  /// Load Warnings only if data doesn't exist
+  void _loadWarningsIfNeeded() {
+    final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
+    final currentData = ref.read(communityWarningsBoundsNotifierProvider).value;
+
+    // If no data exists, load it
+    if (currentData == null || currentData.isEmpty) {
+      AppLogger.map('Warnings: No data, loading...');
+      final camera = _mapController.camera;
+      final bounds = _calculateExtendedBounds(camera.visibleBounds);
+      warningsNotifier.loadWarningsInBackground(bounds);
+    } else {
+      AppLogger.map('Warnings: Data exists (${currentData.length} items), showing without reload');
+    }
+  }
+
   /// Handle map events
   void _onMapEvent(MapEvent mapEvent) {
     // Set map ready on first event (after FlutterMap fully rendered)
@@ -2061,9 +2109,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             AppLogger.map('OSM POI toggle pressed');
                             final wasOff = !mapState.showOSMPOIs;
                             ref.read(mapProvider.notifier).toggleOSMPOIs();
-                            // If turning ON, load data immediately
+                            // If turning ON, load only this feature if needed
                             if (wasOff) {
-                              _loadAllMapDataWithBounds(forceReload: true);
+                              _loadOSMPOIsIfNeeded();
                             }
                           },
                           tooltip: 'Toggle OSM POIs',
@@ -2081,9 +2129,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             AppLogger.map('Community POI toggle pressed');
                             final wasOff = !mapState.showPOIs;
                             ref.read(mapProvider.notifier).togglePOIs();
-                            // If turning ON, load data immediately
+                            // If turning ON, load only this feature if needed
                             if (wasOff) {
-                              _loadAllMapDataWithBounds(forceReload: true);
+                              _loadCommunityPOIsIfNeeded();
                             }
                           },
                           tooltip: 'Toggle Community POIs',
@@ -2101,9 +2149,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             AppLogger.map('Warning toggle pressed');
                             final wasOff = !mapState.showWarnings;
                             ref.read(mapProvider.notifier).toggleWarnings();
-                            // If turning ON, load data immediately
+                            // If turning ON, load only this feature if needed
                             if (wasOff) {
-                              _loadAllMapDataWithBounds(forceReload: true);
+                              _loadWarningsIfNeeded();
                             }
                           },
                           tooltip: 'Toggle Warnings',

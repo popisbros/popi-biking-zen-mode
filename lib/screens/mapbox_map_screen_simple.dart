@@ -1515,12 +1515,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             showFullCount: true,
                             enabled: togglesEnabled,
                             onPressed: () {
+                              AppLogger.map('OSM POI toggle pressed');
                               final wasOff = !mapState.showOSMPOIs;
                               ref.read(mapProvider.notifier).toggleOSMPOIs();
-                              // If turning ON, load data immediately
                               if (wasOff) {
-                                _loadAllPOIData();
-                                _addMarkers();
+                                _loadOSMPOIsIfNeeded();
                               }
                             },
                             tooltip: 'Toggle OSM POIs',
@@ -1534,12 +1533,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             count: ref.watch(cyclingPOIsBoundsNotifierProvider).value?.length ?? 0,
                             enabled: togglesEnabled,
                             onPressed: () {
+                              AppLogger.map('Community POI toggle pressed');
                               final wasOff = !mapState.showPOIs;
                               ref.read(mapProvider.notifier).togglePOIs();
-                              // If turning ON, load data immediately
                               if (wasOff) {
-                                _loadAllPOIData();
-                                _addMarkers();
+                                _loadCommunityPOIsIfNeeded();
                               }
                             },
                             tooltip: 'Toggle Community POIs',
@@ -1553,12 +1551,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             count: ref.watch(communityWarningsBoundsNotifierProvider).value?.length ?? 0,
                             enabled: togglesEnabled,
                             onPressed: () {
+                              AppLogger.map('Warning toggle pressed');
                               final wasOff = !mapState.showWarnings;
                               ref.read(mapProvider.notifier).toggleWarnings();
-                              // If turning ON, load data immediately
                               if (wasOff) {
-                                _loadAllPOIData();
-                                _addMarkers();
+                                _loadWarningsIfNeeded();
                               }
                             },
                             tooltip: 'Toggle Warnings',
@@ -2117,6 +2114,153 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     AppLogger.separator();
+  }
+
+  /// Load OSM POIs only if needed (cache empty)
+  void _loadOSMPOIsIfNeeded() async {
+    final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
+    final currentData = ref.read(osmPOIsNotifierProvider).value;
+
+    if (currentData == null || currentData.isEmpty) {
+      AppLogger.map('OSM POIs: No data, loading...');
+
+      try {
+        final cameraState = await _mapboxMap?.getCameraState();
+        if (cameraState == null) return;
+
+        final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+          CameraOptions(
+            center: cameraState.center,
+            zoom: cameraState.zoom,
+            pitch: cameraState.pitch,
+            bearing: cameraState.bearing,
+          )
+        );
+
+        if (coordinateBounds == null) return;
+
+        final south = coordinateBounds.southwest.coordinates.lat;
+        final west = coordinateBounds.southwest.coordinates.lng;
+        final north = coordinateBounds.northeast.coordinates.lat;
+        final east = coordinateBounds.northeast.coordinates.lng;
+
+        final latDiff = north - south;
+        final lngDiff = east - west;
+
+        final bounds = BoundingBox(
+          south: south - latDiff,
+          west: west - lngDiff,
+          north: north + latDiff,
+          east: east + lngDiff,
+        );
+
+        await osmPOIsNotifier.loadPOIsInBackground(bounds);
+        _addMarkers();
+      } catch (e) {
+        AppLogger.error('Failed to load OSM POIs', error: e);
+      }
+    } else {
+      AppLogger.map('OSM POIs: Data exists (${currentData.length} items), showing without reload');
+      _addMarkers();
+    }
+  }
+
+  /// Load Community POIs only if needed (cache empty)
+  void _loadCommunityPOIsIfNeeded() async {
+    final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
+    final currentData = ref.read(cyclingPOIsBoundsNotifierProvider).value;
+
+    if (currentData == null || currentData.isEmpty) {
+      AppLogger.map('Community POIs: No data, loading...');
+
+      try {
+        final cameraState = await _mapboxMap?.getCameraState();
+        if (cameraState == null) return;
+
+        final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+          CameraOptions(
+            center: cameraState.center,
+            zoom: cameraState.zoom,
+            pitch: cameraState.pitch,
+            bearing: cameraState.bearing,
+          )
+        );
+
+        if (coordinateBounds == null) return;
+
+        final south = coordinateBounds.southwest.coordinates.lat;
+        final west = coordinateBounds.southwest.coordinates.lng;
+        final north = coordinateBounds.northeast.coordinates.lat;
+        final east = coordinateBounds.northeast.coordinates.lng;
+
+        final latDiff = north - south;
+        final lngDiff = east - west;
+
+        final bounds = BoundingBox(
+          south: south - latDiff,
+          west: west - lngDiff,
+          north: north + latDiff,
+          east: east + lngDiff,
+        );
+
+        await communityPOIsNotifier.loadPOIsInBackground(bounds);
+        _addMarkers();
+      } catch (e) {
+        AppLogger.error('Failed to load Community POIs', error: e);
+      }
+    } else {
+      AppLogger.map('Community POIs: Data exists (${currentData.length} items), showing without reload');
+      _addMarkers();
+    }
+  }
+
+  /// Load Warnings only if needed (cache empty)
+  void _loadWarningsIfNeeded() async {
+    final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
+    final currentData = ref.read(communityWarningsBoundsNotifierProvider).value;
+
+    if (currentData == null || currentData.isEmpty) {
+      AppLogger.map('Warnings: No data, loading...');
+
+      try {
+        final cameraState = await _mapboxMap?.getCameraState();
+        if (cameraState == null) return;
+
+        final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+          CameraOptions(
+            center: cameraState.center,
+            zoom: cameraState.zoom,
+            pitch: cameraState.pitch,
+            bearing: cameraState.bearing,
+          )
+        );
+
+        if (coordinateBounds == null) return;
+
+        final south = coordinateBounds.southwest.coordinates.lat;
+        final west = coordinateBounds.southwest.coordinates.lng;
+        final north = coordinateBounds.northeast.coordinates.lat;
+        final east = coordinateBounds.northeast.coordinates.lng;
+
+        final latDiff = north - south;
+        final lngDiff = east - west;
+
+        final bounds = BoundingBox(
+          south: south - latDiff,
+          west: west - lngDiff,
+          north: north + latDiff,
+          east: east + lngDiff,
+        );
+
+        await warningsNotifier.loadWarningsInBackground(bounds);
+        _addMarkers();
+      } catch (e) {
+        AppLogger.error('Failed to load Warnings', error: e);
+      }
+    } else {
+      AppLogger.map('Warnings: Data exists (${currentData.length} items), showing without reload');
+      _addMarkers();
+    }
   }
 
   /// Start periodic camera monitoring to detect map movement
