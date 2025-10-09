@@ -562,12 +562,26 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
     // Don't set loading state - keep existing data visible
 
     try {
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage(
+          'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+        );
+      } catch (e) {
+        print('[DEBUG] Warnings background fetch debug message failed: $e');
+      }
+
       final newWarnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
         west: bounds.west,
         north: bounds.north,
         east: bounds.east,
       );
+
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${newWarnings.length} warnings');
+      } catch (e) {
+        print('[DEBUG] Warnings background result debug message failed: $e');
+      }
 
       AppLogger.success('Loaded ${newWarnings.length} warnings in background');
 
@@ -719,12 +733,26 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
     // Don't set loading state - keep existing data visible
 
     try {
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage(
+          'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+        );
+      } catch (e) {
+        print('[DEBUG] POIs background fetch debug message failed: $e');
+      }
+
       final newPOIs = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
         west: bounds.west,
         north: bounds.north,
         east: bounds.east,
       );
+
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${newPOIs.length} POIs');
+      } catch (e) {
+        print('[DEBUG] POIs background result debug message failed: $e');
+      }
 
       AppLogger.success('Loaded ${newPOIs.length} POIs in background');
 
