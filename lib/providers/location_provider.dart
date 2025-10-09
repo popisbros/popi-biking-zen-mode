@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../models/location_data.dart';
 import '../services/location_service.dart';
 import '../utils/app_logger.dart';
+import 'debug_provider.dart';
 
 /// Provider for location service
 final locationServiceProvider = Provider<LocationService>((ref) {
@@ -85,6 +86,12 @@ class LocationNotifier extends Notifier<AsyncValue<LocationData?>> {
               'lng': location.longitude.toStringAsFixed(6),
               'acc': '${location.accuracy?.toStringAsFixed(1) ?? 'unknown'}m'
             });
+            // Visible debug for GPS location
+            ref.read(debugProvider.notifier).addDebugMessage(
+              'GPS: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)} '
+              '±${location.accuracy?.toStringAsFixed(1) ?? '?'}m '
+              '${location.speed != null ? "${(location.speed! * 3.6).toStringAsFixed(1)}km/h" : "0km/h"}'
+            );
             state = AsyncValue.data(location);
           },
           onError: (error, stackTrace) {
