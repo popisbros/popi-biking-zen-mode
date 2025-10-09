@@ -97,7 +97,7 @@ class SearchNotifier extends Notifier<SearchState> {
       }
 
       // If not coordinates, search via geocoding APIs (bounded first)
-      final results = await _geocodingService.searchAddress(query, mapCenter);
+      final results = await _geocodingService.searchAddress(query, mapCenter, ref: ref);
 
       AppLogger.success('Search completed', tag: 'SEARCH', data: {
         'results': results.length,

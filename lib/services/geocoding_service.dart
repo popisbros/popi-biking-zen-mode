@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_keys.dart';
 import '../models/search_result.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
+import '../providers/debug_provider.dart';
 
 /// Service for geocoding and coordinate parsing
 class GeocodingService {
@@ -14,12 +16,16 @@ class GeocodingService {
 
   /// Search for addresses/places using LocationIQ API (bounded to viewbox)
   /// Falls back to Nominatim if LocationIQ fails
-  Future<List<SearchResult>> searchAddress(String query, LatLng mapCenter) async {
+  Future<List<SearchResult>> searchAddress(String query, LatLng mapCenter, {WidgetRef? ref}) async {
     AppLogger.api('Searching for address (bounded)', data: {
       'query': query,
       'mapCenter': '${mapCenter.latitude},${mapCenter.longitude}',
       'bounded': '1',
     });
+
+    ref?.read(debugProvider.notifier).addDebugMessage(
+      'API: LocationIQ search "$query" near ${mapCenter.latitude.toStringAsFixed(4)},${mapCenter.longitude.toStringAsFixed(4)}'
+    );
 
     try {
       // Try LocationIQ first with bounded=1
@@ -28,6 +34,9 @@ class GeocodingService {
         AppLogger.success('LocationIQ bounded search successful', tag: 'GEOCODING', data: {
           'results': results.length,
         });
+        ref?.read(debugProvider.notifier).addDebugMessage(
+          'API: Got ${results.length} search results'
+        );
         return results;
       }
     } catch (e) {

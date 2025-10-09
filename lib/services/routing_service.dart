@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_keys.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
+import '../providers/debug_provider.dart';
 
 /// Route type enumeration
 enum RouteType {
@@ -41,6 +43,7 @@ class RoutingService {
     required double startLon,
     required double endLat,
     required double endLon,
+    WidgetRef? ref,
   }) async {
     if (ApiKeys.graphhopperApiKey.isEmpty) {
       AppLogger.error('Graphhopper API key not configured', tag: 'ROUTING');
@@ -51,6 +54,10 @@ class RoutingService {
       'from': '$startLat,$startLon',
       'to': '$endLat,$endLon',
     });
+
+    ref?.read(debugProvider.notifier).addDebugMessage(
+      'API: GraphHopper 2 routes [${startLat.toStringAsFixed(4)},${startLon.toStringAsFixed(4)} → ${endLat.toStringAsFixed(4)},${endLon.toStringAsFixed(4)}]'
+    );
 
     // Calculate both routes in parallel
     final results = await Future.wait([
@@ -79,6 +86,9 @@ class RoutingService {
     }
 
     AppLogger.success('Calculated ${validRoutes.length} route(s)', tag: 'ROUTING');
+    ref?.read(debugProvider.notifier).addDebugMessage(
+      'API: Got ${validRoutes.length} route(s): ${validRoutes.map((r) => "${r.distanceKm}km").join(", ")}'
+    );
     return validRoutes;
   }
 
@@ -277,6 +287,7 @@ class RoutingService {
     required double startLon,
     required double endLat,
     required double endLon,
+    WidgetRef? ref,
   }) async {
     if (ApiKeys.graphhopperApiKey.isEmpty) {
       AppLogger.error('Graphhopper API key not configured', tag: 'ROUTING');
@@ -300,6 +311,10 @@ class RoutingService {
       'to': '${endLat},${endLon}',
       'vehicle': 'bike',
     });
+
+    ref?.read(debugProvider.notifier).addDebugMessage(
+      'API: GraphHopper route [${startLat.toStringAsFixed(4)},${startLon.toStringAsFixed(4)} → ${endLat.toStringAsFixed(4)},${endLon.toStringAsFixed(4)}]'
+    );
 
     final stopwatch = Stopwatch()..start();
 
@@ -367,6 +382,10 @@ class RoutingService {
         'distance': '${(distance / 1000).toStringAsFixed(2)} km',
         'duration': '${(duration / 60000).toStringAsFixed(0)} min',
       });
+
+      ref?.read(debugProvider.notifier).addDebugMessage(
+        'API: Got route ${(distance / 1000).toStringAsFixed(1)}km, ${routePoints.length} points'
+      );
 
       return routePoints;
     } catch (e, stackTrace) {

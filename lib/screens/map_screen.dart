@@ -690,6 +690,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       startLon: _lastGPSPosition!.longitude,
       endLat: destLat,
       endLon: destLon,
+      ref: ref,
     );
 
     // Hide loading indicator
@@ -2312,15 +2313,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 const SizedBox(height: 8),
                 // Debug toggle button
-                FloatingActionButton(
-                  mini: true,
-                  heroTag: 'debug_toggle_2d',
-                  onPressed: () {
-                    ref.read(debugProvider.notifier).toggleVisibility();
+                Builder(
+                  builder: (context) {
+                    final debugState = ref.watch(debugProvider);
+                    return FloatingActionButton(
+                      mini: true,
+                      heroTag: 'debug_toggle_2d',
+                      onPressed: () {
+                        ref.read(debugProvider.notifier).toggleVisibility();
+                      },
+                      backgroundColor: debugState.isVisible ? Colors.red : Colors.grey.shade300,
+                      foregroundColor: Colors.white,
+                      tooltip: 'Debug Tracking',
+                      child: const Icon(Icons.bug_report),
+                    );
                   },
-                  backgroundColor: Colors.red,
-                  tooltip: 'Debug Tracking',
-                  child: const Icon(Icons.bug_report),
                 ),
               ],
             ),
