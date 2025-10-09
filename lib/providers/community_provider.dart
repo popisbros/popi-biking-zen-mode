@@ -495,9 +495,13 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
     state = const AsyncValue.loading();
 
     try {
-      ref.read(debugProvider.notifier).addDebugMessage(
-        'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
-      );
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage(
+          'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+        );
+      } catch (e) {
+        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
+      }
 
       final warnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
@@ -533,7 +537,11 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
       }).toList();
       */
 
-      ref.read(debugProvider.notifier).addDebugMessage('API: Got ${warnings.length} warnings');
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${warnings.length} warnings');
+      } catch (e) {
+        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
+      }
       AppLogger.success('Loaded ${warnings.length} warnings with bounds');
       state = AsyncValue.data(warnings);
       _lastLoadedBounds = bounds;
@@ -644,9 +652,13 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
     state = const AsyncValue.loading();
 
     try {
-      ref.read(debugProvider.notifier).addDebugMessage(
-        'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
-      );
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage(
+          'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
+        );
+      } catch (e) {
+        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
+      }
 
       final pois = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
@@ -682,7 +694,11 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
       }).toList();
       */
 
-      ref.read(debugProvider.notifier).addDebugMessage('API: Got ${pois.length} POIs');
+      try {
+        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${pois.length} POIs');
+      } catch (e) {
+        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
+      }
       AppLogger.success('Loaded ${pois.length} POIs with bounds');
       state = AsyncValue.data(pois);
       _lastLoadedBounds = bounds;
