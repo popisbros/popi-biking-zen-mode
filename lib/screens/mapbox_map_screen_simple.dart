@@ -2050,10 +2050,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
 
       // Extract bounds from CoordinateBounds
-      final south = coordinateBounds.southwest.coordinates.lat;
-      final west = coordinateBounds.southwest.coordinates.lng;
-      final north = coordinateBounds.northeast.coordinates.lat;
-      final east = coordinateBounds.northeast.coordinates.lng;
+      final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+      final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+      final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+      final east = coordinateBounds.northeast.coordinates.lng.toDouble();
 
       // Calculate extended bounds (2x in each direction, same as 2D map)
       final latDiff = north - south;
@@ -2139,10 +2139,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         if (coordinateBounds == null) return;
 
-        final south = coordinateBounds.southwest.coordinates.lat;
-        final west = coordinateBounds.southwest.coordinates.lng;
-        final north = coordinateBounds.northeast.coordinates.lat;
-        final east = coordinateBounds.northeast.coordinates.lng;
+        final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+        final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+        final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+        final east = coordinateBounds.northeast.coordinates.lng.toDouble();
 
         final latDiff = north - south;
         final lngDiff = east - west;
@@ -2188,10 +2188,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         if (coordinateBounds == null) return;
 
-        final south = coordinateBounds.southwest.coordinates.lat;
-        final west = coordinateBounds.southwest.coordinates.lng;
-        final north = coordinateBounds.northeast.coordinates.lat;
-        final east = coordinateBounds.northeast.coordinates.lng;
+        final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+        final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+        final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+        final east = coordinateBounds.northeast.coordinates.lng.toDouble();
 
         final latDiff = north - south;
         final lngDiff = east - west;
@@ -2237,10 +2237,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         if (coordinateBounds == null) return;
 
-        final south = coordinateBounds.southwest.coordinates.lat;
-        final west = coordinateBounds.southwest.coordinates.lng;
-        final north = coordinateBounds.northeast.coordinates.lat;
-        final east = coordinateBounds.northeast.coordinates.lng;
+        final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+        final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+        final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+        final east = coordinateBounds.northeast.coordinates.lng.toDouble();
 
         final latDiff = north - south;
         final lngDiff = east - west;
