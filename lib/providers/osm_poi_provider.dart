@@ -112,17 +112,21 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
       'east': bounds.east,
     });
     state = const AsyncValue.loading();
+    print('[OSM_POI] loadPOIsWithBounds called with bounds: ${bounds.south},${bounds.west} to ${bounds.north},${bounds.east}');
 
     try {
+      print('[OSM_POI] About to call addDebugMessage for fetch');
       try {
         ref.read(debugProvider.notifier).addDebugMessage(
           'API: Fetching OSM POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
         );
+        print('[OSM_POI] addDebugMessage for fetch succeeded');
       } catch (e) {
         // Print works in release mode
         print('[DEBUG] OSM POI fetch debug message failed: $e');
       }
 
+      print('[OSM_POI] Calling _osmService.getPOIsInBounds');
       final pois = await _osmService.getPOIsInBounds(
         south: bounds.south,
         west: bounds.west,
@@ -130,8 +134,10 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
         east: bounds.east,
       );
 
+      print('[OSM_POI] Got ${pois.length} POIs, about to call addDebugMessage for result');
       try {
         ref.read(debugProvider.notifier).addDebugMessage('API: Got ${pois.length} OSM POIs');
+        print('[OSM_POI] addDebugMessage for result succeeded');
       } catch (e) {
         print('[DEBUG] OSM POI result debug message failed: $e');
       }
