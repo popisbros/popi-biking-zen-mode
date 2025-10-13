@@ -3023,7 +3023,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Handle GPS location changes for navigation mode
   void _handleGPSLocationChange(LocationData location) async {
-    if (!_isMapReady || _mapboxMap == null) return;
+    AppLogger.debug('GPS location changed', tag: 'GPS', data: {
+      'lat': location.latitude.toStringAsFixed(6),
+      'lng': location.longitude.toStringAsFixed(6),
+      'speed': '${((location.speed ?? 0) * 3.6).toStringAsFixed(1)} km/h',
+    });
+
+    if (!_isMapReady || _mapboxMap == null) {
+      AppLogger.warning('Map not ready, skipping GPS update', tag: 'GPS');
+      return;
+    }
 
     final newGPSPosition = latlong.LatLng(location.latitude, location.longitude);
     final navState = ref.read(navigationModeProvider);
