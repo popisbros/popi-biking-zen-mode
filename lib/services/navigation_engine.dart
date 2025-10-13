@@ -274,24 +274,24 @@ class NavigationEngine {
       return ManeuverType.uTurn;
     }
 
-    // Left turns
+    // Right turns (positive bearing change = clockwise = right)
     if (bearingChange > 0) {
-      if (absChange > _sharpTurnAngle) {
-        return ManeuverType.sharpLeft;
-      } else if (absChange > _mediumTurnAngle) {
-        return ManeuverType.turnLeft;
-      } else {
-        return ManeuverType.slightLeft;
-      }
-    }
-    // Right turns
-    else {
       if (absChange > _sharpTurnAngle) {
         return ManeuverType.sharpRight;
       } else if (absChange > _mediumTurnAngle) {
         return ManeuverType.turnRight;
       } else {
         return ManeuverType.slightRight;
+      }
+    }
+    // Left turns (negative bearing change = counter-clockwise = left)
+    else {
+      if (absChange > _sharpTurnAngle) {
+        return ManeuverType.sharpLeft;
+      } else if (absChange > _mediumTurnAngle) {
+        return ManeuverType.turnLeft;
+      } else {
+        return ManeuverType.slightLeft;
       }
     }
   }
