@@ -138,10 +138,19 @@ class LocationService {
     try {
       AppLogger.separator('Starting continuous location tracking');
 
+      // Check if already tracking
+      if (_positionStream != null) {
+        AppLogger.warning('Position stream already running, skipping startLocationTracking', tag: 'LOCATION');
+        return;
+      }
+
       final permission = await checkPermission();
+      AppLogger.debug('Current permission status', tag: 'LOCATION', data: {'permission': permission.name});
+
       if (permission == LocationPermission.denied) {
         AppLogger.location('Permission denied, requesting');
         final newPermission = await requestPermission();
+        AppLogger.debug('New permission status', tag: 'LOCATION', data: {'permission': newPermission.name});
         if (newPermission == LocationPermission.denied) {
           AppLogger.error('Cannot start tracking - permission denied', tag: 'LOCATION');
           return;
