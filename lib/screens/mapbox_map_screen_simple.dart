@@ -2781,26 +2781,28 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
-    // Show selected route if it exists and no preview routes
-    if (routePoints == null || routePoints.isEmpty) {
-      return;
-    }
-
-    // Don't show old route polyline when turn-by-turn navigation is active
-    // (navigation uses its own route visualization)
+    // Check if turn-by-turn navigation is active
     final turnByTurnNavState = ref.read(navigationProvider);
-    if (turnByTurnNavState.isNavigating) {
-      AppLogger.debug('Skipping route polyline - turn-by-turn navigation active', tag: 'MAP');
-      return;
-    }
 
-    AppLogger.debug('Adding route polyline', tag: 'MAP', data: {
-      'points': routePoints.length,
-    });
+    // Use navigation route if active, otherwise use selected route
+    List<latlong.LatLng>? routeToRender;
+    if (turnByTurnNavState.isNavigating && turnByTurnNavState.activeRoute != null) {
+      routeToRender = turnByTurnNavState.activeRoute!.points;
+      AppLogger.debug('Rendering navigation route', tag: 'MAP', data: {
+        'points': routeToRender.length,
+      });
+    } else if (routePoints != null && routePoints.isNotEmpty) {
+      routeToRender = routePoints;
+      AppLogger.debug('Rendering selected route', tag: 'MAP', data: {
+        'points': routeToRender.length,
+      });
+    } else {
+      return; // No route to render
+    }
 
     try {
       // Convert LatLng points to Mapbox Position list
-      final positions = routePoints.map((point) =>
+      final positions = routeToRender.map((point) =>
         Position(point.longitude, point.latitude)
       ).toList();
 
@@ -2830,11 +2832,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await _mapboxMap?.style.addLayer(lineLayer);
 
       AppLogger.success('Route polyline added', tag: 'MAP', data: {
-        'points': routePoints.length,
+        'points': routeToRender.length,
       });
     } catch (e, stackTrace) {
       AppLogger.error('Failed to add route polyline', tag: 'MAP', error: e, stackTrace: stackTrace, data: {
-        'routePointsCount': routePoints.length,
+        'routePointsCount': routeToRender.length,
         'errorType': e.runtimeType.toString(),
       });
     }
