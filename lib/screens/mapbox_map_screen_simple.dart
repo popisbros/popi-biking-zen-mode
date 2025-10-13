@@ -2676,22 +2676,43 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Add route polyline to map
   Future<void> _addRoutePolyline() async {
+    if (_mapboxMap == null) {
+      AppLogger.warning('Cannot add route polyline - map not ready', tag: 'MAP');
+      return;
+    }
+
     final searchState = ref.read(searchProvider);
     final routePoints = searchState.routePoints;
     final previewFastest = searchState.previewFastestRoute;
     final previewSafest = searchState.previewSafestRoute;
 
-    // Clear all route layers first
-    try {
-      await _mapboxMap?.style.removeStyleLayer('route-layer');
-      await _mapboxMap?.style.removeStyleSource('route-source');
-      await _mapboxMap?.style.removeStyleLayer('preview-fastest-layer');
-      await _mapboxMap?.style.removeStyleSource('preview-fastest-source');
-      await _mapboxMap?.style.removeStyleLayer('preview-safest-layer');
-      await _mapboxMap?.style.removeStyleSource('preview-safest-source');
-    } catch (e) {
-      // Layers/sources don't exist, that's fine
+    // Clear all route layers and sources
+    // CRITICAL: Must remove layers BEFORE sources (Mapbox requirement)
+    final layersToRemove = ['route-layer', 'preview-fastest-layer', 'preview-safest-layer'];
+    final sourcesToRemove = ['route-source', 'preview-fastest-source', 'preview-safest-source'];
+
+    // Step 1: Remove all layers
+    for (final layer in layersToRemove) {
+      try {
+        await _mapboxMap!.style.removeStyleLayer(layer);
+        AppLogger.debug('Removed layer: $layer', tag: 'MAP');
+      } catch (e) {
+        // Layer doesn't exist, that's fine
+      }
     }
+
+    // Step 2: Remove all sources (only after layers are removed)
+    for (final source in sourcesToRemove) {
+      try {
+        await _mapboxMap!.style.removeStyleSource(source);
+        AppLogger.debug('Removed source: $source', tag: 'MAP');
+      } catch (e) {
+        // Source doesn't exist, that's fine
+      }
+    }
+
+    // Small delay to ensure Mapbox processes the removals
+    await Future.delayed(const Duration(milliseconds: 50));
 
     // Show preview routes if both exist
     if (previewFastest != null && previewSafest != null) {
@@ -2788,9 +2809,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Add layer to map (below POI labels if they exist)
       await _mapboxMap?.style.addLayer(lineLayer);
 
-      AppLogger.success('Route polyline added', tag: 'MAP');
+      AppLogger.success('Route polyline added', tag: 'MAP', data: {
+        'points': routePoints.length,
+      });
     } catch (e, stackTrace) {
-      AppLogger.error('Failed to add route polyline', tag: 'MAP', error: e, stackTrace: stackTrace);
+      AppLogger.error('Failed to add route polyline', tag: 'MAP', error: e, stackTrace: stackTrace, data: {
+        'routePointsCount': routePoints.length,
+        'errorType': e.runtimeType.toString(),
+      });
     }
   }
 
