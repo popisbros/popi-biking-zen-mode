@@ -1460,13 +1460,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for location changes to update user marker
     ref.listen(locationNotifierProvider, (previous, next) {
+      AppLogger.debug('Location listener triggered', tag: 'MAP', data: {
+        'isMapReady': _isMapReady,
+        'hasAnnotationManager': _pointAnnotationManager != null,
+      });
       if (_isMapReady && _pointAnnotationManager != null) {
         next.whenData((location) {
           if (location != null) {
             AppLogger.debug('Location updated, refreshing user marker', tag: 'MAP');
             _handleGPSLocationChange(location);
+          } else {
+            AppLogger.warning('Location is null', tag: 'MAP');
           }
         });
+      } else {
+        AppLogger.warning('Map not ready or annotation manager null', tag: 'MAP');
       }
     });
 
