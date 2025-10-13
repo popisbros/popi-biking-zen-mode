@@ -156,10 +156,12 @@ class LocationService {
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 30, // Update every 30 meters (reduced frequency for performance)
+        timeLimit: Duration(seconds: 3), // Also update every 3 seconds even if not moved
       );
 
       AppLogger.location('Starting position stream', data: {
-        'distanceFilter': '30m (optimized for performance)',
+        'distanceFilter': '30m',
+        'timeLimit': '3s',
       });
 
       _positionStream = Geolocator.getPositionStream(
