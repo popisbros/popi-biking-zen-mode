@@ -164,13 +164,12 @@ class LocationService {
 
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 30, // Update every 30 meters (reduced frequency for performance)
-        timeLimit: Duration(seconds: 3), // Also update every 3 seconds even if not moved
+        distanceFilter: 10, // Update every 10 meters for more frequent updates
       );
 
       AppLogger.location('Starting position stream', data: {
-        'distanceFilter': '30m',
-        'timeLimit': '3s',
+        'distanceFilter': '10m',
+        'note': 'Removed timeLimit - may not be supported on iOS',
       });
 
       _positionStream = Geolocator.getPositionStream(
@@ -197,11 +196,16 @@ class LocationService {
           _locationController.add(locationData);
           AppLogger.location('Location data broadcast to listeners');
         },
-        onError: (error) {
-          AppLogger.error('Position stream error', tag: 'LOCATION', error: error);
+        onError: (error, stackTrace) {
+          AppLogger.error('Position stream error', tag: 'LOCATION', error: error, stackTrace: stackTrace);
+          AppLogger.debug('Error type', tag: 'LOCATION', data: {
+            'errorType': error.runtimeType.toString(),
+            'errorMessage': error.toString(),
+          });
         },
         onDone: () {
-          AppLogger.debug('Position stream completed', tag: 'LOCATION');
+          AppLogger.warning('Position stream completed unexpectedly', tag: 'LOCATION');
+          AppLogger.debug('Stream ended - this should not happen unless tracking was stopped', tag: 'LOCATION');
         },
       );
 
