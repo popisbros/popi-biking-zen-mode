@@ -5,7 +5,9 @@ import '../providers/navigation_provider.dart';
 /// Navigation control FABs (End Navigation + Voice Mute)
 /// These appear alongside existing FABs when navigation is active
 class NavigationControls extends ConsumerStatefulWidget {
-  const NavigationControls({super.key});
+  final VoidCallback? onNavigationEnded;
+
+  const NavigationControls({super.key, this.onNavigationEnded});
 
   @override
   ConsumerState<NavigationControls> createState() => _NavigationControlsState();
@@ -85,6 +87,9 @@ class _NavigationControlsState extends ConsumerState<NavigationControls> {
               onPressed: () {
                 Navigator.of(context).pop();
                 ref.read(navigationProvider.notifier).stopNavigation();
+
+                // Call callback to clear route from map
+                widget.onNavigationEnded?.call();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(

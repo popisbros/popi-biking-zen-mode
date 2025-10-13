@@ -704,6 +704,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
+    // Store current pitch and set to 10° BEFORE zooming to routes
+    _pitchBeforeRouteCalculation = _currentPitch;
+    if (_mapboxMap != null) {
+      await _mapboxMap!.easeTo(
+        CameraOptions(pitch: 10.0),
+        MapAnimationOptions(duration: 500),
+      );
+      _currentPitch = 10.0;
+    }
+
     // Set preview routes in state (to display both on map)
     if (routes.length == 2) {
       final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
@@ -713,19 +723,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Refresh markers to show preview routes on map
       _addMarkers();
 
-      // Auto-zoom to fit both routes on screen
+      // Auto-zoom to fit both routes on screen (AFTER pitch is set)
       final allPoints = [...fastest.points, ...safest.points];
       await _fitRouteBounds(allPoints);
-    }
-
-    // Store current pitch and set to 10° before showing route selection dialog
-    _pitchBeforeRouteCalculation = _currentPitch;
-    if (_mapboxMap != null) {
-      await _mapboxMap!.easeTo(
-        CameraOptions(pitch: 10.0),
-        MapAnimationOptions(duration: 500),
-      );
-      _currentPitch = 10.0;
     }
 
     // Show route selection dialog
@@ -877,9 +877,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _pitchBeforeRouteCalculation = null;
     }
 
-    // Zoom map to fit the entire route
-    await _fitRouteBounds(route.points);
-
     AppLogger.success('Route displayed', tag: 'ROUTING', data: {
       'type': route.type.name,
       'points': route.points.length,
@@ -890,6 +887,27 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Start turn-by-turn navigation automatically
     ref.read(navigationProvider.notifier).startNavigation(route);
     AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
+
+    // Zoom to current GPS position for navigation view (close-up)
+    final currentLocation = ref.read(locationNotifierProvider).value;
+    if (currentLocation != null && _mapboxMap != null) {
+      final navigationZoom = _calculateNavigationZoom(currentLocation.speed);
+      final bearing = currentLocation.heading ?? 0.0;
+      final screenHeight = MediaQuery.of(context).size.height;
+      final offsetPixels = screenHeight / 4; // User at 3/4 from top
+
+      await _mapboxMap!.easeTo(
+        CameraOptions(
+          center: Point(coordinates: Position(currentLocation.longitude, currentLocation.latitude)),
+          zoom: navigationZoom,
+          bearing: -bearing,
+          pitch: _currentPitch,
+          padding: MbxEdgeInsets(top: offsetPixels, left: 0, bottom: 0, right: 0),
+        ),
+        MapAnimationOptions(duration: 1000),
+      );
+      AppLogger.debug('Camera positioned for navigation', tag: 'NAVIGATION');
+    }
   }
 
   /// Display route directly (without selection dialog) - legacy method
@@ -1816,7 +1834,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     ),
                   const SizedBox(height: 8),
                   // Navigation controls (End + Mute buttons)
-                  const NavigationControls(),
+                  NavigationControls(
+                    onNavigationEnded: () {
+                      setState(() {
+                        _activeRoute = null;
+                      });
+                    },
+                  ),
                 ],
               ),
             ),
@@ -2786,14 +2810,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Use navigation route if active, otherwise use selected route
     List<latlong.LatLng>? routeToRender;
+    int routeColor;
     if (turnByTurnNavState.isNavigating && turnByTurnNavState.activeRoute != null) {
       routeToRender = turnByTurnNavState.activeRoute!.points;
-      AppLogger.debug('Rendering navigation route', tag: 'MAP', data: {
+      routeColor = 0xFF9C27B0; // Purple during navigation
+      AppLogger.debug('Rendering navigation route (purple)', tag: 'MAP', data: {
         'points': routeToRender.length,
       });
     } else if (routePoints != null && routePoints.isNotEmpty) {
       routeToRender = routePoints;
-      AppLogger.debug('Rendering selected route', tag: 'MAP', data: {
+      routeColor = 0xFF85a78b; // Green for selected route
+      AppLogger.debug('Rendering selected route (green)', tag: 'MAP', data: {
         'points': routeToRender.length,
       });
     } else {
@@ -2822,7 +2849,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final lineLayer = LineLayer(
         id: 'route-layer',
         sourceId: 'route-source',
-        lineColor: 0xFF85a78b,
+        lineColor: routeColor,
         lineWidth: 6.0,
         lineCap: LineCap.ROUND,
         lineJoin: LineJoin.ROUND,
