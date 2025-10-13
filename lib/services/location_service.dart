@@ -164,11 +164,11 @@ class LocationService {
 
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // Update every 10 meters for more frequent updates
+        distanceFilter: 5, // Update every 5 meters for testing (more frequent updates)
       );
 
       AppLogger.location('Starting position stream', data: {
-        'distanceFilter': '10m',
+        'distanceFilter': '5m (testing)',
         'note': 'Removed timeLimit - may not be supported on iOS',
       });
 
