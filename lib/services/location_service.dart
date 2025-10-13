@@ -155,11 +155,11 @@ class LocationService {
 
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // Update every 10 meters
+        distanceFilter: 30, // Update every 30 meters (reduced frequency for performance)
       );
 
       AppLogger.location('Starting position stream', data: {
-        'distanceFilter': '10m',
+        'distanceFilter': '30m (optimized for performance)',
       });
 
       _positionStream = Geolocator.getPositionStream(

@@ -18,6 +18,7 @@ final navigationProvider = NotifierProvider<NavigationNotifier, NavigationState>
 class NavigationNotifier extends Notifier<NavigationState> {
   StreamSubscription<LocationData>? _locationSubscription;
   List<ManeuverInstruction> _detectedManeuvers = [];
+  DateTime? _lastUpdateTime;
 
   @override
   NavigationState build() {
@@ -117,6 +118,13 @@ class NavigationNotifier extends Notifier<NavigationState> {
     if (!state.isNavigating || state.activeRoute == null) {
       return;
     }
+
+    // Throttle updates to max once per 3 seconds for performance
+    final now = DateTime.now();
+    if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 3) {
+      return; // Skip this update
+    }
+    _lastUpdateTime = now;
 
     final currentPos = LatLng(locationData.latitude, locationData.longitude);
     final route = state.activeRoute!;

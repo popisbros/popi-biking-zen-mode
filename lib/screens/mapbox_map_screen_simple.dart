@@ -888,8 +888,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
 
     // Start turn-by-turn navigation automatically
-    ref.read(navigationProvider.notifier).startNavigation(route);
-    AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
+    // TEMPORARY: Commented out for performance testing
+    // TODO: Re-enable or make optional after performance investigation
+    // ref.read(navigationProvider.notifier).startNavigation(route);
+    // AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
   }
 
   /// Display route directly (without selection dialog) - legacy method
