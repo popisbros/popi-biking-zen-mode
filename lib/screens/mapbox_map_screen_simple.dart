@@ -28,7 +28,11 @@ import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/debug_overlay.dart';
+import '../widgets/navigation_card.dart';
+import '../widgets/navigation_controls.dart';
+import '../widgets/off_route_dialog.dart';
 import '../providers/debug_provider.dart';
+import '../providers/navigation_provider.dart';
 import 'map_screen.dart';
 import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
@@ -882,6 +886,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       'distance': route.distanceKm,
       'duration': route.durationMin,
     });
+
+    // Start turn-by-turn navigation automatically
+    ref.read(navigationProvider.notifier).startNavigation(route);
+    AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
   }
 
   /// Display route directly (without selection dialog) - legacy method
@@ -1806,6 +1814,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       tooltip: 'Test iOS Navigation (Step 1.2)',
                       child: const Icon(Icons.navigation),
                     ),
+                  const SizedBox(height: 8),
+                  // Navigation controls (End + Mute buttons)
+                  const NavigationControls(),
                 ],
               ),
             ),
@@ -1916,6 +1927,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               right: 80, // Leave space for bottom-right controls
               child: _buildRouteNavigationSheet(_activeRoute!),
             ),
+
+          // Turn-by-turn navigation card overlay
+          const NavigationCard(),
+
+          // Off-route dialog handler
+          const OffRouteDialog(),
 
           // Debug overlay - on top of everything
           const DebugOverlay(),
@@ -2934,6 +2951,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _addBreadcrumb(location);
     }
 
+    // Turn-by-turn navigation camera auto-follow (user at 3/4 from top)
+    final turnByTurnNavState = ref.read(navigationProvider);
+    if (turnByTurnNavState.isNavigating) {
+      await _handleTurnByTurnCameraFollow(location);
+      return; // Skip regular navigation mode camera (turn-by-turn takes priority)
+    }
+
     // Auto-center logic (threshold: navigation 3m, exploration 25m)
     if (_originalGPSReference != null) {
       final distance = _calculateDistance(
@@ -3120,6 +3144,52 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     if (speedMps < 8.33) return 15.0;  // 25-30 km/h (racing)
     if (speedMps < 11.11) return 14.5; // 30-40 km/h (electric bike)
     return 14.0;                       // 40+ km/h (crazy fast!)
+  }
+
+  /// Handle camera auto-follow for turn-by-turn navigation
+  /// Positions user at 3/4 from top of screen for better forward view
+  Future<void> _handleTurnByTurnCameraFollow(LocationData location) async {
+    if (_mapboxMap == null) return;
+
+    // Calculate target zoom based on speed
+    final targetZoom = _calculateNavigationZoom(location.speed);
+
+    // Calculate bearing from user heading (or travel direction if heading unavailable)
+    double? bearing;
+    if (location.heading != null && location.heading! >= 0) {
+      bearing = location.heading!;
+    } else {
+      bearing = _calculateTravelDirection();
+    }
+
+    // Position user at 3/4 from top (offset camera northward)
+    // This requires calculating a point offset in the direction of travel
+    final screenHeight = MediaQuery.of(context).size.height;
+    final offsetPixels = screenHeight / 4; // Offset by 1/4 of screen height
+
+    // Camera target is user position (marker will appear at 3/4 from top due to padding)
+    await _mapboxMap!.easeTo(
+      CameraOptions(
+        center: Point(coordinates: Position(location.longitude, location.latitude)),
+        zoom: targetZoom,
+        bearing: bearing != null ? -bearing : 0, // Negative: up = direction of travel
+        pitch: _currentPitch,
+        // Note: Mapbox doesn't support anchor offset directly, so we use padding
+        padding: MbxEdgeInsets(
+          top: offsetPixels,
+          left: 0,
+          bottom: 0,
+          right: 0,
+        ),
+      ),
+      MapAnimationOptions(duration: 500), // Smooth 500ms animation
+    );
+
+    AppLogger.debug('Turn-by-turn camera follow', tag: 'NAVIGATION', data: {
+      'zoom': targetZoom.toStringAsFixed(1),
+      'bearing': bearing?.toStringAsFixed(1) ?? 'none',
+      'speed': '${(location.speed ?? 0) * 3.6}km/h',
+    });
   }
 
   /// Calculate bearing between two points (0-360°, 0=North, 90=East)
