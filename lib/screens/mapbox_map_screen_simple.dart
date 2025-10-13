@@ -1847,6 +1847,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       setState(() {
                         _activeRoute = null;
                       });
+                      // Clear route from search provider to remove from map
+                      ref.read(searchProvider.notifier).clearRoute();
+                      // Refresh markers to remove route polyline
+                      _addMarkers();
+                      AppLogger.success('Navigation ended, route cleared', tag: 'NAVIGATION');
                     },
                   ),
                 ],
