@@ -3246,6 +3246,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final screenHeight = MediaQuery.of(context).size.height;
     final offsetPixels = screenHeight / 4; // Offset by 1/4 of screen height
 
+    AppLogger.debug('Turn-by-turn camera update', tag: 'CAMERA', data: {
+      'speed': '${((location.speed ?? 0) * 3.6).toStringAsFixed(1)} km/h',
+      'zoom': targetZoom.toStringAsFixed(1),
+      'heading': location.heading?.toStringAsFixed(0) ?? 'null',
+      'bearing': bearing?.toStringAsFixed(0) ?? 'null',
+      'offset': '${offsetPixels.toStringAsFixed(0)}px',
+      'pitch': _currentPitch.toStringAsFixed(0),
+    });
+
     // Camera target is user position (marker will appear at 3/4 from top due to padding)
     await _mapboxMap!.easeTo(
       CameraOptions(
