@@ -8,7 +8,7 @@ class NavigationEngine {
   static const Distance _distance = Distance();
 
   // Thresholds
-  static const double _offRouteThresholdMeters = 50.0; // 50m off route = alert
+  static const double _offRouteThresholdMeters = 30.0; // 30m off route = alert
   static const double _sharpTurnAngle = 120.0; // degrees
   static const double _mediumTurnAngle = 45.0; // degrees
   static const double _slightTurnAngle = 20.0; // degrees
