@@ -1920,13 +1920,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           ),
 
           // Route navigation sheet (persistent bottom sheet, non-modal)
-          if (_activeRoute != null)
-            Positioned(
-              bottom: 0,
-              left: 80, // Leave space for bottom-left controls
-              right: 80, // Leave space for bottom-right controls
-              child: _buildRouteNavigationSheet(_activeRoute!),
-            ),
+          // Hidden when turn-by-turn navigation is active (new NavigationCard is used instead)
+          Consumer(
+            builder: (context, ref, child) {
+              final turnByTurnNavState = ref.watch(navigationProvider);
+              final showOldSheet = _activeRoute != null && !turnByTurnNavState.isNavigating;
+
+              if (!showOldSheet) return const SizedBox.shrink();
+
+              return Positioned(
+                bottom: 0,
+                left: 80, // Leave space for bottom-left controls
+                right: 80, // Leave space for bottom-right controls
+                child: _buildRouteNavigationSheet(_activeRoute!),
+              );
+            },
+          ),
 
           // Turn-by-turn navigation card overlay
           const NavigationCard(),
