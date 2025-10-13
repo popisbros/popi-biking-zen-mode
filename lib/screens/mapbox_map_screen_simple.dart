@@ -2710,6 +2710,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     }
 
+    // Wait for layer removals to complete
+    await Future.delayed(const Duration(milliseconds: 100));
+
     // Step 2: Remove all sources (only after layers are removed)
     for (final source in sourcesToRemove) {
       try {
@@ -2720,8 +2723,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     }
 
-    // Small delay to ensure Mapbox processes the removals
-    await Future.delayed(const Duration(milliseconds: 50));
+    // Wait for source removals to complete before adding new ones
+    await Future.delayed(const Duration(milliseconds: 100));
 
     // Show preview routes if both exist
     if (previewFastest != null && previewSafest != null) {
@@ -2780,6 +2783,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Show selected route if it exists and no preview routes
     if (routePoints == null || routePoints.isEmpty) {
+      return;
+    }
+
+    // Don't show old route polyline when turn-by-turn navigation is active
+    // (navigation uses its own route visualization)
+    final turnByTurnNavState = ref.read(navigationProvider);
+    if (turnByTurnNavState.isNavigating) {
+      AppLogger.debug('Skipping route polyline - turn-by-turn navigation active', tag: 'MAP');
       return;
     }
 
