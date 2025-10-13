@@ -888,10 +888,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
 
     // Start turn-by-turn navigation automatically
-    // TEMPORARY: Commented out for performance testing
-    // TODO: Re-enable or make optional after performance investigation
-    // ref.read(navigationProvider.notifier).startNavigation(route);
-    // AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
+    ref.read(navigationProvider.notifier).startNavigation(route);
+    AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
   }
 
   /// Display route directly (without selection dialog) - legacy method
@@ -2955,7 +2953,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Turn-by-turn navigation camera auto-follow (user at 3/4 from top)
     final turnByTurnNavState = ref.read(navigationProvider);
+    AppLogger.debug('Checking turn-by-turn nav state', tag: 'CAMERA', data: {
+      'isNavigating': turnByTurnNavState.isNavigating,
+    });
     if (turnByTurnNavState.isNavigating) {
+      AppLogger.success('Starting camera follow for turn-by-turn', tag: 'CAMERA');
       await _handleTurnByTurnCameraFollow(location);
       return; // Skip regular navigation mode camera (turn-by-turn takes priority)
     }
