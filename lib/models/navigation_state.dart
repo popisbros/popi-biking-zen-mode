@@ -37,6 +37,9 @@ class NavigationState {
   /// Whether user has gone off the planned route
   final bool isOffRoute;
 
+  /// Distance from route in meters (when off-route)
+  final double offRouteDistanceMeters;
+
   /// Whether off-route dialog is currently shown
   final bool showingOffRouteDialog;
 
@@ -55,6 +58,7 @@ class NavigationState {
     this.totalDistanceRemaining = 0,
     this.estimatedTimeRemaining = 0,
     this.isOffRoute = false,
+    this.offRouteDistanceMeters = 0,
     this.showingOffRouteDialog = false,
     this.lastUpdateTime,
   });
@@ -124,6 +128,7 @@ class NavigationState {
     double? totalDistanceRemaining,
     int? estimatedTimeRemaining,
     bool? isOffRoute,
+    double? offRouteDistanceMeters,
     bool? showingOffRouteDialog,
     DateTime? lastUpdateTime,
   }) {
@@ -139,6 +144,7 @@ class NavigationState {
       totalDistanceRemaining: totalDistanceRemaining ?? this.totalDistanceRemaining,
       estimatedTimeRemaining: estimatedTimeRemaining ?? this.estimatedTimeRemaining,
       isOffRoute: isOffRoute ?? this.isOffRoute,
+      offRouteDistanceMeters: offRouteDistanceMeters ?? this.offRouteDistanceMeters,
       showingOffRouteDialog: showingOffRouteDialog ?? this.showingOffRouteDialog,
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
     );

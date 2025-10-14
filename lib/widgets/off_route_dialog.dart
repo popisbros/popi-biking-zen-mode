@@ -27,6 +27,12 @@ class OffRouteDialog extends ConsumerWidget {
   }
 
   void _showDialog(BuildContext context, WidgetRef ref) {
+    final navState = ref.read(navigationProvider);
+    final distanceMeters = navState.offRouteDistanceMeters;
+    final distanceText = distanceMeters >= 1000
+        ? '${(distanceMeters / 1000).toStringAsFixed(2)} km'
+        : '${distanceMeters.toStringAsFixed(0)} m';
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -43,8 +49,9 @@ class OffRouteDialog extends ConsumerWidget {
               const Text('Off Route'),
             ],
           ),
-          content: const Text(
-            'You have deviated from the planned route.\n\n'
+          content: Text(
+            'You have deviated from the planned route.\n'
+            'Distance from route: $distanceText\n\n'
             'Would you like to recalculate the route from your current location?',
           ),
           actions: [

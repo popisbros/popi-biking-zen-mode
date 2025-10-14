@@ -106,6 +106,18 @@ class NavigationEngine {
     return distance > _offRouteThresholdMeters;
   }
 
+  /// Get distance from current position to the route in meters
+  static double getDistanceToRoute(LatLng current, List<LatLng> route) {
+    if (route.isEmpty) return 0;
+
+    final closestSegment = findClosestSegment(current, route);
+    return _distanceToSegment(
+      current,
+      route[closestSegment],
+      route[math.min(closestSegment + 1, route.length - 1)],
+    );
+  }
+
   /// Calculate total remaining distance from current position to end
   static double calculateRemainingDistance(
     LatLng current,

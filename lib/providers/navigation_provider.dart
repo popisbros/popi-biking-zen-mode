@@ -119,9 +119,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
       return;
     }
 
-    // Throttle updates to max once per 3 seconds for performance
+    // Throttle updates to max once per 1 second for performance
     final now = DateTime.now();
-    if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 3) {
+    if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 1) {
       return; // Skip this update
     }
     _lastUpdateTime = now;
@@ -132,8 +132,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Find closest segment on route
     final closestSegment = NavigationEngine.findClosestSegment(currentPos, route.points);
 
-    // Check if off route
+    // Check if off route and get distance
     final isOffRoute = NavigationEngine.isOffRoute(currentPos, route.points);
+    final offRouteDistance = NavigationEngine.getDistanceToRoute(currentPos, route.points);
 
     // Calculate remaining distance
     final remainingDistance = NavigationEngine.calculateRemainingDistance(
@@ -184,6 +185,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       totalDistanceRemaining: remainingDistance.toDouble(),
       estimatedTimeRemaining: timeRemaining,
       isOffRoute: isOffRoute,
+      offRouteDistanceMeters: offRouteDistance,
       lastUpdateTime: DateTime.now(),
     );
 
