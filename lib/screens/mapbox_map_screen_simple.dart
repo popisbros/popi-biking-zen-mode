@@ -888,6 +888,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     ref.read(navigationProvider.notifier).startNavigation(route);
     AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
 
+    // Set navigation pitch (35° for better forward view)
+    const navigationPitch = 35.0;
+    _currentPitch = navigationPitch;
+
     // Zoom to current GPS position for navigation view (close-up)
     final currentLocation = ref.read(locationNotifierProvider).value;
     if (currentLocation != null && _mapboxMap != null) {
@@ -901,12 +905,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           center: Point(coordinates: Position(currentLocation.longitude, currentLocation.latitude)),
           zoom: navigationZoom,
           bearing: -bearing,
-          pitch: _currentPitch,
+          pitch: navigationPitch,
           padding: MbxEdgeInsets(top: offsetPixels, left: 0, bottom: 0, right: 0),
         ),
         MapAnimationOptions(duration: 1000),
       );
-      AppLogger.debug('Camera positioned for navigation', tag: 'NAVIGATION');
+      AppLogger.debug('Camera positioned for navigation', tag: 'NAVIGATION', data: {
+        'pitch': '${navigationPitch}°',
+      });
     }
   }
 
@@ -1843,7 +1849,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   const SizedBox(height: 8),
                   // Navigation controls (End + Mute buttons)
                   NavigationControls(
-                    onNavigationEnded: () {
+                    onNavigationEnded: () async {
                       setState(() {
                         _activeRoute = null;
                       });
@@ -1851,6 +1857,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       ref.read(searchProvider.notifier).clearRoute();
                       // Refresh markers to remove route polyline
                       _addMarkers();
+
+                      // Restore pitch to user's previous setting (usually 60° or 0°)
+                      if (_mapboxMap != null) {
+                        final mapState = ref.read(mapProvider);
+                        final restorePitch = mapState.is3D ? 60.0 : 0.0;
+                        await _mapboxMap!.easeTo(
+                          CameraOptions(pitch: restorePitch),
+                          MapAnimationOptions(duration: 500),
+                        );
+                        _currentPitch = restorePitch;
+                        AppLogger.debug('Restored pitch after navigation', tag: 'NAVIGATION', data: {
+                          'pitch': '${restorePitch}°',
+                        });
+                      }
+
                       AppLogger.success('Navigation ended, route cleared', tag: 'NAVIGATION');
                     },
                   ),
