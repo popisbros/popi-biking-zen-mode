@@ -715,17 +715,27 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _currentPitch = 10.0;
     }
 
-    // Set preview routes in state (to display both on map)
-    if (routes.length == 2) {
+    // Set preview routes in state (to display on map)
+    if (routes.length >= 2) {
       final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
-      final safest = routes.firstWhere((r) => r.type == RouteType.safest);
-      ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
+      final safest = routes.where((r) => r.type == RouteType.safest).firstOrNull;
+      final shortest = routes.where((r) => r.type == RouteType.shortest).firstOrNull;
+
+      ref.read(searchProvider.notifier).setPreviewRoutes(
+        fastest.points,
+        safest?.points ?? shortest!.points, // Use safest or shortest as second route
+        routes.length == 3 ? shortest?.points : null, // Add third route if we have 3
+      );
 
       // Refresh markers to show preview routes on map
       _addMarkers();
 
-      // Auto-zoom to fit both routes on screen (AFTER pitch is set)
-      final allPoints = [...fastest.points, ...safest.points];
+      // Auto-zoom to fit all routes on screen (AFTER pitch is set)
+      final allPoints = [
+        ...fastest.points,
+        if (safest != null) ...safest.points,
+        if (shortest != null) ...shortest.points,
+      ];
       await _fitRouteBounds(allPoints);
     }
 
@@ -2754,11 +2764,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final routePoints = searchState.routePoints;
     final previewFastest = searchState.previewFastestRoute;
     final previewSafest = searchState.previewSafestRoute;
+    final previewShortest = searchState.previewShortestRoute;
 
     // Clear all route layers and sources
     // CRITICAL: Must remove layers BEFORE sources (Mapbox requirement)
-    final layersToRemove = ['route-layer', 'preview-fastest-layer', 'preview-safest-layer'];
-    final sourcesToRemove = ['route-source', 'preview-fastest-source', 'preview-safest-source'];
+    final layersToRemove = ['route-layer', 'preview-fastest-layer', 'preview-safest-layer', 'preview-shortest-layer'];
+    final sourcesToRemove = ['route-source', 'preview-fastest-source', 'preview-safest-source', 'preview-shortest-source'];
 
     // Step 1: Remove all layers
     for (final layer in layersToRemove) {
@@ -2786,11 +2797,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Wait for source removals to complete before adding new ones
     await Future.delayed(const Duration(milliseconds: 100));
 
-    // Show preview routes if both exist
-    if (previewFastest != null && previewSafest != null) {
+    // Show preview routes if at least 2 exist
+    if (previewFastest != null && (previewSafest != null || previewShortest != null)) {
       AppLogger.debug('Adding preview route polylines', tag: 'MAP', data: {
         'fastest': previewFastest.length,
-        'safest': previewSafest.length,
+        'safest': previewSafest?.length ?? 0,
+        'shortest': previewShortest?.length ?? 0,
       });
 
       try {
@@ -2814,25 +2826,49 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         );
         await _mapboxMap?.style.addLayer(fastestLayer);
 
-        // Add safest route (green)
-        final safestPositions = previewSafest.map((point) =>
-          Position(point.longitude, point.latitude)
-        ).toList();
-        final safestLineString = LineString(coordinates: safestPositions);
-        final safestSource = GeoJsonSource(
-          id: 'preview-safest-source',
-          data: jsonEncode(safestLineString.toJson()),
-        );
-        await _mapboxMap?.style.addSource(safestSource);
-        final safestLayer = LineLayer(
-          id: 'preview-safest-layer',
-          sourceId: 'preview-safest-source',
-          lineColor: 0xFF4CAF50, // Green
-          lineWidth: 8.0,
-          lineCap: LineCap.ROUND,
-          lineJoin: LineJoin.ROUND,
-        );
-        await _mapboxMap?.style.addLayer(safestLayer);
+        // Add safest route (green) if exists
+        if (previewSafest != null) {
+          final safestPositions = previewSafest.map((point) =>
+            Position(point.longitude, point.latitude)
+          ).toList();
+          final safestLineString = LineString(coordinates: safestPositions);
+          final safestSource = GeoJsonSource(
+            id: 'preview-safest-source',
+            data: jsonEncode(safestLineString.toJson()),
+          );
+          await _mapboxMap?.style.addSource(safestSource);
+          final safestLayer = LineLayer(
+            id: 'preview-safest-layer',
+            sourceId: 'preview-safest-source',
+            lineColor: 0xFF4CAF50, // Green
+            lineWidth: 8.0,
+            lineCap: LineCap.ROUND,
+            lineJoin: LineJoin.ROUND,
+          );
+          await _mapboxMap?.style.addLayer(safestLayer);
+        }
+
+        // Add shortest route (red) if exists
+        if (previewShortest != null) {
+          final shortestPositions = previewShortest.map((point) =>
+            Position(point.longitude, point.latitude)
+          ).toList();
+          final shortestLineString = LineString(coordinates: shortestPositions);
+          final shortestSource = GeoJsonSource(
+            id: 'preview-shortest-source',
+            data: jsonEncode(shortestLineString.toJson()),
+          );
+          await _mapboxMap?.style.addSource(shortestSource);
+          final shortestLayer = LineLayer(
+            id: 'preview-shortest-layer',
+            sourceId: 'preview-shortest-source',
+            lineColor: 0xFFF44336, // Red
+            lineWidth: 8.0,
+            lineCap: LineCap.ROUND,
+            lineJoin: LineJoin.ROUND,
+          );
+          await _mapboxMap?.style.addLayer(shortestLayer);
+        }
 
         AppLogger.success('Preview route polylines added', tag: 'MAP');
       } catch (e, stackTrace) {
