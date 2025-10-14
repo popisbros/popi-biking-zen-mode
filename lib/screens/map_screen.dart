@@ -883,10 +883,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           description = 'Prioritizes cycle lanes & quiet roads';
                           break;
                         case RouteType.shortest:
-                          icon = Icons.directions_walk;
+                          icon = Icons.directions_car;
                           color = Colors.red;
-                          label = 'Walking Route (foot)';
-                          description = 'Testing: pedestrian route';
+                          label = 'Shortest Route (car)';
+                          description = 'Testing: shortest distance by car';
                           break;
                       }
 
