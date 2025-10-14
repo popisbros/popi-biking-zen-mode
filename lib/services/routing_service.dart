@@ -207,7 +207,7 @@ class RoutingService {
         [startLon, startLat],
         [endLon, endLat],
       ],
-      "profile": "bike",
+      "profile": "car", // Fastest route uses car
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
@@ -225,7 +225,7 @@ class RoutingService {
     );
   }
 
-  /// Calculate shortest route (car profile for testing - different from bike routes)
+  /// Calculate shortest route (foot/walking profile for testing)
   Future<http.Response> _calculateShortestRoute({
     required double startLat,
     required double startLon,
@@ -234,13 +234,13 @@ class RoutingService {
   }) async {
     final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
 
-    // Use car profile for third route option
+    // Use foot profile for walking route
     final requestBody = jsonEncode({
       "points": [
         [startLon, startLat],
         [endLon, endLat],
       ],
-      "profile": "car", // Car profile as requested
+      "profile": "foot", // Walking/foot profile
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
@@ -298,7 +298,7 @@ class RoutingService {
         [startLon, startLat],
         [endLon, endLat],
       ],
-      "profile": "foot", // Safest route uses foot profile
+      "profile": "bike", // Safest route uses bike profile
       "locale": "en",
       "points_encoded": false,
       "elevation": false,

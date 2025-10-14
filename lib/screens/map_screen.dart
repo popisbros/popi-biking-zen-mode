@@ -871,9 +871,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
                       switch (route.type) {
                         case RouteType.fastest:
-                          icon = Icons.speed;
-                          color = Colors.blue;
-                          label = 'Fastest Route (bike)';
+                          icon = Icons.directions_car;
+                          color = Colors.red;
+                          label = 'Fastest Route (car)';
                           description = 'Optimized for speed';
                           break;
                         case RouteType.safest:
@@ -883,10 +883,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           description = 'Prioritizes cycle lanes & quiet roads';
                           break;
                         case RouteType.shortest:
-                          icon = Icons.directions_car;
-                          color = Colors.red;
-                          label = 'Shortest Route (car)';
-                          description = 'Testing: shortest distance by car';
+                          icon = Icons.directions_walk;
+                          color = Colors.blue;
+                          label = 'Walking Route (foot)';
+                          description = 'Walking/pedestrian route';
                           break;
                       }
 
@@ -2037,15 +2037,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   if (searchState.previewFastestRoute != null && (searchState.previewSafestRoute != null || searchState.previewShortestRoute != null))
                     PolylineLayer(
                       polylines: [
-                        // Fastest route in blue
+                        // Fastest route in red (car)
                         Polyline(
                           points: searchState.previewFastestRoute!,
                           strokeWidth: 8.0,
-                          color: Colors.blue,
+                          color: Colors.red,
                           borderStrokeWidth: 3.0,
                           borderColor: Colors.white,
                         ),
-                        // Safest route in green (if exists)
+                        // Safest route in green (bike - if exists)
                         if (searchState.previewSafestRoute != null)
                           Polyline(
                             points: searchState.previewSafestRoute!,
@@ -2054,12 +2054,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             borderStrokeWidth: 3.0,
                             borderColor: Colors.white,
                           ),
-                        // Shortest route in red (if exists)
+                        // Shortest route in blue (foot/walking - if exists)
                         if (searchState.previewShortestRoute != null)
                           Polyline(
                             points: searchState.previewShortestRoute!,
                             strokeWidth: 8.0,
-                            color: Colors.red,
+                            color: Colors.blue,
                             borderStrokeWidth: 3.0,
                             borderColor: Colors.white,
                           ),

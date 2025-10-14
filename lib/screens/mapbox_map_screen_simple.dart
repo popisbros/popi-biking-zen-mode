@@ -796,9 +796,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
                       switch (route.type) {
                         case RouteType.fastest:
-                          icon = Icons.speed;
-                          color = Colors.blue;
-                          label = 'Fastest Route (bike)';
+                          icon = Icons.directions_car;
+                          color = Colors.red;
+                          label = 'Fastest Route (car)';
                           description = 'Optimized for speed';
                           break;
                         case RouteType.safest:
@@ -808,10 +808,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           description = 'Prioritizes cycle lanes & quiet roads';
                           break;
                         case RouteType.shortest:
-                          icon = Icons.directions_car;
-                          color = Colors.red;
-                          label = 'Shortest Route (car)';
-                          description = 'Testing: shortest distance by car';
+                          icon = Icons.directions_walk;
+                          color = Colors.blue;
+                          label = 'Walking Route (foot)';
+                          description = 'Walking/pedestrian route';
                           break;
                       }
 
@@ -2838,7 +2838,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final fastestLayer = LineLayer(
           id: 'preview-fastest-layer',
           sourceId: 'preview-fastest-source',
-          lineColor: 0xFF2196F3, // Blue
+          lineColor: 0xFFF44336, // Red (car)
           lineWidth: 8.0,
           lineCap: LineCap.ROUND,
           lineJoin: LineJoin.ROUND,
@@ -2881,7 +2881,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           final shortestLayer = LineLayer(
             id: 'preview-shortest-layer',
             sourceId: 'preview-shortest-source',
-            lineColor: 0xFFF44336, // Red
+            lineColor: 0xFF2196F3, // Blue (foot/walking)
             lineWidth: 8.0,
             lineCap: LineCap.ROUND,
             lineJoin: LineJoin.ROUND,
