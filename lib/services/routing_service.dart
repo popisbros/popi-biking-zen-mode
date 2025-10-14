@@ -86,7 +86,9 @@ class RoutingService {
       return null;
     }
 
-    AppLogger.success('Calculated ${validRoutes.length} route(s)', tag: 'ROUTING');
+    AppLogger.success('Calculated ${validRoutes.length} route(s)', tag: 'ROUTING', data: {
+      'types': validRoutes.map((r) => r.type.name).join(', '),
+    });
     return validRoutes;
   }
 

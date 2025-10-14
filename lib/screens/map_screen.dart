@@ -758,6 +758,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
+    AppLogger.debug('Routes received', tag: 'ROUTING', data: {
+      'count': routes.length,
+      'types': routes.map((r) => r.type.name).join(', '),
+    });
+
     // Set preview routes in state (to display on map)
     if (routes.length >= 2) {
       final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
