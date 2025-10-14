@@ -298,7 +298,7 @@ class RoutingService {
         [startLon, startLat],
         [endLon, endLat],
       ],
-      "profile": "bike", // FIX: Was "foot", should be "bike" for safest bike route
+      "profile": "foot", // Safest route uses foot profile
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
