@@ -168,7 +168,7 @@ class LocationService {
       );
 
       AppLogger.location('Starting position stream', data: {
-        'distanceFilter': '5m (testing)',
+        'distanceFilter': '1m (testing)',
         'note': 'Removed timeLimit - may not be supported on iOS',
       });
 

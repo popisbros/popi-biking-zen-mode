@@ -119,7 +119,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       return;
     }
 
-    // Throttle updates to max once per 1 second for performance
+    // Throttle updates to max once per 1 second for testing (more responsive)
     final now = DateTime.now();
     if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 1) {
       return; // Skip this update
