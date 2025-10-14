@@ -9,6 +9,7 @@ import '../utils/api_logger.dart';
 enum RouteType {
   fastest,
   safest,
+  shortest, // Car route (testing)
 }
 
 /// Route result containing the route points and metadata
@@ -33,7 +34,7 @@ class RouteResult {
 class RoutingService {
   static const String _graphhopperBaseUrl = 'https://graphhopper.com/api/1';
 
-  /// Calculate multiple routes with different profiles (fastest and safest)
+  /// Calculate multiple routes with different profiles (fastest, safest, shortest)
   ///
   /// Returns a list of RouteResult objects, or null if all failed
   Future<List<RouteResult>?> calculateMultipleRoutes({
@@ -47,12 +48,12 @@ class RoutingService {
       return null;
     }
 
-    AppLogger.api('Calculating multiple routes (fastest & safest)', data: {
+    AppLogger.api('Calculating multiple routes (fastest, safest, shortest)', data: {
       'from': '$startLat,$startLon',
       'to': '$endLat,$endLon',
     });
 
-    // Calculate both routes in parallel
+    // Calculate all three routes in parallel
     final results = await Future.wait([
       _calculateSingleRoute(
         startLat: startLat,
@@ -67,6 +68,13 @@ class RoutingService {
         endLat: endLat,
         endLon: endLon,
         type: RouteType.safest,
+      ),
+      _calculateSingleRoute(
+        startLat: startLat,
+        startLon: startLon,
+        endLat: endLat,
+        endLon: endLon,
+        type: RouteType.shortest,
       ),
     ]);
 
@@ -100,12 +108,19 @@ class RoutingService {
               endLat: endLat,
               endLon: endLon,
             )
-          : await _calculateStandardRoute(
-              startLat: startLat,
-              startLon: startLon,
-              endLat: endLat,
-              endLon: endLon,
-            );
+          : type == RouteType.shortest
+              ? await _calculateShortestRoute(
+                  startLat: startLat,
+                  startLon: startLon,
+                  endLat: endLat,
+                  endLon: endLon,
+                )
+              : await _calculateStandardRoute(
+                  startLat: startLat,
+                  startLon: startLon,
+                  endLat: endLat,
+                  endLon: endLon,
+                );
 
       stopwatch.stop();
 
@@ -194,6 +209,40 @@ class RoutingService {
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
+    });
+
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: requestBody,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Request timed out after 10 seconds');
+      },
+    );
+  }
+
+  /// Calculate shortest route (car profile for testing)
+  Future<http.Response> _calculateShortestRoute({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+  }) async {
+    final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
+
+    final requestBody = jsonEncode({
+      "points": [
+        [startLon, startLat],
+        [endLon, endLat],
+      ],
+      "profile": "car", // Car profile for shortest distance
+      "locale": "en",
+      "points_encoded": false,
+      "elevation": false,
+      "algorithm": "alternative_route", // Get shortest path
+      "ch.disable": true, // Disable contraction hierarchies for shortest path
     });
 
     return await http.post(

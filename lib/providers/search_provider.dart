@@ -252,14 +252,16 @@ class SearchNotifier extends Notifier<SearchState> {
   }
 
   /// Set preview routes for route selection
-  void setPreviewRoutes(List<LatLng> fastestRoute, List<LatLng> safestRoute) {
+  void setPreviewRoutes(List<LatLng> fastestRoute, List<LatLng> safestRoute, [List<LatLng>? shortestRoute]) {
     AppLogger.debug('Setting preview routes', tag: 'SEARCH', data: {
       'fastest': fastestRoute.length,
       'safest': safestRoute.length,
+      'shortest': shortestRoute?.length ?? 0,
     });
     state = state.copyWith(
       previewFastestRoute: fastestRoute,
       previewSafestRoute: safestRoute,
+      previewShortestRoute: shortestRoute,
     );
   }
 
@@ -292,6 +294,7 @@ class SearchState {
   final List<LatLng>? routePoints; // Track calculated route
   final List<LatLng>? previewFastestRoute; // Preview route for fastest option
   final List<LatLng>? previewSafestRoute; // Preview route for safest option
+  final List<LatLng>? previewShortestRoute; // Preview route for shortest option
   final bool hasBoundedResults; // Track if initial bounded search returned results
   final bool isExpandedSearch; // Track if we've already expanded the search
 
@@ -303,6 +306,7 @@ class SearchState {
     this.routePoints,
     this.previewFastestRoute,
     this.previewSafestRoute,
+    this.previewShortestRoute,
     this.hasBoundedResults = false,
     this.isExpandedSearch = false,
   });
@@ -327,6 +331,7 @@ class SearchState {
     bool clearRoute = false,
     List<LatLng>? previewFastestRoute,
     List<LatLng>? previewSafestRoute,
+    List<LatLng>? previewShortestRoute,
     bool clearPreviewRoutes = false,
     bool? hasBoundedResults,
     bool? isExpandedSearch,
@@ -339,6 +344,7 @@ class SearchState {
       routePoints: clearRoute ? null : (routePoints ?? this.routePoints),
       previewFastestRoute: clearPreviewRoutes ? null : (previewFastestRoute ?? this.previewFastestRoute),
       previewSafestRoute: clearPreviewRoutes ? null : (previewSafestRoute ?? this.previewSafestRoute),
+      previewShortestRoute: clearPreviewRoutes ? null : (previewShortestRoute ?? this.previewShortestRoute),
       hasBoundedResults: hasBoundedResults ?? this.hasBoundedResults,
       isExpandedSearch: isExpandedSearch ?? this.isExpandedSearch,
     );
