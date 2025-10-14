@@ -75,6 +75,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
   double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
+  double? _pitchBeforeNavigation; // Store pitch before starting navigation
   static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
 
   // Zoom level state
@@ -888,7 +889,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     ref.read(navigationProvider.notifier).startNavigation(route);
     AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
 
-    // Set navigation pitch (35° for better forward view)
+    // Store current pitch and set navigation pitch (35° for better forward view)
+    _pitchBeforeNavigation = _currentPitch;
     const navigationPitch = 35.0;
     _currentPitch = navigationPitch;
 
@@ -1858,18 +1860,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       // Refresh markers to remove route polyline
                       _addMarkers();
 
-                      // Restore pitch to user's previous setting (usually 60° or 0°)
-                      if (_mapboxMap != null) {
-                        final mapState = ref.read(mapProvider);
-                        final restorePitch = mapState.is3D ? 60.0 : 0.0;
+                      // Restore pitch to previous value (only in 3D mode)
+                      if (_mapboxMap != null && _pitchBeforeNavigation != null) {
                         await _mapboxMap!.easeTo(
-                          CameraOptions(pitch: restorePitch),
+                          CameraOptions(pitch: _pitchBeforeNavigation!),
                           MapAnimationOptions(duration: 500),
                         );
-                        _currentPitch = restorePitch;
+                        _currentPitch = _pitchBeforeNavigation!;
                         AppLogger.debug('Restored pitch after navigation', tag: 'NAVIGATION', data: {
-                          'pitch': '${restorePitch}°',
+                          'pitch': '${_pitchBeforeNavigation!}°',
                         });
+                        _pitchBeforeNavigation = null;
                       }
 
                       AppLogger.success('Navigation ended, route cleared', tag: 'NAVIGATION');
