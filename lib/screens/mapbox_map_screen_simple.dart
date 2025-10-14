@@ -788,13 +788,32 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     ),
                     // Routes list
                     ...routes.map((route) {
-                      final isFastest = route.type == RouteType.fastest;
-                      final icon = isFastest ? Icons.speed : Icons.shield;
-                      final color = isFastest ? Colors.blue : Colors.green;
-                      final label = isFastest ? 'Fastest Route (bike)' : 'Safest Route (foot)';
-                      final description = isFastest
-                          ? 'Optimized for speed'
-                          : 'Prioritizes cycle lanes & quiet roads';
+                      // Determine icon, color, label based on route type
+                      final IconData icon;
+                      final Color color;
+                      final String label;
+                      final String description;
+
+                      switch (route.type) {
+                        case RouteType.fastest:
+                          icon = Icons.speed;
+                          color = Colors.blue;
+                          label = 'Fastest Route (bike)';
+                          description = 'Optimized for speed';
+                          break;
+                        case RouteType.safest:
+                          icon = Icons.shield;
+                          color = Colors.green;
+                          label = 'Safest Route (bike)';
+                          description = 'Prioritizes cycle lanes & quiet roads';
+                          break;
+                        case RouteType.shortest:
+                          icon = Icons.directions_car;
+                          color = Colors.red;
+                          label = 'Shortest Route (car)';
+                          description = 'Testing: shortest distance by car';
+                          break;
+                      }
 
                       return InkWell(
                         onTap: () {
