@@ -234,17 +234,16 @@ class RoutingService {
   }) async {
     final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
 
+    // Use simple car profile without special algorithm options
     final requestBody = jsonEncode({
       "points": [
         [startLon, startLat],
         [endLon, endLat],
       ],
-      "profile": "car", // Car profile for shortest distance
+      "profile": "car", // Car profile
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
-      "algorithm": "alternative_route", // Get shortest path
-      "ch.disable": true, // Disable contraction hierarchies for shortest path
     });
 
     return await http.post(
