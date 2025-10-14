@@ -758,14 +758,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       return;
     }
 
-    // Set preview routes in state (to display both on map)
-    if (routes.length == 2) {
+    // Set preview routes in state (to display on map)
+    if (routes.length >= 2) {
       final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
-      final safest = routes.firstWhere((r) => r.type == RouteType.safest);
-      ref.read(searchProvider.notifier).setPreviewRoutes(fastest.points, safest.points);
+      final safest = routes.where((r) => r.type == RouteType.safest).firstOrNull;
+      final shortest = routes.where((r) => r.type == RouteType.shortest).firstOrNull;
 
-      // Auto-zoom to fit both routes on screen
-      final allPoints = [...fastest.points, ...safest.points];
+      ref.read(searchProvider.notifier).setPreviewRoutes(
+        fastest.points,
+        safest?.points ?? shortest!.points, // Use safest or shortest as second route
+        routes.length == 3 ? shortest?.points : null, // Add third route if we have 3
+      );
+
+      // Auto-zoom to fit all routes on screen
+      final allPoints = [
+        ...fastest.points,
+        if (safest != null) ...safest.points,
+        if (shortest != null) ...shortest.points,
+      ];
       _fitRouteBounds(allPoints);
     }
 
@@ -848,13 +858,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     // Routes list
                     ...routes.map((route) {
-                      final isFastest = route.type == RouteType.fastest;
-                      final icon = isFastest ? Icons.speed : Icons.shield;
-                      final color = isFastest ? Colors.blue : Colors.green;
-                      final label = isFastest ? 'Fastest Route (bike)' : 'Safest Route (foot)';
-                      final description = isFastest
-                          ? 'Optimized for speed'
-                          : 'Prioritizes cycle lanes & quiet roads';
+                      // Determine icon, color, label based on route type
+                      final IconData icon;
+                      final Color color;
+                      final String label;
+                      final String description;
+
+                      switch (route.type) {
+                        case RouteType.fastest:
+                          icon = Icons.speed;
+                          color = Colors.blue;
+                          label = 'Fastest Route (bike)';
+                          description = 'Optimized for speed';
+                          break;
+                        case RouteType.safest:
+                          icon = Icons.shield;
+                          color = Colors.green;
+                          label = 'Safest Route (bike)';
+                          description = 'Prioritizes cycle lanes & quiet roads';
+                          break;
+                        case RouteType.shortest:
+                          icon = Icons.directions_car;
+                          color = Colors.red;
+                          label = 'Shortest Route (car)';
+                          description = 'Testing: shortest distance by car';
+                          break;
+                      }
 
                       return InkWell(
                         onTap: () {
@@ -2000,7 +2029,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     subdomains: const ['a', 'b', 'c'],
                   ),
                   // Preview routes layer (shown during route selection)
-                  if (searchState.previewFastestRoute != null && searchState.previewSafestRoute != null)
+                  if (searchState.previewFastestRoute != null && (searchState.previewSafestRoute != null || searchState.previewShortestRoute != null))
                     PolylineLayer(
                       polylines: [
                         // Fastest route in blue
@@ -2011,14 +2040,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           borderStrokeWidth: 3.0,
                           borderColor: Colors.white,
                         ),
-                        // Safest route in green
-                        Polyline(
-                          points: searchState.previewSafestRoute!,
-                          strokeWidth: 8.0,
-                          color: Colors.green,
-                          borderStrokeWidth: 3.0,
-                          borderColor: Colors.white,
-                        ),
+                        // Safest route in green (if exists)
+                        if (searchState.previewSafestRoute != null)
+                          Polyline(
+                            points: searchState.previewSafestRoute!,
+                            strokeWidth: 8.0,
+                            color: Colors.green,
+                            borderStrokeWidth: 3.0,
+                            borderColor: Colors.white,
+                          ),
+                        // Shortest route in red (if exists)
+                        if (searchState.previewShortestRoute != null)
+                          Polyline(
+                            points: searchState.previewShortestRoute!,
+                            strokeWidth: 8.0,
+                            color: Colors.red,
+                            borderStrokeWidth: 3.0,
+                            borderColor: Colors.white,
+                          ),
                       ],
                     ),
                   // Selected route polyline layer (below markers)
