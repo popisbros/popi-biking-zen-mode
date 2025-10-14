@@ -2514,8 +2514,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final hasHeading = heading != null && heading >= 0;
     if (hasHeading) {
       // Rotate around center
+      // Add 180° to flip direction (GPS heading was pointing opposite)
       canvas.translate(size / 2, size / 2);
-      canvas.rotate(heading * 3.14159 / 180); // Convert to radians
+      canvas.rotate((heading + 180) * 3.14159 / 180); // Convert to radians, flip 180°
       canvas.translate(-size / 2, -size / 2);
     }
 
