@@ -2650,6 +2650,85 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return byteData!.buffer.asUint8List();
   }
 
+  /// Create road sign warning image (triangle warning sign style)
+  Future<Uint8List> _createRoadSignImage(String surfaceType, {double size = 48}) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // White square background with red border
+    final bgPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final borderPaint = Paint()
+      ..color = Colors.red.shade700
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    // Draw white square
+    canvas.drawRect(Rect.fromLTWH(0, 0, size, size), bgPaint);
+    // Draw red border
+    canvas.drawRect(Rect.fromLTWH(0, 0, size, size), borderPaint);
+
+    // Draw red triangle inside
+    final trianglePaint = Paint()
+      ..color = Colors.red.shade700
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+
+    final trianglePath = Path();
+    final centerX = size / 2;
+    final triangleSize = size * 0.6;
+
+    // Top point
+    trianglePath.moveTo(centerX, size * 0.2);
+    // Bottom right
+    trianglePath.lineTo(centerX + triangleSize / 2, size * 0.8);
+    // Bottom left
+    trianglePath.lineTo(centerX - triangleSize / 2, size * 0.8);
+    // Back to top
+    trianglePath.close();
+
+    canvas.drawPath(trianglePath, trianglePaint);
+
+    // Draw surface-specific icon in center
+    final surfaceStr = surfaceType.toLowerCase();
+    String iconText;
+
+    if (surfaceStr.contains('gravel') || surfaceStr.contains('unpaved')) {
+      iconText = '⚠'; // Gravel/unpaved
+    } else if (surfaceStr.contains('dirt') || surfaceStr.contains('sand') ||
+               surfaceStr.contains('grass') || surfaceStr.contains('mud')) {
+      iconText = '!'; // Poor surfaces
+    } else if (surfaceStr.contains('cobble') || surfaceStr.contains('sett')) {
+      iconText = '◆'; // Cobblestone
+    } else {
+      iconText = '!'; // Default warning
+    }
+
+    // Draw icon text
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: iconText,
+        style: TextStyle(
+          color: Colors.black87,
+          fontSize: size * 0.35,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(centerX - textPainter.width / 2, size / 2 - textPainter.height / 2),
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
   /// Add POI and warning markers to the map
   /// All markers use emoji icon images with proper colors
   Future<void> _addMarkers() async {
@@ -3036,7 +3115,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       AppLogger.debug('Adding ${warningMarkers.length} surface warning markers', tag: 'MAP');
 
-      // Create point annotations for each warning
+      // Create point annotations for each warning (using road sign style)
+      List<PointAnnotationOptions> warningAnnotations = [];
       for (final marker in warningMarkers) {
         final pointAnnotation = PointAnnotationOptions(
           geometry: Point(
@@ -3045,12 +3125,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               marker.position.latitude,
             ),
           ),
-          iconImage: '⚠️', // Warning emoji
-          iconSize: 1.5,
-          iconAnchor: IconAnchor.BOTTOM,
+          image: await _createRoadSignImage(marker.surfaceType),
+          iconSize: 1.0,
+          iconAnchor: IconAnchor.CENTER,
         );
 
-        await _pointAnnotationManager?.create(pointAnnotation);
+        warningAnnotations.add(pointAnnotation);
+      }
+
+      // Batch create all warning annotations
+      if (warningAnnotations.isNotEmpty) {
+        await _pointAnnotationManager?.createMulti(warningAnnotations);
       }
 
       AppLogger.success('Surface warning markers added', tag: 'MAP', data: {
@@ -3488,34 +3573,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // NOTE: Do NOT use location.heading for map rotation, only for marker arrow
     final bearing = _calculateTravelDirection();
 
-    // Position user at 80% from top (20% from bottom)
-    // Use BOTTOM padding to push user marker lower on screen
-    final screenHeight = MediaQuery.of(context).size.height;
-    final bottomPadding = screenHeight * 0.2; // 20% from bottom = 80% from top
-
     AppLogger.debug('Turn-by-turn camera update', tag: 'CAMERA', data: {
       'speed': '${((location.speed ?? 0) * 3.6).toStringAsFixed(1)} km/h',
       'zoom': targetZoom.toStringAsFixed(1),
       'heading': location.heading?.toStringAsFixed(0) ?? 'null',
       'bearing': bearing?.toStringAsFixed(0) ?? 'null',
-      'bottomPadding': '${bottomPadding.toStringAsFixed(0)}px',
       'pitch': _currentPitch.toStringAsFixed(0),
     });
 
-    // Camera target is user position (marker will appear at 80% from top due to bottom padding)
+    // Camera centered on user position
     await _mapboxMap!.easeTo(
       CameraOptions(
         center: Point(coordinates: Position(location.longitude, location.latitude)),
         zoom: targetZoom,
         bearing: bearing ?? 0, // Positive bearing: direction at top of screen
         pitch: _currentPitch,
-        // Use BOTTOM padding to position user at 80% from top (20% from bottom)
-        padding: MbxEdgeInsets(
-          top: 0,
-          left: 0,
-          bottom: bottomPadding,
-          right: 0,
-        ),
+        padding: MbxEdgeInsets(top: 0, left: 0, bottom: 0, right: 0),
       ),
       MapAnimationOptions(duration: 500), // Smooth 500ms animation
     );

@@ -496,40 +496,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               }
             }
 
-            // For turn-by-turn navigation, check if we should offset the center
-            final turnByTurnNav = ref.read(navigationProvider);
-            LatLng targetCenter = newGPSPosition;
-
-            if (turnByTurnNav.isNavigating) {
-              // Position user at 80% from top (20% from bottom) to show more ahead
-              // We need to offset camera BACKWARDS so user appears lower on screen
-              final screenHeight = MediaQuery.of(context).size.height;
-              final offsetRatio = 0.6; // 60% offset to position user at 80% from top
-
-              // Approximate meters per pixel at current zoom (rough calculation)
-              final metersPerPixel = 156543.03392 * math.cos(newGPSPosition.latitude * math.pi / 180) / math.pow(2, actualZoom);
-              final offsetMeters = screenHeight * offsetRatio * metersPerPixel;
-
-              // Calculate offset point BACKWARDS from direction of travel
-              final travelBearing = _calculateTravelDirection();
-              if (travelBearing != null) {
-                // Offset BACKWARDS (opposite direction) to show user lower on screen
-                final bearing = (travelBearing + 180) * math.pi / 180; // Add 180° to reverse direction
-                final earthRadius = 6371000.0; // meters
-                final lat1 = newGPSPosition.latitude * math.pi / 180;
-                final lon1 = newGPSPosition.longitude * math.pi / 180;
-
-                final lat2 = math.asin(math.sin(lat1) * math.cos(offsetMeters / earthRadius) +
-                    math.cos(lat1) * math.sin(offsetMeters / earthRadius) * math.cos(bearing));
-                final lon2 = lon1 + math.atan2(
-                    math.sin(bearing) * math.sin(offsetMeters / earthRadius) * math.cos(lat1),
-                    math.cos(offsetMeters / earthRadius) - math.sin(lat1) * math.sin(lat2));
-
-                targetCenter = LatLng(lat2 * 180 / math.pi, lon2 * 180 / math.pi);
-              }
-            }
-
-            _mapController.move(targetCenter, actualZoom);
+            _mapController.move(newGPSPosition, actualZoom);
 
             // Rotate map based on travel direction (keep last rotation if stationary)
             final travelBearing = _calculateTravelDirection();
@@ -1391,6 +1358,54 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  /// Build road sign warning marker (triangle warning sign style)
+  Widget _buildRoadSignMarker(String surfaceType) {
+    // Get surface-specific icon
+    final surfaceStr = surfaceType.toLowerCase();
+    IconData iconData;
+
+    if (surfaceStr.contains('gravel') || surfaceStr.contains('unpaved')) {
+      iconData = Icons.texture; // Gravel/unpaved
+    } else if (surfaceStr.contains('dirt') || surfaceStr.contains('sand') ||
+               surfaceStr.contains('grass') || surfaceStr.contains('mud')) {
+      iconData = Icons.warning; // Poor surfaces
+    } else if (surfaceStr.contains('cobble') || surfaceStr.contains('sett')) {
+      iconData = Icons.grid_4x4; // Cobblestone
+    } else {
+      iconData = Icons.warning; // Default warning
+    }
+
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.red.shade700,
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: CustomPaint(
+        painter: _TriangleBorderPainter(Colors.red.shade700),
+        child: Center(
+          child: Icon(
+            iconData,
+            size: 16,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showPOIDetails(OSMPOI poi) {
     final typeEmoji = POITypeConfig.getOSMPOIEmoji(poi.type);
     final typeLabel = POITypeConfig.getOSMPOILabel(poi.type);
@@ -1930,13 +1945,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
         for (final warningMarker in warningMarkers) {
           markers.add(Marker(
-            width: 40,
-            height: 40,
+            width: 32,
+            height: 32,
             point: warningMarker.position,
-            child: const Text(
-              '⚠️',
-              style: TextStyle(fontSize: 30),
-            ),
+            child: _buildRoadSignMarker(warningMarker.surfaceType),
           ));
         }
 
@@ -2578,4 +2590,31 @@ class _RouteStatWidget extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Custom painter for triangle warning sign border
+class _TriangleBorderPainter extends CustomPainter {
+  final Color color;
+
+  _TriangleBorderPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    // Draw triangle pointing up
+    path.moveTo(size.width / 2, 6); // Top center
+    path.lineTo(size.width - 6, size.height - 6); // Bottom right
+    path.lineTo(6, size.height - 6); // Bottom left
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_TriangleBorderPainter oldDelegate) => false;
 }

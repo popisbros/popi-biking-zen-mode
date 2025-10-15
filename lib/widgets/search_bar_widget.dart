@@ -161,7 +161,23 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                     );
               },
               onSubmitted: (value) {
-                ref.read(searchProvider.notifier).performSearch(widget.mapCenter);
+                // If results are already showing, select first result (or expand option)
+                final currentResults = searchState.results.value;
+                if (currentResults != null && currentResults.isNotEmpty) {
+                  final firstResult = currentResults.first;
+
+                  // If first result is "expand search", trigger expand
+                  if (firstResult.type == SearchResultType.expandSearch) {
+                    ref.read(searchProvider.notifier).expandSearch(widget.mapCenter);
+                  } else {
+                    // Select first result
+                    widget.onResultTap(firstResult.latitude, firstResult.longitude);
+                    ref.read(searchProvider.notifier).closeSearch();
+                  }
+                } else {
+                  // No results yet, perform search
+                  ref.read(searchProvider.notifier).performSearch(widget.mapCenter);
+                }
               },
             ),
           ),

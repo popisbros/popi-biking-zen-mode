@@ -8,8 +8,15 @@ import '../services/route_hazard_detector.dart';
 
 /// Navigation card overlay showing turn-by-turn instructions
 /// Option B design: Medium-sized card at top of map
-class NavigationCard extends ConsumerWidget {
+class NavigationCard extends ConsumerStatefulWidget {
   const NavigationCard({super.key});
+
+  @override
+  ConsumerState<NavigationCard> createState() => _NavigationCardState();
+}
+
+class _NavigationCardState extends ConsumerState<NavigationCard> {
+  bool _isGraphHopperDataExpanded = false;
 
   /// Get current GraphHopper instruction based on segment index
   RouteInstruction? _getCurrentInstruction(int segmentIndex, List<RouteInstruction>? instructions) {
@@ -46,28 +53,40 @@ class NavigationCard extends ConsumerWidget {
   }
 
   /// Get next segment info (surface type and distance)
+  /// Only returns info if the IMMEDIATE next segment (different from current) needs a warning
   Map<String, dynamic>? _getNextSegmentInfo(int currentSegmentIndex, Map<String, dynamic>? pathDetails, List<LatLng>? routePoints) {
     if (pathDetails == null || !pathDetails.containsKey('surface') || routePoints == null) return null;
 
     final surfaceList = pathDetails['surface'] as List?;
     if (surfaceList == null || surfaceList.isEmpty) return null;
 
-    // Find the surface segment that contains or is immediately after current position
-    Map<String, dynamic>? immediatelyNextSegment;
-    int? closestStart;
+    // First, find which segment we're currently on
+    String? currentSurface;
+    int? currentSegmentEnd;
 
     for (final detail in surfaceList) {
       final detailData = detail as List;
       final start = detailData[0] as int;
       final end = detailData[1] as int;
-      final surfaceType = detailData[2];
+      final surfaceType = detailData[2] as String;
 
-      // Check if this segment is ahead of current position
-      if (start > currentSegmentIndex) {
-        // Track the segment with the closest start (immediately next)
-        if (closestStart == null || start < closestStart) {
-          closestStart = start;
+      if (start <= currentSegmentIndex && currentSegmentIndex < end) {
+        currentSurface = surfaceType;
+        currentSegmentEnd = end;
+        break;
+      }
+    }
 
+    // Now find the IMMEDIATE next segment (the one that starts right after current ends)
+    if (currentSegmentEnd != null) {
+      for (final detail in surfaceList) {
+        final detailData = detail as List;
+        final start = detailData[0] as int;
+        final end = detailData[1] as int;
+        final surfaceType = detailData[2] as String;
+
+        // Find segment that starts at or right after current segment ends
+        if (start >= currentSegmentEnd && start > currentSegmentIndex) {
           // Calculate distance to this segment
           double distance = 0;
           for (int i = currentSegmentIndex; i < start && i < routePoints.length - 1; i++) {
@@ -88,7 +107,7 @@ class NavigationCard extends ConsumerWidget {
             );
           }
 
-          immediatelyNextSegment = {
+          return {
             'surface': surfaceType,
             'distanceTo': distance,
             'segmentLength': segmentLength,
@@ -96,7 +115,8 @@ class NavigationCard extends ConsumerWidget {
         }
       }
     }
-    return immediatelyNextSegment;
+
+    return null;
   }
 
   /// Check if surface requires warning (not excellent or good)
@@ -407,71 +427,93 @@ class NavigationCard extends ConsumerWidget {
               // Hazard Section (above GraphHopper data)
               ..._buildHazardSection(navState),
 
-              // GraphHopper Path Details Section
+              // GraphHopper Path Details Section (Collapsible)
               if (streetName != null || lanes != null || roadClass != null || maxSpeed != null || surface != null) ...[
                 const SizedBox(height: 12),
                 Divider(color: Colors.grey.shade300, height: 1),
-                const SizedBox(height: 12),
-                // Section header
-                Text(
-                  'GRAPHHOPPER DATA (LIVE)',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade700,
-                    letterSpacing: 0.5,
+                const SizedBox(height: 8),
+                // Section header with expand/collapse button
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isGraphHopperDataExpanded = !_isGraphHopperDataExpanded;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          'GRAPHHOPPER DATA (LIVE)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _isGraphHopperDataExpanded ? Icons.expand_less : Icons.expand_more,
+                          size: 18,
+                          color: Colors.orange.shade700,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                // Data grid
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    if (streetName != null)
-                      _buildDataChip(
-                        icon: Icons.signpost,
-                        label: 'Street',
-                        value: streetName.toString(),
-                        color: Colors.blue,
-                      ),
-                    if (currentInstruction?.streetRef != null)
-                      _buildDataChip(
-                        icon: Icons.route,
-                        label: 'Ref',
-                        value: currentInstruction!.streetRef!,
-                        color: Colors.green,
-                      ),
-                    if (currentInstruction?.streetDestination != null)
-                      _buildDataChip(
-                        icon: Icons.location_on,
-                        label: 'To',
-                        value: currentInstruction!.streetDestination!,
-                        color: Colors.purple,
-                      ),
-                    if (lanes != null)
-                      _buildDataChip(
-                        icon: Icons.multiple_stop,
-                        label: 'Lanes',
-                        value: lanes.toString(),
-                        color: Colors.orange,
-                      ),
-                    if (roadClass != null)
-                      _buildDataChip(
-                        icon: Icons.category,
-                        label: 'Class',
-                        value: roadClass.toString(),
-                        color: Colors.teal,
-                      ),
-                    if (surface != null)
-                      _buildDataChip(
-                        icon: Icons.texture,
-                        label: 'Surface',
-                        value: surface.toString(),
-                        color: Colors.brown,
-                      ),
-                  ],
-                ),
+                // Expandable data grid
+                if (_isGraphHopperDataExpanded) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      if (streetName != null)
+                        _buildDataChip(
+                          icon: Icons.signpost,
+                          label: 'Street',
+                          value: streetName.toString(),
+                          color: Colors.blue,
+                        ),
+                      if (currentInstruction?.streetRef != null)
+                        _buildDataChip(
+                          icon: Icons.route,
+                          label: 'Ref',
+                          value: currentInstruction!.streetRef!,
+                          color: Colors.green,
+                        ),
+                      if (currentInstruction?.streetDestination != null)
+                        _buildDataChip(
+                          icon: Icons.location_on,
+                          label: 'To',
+                          value: currentInstruction!.streetDestination!,
+                          color: Colors.purple,
+                        ),
+                      if (lanes != null)
+                        _buildDataChip(
+                          icon: Icons.multiple_stop,
+                          label: 'Lanes',
+                          value: lanes.toString(),
+                          color: Colors.orange,
+                        ),
+                      if (roadClass != null)
+                        _buildDataChip(
+                          icon: Icons.category,
+                          label: 'Class',
+                          value: roadClass.toString(),
+                          color: Colors.teal,
+                        ),
+                      if (surface != null)
+                        _buildDataChip(
+                          icon: Icons.texture,
+                          label: 'Surface',
+                          value: surface.toString(),
+                          color: Colors.brown,
+                        ),
+                    ],
+                  ),
+                ],
               ],
 
               // GraphHopper Instruction (if different from custom maneuver)
