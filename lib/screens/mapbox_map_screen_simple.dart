@@ -1670,7 +1670,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     onPressed: () async {
                       final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
                       if (currentZoom != null) {
-                        final newZoom = currentZoom + 1;
+                        // Use floor to get integer zoom: 17.6 -> 18
+                        final newZoom = currentZoom.floor() + 1.0;
                         await _mapboxMap?.setCamera(CameraOptions(
                           zoom: newZoom,
                           pitch: _currentPitch, // Maintain pitch angle
@@ -1711,7 +1712,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     onPressed: () async {
                       final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
                       if (currentZoom != null) {
-                        final newZoom = currentZoom - 1;
+                        // Use floor to get integer zoom: 17.6 -> 17
+                        final newZoom = currentZoom.floor() - 1.0;
                         await _mapboxMap?.setCamera(CameraOptions(
                           zoom: newZoom,
                           pitch: _currentPitch, // Maintain pitch angle
@@ -3353,15 +3355,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   /// Calculate dynamic zoom based on speed (navigation mode)
   /// Optimized for walking/biking with 0.5 zoom steps
   double _calculateNavigationZoom(double? speedMps) {
-    if (speedMps == null || speedMps < 0.28) return 18.0; // Stationary (< 1 km/h)
-    if (speedMps < 1.39) return 17.5;  // 1-5 km/h (walking)
-    if (speedMps < 2.78) return 17.0;  // 5-10 km/h (slow biking)
-    if (speedMps < 4.17) return 16.5;  // 10-15 km/h (normal biking)
-    if (speedMps < 5.56) return 16.0;  // 15-20 km/h (fast biking)
-    if (speedMps < 6.94) return 15.5;  // 20-25 km/h (very fast)
-    if (speedMps < 8.33) return 15.0;  // 25-30 km/h (racing)
-    if (speedMps < 11.11) return 14.5; // 30-40 km/h (electric bike)
-    return 14.0;                       // 40+ km/h (crazy fast!)
+    if (speedMps == null || speedMps < 0.28) return 19.0; // Stationary (< 1 km/h) - closer view
+    if (speedMps < 1.39) return 18.5;  // 1-5 km/h (walking) - closer view
+    if (speedMps < 2.78) return 18.0;  // 5-10 km/h (slow biking) - closer view
+    if (speedMps < 4.17) return 17.5;  // 10-15 km/h (normal biking) - closer view
+    if (speedMps < 5.56) return 17.0;  // 15-20 km/h (fast biking) - closer view
+    if (speedMps < 6.94) return 16.5;  // 20-25 km/h (very fast) - closer view
+    if (speedMps < 8.33) return 16.0;  // 25-30 km/h (racing) - closer view
+    if (speedMps < 11.11) return 15.5; // 30-40 km/h (electric bike) - closer view
+    return 15.0;                       // 40+ km/h (crazy fast!) - closer view
   }
 
   /// Handle camera auto-follow for turn-by-turn navigation
