@@ -74,6 +74,15 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
       );
     }
 
+    // Keep focus on TextField after results appear (so Enter key works)
+    if (searchState.isVisible && searchState.results.hasValue) {
+      Future.microtask(() {
+        if (!_focusNode.hasFocus) {
+          _focusNode.requestFocus();
+        }
+      });
+    }
+
     if (!searchState.isVisible) {
       return const SizedBox.shrink();
     }
