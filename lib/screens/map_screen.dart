@@ -957,12 +957,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // Center on user's GPS location for navigation (instead of showing entire route)
     final locationAsync = ref.read(locationNotifierProvider);
-    locationAsync.whenData((location) {
-      if (location != null && mounted) {
-        _mapController.move(LatLng(location.latitude, location.longitude), 16.0);
-        AppLogger.debug('Map centered on user location for navigation', tag: 'ROUTING');
-      }
-    });
+    final location = locationAsync.value;
+    if (location != null && _isMapReady) {
+      _mapController.move(LatLng(location.latitude, location.longitude), 16.0);
+      AppLogger.debug('Map centered on user location for navigation', tag: 'ROUTING');
+    } else {
+      AppLogger.warning('Cannot center map - location not available or map not ready', tag: 'ROUTING');
+    }
 
     final routeTypeLabel = route.type == RouteType.fastest ? 'Fastest' : 'Safest';
     AppLogger.success('$routeTypeLabel route displayed', tag: 'ROUTING', data: {
