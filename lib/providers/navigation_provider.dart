@@ -21,9 +21,10 @@ class NavigationNotifier extends Notifier<NavigationState> {
   DateTime? _lastUpdateTime;
 
   // Arrival detection constants
-  static const double _arrivalDistanceThreshold = 20.0; // 20 meters to destination
+  static const double _arrivalDistanceThreshold = 10.0; // 10 meters to destination
   static const double _arrivalSpeedThreshold = 5.0; // 5 km/h (slow/stopped)
   static const int _arrivalConfirmationSeconds = 3; // Stay in zone for 3 seconds
+  static const double _arrivalGpsAccuracyThreshold = 10.0; // GPS accuracy < 10m
 
   @override
   NavigationState build() {
@@ -179,7 +180,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Check arrival conditions
     final bool withinArrivalZone = distanceToDestination < _arrivalDistanceThreshold;
     final bool movingSlowly = speedKmh < _arrivalSpeedThreshold;
-    final bool goodGpsAccuracy = gpsAccuracy < 30.0; // GPS accuracy < 30m
+    final bool goodGpsAccuracy = gpsAccuracy < _arrivalGpsAccuracyThreshold;
 
     // Determine arrival states
     bool isApproaching = false;

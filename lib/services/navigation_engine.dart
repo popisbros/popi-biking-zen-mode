@@ -126,16 +126,22 @@ class NavigationEngine {
   ) {
     if (route.isEmpty || currentSegmentIndex >= route.length) return 0;
 
-    // Distance from current position to the next route point
+    // Use next waypoint (not current segment start)
+    final nextWaypointIndex = currentSegmentIndex + 1;
+    if (nextWaypointIndex >= route.length) {
+      // We're at or past the last point
+      return _distance.as(LengthUnit.Meter, current, route.last);
+    }
+
+    // Distance from current position to the NEXT route waypoint
     double remaining = _distance.as(
       LengthUnit.Meter,
       current,
-      route[currentSegmentIndex],
+      route[nextWaypointIndex],
     );
 
-    // Add distances for all remaining segments AFTER the current segment
-    // Start from currentSegmentIndex + 1 to avoid double-counting
-    for (int i = currentSegmentIndex + 1; i < route.length - 1; i++) {
+    // Add distances for all remaining segments after the next waypoint
+    for (int i = nextWaypointIndex; i < route.length - 1; i++) {
       remaining += _distance.as(
         LengthUnit.Meter,
         route[i],
@@ -362,15 +368,19 @@ class NavigationEngine {
   ) {
     if (nextManeuver == null || route.isEmpty) return 0;
 
-    // Distance from current position to next route point
+    // Use next waypoint (not current segment start)
+    final nextWaypointIndex = currentSegmentIndex + 1;
+    if (nextWaypointIndex >= route.length) return 0;
+
+    // Distance from current position to the NEXT route waypoint
     double distance = _distance.as(
       LengthUnit.Meter,
       current,
-      route[math.min(currentSegmentIndex, route.length - 1)],
+      route[nextWaypointIndex],
     );
 
-    // Add distances for segments between current and maneuver
-    for (int i = currentSegmentIndex; i < nextManeuver.routePointIndex && i < route.length - 1; i++) {
+    // Add distances for segments between next waypoint and maneuver
+    for (int i = nextWaypointIndex; i < nextManeuver.routePointIndex && i < route.length - 1; i++) {
       distance += _distance.as(
         LengthUnit.Meter,
         route[i],
