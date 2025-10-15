@@ -24,7 +24,9 @@ import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/debug_overlay.dart';
+import '../widgets/navigation_card.dart';
 import '../providers/debug_provider.dart';
+import '../providers/navigation_provider.dart';
 // Conditional import for 3D map button - use stub on Web
 import 'mapbox_map_screen_simple.dart'
     if (dart.library.html) 'mapbox_map_screen_simple_stub.dart';
@@ -2527,6 +2529,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               },
             ),
           ),
+
+          // Navigation card - shown during turn-by-turn navigation
+          const NavigationCard(),
 
           // Debug overlay - on top of everything
           const DebugOverlay(),
