@@ -18,16 +18,56 @@ class RouteResult {
   final List<LatLng> points;
   final double distanceMeters;
   final int durationMillis;
+  final List<RouteInstruction>? instructions; // GraphHopper turn-by-turn instructions
+  final Map<String, dynamic>? pathDetails; // Path details (lanes, street names, etc)
 
   RouteResult({
     required this.type,
     required this.points,
     required this.distanceMeters,
     required this.durationMillis,
+    this.instructions,
+    this.pathDetails,
   });
 
   String get distanceKm => (distanceMeters / 1000).toStringAsFixed(2);
   String get durationMin => (durationMillis / 60000).toStringAsFixed(0);
+}
+
+/// GraphHopper turn-by-turn instruction
+class RouteInstruction {
+  final double distance; // Distance for this instruction in meters
+  final int sign; // Turn direction sign (-7 to 7)
+  final List<int> interval; // [start_index, end_index] in route points
+  final String text; // Human readable instruction
+  final int time; // Time for this segment in milliseconds
+  final String? streetName; // Street name (if available)
+  final String? streetDestination; // Destination info from OSM
+  final String? streetRef; // Street reference (e.g., "A1")
+
+  RouteInstruction({
+    required this.distance,
+    required this.sign,
+    required this.interval,
+    required this.text,
+    required this.time,
+    this.streetName,
+    this.streetDestination,
+    this.streetRef,
+  });
+
+  factory RouteInstruction.fromJson(Map<String, dynamic> json) {
+    return RouteInstruction(
+      distance: (json['distance'] as num).toDouble(),
+      sign: json['sign'] as int,
+      interval: (json['interval'] as List).cast<int>(),
+      text: json['text'] as String,
+      time: json['time'] as int,
+      streetName: json['street_name'] as String?,
+      streetDestination: json['street_destination'] as String?,
+      streetRef: json['street_ref'] as String?,
+    );
+  }
 }
 
 /// Service for calculating cycling routes using Graphhopper API
@@ -173,10 +213,27 @@ class RoutingService {
       final distance = (path['distance'] as num).toDouble();
       final duration = (path['time'] as num).toInt();
 
+      // Parse instructions if available
+      List<RouteInstruction>? instructions;
+      if (path['instructions'] != null) {
+        final instructionsList = path['instructions'] as List;
+        instructions = instructionsList.map((inst) => RouteInstruction.fromJson(inst as Map<String, dynamic>)).toList();
+        AppLogger.debug('Parsed ${instructions.length} instructions', tag: 'ROUTING');
+      }
+
+      // Extract path details if available
+      Map<String, dynamic>? pathDetails;
+      if (path['details'] != null) {
+        pathDetails = path['details'] as Map<String, dynamic>;
+        AppLogger.debug('Path details available: ${pathDetails.keys.join(", ")}', tag: 'ROUTING');
+      }
+
       AppLogger.success('${type.name} route calculated', tag: 'ROUTING', data: {
         'points': routePoints.length,
         'distance': '${(distance / 1000).toStringAsFixed(2)} km',
         'duration': '${(duration / 60000).toStringAsFixed(0)} min',
+        'instructions': instructions?.length ?? 0,
+        'details': pathDetails?.keys.length ?? 0,
       });
 
       return RouteResult(
@@ -184,6 +241,8 @@ class RoutingService {
         points: routePoints,
         distanceMeters: distance,
         durationMillis: duration,
+        instructions: instructions,
+        pathDetails: pathDetails,
       );
     } catch (e, stackTrace) {
       stopwatch.stop();
@@ -211,6 +270,8 @@ class RoutingService {
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
+      "instructions": true, // Enable turn-by-turn instructions
+      "details": ["street_name", "street_ref", "street_destination", "lanes", "road_class", "max_speed", "surface"], // Request all useful path details
     });
 
     return await http.post(
@@ -244,6 +305,8 @@ class RoutingService {
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
+      "instructions": true, // Enable turn-by-turn instructions
+      "details": ["street_name", "street_ref", "street_destination", "lanes", "road_class", "max_speed", "surface"], // Request all useful path details
     });
 
     return await http.post(
@@ -302,6 +365,8 @@ class RoutingService {
       "locale": "en",
       "points_encoded": false,
       "elevation": false,
+      "instructions": true, // Enable turn-by-turn instructions
+      "details": ["street_name", "street_ref", "street_destination", "lanes", "road_class", "max_speed", "surface"], // Request all useful path details
 //      "ch.disable": true,
 //      "custom_model": customModel,
     });
