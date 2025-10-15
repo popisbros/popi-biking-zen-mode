@@ -46,6 +46,15 @@ class NavigationState {
   /// Timestamp of last location update
   final DateTime? lastUpdateTime;
 
+  /// Whether user is approaching destination (pre-arrival state)
+  final bool isApproachingDestination;
+
+  /// Whether user has arrived at destination
+  final bool hasArrived;
+
+  /// Timestamp when user first entered arrival zone
+  final DateTime? arrivalZoneEntryTime;
+
   const NavigationState({
     this.isNavigating = false,
     this.activeRoute,
@@ -61,6 +70,9 @@ class NavigationState {
     this.offRouteDistanceMeters = 0,
     this.showingOffRouteDialog = false,
     this.lastUpdateTime,
+    this.isApproachingDestination = false,
+    this.hasArrived = false,
+    this.arrivalZoneEntryTime,
   });
 
   /// Get human-readable remaining distance
@@ -131,6 +143,9 @@ class NavigationState {
     double? offRouteDistanceMeters,
     bool? showingOffRouteDialog,
     DateTime? lastUpdateTime,
+    bool? isApproachingDestination,
+    bool? hasArrived,
+    DateTime? arrivalZoneEntryTime,
   }) {
     return NavigationState(
       isNavigating: isNavigating ?? this.isNavigating,
@@ -147,6 +162,9 @@ class NavigationState {
       offRouteDistanceMeters: offRouteDistanceMeters ?? this.offRouteDistanceMeters,
       showingOffRouteDialog: showingOffRouteDialog ?? this.showingOffRouteDialog,
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
+      isApproachingDestination: isApproachingDestination ?? this.isApproachingDestination,
+      hasArrived: hasArrived ?? this.hasArrived,
+      arrivalZoneEntryTime: arrivalZoneEntryTime ?? this.arrivalZoneEntryTime,
     );
   }
 

@@ -31,6 +31,7 @@ import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/off_route_dialog.dart';
+import '../widgets/arrival_dialog.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'map_screen.dart';
@@ -1512,6 +1513,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         });
       } else {
         AppLogger.warning('Map not ready or annotation manager null', tag: 'MAP');
+      }
+    });
+
+    // Listen for arrival at destination
+    ref.listen(navigationProvider, (previous, next) {
+      // Show arrival dialog when user arrives
+      if (next.hasArrived && !(previous?.hasArrived ?? false)) {
+        AppLogger.success('Showing arrival dialog', tag: 'NAVIGATION');
+        final destination = next.activeRoute?.destinationName ?? 'Destination';
+        final distance = next.totalDistanceRemaining;
+
+        // Show arrival dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => ArrivalDialog(
+            destinationName: destination,
+            finalDistance: distance,
+          ),
+        );
       }
     });
 

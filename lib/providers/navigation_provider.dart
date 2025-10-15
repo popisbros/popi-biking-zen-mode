@@ -20,6 +20,11 @@ class NavigationNotifier extends Notifier<NavigationState> {
   List<ManeuverInstruction> _detectedManeuvers = [];
   DateTime? _lastUpdateTime;
 
+  // Arrival detection constants
+  static const double _arrivalDistanceThreshold = 20.0; // 20 meters to destination
+  static const double _arrivalSpeedThreshold = 5.0; // 5 km/h (slow/stopped)
+  static const int _arrivalConfirmationSeconds = 3; // Stay in zone for 3 seconds
+
   @override
   NavigationState build() {
     // Clean up subscription when provider is disposed
@@ -166,13 +171,52 @@ class NavigationNotifier extends Notifier<NavigationState> {
       speed,
     );
 
-    // Check if arrived (within 20m of destination)
-    final distanceToEnd = NavigationEngine.calculateRemainingDistance(
-      currentPos,
-      route.points,
-      route.points.length - 2,
-    );
-    final hasArrived = distanceToEnd < 20;
+    // Enhanced arrival detection
+    final distanceToDestination = remainingDistance;
+    final speedKmh = speed * 3.6; // Convert m/s to km/h
+    final gpsAccuracy = locationData.accuracy ?? 999;
+
+    // Check arrival conditions
+    final bool withinArrivalZone = distanceToDestination < _arrivalDistanceThreshold;
+    final bool movingSlowly = speedKmh < _arrivalSpeedThreshold;
+    final bool goodGpsAccuracy = gpsAccuracy < 30.0; // GPS accuracy < 30m
+
+    // Determine arrival states
+    bool isApproaching = false;
+    bool hasArrived = false;
+    DateTime? arrivalZoneEntry = state.arrivalZoneEntryTime;
+
+    if (withinArrivalZone && goodGpsAccuracy) {
+      // User is in arrival zone with good GPS
+      if (arrivalZoneEntry == null) {
+        // Just entered arrival zone
+        arrivalZoneEntry = DateTime.now();
+        isApproaching = true;
+        AppLogger.success('Approaching destination...', tag: 'NAVIGATION', data: {
+          'distance': '${distanceToDestination.toStringAsFixed(1)}m',
+          'speed': '${speedKmh.toStringAsFixed(1)}km/h',
+        });
+      } else {
+        // Already in arrival zone - check if confirmed
+        final timeInZone = DateTime.now().difference(arrivalZoneEntry).inSeconds;
+
+        if (timeInZone >= _arrivalConfirmationSeconds && movingSlowly) {
+          // Confirmed arrival: in zone for 3+ seconds AND moving slowly/stopped
+          hasArrived = true;
+          AppLogger.success('ARRIVED at destination!', tag: 'NAVIGATION', data: {
+            'timeInZone': '${timeInZone}s',
+            'finalDistance': '${distanceToDestination.toStringAsFixed(1)}m',
+          });
+        } else {
+          // Still approaching
+          isApproaching = true;
+        }
+      }
+    } else {
+      // Outside arrival zone or poor GPS - reset
+      arrivalZoneEntry = null;
+      isApproaching = false;
+    }
 
     // Update state
     state = state.copyWith(
@@ -187,6 +231,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
       isOffRoute: isOffRoute,
       offRouteDistanceMeters: offRouteDistance,
       lastUpdateTime: DateTime.now(),
+      isApproachingDestination: isApproaching,
+      hasArrived: hasArrived,
+      arrivalZoneEntryTime: arrivalZoneEntry,
     );
 
     // Log navigation update (every update for debugging)
@@ -195,13 +242,15 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'nextManeuver': nextManeuver?.type.name ?? 'none',
       'distanceToNext': '${distanceToManeuver.toStringAsFixed(0)}m',
       'remaining': '${(remainingDistance / 1000).toStringAsFixed(2)}km',
-      'speed': '${(speed * 3.6).toStringAsFixed(1)}km/h',
+      'speed': '${speedKmh.toStringAsFixed(1)}km/h',
       'offRoute': isOffRoute,
+      'approaching': isApproaching,
+      'arrived': hasArrived,
     });
 
     // Handle arrival
-    if (hasArrived) {
-      AppLogger.success('Arrived at destination!', tag: 'NAVIGATION');
+    if (hasArrived && !state.hasArrived) {
+      // First time arrival detected
       _onArrival();
     }
 
