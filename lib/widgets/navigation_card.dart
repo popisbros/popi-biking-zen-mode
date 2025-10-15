@@ -155,6 +155,8 @@ class NavigationCard extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    // Speed limit traffic sign (same size as maneuver icon: 56x56)
+                    _buildSpeedLimitSign(maxSpeed),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -374,6 +376,42 @@ class NavigationCard extends ConsumerWidget {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build a speed limit traffic sign (European style circular sign)
+  Widget _buildSpeedLimitSign(dynamic speedLimit) {
+    // Get speed value - if null, show "?"
+    final String speedText = speedLimit != null ? speedLimit.toString() : '?';
+
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.red.shade700,
+          width: 4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          speedText,
+          style: TextStyle(
+            fontSize: speedText.length > 2 ? 18 : 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
           ),
         ),
       ),
