@@ -60,15 +60,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     final surfaceList = pathDetails['surface'] as List?;
     if (surfaceList == null || surfaceList.isEmpty) return null;
 
-    // DEBUG: Log all segments
-    print('=== DEBUG NEXT SEGMENT ===');
-    print('Current segment index: $currentSegmentIndex');
-    print('All surface segments:');
-    for (final detail in surfaceList) {
-      final detailData = detail as List;
-      print('  [${detailData[0]}-${detailData[1]}]: ${detailData[2]}');
-    }
-
     // First, find which segment we're currently on
     String? currentSurface;
     int? currentSegmentEnd;
@@ -82,7 +73,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       if (start <= currentSegmentIndex && currentSegmentIndex < end) {
         currentSurface = surfaceType;
         currentSegmentEnd = end;
-        print('Current segment: [$start-$end]: $surfaceType');
         break;
       }
     }
@@ -103,7 +93,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
         if (start >= currentSegmentEnd && start > currentSegmentIndex) {
           if (closestStart == null || start < closestStart) {
             closestStart = start;
-            print('  Found candidate next segment: [$start-$end]: $surfaceType');
 
             // Calculate distance to this segment
             double distance = 0;
@@ -134,16 +123,9 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
         }
       }
 
-      if (nextSegment != null) {
-        print('Selected next segment: $nextSegment');
-      }
-      print('=========================');
-
       return nextSegment;
     }
 
-    print('No current segment found');
-    print('=========================');
     return null;
   }
 
@@ -319,12 +301,14 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                               children: [
                                 const Icon(Icons.warning, size: 14, color: Colors.orange),
                                 const SizedBox(width: 4),
-                                Text(
-                                  'Next: ${(nextSegmentInfo['segmentLength'] as double).toInt()}m - ${nextSegmentInfo['surface']}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.orange.shade700,
-                                    fontWeight: FontWeight.w500,
+                                Expanded(
+                                  child: Text(
+                                    'Next: ${(nextSegmentInfo['segmentLength'] as double).toInt()}m - ${nextSegmentInfo['surface']} [DEBUG: dist=${(nextSegmentInfo['distanceTo'] as double).toInt()}m idx=${navState.currentSegmentIndex}]',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.orange.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               ],
