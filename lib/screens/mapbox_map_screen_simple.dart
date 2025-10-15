@@ -2725,6 +2725,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Add route polyline if available
     await _addRoutePolyline();
+
+    // Add surface warning markers if navigation is active
+    await _addSurfaceWarningMarkers();
   }
 
   /// Add search result marker (grey circle with + symbol)
@@ -3042,6 +3045,55 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'routePointsCount': routeToRender?.length ?? 0,
         'errorType': e.runtimeType.toString(),
       });
+    }
+  }
+
+  /// Add surface warning markers for poor/special surface segments
+  Future<void> _addSurfaceWarningMarkers() async {
+    if (_pointAnnotationManager == null) return;
+
+    try {
+      // Check if navigation is active
+      final navState = ref.read(navigationProvider);
+      if (!navState.isNavigating || navState.activeRoute == null) {
+        return; // Only show during navigation
+      }
+
+      final pathDetails = navState.activeRoute!.pathDetails;
+      if (pathDetails == null || !pathDetails.containsKey('surface')) {
+        return; // No surface data
+      }
+
+      // Get warning marker positions
+      final warningMarkers = RouteSurfaceHelper.getSurfaceWarningMarkers(
+        navState.activeRoute!.points,
+        pathDetails,
+      );
+
+      AppLogger.debug('Adding ${warningMarkers.length} surface warning markers', tag: 'MAP');
+
+      // Create point annotations for each warning
+      for (final marker in warningMarkers) {
+        final pointAnnotation = PointAnnotationOptions(
+          geometry: Point(
+            coordinates: Position(
+              marker.position.longitude,
+              marker.position.latitude,
+            ),
+          ),
+          iconImage: '⚠️', // Warning emoji
+          iconSize: 1.5,
+          iconAnchor: IconAnchor.BOTTOM,
+        );
+
+        await _pointAnnotationManager?.create(pointAnnotation);
+      }
+
+      AppLogger.success('Surface warning markers added', tag: 'MAP', data: {
+        'count': warningMarkers.length,
+      });
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to add surface warning markers', tag: 'MAP', error: e, stackTrace: stackTrace);
     }
   }
 

@@ -1973,6 +1973,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       markers.add(_buildSearchResultMarker(selectedLoc.latitude, selectedLoc.longitude));
     }
 
+    // Add surface warning markers during navigation
+    final navState = ref.read(navigationProvider);
+    if (navState.isNavigating && navState.activeRoute != null) {
+      final pathDetails = navState.activeRoute!.pathDetails;
+      if (pathDetails != null && pathDetails.containsKey('surface')) {
+        final warningMarkers = RouteSurfaceHelper.getSurfaceWarningMarkers(
+          navState.activeRoute!.points,
+          pathDetails,
+        );
+
+        for (final warningMarker in warningMarkers) {
+          markers.add(Marker(
+            width: 40,
+            height: 40,
+            point: warningMarker.position,
+            child: const Text(
+              '⚠️',
+              style: TextStyle(fontSize: 30),
+            ),
+          ));
+        }
+
+        AppLogger.debug('Added ${warningMarkers.length} surface warning markers', tag: 'MAP');
+      }
+    }
+
     AppLogger.map('Total markers on map', data: {'count': markers.length});
 
     // Get map center for search

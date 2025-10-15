@@ -185,4 +185,56 @@ class RouteSurfaceHelper {
 
     return 'Unknown';
   }
+
+  /// Get positions where surface warnings should be placed
+  /// Returns list of LatLng positions at the start of poor/special surface segments
+  static List<SurfaceWarningMarker> getSurfaceWarningMarkers(
+    List<LatLng> routePoints,
+    Map<String, dynamic>? pathDetails,
+  ) {
+    if (pathDetails == null ||
+        !pathDetails.containsKey('surface') ||
+        routePoints.isEmpty) {
+      return [];
+    }
+
+    final surfaceList = pathDetails['surface'] as List?;
+    if (surfaceList == null || surfaceList.isEmpty) {
+      return [];
+    }
+
+    final List<SurfaceWarningMarker> markers = [];
+
+    for (final detail in surfaceList) {
+      final detailData = detail as List;
+      final start = detailData[0] as int;
+      final surfaceType = detailData[2];
+
+      // Only add markers for poor/special surfaces
+      if (surfaceNeedsWarning(surfaceType)) {
+        if (start < routePoints.length) {
+          markers.add(SurfaceWarningMarker(
+            position: routePoints[start],
+            surfaceType: surfaceType.toString(),
+            surfaceQuality: getSurfaceQualityLabel(surfaceType),
+          ));
+        }
+      }
+    }
+
+    return markers;
+  }
+}
+
+/// Surface warning marker data
+class SurfaceWarningMarker {
+  final LatLng position;
+  final String surfaceType;
+  final String surfaceQuality;
+
+  SurfaceWarningMarker({
+    required this.position,
+    required this.surfaceType,
+    required this.surfaceQuality,
+  });
 }
