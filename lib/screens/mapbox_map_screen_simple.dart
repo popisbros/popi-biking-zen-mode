@@ -3133,7 +3133,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
     if (turnByTurnNavState.isNavigating) {
       AppLogger.success('Starting camera follow for turn-by-turn', tag: 'CAMERA');
+      _lastGPSPosition = newGPSPosition;
       await _handleTurnByTurnCameraFollow(location);
+      _addMarkers(); // Update user marker position
       return; // Skip regular navigation mode camera (turn-by-turn takes priority)
     }
 
@@ -3333,13 +3335,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Calculate target zoom based on speed
     final targetZoom = _calculateNavigationZoom(location.speed);
 
-    // Calculate bearing from user heading (or travel direction if heading unavailable)
-    double? bearing;
-    if (location.heading != null && location.heading! >= 0) {
-      bearing = location.heading!;
-    } else {
-      bearing = _calculateTravelDirection();
-    }
+    // Calculate bearing from travel direction (breadcrumbs) - matches 2D behavior
+    // NOTE: Do NOT use location.heading for map rotation, only for marker arrow
+    final bearing = _calculateTravelDirection();
 
     // Position user at 3/4 from top (offset camera northward)
     // This requires calculating a point offset in the direction of travel
