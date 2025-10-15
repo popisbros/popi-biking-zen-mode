@@ -385,7 +385,7 @@ class NavigationCard extends ConsumerWidget {
     required IconData icon,
     required String label,
     required String value,
-    required Color color,
+    required MaterialColor color,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
