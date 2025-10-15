@@ -77,8 +77,11 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       }
     }
 
-    // Now find the IMMEDIATE next segment (the one that starts right after current ends)
+    // Now find the IMMEDIATE next segment (the one with smallest start >= currentSegmentEnd)
     if (currentSegmentEnd != null) {
+      int? closestStart;
+      Map<String, dynamic>? nextSegment;
+
       for (final detail in surfaceList) {
         final detailData = detail as List;
         final start = detailData[0] as int;
@@ -86,34 +89,41 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
         final surfaceType = detailData[2] as String;
 
         // Find segment that starts at or right after current segment ends
+        // Track the one with the SMALLEST start index
         if (start >= currentSegmentEnd && start > currentSegmentIndex) {
-          // Calculate distance to this segment
-          double distance = 0;
-          for (int i = currentSegmentIndex; i < start && i < routePoints.length - 1; i++) {
-            distance += const Distance().as(
-              LengthUnit.Meter,
-              routePoints[i],
-              routePoints[i + 1],
-            );
-          }
+          if (closestStart == null || start < closestStart) {
+            closestStart = start;
 
-          // Calculate segment length
-          double segmentLength = 0;
-          for (int i = start; i < end && i < routePoints.length - 1; i++) {
-            segmentLength += const Distance().as(
-              LengthUnit.Meter,
-              routePoints[i],
-              routePoints[i + 1],
-            );
-          }
+            // Calculate distance to this segment
+            double distance = 0;
+            for (int i = currentSegmentIndex; i < start && i < routePoints.length - 1; i++) {
+              distance += const Distance().as(
+                LengthUnit.Meter,
+                routePoints[i],
+                routePoints[i + 1],
+              );
+            }
 
-          return {
-            'surface': surfaceType,
-            'distanceTo': distance,
-            'segmentLength': segmentLength,
-          };
+            // Calculate segment length
+            double segmentLength = 0;
+            for (int i = start; i < end && i < routePoints.length - 1; i++) {
+              segmentLength += const Distance().as(
+                LengthUnit.Meter,
+                routePoints[i],
+                routePoints[i + 1],
+              );
+            }
+
+            nextSegment = {
+              'surface': surfaceType,
+              'distanceTo': distance,
+              'segmentLength': segmentLength,
+            };
+          }
         }
       }
+
+      return nextSegment;
     }
 
     return null;
@@ -513,41 +523,40 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                         ),
                     ],
                   ),
+                  // GraphHopper Instruction (inside collapsible section)
+                  if (currentInstruction != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'GraphHopper Instruction:',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            currentInstruction.text,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-
-              // GraphHopper Instruction (if different from custom maneuver)
-              if (currentInstruction != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'GraphHopper Instruction:',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber.shade900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        currentInstruction.text,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.amber.shade900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ],
           ),

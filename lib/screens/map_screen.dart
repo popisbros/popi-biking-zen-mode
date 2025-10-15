@@ -1358,7 +1358,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// Build road sign warning marker (triangle warning sign style)
+  /// Build road sign warning marker (orange circle style like community hazards)
   Widget _buildRoadSignMarker(String surfaceType) {
     // Get surface-specific icon
     final surfaceStr = surfaceType.toLowerCase();
@@ -1379,28 +1379,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.orange.shade100,
+        shape: BoxShape.circle,
         border: Border.all(
-          color: Colors.red.shade700,
-          width: 2,
+          color: Colors.orange.shade700,
+          width: 2.5,
         ),
-        borderRadius: BorderRadius.circular(3),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
-            blurRadius: 2,
+            blurRadius: 3,
             offset: const Offset(0, 1),
           ),
         ],
       ),
-      child: CustomPaint(
-        painter: _TriangleBorderPainter(Colors.red.shade700),
-        child: Center(
-          child: Icon(
-            iconData,
-            size: 16,
-            color: Colors.black87,
-          ),
+      child: Center(
+        child: Icon(
+          iconData,
+          size: 18,
+          color: Colors.orange.shade900,
         ),
       ),
     );

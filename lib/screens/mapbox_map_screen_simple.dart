@@ -2650,47 +2650,29 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return byteData!.buffer.asUint8List();
   }
 
-  /// Create road sign warning image (triangle warning sign style)
+  /// Create road sign warning image (orange circle style like community hazards)
   Future<Uint8List> _createRoadSignImage(String surfaceType, {double size = 48}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // White square background with red border
+    // Orange circle background with orange border
     final bgPaint = Paint()
-      ..color = Colors.white
+      ..color = Colors.orange.shade100
       ..style = PaintingStyle.fill;
     final borderPaint = Paint()
-      ..color = Colors.red.shade700
+      ..color = Colors.orange.shade700
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0;
 
-    // Draw white square
-    canvas.drawRect(Rect.fromLTWH(0, 0, size, size), bgPaint);
-    // Draw red border
-    canvas.drawRect(Rect.fromLTWH(0, 0, size, size), borderPaint);
+    final center = Offset(size / 2, size / 2);
+    final radius = size / 2 - 2;
 
-    // Draw red triangle inside
-    final trianglePaint = Paint()
-      ..color = Colors.red.shade700
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
+    // Draw orange filled circle
+    canvas.drawCircle(center, radius, bgPaint);
+    // Draw orange border
+    canvas.drawCircle(center, radius, borderPaint);
 
-    final trianglePath = Path();
-    final centerX = size / 2;
-    final triangleSize = size * 0.6;
-
-    // Top point
-    trianglePath.moveTo(centerX, size * 0.2);
-    // Bottom right
-    trianglePath.lineTo(centerX + triangleSize / 2, size * 0.8);
-    // Bottom left
-    trianglePath.lineTo(centerX - triangleSize / 2, size * 0.8);
-    // Back to top
-    trianglePath.close();
-
-    canvas.drawPath(trianglePath, trianglePaint);
-
-    // Draw surface-specific icon in center
+    // Get surface-specific icon
     final surfaceStr = surfaceType.toLowerCase();
     String iconText;
 
@@ -2710,8 +2692,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       text: TextSpan(
         text: iconText,
         style: TextStyle(
-          color: Colors.black87,
-          fontSize: size * 0.35,
+          color: Colors.orange.shade900,
+          fontSize: size * 0.45,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -2720,7 +2702,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     textPainter.layout();
     textPainter.paint(
       canvas,
-      Offset(centerX - textPainter.width / 2, size / 2 - textPainter.height / 2),
+      Offset(size / 2 - textPainter.width / 2, size / 2 - textPainter.height / 2),
     );
 
     final picture = recorder.endRecording();
