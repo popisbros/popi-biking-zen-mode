@@ -7,6 +7,7 @@ import '../models/maneuver_instruction.dart';
 import '../services/routing_service.dart';
 import '../services/navigation_engine.dart';
 import '../services/location_service.dart';
+import '../services/toast_service.dart';
 import '../utils/app_logger.dart';
 
 /// Provider for navigation state
@@ -20,11 +21,20 @@ class NavigationNotifier extends Notifier<NavigationState> {
   List<ManeuverInstruction> _detectedManeuvers = [];
   DateTime? _lastUpdateTime;
 
+  // Rerouting state
+  DateTime? _lastRerouteTime;
+  LatLng? _lastReroutePosition;
+  bool _isRerouting = false;
+
   // Arrival detection constants
   static const double _arrivalDistanceThreshold = 10.0; // 10 meters to destination
   static const double _arrivalSpeedThreshold = 5.0; // 5 km/h (slow/stopped)
   static const int _arrivalConfirmationSeconds = 3; // Stay in zone for 3 seconds
   static const double _arrivalGpsAccuracyThreshold = 10.0; // GPS accuracy < 10m
+
+  // Rerouting constants
+  static const int _rerouteCooldownSeconds = 10; // Minimum 10 seconds between reroutes
+  static const double _reroutePositionThreshold = 10.0; // 10 meters from last reroute position
 
   @override
   NavigationState build() {
@@ -255,9 +265,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
       _onArrival();
     }
 
-    // Show off-route dialog if needed
-    if (isOffRoute && !state.showingOffRouteDialog) {
-      _showOffRouteAlert();
+    // Automatic rerouting if off route
+    if (isOffRoute && !_isRerouting) {
+      _handleAutomaticRerouting(currentPos);
     }
   }
 
@@ -268,36 +278,66 @@ class NavigationNotifier extends Notifier<NavigationState> {
     AppLogger.success('Arrived at destination', tag: 'NAVIGATION');
   }
 
-  /// Show off-route alert (state flag for UI to show dialog)
-  void _showOffRouteAlert() {
-    AppLogger.warning('User went off route', tag: 'NAVIGATION');
-    state = state.copyWith(showingOffRouteDialog: true);
-  }
-
-  /// User dismissed off-route dialog without recalculating
-  void dismissOffRouteDialog() {
-    AppLogger.debug('Off-route dialog dismissed', tag: 'NAVIGATION');
-    state = state.copyWith(
-      showingOffRouteDialog: false,
-      isOffRoute: false, // Reset off-route flag
-    );
-  }
-
-  /// Recalculate route from current position
-  Future<void> recalculateRoute() async {
-    if (!state.isNavigating || state.activeRoute == null || state.currentPosition == null) {
+  /// Handle automatic rerouting when off route
+  Future<void> _handleAutomaticRerouting(LatLng currentPos) async {
+    // Check if we're still navigating
+    if (!state.isNavigating || state.activeRoute == null) {
       return;
     }
 
-    AppLogger.separator('Recalculating Route');
-    AppLogger.debug('Recalculating from current position', tag: 'NAVIGATION');
+    // Check cooldown period
+    if (_lastRerouteTime != null) {
+      final timeSinceLastReroute = DateTime.now().difference(_lastRerouteTime!).inSeconds;
+      if (timeSinceLastReroute < _rerouteCooldownSeconds) {
+        AppLogger.debug('Rerouting cooldown active', tag: 'NAVIGATION', data: {
+          'timeSince': '${timeSinceLastReroute}s',
+          'cooldown': '${_rerouteCooldownSeconds}s',
+        });
+        return;
+      }
+    }
 
-    final currentPos = state.currentPosition!;
-    final destination = state.activeRoute!.points.last;
+    // Check position-based duplicate detection
+    if (_lastReroutePosition != null) {
+      final distance = const Distance().as(
+        LengthUnit.Meter,
+        currentPos,
+        _lastReroutePosition!,
+      );
+
+      if (distance < _reroutePositionThreshold) {
+        // Same position as last successful reroute - abort
+        ToastService.warning('Recalculation aborted - same position than 10s ago');
+        AppLogger.warning('Rerouting aborted - same position', tag: 'NAVIGATION', data: {
+          'distance': '${distance.toStringAsFixed(1)}m',
+          'threshold': '${_reroutePositionThreshold}m',
+        });
+
+        // Update cooldown to prevent spam
+        _lastRerouteTime = DateTime.now();
+        return;
+      }
+    }
+
+    // Start rerouting
+    _isRerouting = true;
     final routeType = state.activeRoute!.type;
+    final destination = state.activeRoute!.points.last;
 
-    // Dismiss dialog immediately
-    state = state.copyWith(showingOffRouteDialog: false);
+    // Show toast notification
+    final routeTypeName = routeType == RouteType.fastest
+        ? 'Fastest'
+        : routeType == RouteType.safest
+            ? 'Safest'
+            : 'Shortest';
+    ToastService.info('Calculating new $routeTypeName route...');
+
+    AppLogger.separator('Automatic Rerouting');
+    AppLogger.debug('Starting automatic reroute', tag: 'NAVIGATION', data: {
+      'routeType': routeType.name,
+      'from': '${currentPos.latitude},${currentPos.longitude}',
+      'to': '${destination.latitude},${destination.longitude}',
+    });
 
     try {
       final routingService = RoutingService();
@@ -311,8 +351,12 @@ class NavigationNotifier extends Notifier<NavigationState> {
       );
 
       if (routes == null || routes.isEmpty) {
-        AppLogger.error('Failed to recalculate route', tag: 'NAVIGATION');
-        state = state.copyWith(isOffRoute: false); // Reset flag
+        AppLogger.error('Failed to calculate new route', tag: 'NAVIGATION');
+        ToastService.error('Failed to recalculate route');
+
+        // Update cooldown even on failure
+        _lastRerouteTime = DateTime.now();
+        _isRerouting = false;
         return;
       }
 
@@ -322,11 +366,18 @@ class NavigationNotifier extends Notifier<NavigationState> {
         orElse: () => routes.first,
       );
 
-      AppLogger.success('Route recalculated', tag: 'NAVIGATION', data: {
+      AppLogger.success('New route calculated', tag: 'NAVIGATION', data: {
         'type': newRoute.type.name,
         'distance': newRoute.distanceKm,
         'duration': newRoute.durationMin,
       });
+
+      // Show success toast
+      ToastService.success('Route recalculated');
+
+      // Record successful reroute position and time
+      _lastReroutePosition = currentPos;
+      _lastRerouteTime = DateTime.now();
 
       // Restart navigation with new route
       stopNavigation();
@@ -334,13 +385,16 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
       AppLogger.separator();
     } catch (e, stackTrace) {
-      AppLogger.error('Route recalculation failed', tag: 'NAVIGATION', error: e, stackTrace: stackTrace);
-      state = state.copyWith(
-        showingOffRouteDialog: false,
-        isOffRoute: false,
-      );
+      AppLogger.error('Automatic rerouting failed', tag: 'NAVIGATION', error: e, stackTrace: stackTrace);
+      ToastService.error('Rerouting failed');
+
+      // Update cooldown even on failure
+      _lastRerouteTime = DateTime.now();
+    } finally {
+      _isRerouting = false;
     }
   }
+
 
   /// Get formatted instruction for voice guidance
   String? getVoiceInstruction() {

@@ -87,7 +87,9 @@ class NavigationState {
   /// Get human-readable remaining time
   String get remainingTimeText {
     final minutes = (estimatedTimeRemaining / 60).round();
-    if (minutes < 60) {
+    if (minutes <= 1) {
+      return 'less than 1 min';
+    } else if (minutes < 60) {
       return '$minutes min';
     } else {
       final hours = (minutes / 60).floor();

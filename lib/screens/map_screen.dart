@@ -978,101 +978,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       'duration': route.durationMin,
     });
 
-    // Show persistent navigation modal
-    if (mounted) {
-      _showRouteNavigationModal(route);
-    }
-  }
-
-  /// Show persistent bottom sheet for active route navigation
-  void _showRouteNavigationModal(RouteResult route) {
+    // Store active route for state management
     setState(() {
       _activeRoute = route;
     });
   }
 
-  /// Build route navigation sheet widget
-  Widget _buildRouteNavigationSheet(RouteResult route) {
-    final routeTypeLabel = route.type == RouteType.fastest ? 'Fastest' : 'Safest';
-    final routeIcon = route.type == RouteType.fastest ? '🚴' : '🛡️';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Route type badge
-          Text(
-            '$routeIcon $routeTypeLabel Route',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-
-          // Route stats
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _RouteStatWidget(
-                icon: Icons.straighten,
-                label: 'Distance',
-                value: '${route.distanceKm} km',
-              ),
-              _RouteStatWidget(
-                icon: Icons.schedule,
-                label: 'Est. Time',
-                value: '${route.durationMin} min',
-              ),
-              Consumer(
-                builder: (context, ref, _) {
-                  final locationAsync = ref.watch(locationNotifierProvider);
-                  return locationAsync.when(
-                    data: (location) {
-                      final speed = location?.speed;
-                      final kmh = speed != null ? (speed * 3.6).toStringAsFixed(1) : '--';
-                      return _RouteStatWidget(
-                        icon: Icons.speed,
-                        label: 'Speed',
-                        value: '$kmh km/h',
-                      );
-                    },
-                    loading: () => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
-                    error: (_, __) => _RouteStatWidget(icon: Icons.speed, label: 'Speed', value: '-- km/h'),
-                  );
-                },
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Stop button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              onPressed: _stopNavigation,
-              child: const Text('STOP ROUTE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Stop navigation and clear route
   void _stopNavigation() {
@@ -2555,22 +2466,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Route navigation sheet (persistent bottom sheet, non-modal)
           // Hidden when turn-by-turn navigation is active (new NavigationCard is used instead)
-          if (_activeRoute != null)
-            Consumer(
-              builder: (context, ref, _) {
-                final navState = ref.watch(navigationProvider);
-                // Hide old sheet when turn-by-turn navigation is active
-                if (navState.isNavigating) {
-                  return const SizedBox.shrink();
-                }
-                return Positioned(
-                  bottom: 0,
-                  left: 80, // Leave space for bottom-left controls
-                  right: 80, // Leave space for bottom-right controls
-                  child: _buildRouteNavigationSheet(_activeRoute!),
-                );
-              },
-            ),
 
           // Search bar widget (slides down from top) - rendered on top of everything
           Positioned(

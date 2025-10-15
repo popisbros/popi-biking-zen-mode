@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,7 @@ import '../providers/navigation_provider.dart';
 import '../constants/app_colors.dart';
 
 /// Dialog shown when user arrives at destination
-class ArrivalDialog extends ConsumerWidget {
+class ArrivalDialog extends ConsumerStatefulWidget {
   final String destinationName;
   final double finalDistance;
 
@@ -16,10 +17,48 @@ class ArrivalDialog extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ArrivalDialog> createState() => _ArrivalDialogState();
+}
+
+class _ArrivalDialogState extends ConsumerState<ArrivalDialog> {
+  Timer? _countdownTimer;
+  int _remainingSeconds = 10;
+
+  @override
+  void initState() {
+    super.initState();
+
     // Trigger haptic feedback
     HapticFeedback.mediumImpact();
 
+    // Start countdown timer
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        // Auto-close after 10 seconds
+        timer.cancel();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
@@ -57,7 +96,7 @@ class ArrivalDialog extends ConsumerWidget {
 
             // Destination name
             Text(
-              destinationName,
+              widget.destinationName,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -68,9 +107,20 @@ class ArrivalDialog extends ConsumerWidget {
 
             // Final distance
             Text(
-              'Final distance: ${finalDistance.toStringAsFixed(0)}m',
+              'Final distance: ${widget.finalDistance.toStringAsFixed(0)}m',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
+                  ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Countdown timer
+            Text(
+              'Auto-closing in ${_remainingSeconds}s',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                    fontStyle: FontStyle.italic,
                   ),
             ),
 
@@ -84,6 +134,7 @@ class ArrivalDialog extends ConsumerWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
+                      _countdownTimer?.cancel();
                       Navigator.of(context).pop();
                       ref.read(navigationProvider.notifier).stopNavigation();
                     },
@@ -101,10 +152,11 @@ class ArrivalDialog extends ConsumerWidget {
 
                 const SizedBox(width: 12),
 
-                // Dismiss button
+                // OK button (dismiss but keep navigation active)
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
+                      _countdownTimer?.cancel();
                       Navigator.of(context).pop();
                     },
                     style: OutlinedButton.styleFrom(
@@ -115,7 +167,7 @@ class ArrivalDialog extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Dismiss'),
+                    child: const Text('OK'),
                   ),
                 ),
               ],
