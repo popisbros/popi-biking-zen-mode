@@ -2486,12 +2486,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
 
           // Route navigation sheet (persistent bottom sheet, non-modal)
+          // Hidden when turn-by-turn navigation is active (new NavigationCard is used instead)
           if (_activeRoute != null)
-            Positioned(
-              bottom: 0,
-              left: 80, // Leave space for bottom-left controls
-              right: 80, // Leave space for bottom-right controls
-              child: _buildRouteNavigationSheet(_activeRoute!),
+            Consumer(
+              builder: (context, ref, _) {
+                final navState = ref.watch(navigationProvider);
+                // Hide old sheet when turn-by-turn navigation is active
+                if (navState.isNavigating) {
+                  return const SizedBox.shrink();
+                }
+                return Positioned(
+                  bottom: 0,
+                  left: 80, // Leave space for bottom-left controls
+                  right: 80, // Leave space for bottom-right controls
+                  child: _buildRouteNavigationSheet(_activeRoute!),
+                );
+              },
             ),
 
           // Search bar widget (slides down from top) - rendered on top of everything
