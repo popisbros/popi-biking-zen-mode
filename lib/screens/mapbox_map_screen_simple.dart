@@ -2060,14 +2060,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to disable pitch gestures', error: e);
     }
 
-    // Disable built-in location component - we'll use custom marker matching 2D map
+    // TEMPORARY: Enable built-in location component for testing
     try {
       await mapboxMap.location.updateSettings(LocationComponentSettings(
-        enabled: false, // Disable to use custom marker
+        enabled: true, // TESTING: Enable default Mapbox location puck
+        puckBearingEnabled: true, // Show direction arrow
+        locationPuck: LocationPuck(
+          locationPuck2D: DefaultLocationPuck2D(),
+        ),
       ));
-      AppLogger.success('Built-in location component disabled (using custom marker)', tag: 'MAP');
+      AppLogger.success('Built-in location component ENABLED for testing', tag: 'MAP');
     } catch (e) {
-      AppLogger.error('Failed to disable location component', error: e);
+      AppLogger.error('Failed to enable location component', error: e);
     }
 
     // Initialize annotation managers
@@ -2961,7 +2965,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Add custom user location marker matching 2D map style
+  /// TEMPORARY: Disabled for testing with default Mapbox location puck
   Future<void> _addUserLocationMarker() async {
+    // DISABLED FOR TESTING - using default Mapbox location puck
+    AppLogger.debug('Custom user location marker disabled (using default puck)', tag: 'MAP');
+    return;
+
+    /* ORIGINAL CODE - COMMENTED OUT FOR TESTING
     final locationAsync = ref.read(locationNotifierProvider);
     final compassHeading = ref.read(compassNotifierProvider);
     final navState = ref.read(navigationModeProvider);
@@ -2997,6 +3007,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         AppLogger.success('User location marker added', tag: 'MAP');
       }
     });
+    */
   }
 
   /// Add OSM POIs as emoji icons
