@@ -322,7 +322,11 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Automatic rerouting if off route
     if (isOffRoute && !_isRerouting) {
+      print('[REROUTE DEBUG] Off route detected! Distance: ${offRouteDistance.toStringAsFixed(1)}m');
+      print('[REROUTE DEBUG] Calling _handleAutomaticRerouting');
       _handleAutomaticRerouting(currentPos);
+    } else if (isOffRoute && _isRerouting) {
+      print('[REROUTE DEBUG] Off route but already rerouting...');
     }
   }
 
@@ -335,19 +339,24 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
   /// Handle automatic rerouting when off route
   Future<void> _handleAutomaticRerouting(LatLng currentPos) async {
+    print('[REROUTE DEBUG] _handleAutomaticRerouting called');
+
     // Check if we're still navigating
     if (!state.isNavigating || state.activeRoute == null) {
+      print('[REROUTE DEBUG] Not navigating or no active route, aborting');
       return;
     }
 
     // Check cooldown period
     if (_lastRerouteTime != null) {
       final timeSinceLastReroute = DateTime.now().difference(_lastRerouteTime!).inSeconds;
+      print('[REROUTE DEBUG] Time since last reroute: ${timeSinceLastReroute}s (cooldown: ${_rerouteCooldownSeconds}s)');
       if (timeSinceLastReroute < _rerouteCooldownSeconds) {
         AppLogger.debug('Rerouting cooldown active', tag: 'NAVIGATION', data: {
           'timeSince': '${timeSinceLastReroute}s',
           'cooldown': '${_rerouteCooldownSeconds}s',
         });
+        print('[REROUTE DEBUG] Cooldown active, aborting');
         return;
       }
     }
@@ -360,6 +369,8 @@ class NavigationNotifier extends Notifier<NavigationState> {
         _lastReroutePosition!,
       );
 
+      print('[REROUTE DEBUG] Distance from last reroute position: ${distance.toStringAsFixed(1)}m (threshold: ${_reroutePositionThreshold}m)');
+
       if (distance < _reroutePositionThreshold) {
         // Same position as last successful reroute - abort
         ToastService.warning('Recalculation aborted - same position than 10s ago');
@@ -368,6 +379,8 @@ class NavigationNotifier extends Notifier<NavigationState> {
           'threshold': '${_reroutePositionThreshold}m',
         });
 
+        print('[REROUTE DEBUG] Same position, aborting');
+
         // Update cooldown to prevent spam
         _lastRerouteTime = DateTime.now();
         return;
@@ -375,6 +388,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     }
 
     // Start rerouting
+    print('[REROUTE DEBUG] Starting reroute process...');
     _isRerouting = true;
     final routeType = state.activeRoute!.type;
     final destination = state.activeRoute!.points.last;
@@ -385,6 +399,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
         : routeType == RouteType.safest
             ? 'Safest'
             : 'Shortest';
+    print('[REROUTE DEBUG] Showing toast: Calculating new $routeTypeName route...');
     ToastService.info('Calculating new $routeTypeName route...');
 
     AppLogger.separator('Automatic Rerouting');
@@ -393,6 +408,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'from': '${currentPos.latitude},${currentPos.longitude}',
       'to': '${destination.latitude},${destination.longitude}',
     });
+    print('[REROUTE DEBUG] Calling routing service...');
 
     try {
       final routingService = RoutingService();
