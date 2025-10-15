@@ -168,7 +168,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final navState = ref.watch(navigationProvider);
 
     // Only show if navigation is active
