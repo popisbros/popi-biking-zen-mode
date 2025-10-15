@@ -501,20 +501,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             LatLng targetCenter = newGPSPosition;
 
             if (turnByTurnNav.isNavigating) {
-              // Position user at 20% from bottom (offset camera to show more ahead)
-              // Calculate offset in meters based on screen height and zoom
+              // Position user at 80% from top (20% from bottom) to show more ahead
+              // We need to offset camera BACKWARDS so user appears lower on screen
               final screenHeight = MediaQuery.of(context).size.height;
-              final offsetRatio = 0.3; // 30% offset to position user at ~20% from bottom
+              final offsetRatio = 0.6; // 60% offset to position user at 80% from top
 
               // Approximate meters per pixel at current zoom (rough calculation)
               final metersPerPixel = 156543.03392 * math.cos(newGPSPosition.latitude * math.pi / 180) / math.pow(2, actualZoom);
               final offsetMeters = screenHeight * offsetRatio * metersPerPixel;
 
-              // Calculate offset point in the direction of travel
+              // Calculate offset point BACKWARDS from direction of travel
               final travelBearing = _calculateTravelDirection();
               if (travelBearing != null) {
-                // Offset in the direction of travel
-                final bearing = travelBearing * math.pi / 180;
+                // Offset BACKWARDS (opposite direction) to show user lower on screen
+                final bearing = (travelBearing + 180) * math.pi / 180; // Add 180° to reverse direction
                 final earthRadius = 6371000.0; // meters
                 final lat1 = newGPSPosition.latitude * math.pi / 180;
                 final lon1 = newGPSPosition.longitude * math.pi / 180;
