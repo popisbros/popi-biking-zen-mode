@@ -25,6 +25,7 @@ import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
+import '../widgets/navigation_controls.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../services/route_surface_helper.dart';
@@ -2418,6 +2419,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       tooltip: 'Debug Tracking',
                       child: const Icon(Icons.bug_report),
                     );
+                  },
+                ),
+                const SizedBox(height: 8),
+                // Navigation controls (End + Mute buttons)
+                NavigationControls(
+                  onNavigationEnded: () {
+                    setState(() {
+                      _activeRoute = null;
+                    });
                   },
                 ),
               ],

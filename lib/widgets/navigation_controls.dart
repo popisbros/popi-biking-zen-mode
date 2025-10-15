@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
+import '../providers/navigation_mode_provider.dart';
+import '../providers/search_provider.dart';
 
 /// Navigation control FABs (End Navigation + Voice Mute)
 /// These appear alongside existing FABs when navigation is active
@@ -86,7 +88,15 @@ class _NavigationControlsState extends ConsumerState<NavigationControls> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
+
+                // Clear route from provider
+                ref.read(searchProvider.notifier).clearRoute();
+
+                // Stop turn-by-turn navigation
                 ref.read(navigationProvider.notifier).stopNavigation();
+
+                // Exit navigation mode (return to exploration)
+                ref.read(navigationModeProvider.notifier).stopRouteNavigation();
 
                 // Call callback to clear route from map
                 widget.onNavigationEnded?.call();

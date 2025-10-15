@@ -3582,7 +3582,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Clear route from provider
     ref.read(searchProvider.notifier).clearRoute();
 
-    // Exit navigation mode
+    // Stop turn-by-turn navigation
+    ref.read(navigationProvider.notifier).stopNavigation();
+
+    // Exit navigation mode (return to exploration)
     ref.read(navigationModeProvider.notifier).stopRouteNavigation();
 
     // Keep current map rotation (don't reset to north)

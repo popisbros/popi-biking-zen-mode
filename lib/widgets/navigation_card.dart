@@ -52,7 +52,10 @@ class NavigationCard extends ConsumerWidget {
     final surfaceList = pathDetails['surface'] as List?;
     if (surfaceList == null || surfaceList.isEmpty) return null;
 
-    // Find next surface segment
+    // Find the surface segment that contains or is immediately after current position
+    Map<String, dynamic>? immediatelyNextSegment;
+    int? closestStart;
+
     for (final detail in surfaceList) {
       final detailData = detail as List;
       final start = detailData[0] as int;
@@ -61,34 +64,39 @@ class NavigationCard extends ConsumerWidget {
 
       // Check if this segment is ahead of current position
       if (start > currentSegmentIndex) {
-        // Calculate distance to this segment
-        double distance = 0;
-        for (int i = currentSegmentIndex; i < start && i < routePoints.length - 1; i++) {
-          distance += const Distance().as(
-            LengthUnit.Meter,
-            routePoints[i],
-            routePoints[i + 1],
-          );
-        }
+        // Track the segment with the closest start (immediately next)
+        if (closestStart == null || start < closestStart) {
+          closestStart = start;
 
-        // Calculate segment length
-        double segmentLength = 0;
-        for (int i = start; i < end && i < routePoints.length - 1; i++) {
-          segmentLength += const Distance().as(
-            LengthUnit.Meter,
-            routePoints[i],
-            routePoints[i + 1],
-          );
-        }
+          // Calculate distance to this segment
+          double distance = 0;
+          for (int i = currentSegmentIndex; i < start && i < routePoints.length - 1; i++) {
+            distance += const Distance().as(
+              LengthUnit.Meter,
+              routePoints[i],
+              routePoints[i + 1],
+            );
+          }
 
-        return {
-          'surface': surfaceType,
-          'distanceTo': distance,
-          'segmentLength': segmentLength,
-        };
+          // Calculate segment length
+          double segmentLength = 0;
+          for (int i = start; i < end && i < routePoints.length - 1; i++) {
+            segmentLength += const Distance().as(
+              LengthUnit.Meter,
+              routePoints[i],
+              routePoints[i + 1],
+            );
+          }
+
+          immediatelyNextSegment = {
+            'surface': surfaceType,
+            'distanceTo': distance,
+            'segmentLength': segmentLength,
+          };
+        }
       }
     }
-    return null;
+    return immediatelyNextSegment;
   }
 
   /// Check if surface requires warning (not excellent or good)
@@ -249,7 +257,7 @@ class NavigationCard extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            navState.nextManeuver!.distanceText,
+                            _formatDistance(navState.distanceToNextManeuver),
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey.shade700,
@@ -699,6 +707,17 @@ class NavigationCard extends ConsumerWidget {
         ),
       ),
     ];
+  }
+
+  /// Format distance in meters to human-readable string
+  String _formatDistance(double meters) {
+    if (meters < 100) {
+      return '${meters.toStringAsFixed(0)} meters';
+    } else if (meters < 1000) {
+      return '${(meters / 10).round() * 10} meters';
+    } else {
+      return '${(meters / 1000).toStringAsFixed(1)} km';
+    }
   }
 
   /// Get icon for hazard type
