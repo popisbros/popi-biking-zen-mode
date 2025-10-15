@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import '../providers/navigation_provider.dart';
 import '../services/routing_service.dart';
 
@@ -42,6 +43,100 @@ class NavigationCard extends ConsumerWidget {
     return null;
   }
 
+  /// Get next segment info (surface type and distance)
+  Map<String, dynamic>? _getNextSegmentInfo(int currentSegmentIndex, Map<String, dynamic>? pathDetails, List<LatLng>? routePoints) {
+    if (pathDetails == null || !pathDetails.containsKey('surface') || routePoints == null) return null;
+
+    final surfaceList = pathDetails['surface'] as List?;
+    if (surfaceList == null || surfaceList.isEmpty) return null;
+
+    // Find next surface segment
+    for (final detail in surfaceList) {
+      final detailData = detail as List;
+      final start = detailData[0] as int;
+      final end = detailData[1] as int;
+      final surfaceType = detailData[2];
+
+      // Check if this segment is ahead of current position
+      if (start > currentSegmentIndex) {
+        // Calculate distance to this segment
+        double distance = 0;
+        for (int i = currentSegmentIndex; i < start && i < routePoints.length - 1; i++) {
+          distance += const Distance().as(
+            LengthUnit.Meter,
+            routePoints[i],
+            routePoints[i + 1],
+          );
+        }
+
+        // Calculate segment length
+        double segmentLength = 0;
+        for (int i = start; i < end && i < routePoints.length - 1; i++) {
+          segmentLength += const Distance().as(
+            LengthUnit.Meter,
+            routePoints[i],
+            routePoints[i + 1],
+          );
+        }
+
+        return {
+          'surface': surfaceType,
+          'distanceTo': distance,
+          'segmentLength': segmentLength,
+        };
+      }
+    }
+    return null;
+  }
+
+  /// Check if surface requires warning (not excellent or good)
+  bool _surfaceNeedsWarning(dynamic surface) {
+    if (surface == null) return false;
+    final surfaceStr = surface.toString().toLowerCase();
+
+    // Excellent surfaces (no warning)
+    if (surfaceStr.contains('asphalt') ||
+        surfaceStr.contains('concrete') ||
+        surfaceStr.contains('paved')) {
+      return false;
+    }
+
+    // Good surfaces (no warning)
+    if (surfaceStr.contains('compacted') ||
+        surfaceStr.contains('fine_gravel')) {
+      return false;
+    }
+
+    // Everything else needs warning
+    return true;
+  }
+
+  /// Get icon for surface type
+  IconData _getSurfaceIcon(dynamic surface) {
+    if (surface == null) return Icons.help_outline;
+    final surfaceStr = surface.toString().toLowerCase();
+
+    // Moderate surfaces (gravel, unpaved)
+    if (surfaceStr.contains('gravel') || surfaceStr.contains('unpaved')) {
+      return Icons.texture;
+    }
+
+    // Poor surfaces (dirt, sand, grass, mud)
+    if (surfaceStr.contains('dirt') ||
+        surfaceStr.contains('sand') ||
+        surfaceStr.contains('grass') ||
+        surfaceStr.contains('mud')) {
+      return Icons.warning;
+    }
+
+    // Special surfaces (cobblestone, sett)
+    if (surfaceStr.contains('cobble') || surfaceStr.contains('sett')) {
+      return Icons.grid_4x4;
+    }
+
+    return Icons.warning;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final navState = ref.watch(navigationProvider);
@@ -80,6 +175,13 @@ class NavigationCard extends ConsumerWidget {
       navState.currentSegmentIndex,
       navState.activeRoute?.pathDetails,
       'surface',
+    );
+
+    // Get next segment info
+    final nextSegmentInfo = _getNextSegmentInfo(
+      navState.currentSegmentIndex,
+      navState.activeRoute?.pathDetails,
+      navState.activeRoute?.points,
     );
 
     return Positioned(
@@ -152,9 +254,37 @@ class NavigationCard extends ConsumerWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          // Next segment info
+                          if (nextSegmentInfo != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (_surfaceNeedsWarning(nextSegmentInfo['surface']))
+                                  const Icon(Icons.warning, size: 14, color: Colors.orange),
+                                if (_surfaceNeedsWarning(nextSegmentInfo['surface']))
+                                  const SizedBox(width: 4),
+                                Text(
+                                  'Next: ${(nextSegmentInfo['segmentLength'] as double).toInt()}m - ${nextSegmentInfo['surface']}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _surfaceNeedsWarning(nextSegmentInfo['surface'])
+                                        ? Colors.orange.shade700
+                                        : Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
+                    // Surface warning triangle (only for moderate/poor/special surfaces)
+                    if (_surfaceNeedsWarning(surface))
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildSurfaceWarningSign(surface),
+                      ),
                     // Speed limit traffic sign (same size as maneuver icon: 56x56)
                     _buildSpeedLimitSign(maxSpeed),
                   ],
@@ -324,13 +454,6 @@ class NavigationCard extends ConsumerWidget {
                         value: roadClass.toString(),
                         color: Colors.teal,
                       ),
-                    if (maxSpeed != null)
-                      _buildDataChip(
-                        icon: Icons.speed,
-                        label: 'Max Speed',
-                        value: '$maxSpeed km/h',
-                        color: Colors.red,
-                      ),
                     if (surface != null)
                       _buildDataChip(
                         icon: Icons.texture,
@@ -382,10 +505,45 @@ class NavigationCard extends ConsumerWidget {
     );
   }
 
+  /// Build a surface warning triangle sign
+  Widget _buildSurfaceWarningSign(dynamic surface) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.red.shade700,
+          width: 4,
+        ),
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: CustomPaint(
+        painter: _TriangleBorderPainter(Colors.red.shade700),
+        child: Center(
+          child: Icon(
+            _getSurfaceIcon(surface),
+            size: 28,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Build a speed limit traffic sign (European style circular sign)
   Widget _buildSpeedLimitSign(dynamic speedLimit) {
-    // Get speed value - if null, show "?"
-    final String speedText = speedLimit != null ? speedLimit.toString() : '?';
+    // Cast speed to integer, or show "?" if null
+    final String speedText = speedLimit != null
+        ? (speedLimit is int ? speedLimit.toString() : (speedLimit as num).toInt().toString())
+        : '?';
 
     return Container(
       width: 56,
@@ -456,4 +614,31 @@ class NavigationCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Custom painter for triangle border in warning sign
+class _TriangleBorderPainter extends CustomPainter {
+  final Color color;
+
+  _TriangleBorderPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+    // Draw triangle pointing up
+    path.moveTo(size.width / 2, 8); // Top center
+    path.lineTo(size.width - 8, size.height - 8); // Bottom right
+    path.lineTo(8, size.height - 8); // Bottom left
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_TriangleBorderPainter oldDelegate) => false;
 }
