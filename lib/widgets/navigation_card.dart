@@ -615,20 +615,45 @@ class NavigationCard extends ConsumerWidget {
     // Get upcoming hazards
     final routeHazards = navState.activeRoute!.routeHazards!;
     final currentPosition = navState.currentPosition;
-    if (currentPosition == null) return [];
+    final routePoints = navState.activeRoute!.points;
+    if (currentPosition == null || routePoints.isEmpty) return [];
 
-    // Find closest upcoming hazard
+    // Calculate current position's distance along route
     final Distance distance = const Distance();
-    double? closestDistance;
+    double currentDistanceAlongRoute = 0;
+
+    // Find current segment and calculate distance from start
+    final currentSegmentIndex = navState.currentSegmentIndex;
+    for (int i = 0; i < currentSegmentIndex && i < routePoints.length - 1; i++) {
+      currentDistanceAlongRoute += distance.as(
+        LengthUnit.Meter,
+        routePoints[i],
+        routePoints[i + 1],
+      );
+    }
+
+    // Add distance from current segment start to current position
+    if (currentSegmentIndex < routePoints.length) {
+      currentDistanceAlongRoute += distance.as(
+        LengthUnit.Meter,
+        routePoints[currentSegmentIndex],
+        currentPosition,
+      );
+    }
+
+    // Find closest upcoming hazard (ahead of current position)
     RouteHazard? closestHazard;
+    double? closestDistanceAhead;
 
     for (final hazard in routeHazards) {
-      final hazardPos = LatLng(hazard.warning.latitude, hazard.warning.longitude);
-      final dist = distance.as(LengthUnit.Meter, currentPosition, hazardPos);
+      // Only consider hazards ahead on the route
+      if (hazard.distanceAlongRoute > currentDistanceAlongRoute) {
+        final distanceAhead = hazard.distanceAlongRoute - currentDistanceAlongRoute;
 
-      if (closestDistance == null || dist < closestDistance) {
-        closestDistance = dist;
-        closestHazard = hazard;
+        if (closestDistanceAhead == null || distanceAhead < closestDistanceAhead) {
+          closestDistanceAhead = distanceAhead;
+          closestHazard = hazard;
+        }
       }
     }
 
@@ -667,7 +692,7 @@ class NavigationCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'In ${closestDistance!.toStringAsFixed(0)}m',
+                    'In ${closestDistanceAhead!.toStringAsFixed(0)}m',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.red.shade700,
