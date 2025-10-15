@@ -2092,7 +2092,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             // Using Duck model - simple and easy to see direction
             modelUri: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Embedded/Duck.gltf",
             modelScale: [10.0, 10.0, 10.0], // 10x scale for visibility
-            modelRotation: [0.0, 0.0, 0.0], // Duck faces forward by default
+            modelRotation: [0.0, 0.0, -90.0], // Rotate -90° to correct direction (beak was pointing right)
           ),
         ),
       ));
@@ -3396,7 +3396,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       CameraOptions(
         center: Point(coordinates: Position(location.longitude, location.latitude)),
         zoom: targetZoom,
-        bearing: bearing != null ? -bearing : 0, // Negative: up = direction of travel
+        bearing: bearing ?? 0, // Positive bearing: direction at top of screen
         pitch: _currentPitch,
         // Note: Mapbox doesn't support anchor offset directly, so we use padding
         padding: MbxEdgeInsets(

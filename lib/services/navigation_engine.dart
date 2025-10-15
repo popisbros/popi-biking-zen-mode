@@ -126,15 +126,16 @@ class NavigationEngine {
   ) {
     if (route.isEmpty || currentSegmentIndex >= route.length) return 0;
 
-    // Distance to next route point
+    // Distance from current position to the next route point
     double remaining = _distance.as(
       LengthUnit.Meter,
       current,
       route[currentSegmentIndex],
     );
 
-    // Add distances for all remaining segments
-    for (int i = currentSegmentIndex; i < route.length - 1; i++) {
+    // Add distances for all remaining segments AFTER the current segment
+    // Start from currentSegmentIndex + 1 to avoid double-counting
+    for (int i = currentSegmentIndex + 1; i < route.length - 1; i++) {
       remaining += _distance.as(
         LengthUnit.Meter,
         route[i],
