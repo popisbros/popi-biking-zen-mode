@@ -2672,29 +2672,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Draw orange border
     canvas.drawCircle(center, radius, borderPaint);
 
-    // Get surface-specific icon
+    // Get surface-specific icon (matching 2D map)
     final surfaceStr = surfaceType.toLowerCase();
-    String iconText;
+    IconData iconData;
 
     if (surfaceStr.contains('gravel') || surfaceStr.contains('unpaved')) {
-      iconText = '⚠'; // Gravel/unpaved
+      iconData = Icons.texture; // Gravel/unpaved
     } else if (surfaceStr.contains('dirt') || surfaceStr.contains('sand') ||
                surfaceStr.contains('grass') || surfaceStr.contains('mud')) {
-      iconText = '!'; // Poor surfaces
+      iconData = Icons.warning; // Poor surfaces
     } else if (surfaceStr.contains('cobble') || surfaceStr.contains('sett')) {
-      iconText = '◆'; // Cobblestone
+      iconData = Icons.grid_4x4; // Cobblestone
     } else {
-      iconText = '!'; // Default warning
+      iconData = Icons.warning; // Default warning
     }
 
-    // Draw icon text
+    // Draw Material Icon using TextPainter with icon font
     final textPainter = TextPainter(
       text: TextSpan(
-        text: iconText,
+        text: String.fromCharCode(iconData.codePoint),
         style: TextStyle(
+          fontFamily: iconData.fontFamily,
+          package: iconData.fontPackage,
           color: Colors.orange.shade900,
           fontSize: size * 0.5,
-          fontWeight: FontWeight.bold,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -3108,7 +3109,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             ),
           ),
           image: await _createRoadSignImage(marker.surfaceType),
-          iconSize: 1.0,
+          iconSize: 1.5, // Match community POI/warning size
           iconAnchor: IconAnchor.CENTER,
         );
 
