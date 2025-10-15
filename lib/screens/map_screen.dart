@@ -496,7 +496,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               }
             }
 
-            _mapController.move(newGPSPosition, actualZoom);
+            // For turn-by-turn navigation, check if we should offset the center
+            final turnByTurnNav = ref.read(navigationProvider);
+            LatLng targetCenter = newGPSPosition;
+
+            if (turnByTurnNav.isNavigating) {
+              // Position user at 20% from bottom (offset camera to show more ahead)
+              // Calculate offset in meters based on screen height and zoom
+              final screenHeight = MediaQuery.of(context).size.height;
+              final offsetRatio = 0.3; // 30% offset to position user at ~20% from bottom
+
+              // Approximate meters per pixel at current zoom (rough calculation)
+              final metersPerPixel = 156543.03392 * math.cos(newGPSPosition.latitude * math.pi / 180) / math.pow(2, actualZoom);
+              final offsetMeters = screenHeight * offsetRatio * metersPerPixel;
+
+              // Calculate offset point in the direction of travel
+              final travelBearing = _calculateTravelDirection();
+              if (travelBearing != null) {
+                // Offset in the direction of travel
+                final bearing = travelBearing * math.pi / 180;
+                final earthRadius = 6371000.0; // meters
+                final lat1 = newGPSPosition.latitude * math.pi / 180;
+                final lon1 = newGPSPosition.longitude * math.pi / 180;
+
+                final lat2 = math.asin(math.sin(lat1) * math.cos(offsetMeters / earthRadius) +
+                    math.cos(lat1) * math.sin(offsetMeters / earthRadius) * math.cos(bearing));
+                final lon2 = lon1 + math.atan2(
+                    math.sin(bearing) * math.sin(offsetMeters / earthRadius) * math.cos(lat1),
+                    math.cos(offsetMeters / earthRadius) - math.sin(lat1) * math.sin(lat2));
+
+                targetCenter = LatLng(lat2 * 180 / math.pi, lon2 * 180 / math.pi);
+              }
+            }
+
+            _mapController.move(targetCenter, actualZoom);
 
             // Rotate map based on travel direction (keep last rotation if stationary)
             final travelBearing = _calculateTravelDirection();

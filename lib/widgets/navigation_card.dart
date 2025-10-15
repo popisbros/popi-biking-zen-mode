@@ -195,17 +195,17 @@ class NavigationCard extends ConsumerWidget {
     );
 
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 16, // Below status bar
+      top: MediaQuery.of(context).padding.top - 4, // 20px higher (16 - 20 = -4)
       left: 16,
       right: 16,
       child: Material(
         elevation: 8,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         color: Colors.white,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -225,23 +225,23 @@ class NavigationCard extends ConsumerWidget {
                   children: [
                     // Maneuver icon
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: Colors.blue.shade600,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
                         child: Text(
                           navState.nextManeuver!.icon,
                           style: const TextStyle(
-                            fontSize: 32,
+                            fontSize: 28,
                             color: Colors.white,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     // Instruction text
                     Expanded(
                       child: Column(
@@ -250,16 +250,16 @@ class NavigationCard extends ConsumerWidget {
                           Text(
                             navState.nextManeuver!.instruction,
                             style: const TextStyle(
-                              fontSize: 20,
+                              fontSize: 15,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
                             _formatDistance(navState.distanceToNextManeuver),
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 15,
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.w500,
                             ),
@@ -295,17 +295,17 @@ class NavigationCard extends ConsumerWidget {
                         padding: const EdgeInsets.only(right: 8),
                         child: _buildSurfaceWarningSign(surface),
                       ),
-                    // Speed limit traffic sign (same size as maneuver icon: 56x56)
+                    // Speed limit traffic sign (same size as maneuver icon: 48x48)
                     _buildSpeedLimitSign(maxSpeed),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 // Divider
                 Divider(
                   color: Colors.grey.shade300,
                   height: 1,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
               ],
               // Route summary
               Row(
@@ -313,30 +313,30 @@ class NavigationCard extends ConsumerWidget {
                   // Remaining distance
                   Icon(
                     Icons.straighten,
-                    size: 18,
+                    size: 16,
                     color: Colors.grey.shade600,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Text(
                     navState.remainingDistanceText,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey.shade800,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   // Remaining time
                   Icon(
                     Icons.access_time,
-                    size: 18,
+                    size: 16,
                     color: Colors.grey.shade600,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Text(
                     navState.remainingTimeText,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey.shade800,
                     ),
@@ -345,25 +345,25 @@ class NavigationCard extends ConsumerWidget {
                   // ETA
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: 8,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.flag,
-                          size: 16,
+                          size: 14,
                           color: Colors.blue.shade700,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Text(
                           navState.etaText,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: Colors.blue.shade700,
                           ),
@@ -521,19 +521,19 @@ class NavigationCard extends ConsumerWidget {
   /// Build a surface warning triangle sign
   Widget _buildSurfaceWarningSign(dynamic surface) {
     return Container(
-      width: 56,
-      height: 56,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(
           color: Colors.red.shade700,
-          width: 4,
+          width: 3,
         ),
         borderRadius: BorderRadius.circular(4),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
+            blurRadius: 3,
             offset: const Offset(0, 2),
           ),
         ],
@@ -543,7 +543,7 @@ class NavigationCard extends ConsumerWidget {
         child: Center(
           child: Icon(
             _getSurfaceIcon(surface),
-            size: 28,
+            size: 24,
             color: Colors.black87,
           ),
         ),
@@ -559,19 +559,19 @@ class NavigationCard extends ConsumerWidget {
         : '?';
 
     return Container(
-      width: 56,
-      height: 56,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
         border: Border.all(
           color: Colors.red.shade700,
-          width: 4,
+          width: 3,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
+            blurRadius: 3,
             offset: const Offset(0, 2),
           ),
         ],

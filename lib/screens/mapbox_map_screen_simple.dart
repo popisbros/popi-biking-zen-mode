@@ -3508,10 +3508,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // NOTE: Do NOT use location.heading for map rotation, only for marker arrow
     final bearing = _calculateTravelDirection();
 
-    // Position user at 3/4 from top (offset camera northward)
+    // Position user at 20% from bottom (80% from top = 0.8 * screenHeight)
     // This requires calculating a point offset in the direction of travel
     final screenHeight = MediaQuery.of(context).size.height;
-    final offsetPixels = screenHeight / 4; // Offset by 1/4 of screen height
+    final offsetPixels = screenHeight * 0.6; // Offset by 60% of screen height (to position marker at 80% from top)
 
     AppLogger.debug('Turn-by-turn camera update', tag: 'CAMERA', data: {
       'speed': '${((location.speed ?? 0) * 3.6).toStringAsFixed(1)} km/h',
@@ -3522,7 +3522,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       'pitch': _currentPitch.toStringAsFixed(0),
     });
 
-    // Camera target is user position (marker will appear at 3/4 from top due to padding)
+    // Camera target is user position (marker will appear at 20% from bottom due to padding)
     await _mapboxMap!.easeTo(
       CameraOptions(
         center: Point(coordinates: Position(location.longitude, location.latitude)),
