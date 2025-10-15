@@ -641,71 +641,83 @@ class NavigationCard extends ConsumerWidget {
       );
     }
 
-    // Find closest upcoming hazard (ahead of current position)
-    RouteHazard? closestHazard;
-    double? closestDistanceAhead;
+    // Find all upcoming hazards (ahead of current position)
+    final List<Map<String, dynamic>> upcomingHazards = [];
 
     for (final hazard in routeHazards) {
       // Only consider hazards ahead on the route
       if (hazard.distanceAlongRoute > currentDistanceAlongRoute) {
         final distanceAhead = hazard.distanceAlongRoute - currentDistanceAlongRoute;
-
-        if (closestDistanceAhead == null || distanceAhead < closestDistanceAhead) {
-          closestDistanceAhead = distanceAhead;
-          closestHazard = hazard;
-        }
+        upcomingHazards.add({
+          'hazard': hazard,
+          'distanceAhead': distanceAhead,
+        });
       }
     }
 
-    if (closestHazard == null) return [];
+    // Sort by distance ahead
+    upcomingHazards.sort((a, b) => (a['distanceAhead'] as double).compareTo(b['distanceAhead'] as double));
 
-    // Get hazard icon
-    final hazardIcon = _getHazardIcon(closestHazard.warning.type);
+    if (upcomingHazards.isEmpty) return [];
 
-    return [
+    // Build UI for all upcoming hazards
+    final List<Widget> hazardWidgets = [
       const SizedBox(height: 12),
       Divider(color: Colors.grey.shade300, height: 1),
       const SizedBox(height: 8),
-      // Hazard warning (no title to save space)
-      Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red.shade200),
-        ),
-        child: Row(
-          children: [
-            Icon(hazardIcon, color: Colors.red.shade700, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    closestHazard.warning.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'In ${closestDistanceAhead!.toStringAsFixed(0)}m',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade700,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     ];
+
+    // Add each hazard as a row
+    for (int i = 0; i < upcomingHazards.length; i++) {
+      final hazardData = upcomingHazards[i];
+      final RouteHazard hazard = hazardData['hazard'] as RouteHazard;
+      final double distanceAhead = hazardData['distanceAhead'] as double;
+      final hazardIcon = _getHazardIcon(hazard.warning.type);
+
+      if (i > 0) {
+        hazardWidgets.add(const SizedBox(height: 6)); // Spacing between hazards
+      }
+
+      hazardWidgets.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(hazardIcon, color: Colors.red.shade700, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hazard.warning.title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${distanceAhead.toStringAsFixed(0)}m',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return hazardWidgets;
   }
 
   /// Format distance in meters to human-readable string
