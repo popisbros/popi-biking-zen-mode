@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../config/api_keys.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
+import 'route_hazard_detector.dart';
 
 /// Route type enumeration
 enum RouteType {
@@ -20,6 +21,7 @@ class RouteResult {
   final int durationMillis;
   final List<RouteInstruction>? instructions; // GraphHopper turn-by-turn instructions
   final Map<String, dynamic>? pathDetails; // Path details (lanes, street names, etc)
+  final List<RouteHazard>? routeHazards; // Community hazards on or near this route
 
   RouteResult({
     required this.type,
@@ -28,10 +30,24 @@ class RouteResult {
     required this.durationMillis,
     this.instructions,
     this.pathDetails,
+    this.routeHazards,
   });
 
   String get distanceKm => (distanceMeters / 1000).toStringAsFixed(2);
   String get durationMin => (durationMillis / 60000).toStringAsFixed(0);
+
+  /// Create a copy with updated hazards
+  RouteResult copyWithHazards(List<RouteHazard> hazards) {
+    return RouteResult(
+      type: type,
+      points: points,
+      distanceMeters: distanceMeters,
+      durationMillis: durationMillis,
+      instructions: instructions,
+      pathDetails: pathDetails,
+      routeHazards: hazards,
+    );
+  }
 }
 
 /// GraphHopper turn-by-turn instruction

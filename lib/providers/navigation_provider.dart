@@ -8,7 +8,9 @@ import '../services/routing_service.dart';
 import '../services/navigation_engine.dart';
 import '../services/location_service.dart';
 import '../services/toast_service.dart';
+import '../services/route_hazard_detector.dart';
 import '../utils/app_logger.dart';
+import 'community_provider.dart';
 
 /// Provider for navigation state
 final navigationProvider = NotifierProvider<NavigationNotifier, NavigationState>(
@@ -57,6 +59,26 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'duration': route.durationMin,
     });
 
+    // Detect hazards on route
+    final communityWarnings = ref.read(communityWarningsNotifierProvider);
+    List<RouteHazard> routeHazards = [];
+
+    communityWarnings.whenData((warnings) {
+      if (warnings.isNotEmpty) {
+        routeHazards = RouteHazardDetector.detectHazardsOnRoute(
+          routePoints: route.points,
+          allHazards: warnings,
+        );
+
+        if (routeHazards.isNotEmpty) {
+          AppLogger.success('Found ${routeHazards.length} hazards on route', tag: 'NAVIGATION');
+        }
+      }
+    });
+
+    // Update route with detected hazards
+    final routeWithHazards = route.copyWithHazards(routeHazards);
+
     // Detect all maneuvers in the route
     _detectedManeuvers = NavigationEngine.detectManeuvers(route.points);
     AppLogger.debug('Maneuvers detected', tag: 'NAVIGATION', data: {
@@ -69,7 +91,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     state = NavigationState(
       isNavigating: true,
-      activeRoute: route,
+      activeRoute: routeWithHazards,
       currentPosition: initialPosition,
       currentSegmentIndex: 0,
       nextManeuver: nextManeuver,

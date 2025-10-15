@@ -1908,6 +1908,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
         AppLogger.debug('Added ${warningMarkers.length} surface warning markers', tag: 'MAP');
       }
+
+      // Add route hazards markers during navigation
+      if (navState.activeRoute!.routeHazards != null && navState.activeRoute!.routeHazards!.isNotEmpty) {
+        final routeHazards = navState.activeRoute!.routeHazards!;
+        for (final hazard in routeHazards) {
+          markers.add(_buildWarningMarker(hazard.warning));
+        }
+        AppLogger.debug('Added ${routeHazards.length} route hazard markers', tag: 'MAP');
+      }
     }
 
     AppLogger.map('Total markers on map', data: {'count': markers.length});

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path; // Hide Path from latlong2 to avoid conflict with Flutter UI Path
+import '../models/navigation_state.dart';
 import '../providers/navigation_provider.dart';
 import '../services/routing_service.dart';
+import '../services/route_hazard_detector.dart';
 
 /// Navigation card overlay showing turn-by-turn instructions
 /// Option B design: Medium-sized card at top of map
@@ -398,6 +400,9 @@ class NavigationCard extends ConsumerWidget {
                 ),
               ],
 
+              // Hazard Section (above GraphHopper data)
+              ..._buildHazardSection(navState),
+
               // GraphHopper Path Details Section
               if (streetName != null || lanes != null || roadClass != null || maxSpeed != null || surface != null) ...[
                 const SizedBox(height: 12),
@@ -574,6 +579,148 @@ class NavigationCard extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Build hazard warning section
+  List<Widget> _buildHazardSection(NavigationState navState) {
+    // Check if we have hazards on the route
+    if (navState.activeRoute?.routeHazards == null || navState.activeRoute!.routeHazards!.isEmpty) {
+      // No hazards - show positive message
+      return [
+        const SizedBox(height: 12),
+        Divider(color: Colors.grey.shade300, height: 1),
+        const SizedBox(height: 12),
+        // Section header
+        Text(
+          'HAZARDS',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.green.shade700,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Positive message
+        Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Route clear, enjoy your ride ✌️',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ];
+    }
+
+    // Get upcoming hazards
+    final routeHazards = navState.activeRoute!.routeHazards!;
+    final currentPosition = navState.currentPosition;
+    if (currentPosition == null) return [];
+
+    // Find closest upcoming hazard
+    final Distance distance = const Distance();
+    double? closestDistance;
+    RouteHazard? closestHazard;
+
+    for (final hazard in routeHazards) {
+      final hazardPos = LatLng(hazard.warning.latitude, hazard.warning.longitude);
+      final dist = distance.as(LengthUnit.Meter, currentPosition, hazardPos);
+
+      if (closestDistance == null || dist < closestDistance) {
+        closestDistance = dist;
+        closestHazard = hazard;
+      }
+    }
+
+    if (closestHazard == null) return [];
+
+    // Get hazard icon
+    final hazardIcon = _getHazardIcon(closestHazard.warning.type);
+
+    return [
+      const SizedBox(height: 12),
+      Divider(color: Colors.grey.shade300, height: 1),
+      const SizedBox(height: 12),
+      // Section header
+      Text(
+        'HAZARDS',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.red.shade700,
+          letterSpacing: 0.5,
+        ),
+      ),
+      const SizedBox(height: 8),
+      // Hazard warning
+      Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(hazardIcon, color: Colors.red.shade700, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    closestHazard.warning.title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'In ${closestDistance!.toStringAsFixed(0)}m',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  /// Get icon for hazard type
+  IconData _getHazardIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'pothole':
+        return Icons.warning;
+      case 'broken_glass':
+        return Icons.dangerous;
+      case 'roadwork':
+        return Icons.construction;
+      case 'debris':
+        return Icons.warning_amber;
+      case 'poor_surface':
+        return Icons.terrain;
+      case 'traffic':
+        return Icons.traffic;
+      case 'accident':
+        return Icons.car_crash;
+      default:
+        return Icons.warning;
+    }
   }
 
   /// Build a data chip for GraphHopper details

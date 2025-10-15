@@ -2701,6 +2701,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     await _addCommunityPOIsAsIcons(mapState);
     await _addWarningsAsIcons(mapState);
 
+    // Add route hazards during turn-by-turn navigation
+    await _addRouteHazards();
+
     // Add search result marker if available
     await _addSearchResultMarker();
 
@@ -3222,6 +3225,47 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     if (pointOptions.isNotEmpty) {
       await _pointAnnotationManager!.createMulti(pointOptions);
       AppLogger.success('Added Warning icons', tag: 'MAP', data: {'count': pointOptions.length});
+    }
+  }
+
+  /// Add route hazards as warning markers (only during turn-by-turn navigation)
+  Future<void> _addRouteHazards() async {
+    if (_pointAnnotationManager == null) return;
+
+    final navState = ref.read(navigationProvider);
+    if (!navState.isNavigating || navState.activeRoute?.routeHazards == null) {
+      return;
+    }
+
+    final routeHazards = navState.activeRoute!.routeHazards!;
+    if (routeHazards.isEmpty) return;
+
+    List<PointAnnotationOptions> pointOptions = [];
+
+    AppLogger.debug('Adding route hazards as markers', tag: 'MAP', data: {'count': routeHazards.length});
+    for (var hazard in routeHazards) {
+      final warning = hazard.warning;
+      final id = 'route_hazard_${warning.latitude}_${warning.longitude}';
+      _warningById[id] = warning;
+
+      // Get emoji for this warning type
+      final emoji = POITypeConfig.getWarningEmoji(warning.type);
+
+      // Create icon image from emoji with warning colors (red circle)
+      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.warning);
+
+      pointOptions.add(
+        PointAnnotationOptions(
+          geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
+          image: iconImage,
+          iconSize: 1.5, // Same size as regular warnings
+        ),
+      );
+    }
+
+    if (pointOptions.isNotEmpty) {
+      await _pointAnnotationManager!.createMulti(pointOptions);
+      AppLogger.success('Added route hazard markers', tag: 'MAP', data: {'count': pointOptions.length});
     }
   }
 
