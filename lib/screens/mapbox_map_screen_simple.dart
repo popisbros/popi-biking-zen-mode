@@ -1521,7 +1521,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Show arrival dialog when user arrives
       if (next.hasArrived && !(previous?.hasArrived ?? false)) {
         AppLogger.success('Showing arrival dialog', tag: 'NAVIGATION');
-        final destination = next.activeRoute?.destinationName ?? 'Destination';
         final distance = next.totalDistanceRemaining;
 
         // Show arrival dialog
@@ -1529,7 +1528,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           context: context,
           barrierDismissible: false,
           builder: (context) => ArrivalDialog(
-            destinationName: destination,
+            destinationName: 'Your Destination',
             finalDistance: distance,
           ),
         );
