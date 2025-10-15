@@ -2068,14 +2068,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         pulsingEnabled: true, // Add pulsing effect for better visibility
         locationPuck: LocationPuck(
           locationPuck3D: LocationPuck3D(
-            // Use Mapbox's default 3D arrow model
+            // Testing with different 3D models:
+            // Option 1: Duck (simple, easy to see direction)
+            // modelUri: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Embedded/Duck.gltf",
+            // Option 2: Arrow (directional, good for navigation)
+            // modelUri: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxTextured/glTF/BoxTextured.gltf",
+            // Option 3: CesiumMilkTruck (vehicle-like)
             modelUri: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf",
-            modelScale: [3.0, 3.0, 3.0], // Scale up 3x for visibility
+            modelScale: [10.0, 10.0, 10.0], // Much bigger: 10x scale (was 3x)
             modelRotation: [0.0, 0.0, 90.0], // Rotate to point forward
           ),
         ),
       ));
-      AppLogger.success('Built-in 3D location puck ENABLED for testing', tag: 'MAP');
+      AppLogger.success('Built-in 3D location puck ENABLED (10x scale) for testing', tag: 'MAP');
     } catch (e) {
       AppLogger.error('Failed to enable 3D location component', error: e);
     }
