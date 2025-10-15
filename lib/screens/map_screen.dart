@@ -955,8 +955,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Activate navigation mode automatically
     ref.read(navigationModeProvider.notifier).startRouteNavigation();
 
-    // Zoom map to fit the entire route
-    _fitRouteBounds(route.points);
+    // Center on user's GPS location for navigation (instead of showing entire route)
+    final locationAsync = ref.read(locationNotifierProvider);
+    locationAsync.whenData((location) {
+      if (location != null && mounted) {
+        _mapController.move(LatLng(location.latitude, location.longitude), 16.0);
+        AppLogger.debug('Map centered on user location for navigation', tag: 'ROUTING');
+      }
+    });
 
     final routeTypeLabel = route.type == RouteType.fastest ? 'Fastest' : 'Safest';
     AppLogger.success('$routeTypeLabel route displayed', tag: 'ROUTING', data: {
