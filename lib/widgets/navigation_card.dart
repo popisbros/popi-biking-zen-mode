@@ -373,6 +373,24 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                       color: Colors.grey.shade800,
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  // Off-route distance (DEBUG)
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: navState.isOffRoute ? Colors.red.shade600 : Colors.green.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    navState.isOffRoute
+                      ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF'
+                      : 'ON',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800,
+                    ),
+                  ),
                   const Spacer(),
                   // ETA
                   Container(
