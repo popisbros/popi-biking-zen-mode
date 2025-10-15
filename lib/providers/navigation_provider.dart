@@ -60,43 +60,50 @@ class NavigationNotifier extends Notifier<NavigationState> {
     });
 
     // Detect hazards on route
-    final communityWarnings = ref.read(communityWarningsNotifierProvider);
+    // Try bounds provider first (likely loaded), then all warnings provider
+    List<CommunityWarning> warnings = [];
+
+    final boundsWarnings = ref.read(communityWarningsBoundsNotifierProvider);
+    final allWarnings = ref.read(communityWarningsNotifierProvider);
+
+    print('[HAZARD DEBUG PROVIDER] boundsWarnings.hasValue: ${boundsWarnings.hasValue}, count: ${boundsWarnings.value?.length ?? 0}');
+    print('[HAZARD DEBUG PROVIDER] allWarnings.hasValue: ${allWarnings.hasValue}, count: ${allWarnings.value?.length ?? 0}');
+
+    // Prefer all warnings (complete set) if available, otherwise use bounds
+    if (allWarnings.hasValue && allWarnings.value != null && allWarnings.value!.isNotEmpty) {
+      warnings = allWarnings.value!;
+      print('[HAZARD DEBUG PROVIDER] Using ALL warnings: ${warnings.length}');
+    } else if (boundsWarnings.hasValue && boundsWarnings.value != null && boundsWarnings.value!.isNotEmpty) {
+      warnings = boundsWarnings.value!;
+      print('[HAZARD DEBUG PROVIDER] Using BOUNDS warnings: ${warnings.length}');
+    } else {
+      print('[HAZARD DEBUG PROVIDER] No warnings available from either provider');
+    }
+
     List<RouteHazard> routeHazards = [];
 
-    // Check if community warnings are loaded and detect hazards synchronously
-    print('[HAZARD DEBUG PROVIDER] communityWarnings.hasValue: ${communityWarnings.hasValue}');
-    print('[HAZARD DEBUG PROVIDER] communityWarnings.value: ${communityWarnings.value?.length ?? 0}');
+    if (warnings.isNotEmpty) {
+      AppLogger.debug('Detecting hazards on route', tag: 'NAVIGATION', data: {
+        'totalWarnings': warnings.length,
+      });
 
-    if (communityWarnings.hasValue && communityWarnings.value != null) {
-      final warnings = communityWarnings.value!;
-      print('[HAZARD DEBUG PROVIDER] Total warnings available: ${warnings.length}');
+      routeHazards = RouteHazardDetector.detectHazardsOnRoute(
+        routePoints: route.points,
+        allHazards: warnings,
+      );
 
-      if (warnings.isNotEmpty) {
-        AppLogger.debug('Detecting hazards on route', tag: 'NAVIGATION', data: {
-          'totalWarnings': warnings.length,
-        });
+      print('[HAZARD DEBUG PROVIDER] Hazards detected: ${routeHazards.length}');
 
-        routeHazards = RouteHazardDetector.detectHazardsOnRoute(
-          routePoints: route.points,
-          allHazards: warnings,
-        );
-
-        print('[HAZARD DEBUG PROVIDER] Hazards detected: ${routeHazards.length}');
-
-        if (routeHazards.isNotEmpty) {
-          AppLogger.success('Found ${routeHazards.length} hazards on route', tag: 'NAVIGATION');
-          for (var i = 0; i < routeHazards.length; i++) {
-            print('[HAZARD DEBUG PROVIDER] Hazard $i: ${routeHazards[i].warning.title} at ${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m');
-          }
-        } else {
-          AppLogger.debug('No hazards found on route', tag: 'NAVIGATION');
+      if (routeHazards.isNotEmpty) {
+        AppLogger.success('Found ${routeHazards.length} hazards on route', tag: 'NAVIGATION');
+        for (var i = 0; i < routeHazards.length; i++) {
+          print('[HAZARD DEBUG PROVIDER] Hazard $i: ${routeHazards[i].warning.title} at ${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m');
         }
       } else {
-        print('[HAZARD DEBUG PROVIDER] Warnings list is empty');
+        AppLogger.debug('No hazards found on route', tag: 'NAVIGATION');
       }
     } else {
-      AppLogger.warning('Community warnings not loaded yet', tag: 'NAVIGATION');
-      print('[HAZARD DEBUG PROVIDER] Community warnings NOT available');
+      AppLogger.warning('No community warnings available for hazard detection', tag: 'NAVIGATION');
     }
 
     print('[HAZARD DEBUG PROVIDER] Creating route with ${routeHazards.length} hazards');
