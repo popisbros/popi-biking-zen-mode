@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../models/location_data.dart';
 import '../models/navigation_state.dart';
 import '../models/maneuver_instruction.dart';
+import '../models/community_warning.dart';
 import '../services/routing_service.dart';
 import '../services/navigation_engine.dart';
 import '../services/location_service.dart';
