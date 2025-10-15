@@ -2065,11 +2065,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await mapboxMap.location.updateSettings(LocationComponentSettings(
         enabled: true, // TESTING: Enable default Mapbox location puck
         puckBearingEnabled: true, // Show direction arrow
+        pulsingEnabled: true, // Add pulsing effect for better visibility
         locationPuck: LocationPuck(
-          locationPuck2D: DefaultLocationPuck2D(),
+          locationPuck2D: DefaultLocationPuck2D(
+            topImage: null, // Use default arrow
+            bearingImage: null, // Use default bearing arrow
+            shadowImage: null, // Use default shadow
+            scale: 1.5, // Make it 50% bigger for better visibility
+            opacity: 1.0, // Full opacity
+          ),
         ),
       ));
-      AppLogger.success('Built-in location component ENABLED for testing', tag: 'MAP');
+      AppLogger.success('Built-in location component ENABLED for testing (scaled 1.5x)', tag: 'MAP');
     } catch (e) {
       AppLogger.error('Failed to enable location component', error: e);
     }
