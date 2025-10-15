@@ -3488,32 +3488,32 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // NOTE: Do NOT use location.heading for map rotation, only for marker arrow
     final bearing = _calculateTravelDirection();
 
-    // Position user at 20% from bottom (80% from top = 0.8 * screenHeight)
-    // This requires calculating a point offset in the direction of travel
+    // Position user at 80% from top (20% from bottom)
+    // Use BOTTOM padding to push user marker lower on screen
     final screenHeight = MediaQuery.of(context).size.height;
-    final offsetPixels = screenHeight * 0.6; // Offset by 60% of screen height (to position marker at 80% from top)
+    final bottomPadding = screenHeight * 0.2; // 20% from bottom = 80% from top
 
     AppLogger.debug('Turn-by-turn camera update', tag: 'CAMERA', data: {
       'speed': '${((location.speed ?? 0) * 3.6).toStringAsFixed(1)} km/h',
       'zoom': targetZoom.toStringAsFixed(1),
       'heading': location.heading?.toStringAsFixed(0) ?? 'null',
       'bearing': bearing?.toStringAsFixed(0) ?? 'null',
-      'offset': '${offsetPixels.toStringAsFixed(0)}px',
+      'bottomPadding': '${bottomPadding.toStringAsFixed(0)}px',
       'pitch': _currentPitch.toStringAsFixed(0),
     });
 
-    // Camera target is user position (marker will appear at 20% from bottom due to padding)
+    // Camera target is user position (marker will appear at 80% from top due to bottom padding)
     await _mapboxMap!.easeTo(
       CameraOptions(
         center: Point(coordinates: Position(location.longitude, location.latitude)),
         zoom: targetZoom,
         bearing: bearing ?? 0, // Positive bearing: direction at top of screen
         pitch: _currentPitch,
-        // Note: Mapbox doesn't support anchor offset directly, so we use padding
+        // Use BOTTOM padding to position user at 80% from top (20% from bottom)
         padding: MbxEdgeInsets(
-          top: offsetPixels,
+          top: 0,
           left: 0,
-          bottom: 0,
+          bottom: bottomPadding,
           right: 0,
         ),
       ),
