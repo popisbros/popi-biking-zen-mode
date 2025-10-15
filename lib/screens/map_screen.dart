@@ -1937,9 +1937,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         );
 
         for (final warningMarker in warningMarkers) {
+          // Use same size as community hazard markers
+          final size = MarkerConfig.getRadiusForType(POIMarkerType.warning) * 2;
           markers.add(Marker(
-            width: 32,
-            height: 32,
+            width: size,
+            height: size,
             point: warningMarker.position,
             child: _buildRoadSignMarker(warningMarker.surfaceType),
           ));
