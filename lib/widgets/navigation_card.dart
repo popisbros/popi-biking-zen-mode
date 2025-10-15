@@ -195,7 +195,7 @@ class NavigationCard extends ConsumerWidget {
     );
 
     return Positioned(
-      top: MediaQuery.of(context).padding.top - 4, // 20px higher (16 - 20 = -4)
+      top: MediaQuery.of(context).padding.top + 1, // 5px lower than before (-4 + 5 = 1)
       left: 16,
       right: 16,
       child: Material(
