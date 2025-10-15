@@ -957,6 +957,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Activate navigation mode automatically
     ref.read(navigationModeProvider.notifier).startRouteNavigation();
 
+    // Start turn-by-turn navigation with the new navigation provider
+    ref.read(navigationProvider.notifier).startNavigation(route);
+
     // Center on user's GPS location for navigation (instead of showing entire route)
     final locationAsync = ref.read(locationNotifierProvider);
     final location = locationAsync.value;
@@ -1077,6 +1080,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // Exit navigation mode
     ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+
+    // Stop turn-by-turn navigation
+    ref.read(navigationProvider.notifier).stopNavigation();
 
     // Keep current map rotation (don't reset to north)
 
