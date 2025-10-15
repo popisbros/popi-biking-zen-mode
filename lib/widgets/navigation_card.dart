@@ -264,22 +264,18 @@ class NavigationCard extends ConsumerWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          // Next segment info
-                          if (nextSegmentInfo != null) ...[
+                          // Next segment info (only show if next segment has a warning)
+                          if (nextSegmentInfo != null && _surfaceNeedsWarning(nextSegmentInfo['surface'])) ...[
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                if (_surfaceNeedsWarning(nextSegmentInfo['surface']))
-                                  const Icon(Icons.warning, size: 14, color: Colors.orange),
-                                if (_surfaceNeedsWarning(nextSegmentInfo['surface']))
-                                  const SizedBox(width: 4),
+                                const Icon(Icons.warning, size: 14, color: Colors.orange),
+                                const SizedBox(width: 4),
                                 Text(
                                   'Next: ${(nextSegmentInfo['segmentLength'] as double).toInt()}m - ${nextSegmentInfo['surface']}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _surfaceNeedsWarning(nextSegmentInfo['surface'])
-                                        ? Colors.orange.shade700
-                                        : Colors.grey.shade600,
+                                    color: Colors.orange.shade700,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
