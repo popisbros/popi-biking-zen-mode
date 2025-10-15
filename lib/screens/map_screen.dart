@@ -2326,7 +2326,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       mini: true,
                       heroTag: 'navigation_mode_toggle',
                       onPressed: () {
-                        ref.read(navigationModeProvider.notifier).toggleMode();
+                        if (isNavigationMode) {
+                          // If in navigation mode, stop navigation completely
+                          _stopNavigation();
+                        } else {
+                          // Otherwise just toggle mode
+                          ref.read(navigationModeProvider.notifier).toggleMode();
+                        }
                       },
                       backgroundColor: isNavigationMode ? Colors.purple : Colors.grey.shade300,
                       foregroundColor: isNavigationMode ? Colors.white : Colors.grey.shade600,
