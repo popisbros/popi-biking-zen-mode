@@ -1358,8 +1358,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// Build road sign warning marker (orange circle style like community hazards)
+  /// Build road sign warning marker (orange circle matching community hazards style)
   Widget _buildRoadSignMarker(String surfaceType) {
+    // Match community hazard marker size exactly
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.warning) * 2;
+
     // Get surface-specific icon
     final surfaceStr = surfaceType.toLowerCase();
     IconData iconData;
@@ -1376,29 +1379,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     return Container(
-      width: 32,
-      height: 32,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
+        // Orange with ~20% opacity to match community hazard transparency
+        color: const Color(0x33FFE0B2), // orange.shade100 with ~20% opacity
         shape: BoxShape.circle,
         border: Border.all(
-          color: Colors.orange.shade700,
-          width: 2.5,
+          color: Colors.orange, // Orange border
+          width: MarkerConfig.circleStrokeWidth,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
       ),
-      child: Center(
-        child: Icon(
-          iconData,
-          size: 18,
-          color: Colors.orange.shade900,
-        ),
+      alignment: Alignment.center,
+      child: Icon(
+        iconData,
+        size: size * 0.5,
+        color: Colors.orange.shade900,
       ),
     );
   }

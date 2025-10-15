@@ -2650,22 +2650,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return byteData!.buffer.asUint8List();
   }
 
-  /// Create road sign warning image (orange circle style like community hazards)
+  /// Create road sign warning image (orange circle matching community hazards style)
   Future<Uint8List> _createRoadSignImage(String surfaceType, {double size = 48}) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Orange circle background with orange border
+    // Orange circle with ~20% opacity to match community hazard transparency
     final bgPaint = Paint()
-      ..color = Colors.orange.shade100
+      ..color = const Color(0x33FFE0B2) // orange.shade100 with ~20% opacity
       ..style = PaintingStyle.fill;
     final borderPaint = Paint()
-      ..color = Colors.orange.shade700
+      ..color = Colors.orange // Orange border (solid)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
+      ..strokeWidth = MarkerConfig.circleStrokeWidth;
 
     final center = Offset(size / 2, size / 2);
-    final radius = size / 2 - 2;
+    final radius = size / 2 - MarkerConfig.circleStrokeWidth;
 
     // Draw orange filled circle
     canvas.drawCircle(center, radius, bgPaint);
@@ -2693,7 +2693,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         text: iconText,
         style: TextStyle(
           color: Colors.orange.shade900,
-          fontSize: size * 0.45,
+          fontSize: size * 0.5,
           fontWeight: FontWeight.bold,
         ),
       ),

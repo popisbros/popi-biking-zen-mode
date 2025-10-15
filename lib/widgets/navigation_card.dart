@@ -60,6 +60,15 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     final surfaceList = pathDetails['surface'] as List?;
     if (surfaceList == null || surfaceList.isEmpty) return null;
 
+    // DEBUG: Log all segments
+    print('=== DEBUG NEXT SEGMENT ===');
+    print('Current segment index: $currentSegmentIndex');
+    print('All surface segments:');
+    for (final detail in surfaceList) {
+      final detailData = detail as List;
+      print('  [${detailData[0]}-${detailData[1]}]: ${detailData[2]}');
+    }
+
     // First, find which segment we're currently on
     String? currentSurface;
     int? currentSegmentEnd;
@@ -73,6 +82,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       if (start <= currentSegmentIndex && currentSegmentIndex < end) {
         currentSurface = surfaceType;
         currentSegmentEnd = end;
+        print('Current segment: [$start-$end]: $surfaceType');
         break;
       }
     }
@@ -93,6 +103,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
         if (start >= currentSegmentEnd && start > currentSegmentIndex) {
           if (closestStart == null || start < closestStart) {
             closestStart = start;
+            print('  Found candidate next segment: [$start-$end]: $surfaceType');
 
             // Calculate distance to this segment
             double distance = 0;
@@ -123,9 +134,16 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
         }
       }
 
+      if (nextSegment != null) {
+        print('Selected next segment: $nextSegment');
+      }
+      print('=========================');
+
       return nextSegment;
     }
 
+    print('No current segment found');
+    print('=========================');
     return null;
   }
 
