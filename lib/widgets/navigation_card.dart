@@ -597,22 +597,11 @@ class NavigationCard extends ConsumerWidget {
       return [
         const SizedBox(height: 12),
         Divider(color: Colors.grey.shade300, height: 1),
-        const SizedBox(height: 12),
-        // Section header
-        Text(
-          'HAZARDS',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: Colors.green.shade700,
-            letterSpacing: 0.5,
-          ),
-        ),
         const SizedBox(height: 8),
-        // Positive message
+        // Positive message (no title to save space)
         Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+            Icon(Icons.check_circle, color: Colors.green.shade600, size: 18),
             const SizedBox(width: 8),
             const Text(
               'Route clear, enjoy your ride ✌️',
@@ -655,19 +644,8 @@ class NavigationCard extends ConsumerWidget {
     return [
       const SizedBox(height: 12),
       Divider(color: Colors.grey.shade300, height: 1),
-      const SizedBox(height: 12),
-      // Section header
-      Text(
-        'HAZARDS',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: Colors.red.shade700,
-          letterSpacing: 0.5,
-        ),
-      ),
       const SizedBox(height: 8),
-      // Hazard warning
+      // Hazard warning (no title to save space)
       Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
