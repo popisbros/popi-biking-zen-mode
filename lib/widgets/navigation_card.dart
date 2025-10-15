@@ -53,16 +53,17 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
   }
 
   /// Get next segment info (surface type and distance)
-  /// Only returns info if the IMMEDIATE next segment (different from current) needs a warning
-  Map<String, dynamic>? _getNextSegmentInfo(int currentSegmentIndex, Map<String, dynamic>? pathDetails, List<LatLng>? routePoints) {
+  /// currentSegmentIndex = current POINT index (not segment range)
+  /// GraphHopper segment = range of points with same surface (e.g., [0-50] = points 0 to 50)
+  Map<String, dynamic>? _getNextSegmentInfo(int currentPointIndex, Map<String, dynamic>? pathDetails, List<LatLng>? routePoints) {
     if (pathDetails == null || !pathDetails.containsKey('surface') || routePoints == null) return null;
 
     final surfaceList = pathDetails['surface'] as List?;
     if (surfaceList == null || surfaceList.isEmpty) return null;
 
-    // First, find which segment we're currently on
-    String? currentSurface;
+    // Find which GraphHopper segment the current point is in
     int? currentSegmentEnd;
+    String? currentSurface;
 
     for (final detail in surfaceList) {
       final detailData = detail as List;
@@ -70,63 +71,66 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       final end = detailData[1] as int;
       final surfaceType = detailData[2] as String;
 
-      if (start <= currentSegmentIndex && currentSegmentIndex < end) {
-        currentSurface = surfaceType;
+      // Check if current point is within this segment's range
+      if (currentPointIndex >= start && currentPointIndex < end) {
         currentSegmentEnd = end;
+        currentSurface = surfaceType;
         break;
       }
     }
 
-    // Now find the IMMEDIATE next segment (the one with smallest start >= currentSegmentEnd)
-    if (currentSegmentEnd != null) {
-      int? closestStart;
-      Map<String, dynamic>? nextSegment;
+    if (currentSegmentEnd == null) return null;
 
-      for (final detail in surfaceList) {
-        final detailData = detail as List;
-        final start = detailData[0] as int;
-        final end = detailData[1] as int;
-        final surfaceType = detailData[2] as String;
+    // Find the IMMEDIATE next segment (smallest start index > currentSegmentEnd)
+    int? nextSegmentStart;
+    int? nextSegmentEnd;
+    String? nextSurface;
 
-        // Find segment that starts at or right after current segment ends
-        // Track the one with the SMALLEST start index
-        if (start >= currentSegmentEnd && start > currentSegmentIndex) {
-          if (closestStart == null || start < closestStart) {
-            closestStart = start;
+    for (final detail in surfaceList) {
+      final detailData = detail as List;
+      final start = detailData[0] as int;
+      final end = detailData[1] as int;
+      final surfaceType = detailData[2] as String;
 
-            // Calculate distance to this segment
-            double distance = 0;
-            for (int i = currentSegmentIndex; i < start && i < routePoints.length - 1; i++) {
-              distance += const Distance().as(
-                LengthUnit.Meter,
-                routePoints[i],
-                routePoints[i + 1],
-              );
-            }
-
-            // Calculate segment length
-            double segmentLength = 0;
-            for (int i = start; i < end && i < routePoints.length - 1; i++) {
-              segmentLength += const Distance().as(
-                LengthUnit.Meter,
-                routePoints[i],
-                routePoints[i + 1],
-              );
-            }
-
-            nextSegment = {
-              'surface': surfaceType,
-              'distanceTo': distance,
-              'segmentLength': segmentLength,
-            };
-          }
+      // Look for segments that start after current segment ends
+      if (start >= currentSegmentEnd) {
+        if (nextSegmentStart == null || start < nextSegmentStart) {
+          nextSegmentStart = start;
+          nextSegmentEnd = end;
+          nextSurface = surfaceType;
         }
       }
-
-      return nextSegment;
     }
 
-    return null;
+    if (nextSegmentStart == null || nextSegmentEnd == null || nextSurface == null) {
+      return null;
+    }
+
+    // Calculate distance from current point to the start of next segment
+    double distanceToSegment = 0;
+    for (int i = currentPointIndex; i < nextSegmentStart && i < routePoints.length - 1; i++) {
+      distanceToSegment += const Distance().as(
+        LengthUnit.Meter,
+        routePoints[i],
+        routePoints[i + 1],
+      );
+    }
+
+    // Calculate length of the next segment
+    double segmentLength = 0;
+    for (int i = nextSegmentStart; i < nextSegmentEnd && i < routePoints.length - 1; i++) {
+      segmentLength += const Distance().as(
+        LengthUnit.Meter,
+        routePoints[i],
+        routePoints[i + 1],
+      );
+    }
+
+    return {
+      'surface': nextSurface,
+      'distanceToSegment': distanceToSegment,
+      'segmentLength': segmentLength,
+    };
   }
 
   /// Check if surface requires warning (not excellent or good)
@@ -303,7 +307,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
-                                    'Next: ${(nextSegmentInfo['segmentLength'] as double).toInt()}m - ${nextSegmentInfo['surface']} [DEBUG: dist=${(nextSegmentInfo['distanceTo'] as double).toInt()}m idx=${navState.currentSegmentIndex}]',
+                                    'In ${(nextSegmentInfo['distanceToSegment'] as double).toInt()}m ${nextSegmentInfo['surface']} during ${(nextSegmentInfo['segmentLength'] as double).toInt()}m',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.orange.shade700,
