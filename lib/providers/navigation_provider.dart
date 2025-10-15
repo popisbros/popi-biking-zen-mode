@@ -63,8 +63,14 @@ class NavigationNotifier extends Notifier<NavigationState> {
     final communityWarnings = ref.read(communityWarningsNotifierProvider);
     List<RouteHazard> routeHazards = [];
 
-    communityWarnings.whenData((warnings) {
+    // Check if community warnings are loaded and detect hazards synchronously
+    if (communityWarnings.hasValue && communityWarnings.value != null) {
+      final warnings = communityWarnings.value!;
       if (warnings.isNotEmpty) {
+        AppLogger.debug('Detecting hazards on route', tag: 'NAVIGATION', data: {
+          'totalWarnings': warnings.length,
+        });
+
         routeHazards = RouteHazardDetector.detectHazardsOnRoute(
           routePoints: route.points,
           allHazards: warnings,
@@ -72,9 +78,13 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
         if (routeHazards.isNotEmpty) {
           AppLogger.success('Found ${routeHazards.length} hazards on route', tag: 'NAVIGATION');
+        } else {
+          AppLogger.debug('No hazards found on route', tag: 'NAVIGATION');
         }
       }
-    });
+    } else {
+      AppLogger.warning('Community warnings not loaded yet', tag: 'NAVIGATION');
+    }
 
     // Update route with detected hazards
     final routeWithHazards = route.copyWithHazards(routeHazards);
