@@ -2326,32 +2326,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Navigation mode toggle button
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationModeProvider);
-                    final isNavigationMode = navState.mode == NavMode.navigation;
-
-                    return FloatingActionButton(
-                      mini: true,
-                      heroTag: 'navigation_mode_toggle',
-                      onPressed: () {
-                        if (isNavigationMode) {
-                          // If in navigation mode, stop navigation completely
-                          _stopNavigation();
-                        } else {
-                          // Otherwise just toggle mode
-                          ref.read(navigationModeProvider.notifier).toggleMode();
-                        }
-                      },
-                      backgroundColor: isNavigationMode ? Colors.purple : Colors.grey.shade300,
-                      foregroundColor: isNavigationMode ? Colors.white : Colors.grey.shade600,
-                      tooltip: isNavigationMode ? 'Exit Navigation Mode' : 'Enter Navigation Mode',
-                      child: Icon(isNavigationMode ? Icons.navigation : Icons.navigation_outlined),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
                 // Auto-zoom toggle button (only show in navigation mode)
                 Consumer(
                   builder: (context, ref, child) {

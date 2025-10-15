@@ -1752,26 +1752,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Navigation mode toggle button
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final navState = ref.watch(navigationModeProvider);
-                      final isNavigationMode = navState.mode == NavMode.navigation;
-
-                      return FloatingActionButton(
-                        mini: true,
-                        heroTag: 'navigation_mode_toggle',
-                        onPressed: () {
-                          ref.read(navigationModeProvider.notifier).toggleMode();
-                        },
-                        backgroundColor: isNavigationMode ? Colors.purple : Colors.grey.shade300,
-                        foregroundColor: isNavigationMode ? Colors.white : Colors.grey.shade600,
-                        tooltip: isNavigationMode ? 'Exit Navigation Mode' : 'Enter Navigation Mode',
-                        child: Icon(isNavigationMode ? Icons.navigation : Icons.navigation_outlined),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8), // Match zoom spacing
                   // Auto-zoom toggle button (only show in navigation mode)
                   Consumer(
                     builder: (context, ref, child) {
