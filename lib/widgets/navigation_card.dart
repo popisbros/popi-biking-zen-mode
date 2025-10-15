@@ -203,7 +203,7 @@ class NavigationCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         color: Colors.white,
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
@@ -250,7 +250,7 @@ class NavigationCard extends ConsumerWidget {
                           Text(
                             navState.nextManeuver!.instruction,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
@@ -259,7 +259,7 @@ class NavigationCard extends ConsumerWidget {
                           Text(
                             _formatDistance(navState.distanceToNextManeuver),
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 13,
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.w500,
                             ),
