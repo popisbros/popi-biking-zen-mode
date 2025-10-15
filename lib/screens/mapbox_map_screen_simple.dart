@@ -29,6 +29,7 @@ import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
+import '../services/route_surface_helper.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/off_route_dialog.dart';
 import '../widgets/arrival_dialog.dart';
@@ -2933,16 +2934,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Use navigation route if active, otherwise use selected route
     List<latlong.LatLng>? routeToRender;
-    int routeColor;
+    bool isNavigating = false;
+    Map<String, dynamic>? pathDetails;
+
     if (turnByTurnNavState.isNavigating && turnByTurnNavState.activeRoute != null) {
       routeToRender = turnByTurnNavState.activeRoute!.points;
-      routeColor = 0xFF9C27B0; // Purple during navigation
-      AppLogger.debug('Rendering navigation route (purple)', tag: 'MAP', data: {
+      pathDetails = turnByTurnNavState.activeRoute!.pathDetails;
+      isNavigating = true;
+      AppLogger.debug('Rendering navigation route (surface-colored)', tag: 'MAP', data: {
         'points': routeToRender.length,
+        'hasSurfaceData': pathDetails?.containsKey('surface') ?? false,
       });
     } else if (routePoints != null && routePoints.isNotEmpty) {
       routeToRender = routePoints;
-      routeColor = 0xFF85a78b; // Green for selected route
+      isNavigating = false;
       AppLogger.debug('Rendering selected route (green)', tag: 'MAP', data: {
         'points': routeToRender.length,
       });
@@ -2951,42 +2956,90 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     try {
-      // Convert LatLng points to Mapbox Position list
-      final positions = routeToRender.map((point) =>
-        Position(point.longitude, point.latitude)
-      ).toList();
+      // During navigation with surface data, render color-coded segments
+      if (isNavigating && pathDetails != null && pathDetails.containsKey('surface')) {
+        final segments = RouteSurfaceHelper.createSurfaceSegments(routeToRender, pathDetails);
 
-      // Create LineString geometry
-      final lineString = LineString(coordinates: positions);
+        AppLogger.debug('Rendering ${segments.length} surface segments', tag: 'MAP');
 
-      // Create GeoJSON source with JSON string
-      final geoJsonSource = GeoJsonSource(
-        id: 'route-source',
-        data: jsonEncode(lineString.toJson()),
-      );
+        for (int i = 0; i < segments.length; i++) {
+          final segment = segments[i];
 
-      // Add source to map
-      await _mapboxMap?.style.addSource(geoJsonSource);
+          // Convert LatLng points to Mapbox Position list
+          final positions = segment.points.map((point) =>
+            Position(point.longitude, point.latitude)
+          ).toList();
 
-      // Create line layer for the route
-      final lineLayer = LineLayer(
-        id: 'route-layer',
-        sourceId: 'route-source',
-        lineColor: routeColor,
-        lineWidth: 6.0,
-        lineCap: LineCap.ROUND,
-        lineJoin: LineJoin.ROUND,
-      );
+          if (positions.length < 2) continue; // Skip segments with less than 2 points
 
-      // Add layer to map (below POI labels if they exist)
-      await _mapboxMap?.style.addLayer(lineLayer);
+          // Create LineString geometry
+          final lineString = LineString(coordinates: positions);
 
-      AppLogger.success('Route polyline added', tag: 'MAP', data: {
-        'points': routeToRender.length,
-      });
+          // Create GeoJSON source
+          final geoJsonSource = GeoJsonSource(
+            id: 'route-source-$i',
+            data: jsonEncode(lineString.toJson()),
+          );
+
+          // Add source to map
+          await _mapboxMap?.style.addSource(geoJsonSource);
+
+          // Create line layer with surface color
+          final lineLayer = LineLayer(
+            id: 'route-layer-$i',
+            sourceId: 'route-source-$i',
+            lineColor: segment.color.value,
+            lineWidth: 6.0,
+            lineCap: LineCap.ROUND,
+            lineJoin: LineJoin.ROUND,
+          );
+
+          // Add layer to map
+          await _mapboxMap?.style.addLayer(lineLayer);
+        }
+
+        AppLogger.success('Surface-colored route added (${segments.length} segments)', tag: 'MAP');
+      } else {
+        // Render single-color route (preview or no surface data)
+        final routeColor = isNavigating ? 0xFF2196F3 : 0xFF85a78b; // Blue for navigation without data, green for preview
+
+        // Convert LatLng points to Mapbox Position list
+        final positions = routeToRender.map((point) =>
+          Position(point.longitude, point.latitude)
+        ).toList();
+
+        // Create LineString geometry
+        final lineString = LineString(coordinates: positions);
+
+        // Create GeoJSON source with JSON string
+        final geoJsonSource = GeoJsonSource(
+          id: 'route-source',
+          data: jsonEncode(lineString.toJson()),
+        );
+
+        // Add source to map
+        await _mapboxMap?.style.addSource(geoJsonSource);
+
+        // Create line layer for the route
+        final lineLayer = LineLayer(
+          id: 'route-layer',
+          sourceId: 'route-source',
+          lineColor: routeColor,
+          lineWidth: 6.0,
+          lineCap: LineCap.ROUND,
+          lineJoin: LineJoin.ROUND,
+        );
+
+        // Add layer to map
+        await _mapboxMap?.style.addLayer(lineLayer);
+
+        AppLogger.success('Single-color route added', tag: 'MAP', data: {
+          'points': routeToRender.length,
+        });
+      }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to add route polyline', tag: 'MAP', error: e, stackTrace: stackTrace, data: {
-        'routePointsCount': routeToRender.length,
+        'routePointsCount': routeToRender?.length ?? 0,
         'errorType': e.runtimeType.toString(),
       });
     }

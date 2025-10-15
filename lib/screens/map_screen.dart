@@ -27,6 +27,7 @@ import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
+import '../services/route_surface_helper.dart';
 // Conditional import for 3D map button - use stub on Web
 import 'mapbox_map_screen_simple.dart'
     if (dart.library.html) 'mapbox_map_screen_simple_stub.dart';
@@ -2082,16 +2083,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                   // Selected route polyline layer (below markers)
                   if (routePoints != null && routePoints.isNotEmpty && searchState.previewFastestRoute == null)
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: routePoints,
-                          strokeWidth: 6.0,
-                          color: const Color(0xFF85a78b),
-                          borderStrokeWidth: 2.0,
-                          borderColor: Colors.white,
-                        ),
-                      ],
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final navState = ref.watch(navigationProvider);
+
+                        // During navigation with surface data, render color-coded segments
+                        if (navState.isNavigating && navState.activeRoute != null) {
+                          final pathDetails = navState.activeRoute!.pathDetails;
+
+                          if (pathDetails != null && pathDetails.containsKey('surface')) {
+                            final segments = RouteSurfaceHelper.createSurfaceSegments(
+                              navState.activeRoute!.points,
+                              pathDetails,
+                            );
+
+                            return PolylineLayer(
+                              polylines: segments.map((segment) => Polyline(
+                                points: segment.points,
+                                strokeWidth: 6.0,
+                                color: segment.color,
+                                borderStrokeWidth: 2.0,
+                                borderColor: Colors.white,
+                              )).toList(),
+                            );
+                          }
+                        }
+
+                        // Fallback: single color route
+                        return PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: routePoints,
+                              strokeWidth: 6.0,
+                              color: const Color(0xFF85a78b),
+                              borderStrokeWidth: 2.0,
+                              borderColor: Colors.white,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   if (markers.isNotEmpty)
                     MarkerLayer(
