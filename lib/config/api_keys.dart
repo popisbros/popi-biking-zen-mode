@@ -1,39 +1,44 @@
 /// API Keys Configuration
-/// Keys are injected at build time using --dart-define flags
-/// Fallback values from .env file for development
+/// Keys MUST be injected at build time using --dart-define flags or environment variables
+/// NO default values are provided for security reasons
+///
+/// For local development, create a .env file with your keys (see .env.example)
+/// For GitHub Actions, configure secrets in repository settings
+///
+/// Required environment variables:
+/// - THUNDERFOREST_API_KEY: https://www.thunderforest.com/
+/// - MAPTILER_API_KEY: https://www.maptiler.com/
+/// - MAPBOX_ACCESS_TOKEN: https://account.mapbox.com/
+/// - LOCATIONIQ_API_KEY: https://locationiq.com/
+/// - GRAPHHOPPER_API_KEY: https://www.graphhopper.com/
 class ApiKeys {
   // Thunderforest API Key (for OpenCycleMap, Cycle, Outdoors layers)
-  // Get at: https://www.thunderforest.com/
   static const String thunderforestApiKey = String.fromEnvironment(
     'THUNDERFOREST_API_KEY',
-    defaultValue: 'REMOVED_FROM_HISTORY', // From .env
+    defaultValue: '', // No default - must be provided via environment
   );
 
   // MapTiler API Key (for Satellite, Terrain layers)
-  // Get at: https://www.maptiler.com/
   static const String mapTilerApiKey = String.fromEnvironment(
     'MAPTILER_API_KEY',
-    defaultValue: 'REMOVED_FROM_HISTORY', // From .env
+    defaultValue: '', // No default - must be provided via environment
   );
 
   // Mapbox Access Token (for 3D maps)
-  // Get at: https://account.mapbox.com/
   static const String mapboxAccessToken = String.fromEnvironment(
     'MAPBOX_ACCESS_TOKEN',
-    defaultValue: 'REMOVED_FROM_HISTORY', // From .env
+    defaultValue: '', // No default - must be provided via environment
   );
 
   // LocationIQ API Key (for geocoding - optional)
-  // Get at: https://locationiq.com/
   static const String locationiqApiKey = String.fromEnvironment(
     'LOCATIONIQ_API_KEY',
-    defaultValue: 'REMOVED_FROM_HISTORY', // From .env
+    defaultValue: '', // No default - must be provided via environment
   );
 
   // Graphhopper API Key (for routing)
-  // Get at: https://www.graphhopper.com/
   static const String graphhopperApiKey = String.fromEnvironment(
     'GRAPHHOPPER_API_KEY',
-    defaultValue: 'REMOVED_FROM_HISTORY', // Add your key here for local development
+    defaultValue: '', // No default - must be provided via environment
   );
 }
