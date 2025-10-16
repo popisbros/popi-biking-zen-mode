@@ -393,10 +393,18 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Automatic rerouting if off route
     if (isOffRoute && !_isRerouting) {
       print('[REROUTE DEBUG] Off route detected! Distance: ${offRouteDistance.toStringAsFixed(1)}m');
+
+      // Show toast notification when going off-route
+      if (!state.isOffRoute) {
+        // First time going off route
+        ToastService.warning('Off route: ${offRouteDistance.toStringAsFixed(0)}m from path');
+      }
+
       print('[REROUTE DEBUG] Calling _handleAutomaticRerouting');
       _handleAutomaticRerouting(currentPos);
     } else if (isOffRoute && _isRerouting) {
       print('[REROUTE DEBUG] Off route but already rerouting...');
+      ToastService.info('Rerouting in progress...');
     }
   }
 

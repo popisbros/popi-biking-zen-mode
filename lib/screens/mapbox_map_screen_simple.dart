@@ -1803,7 +1803,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Center on Location',
                     child: const Icon(Icons.my_location),
                   ),
-                  const SizedBox(height: 8), // Match zoom spacing
+                  const SizedBox(height: 12), // Match top toggle buttons spacing
                   // Reload POIs button
                   FloatingActionButton(
                     mini: true, // Match zoom button size
@@ -1818,7 +1818,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Reload POIs',
                     child: const Icon(Icons.refresh),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   // Debug toggle button
                   Builder(
                     builder: (context) {
@@ -1836,7 +1836,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   // iOS Native Navigation Test Button (Phase 1, Step 1.2)
                   if (Platform.isIOS)
                     FloatingActionButton(
@@ -1890,7 +1890,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       tooltip: 'Test iOS Navigation (Step 1.2)',
                       child: const Icon(Icons.navigation),
                     ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   // Navigation controls (End + Mute buttons)
                   NavigationControls(
                     onNavigationEnded: () async {
@@ -1938,7 +1938,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Change Map Style',
                     child: const Icon(Icons.layers),
                   ),
-                  const SizedBox(height: 8), // Match zoom spacing
+                  const SizedBox(height: 12), // Match top toggle buttons spacing
                   // Pitch selector button
                   FloatingActionButton(
                     mini: true, // Match zoom button size
@@ -1948,7 +1948,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Change Pitch: ${_currentPitch.toInt()}°',
                     child: Text('${_currentPitch.toInt()}°', style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(height: 8), // Match zoom spacing
+                  const SizedBox(height: 12), // Match top toggle buttons spacing
                   // Switch to 2D button
                   FloatingActionButton(
                     mini: true, // Match zoom button size

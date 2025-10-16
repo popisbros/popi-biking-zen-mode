@@ -1425,22 +1425,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               const SizedBox(height: 4),
               Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
               if (poi.description != null && poi.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.description!),
               ],
               if (poi.address != null && poi.address!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.address!),
               ],
               if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.phone!),
               ],
               if (poi.website != null && poi.website!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.website!),
               ],
@@ -1530,7 +1530,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               const SizedBox(height: 4),
               Text('Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}'),
               if (warning.description.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(warning.description),
               ],
@@ -1610,22 +1610,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               const SizedBox(height: 4),
               Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
               if (poi.description != null && poi.description!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.description!),
               ],
               if (poi.address != null && poi.address!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.address!),
               ],
               if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.phone!),
               ],
               if (poi.website != null && poi.website!.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500)),
                 Text(poi.website!),
               ],
@@ -2415,7 +2415,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   tooltip: 'Center on Location',
                   child: const Icon(Icons.my_location),
                 ),
-                const SizedBox(height: 8), // Match zoom spacing
+                const SizedBox(height: 12), // Match top toggle buttons spacing
                 // Reload POIs button
                 FloatingActionButton(
                   mini: true, // Match zoom button size
@@ -2428,7 +2428,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   tooltip: 'Reload POIs',
                   child: const Icon(Icons.refresh),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 // Debug toggle button
                 Builder(
                   builder: (context) {
@@ -2446,7 +2446,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 // Navigation controls (End + Mute buttons)
                 NavigationControls(
                   onNavigationEnded: () {
@@ -2476,7 +2476,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 // 3D Map button - only show on Native (not on web/PWA)
                 if (!kIsWeb) ...[
-                  const SizedBox(height: 8), // Match zoom spacing
+                  const SizedBox(height: 12), // Match top toggle buttons spacing
                   FloatingActionButton(
                     mini: true, // Match zoom button size
                     heroTag: '3d_map',
