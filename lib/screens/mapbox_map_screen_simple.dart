@@ -1873,9 +1873,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
-                  const SizedBox(height: 8),
-                  // Navigation controls (End + Mute buttons)
-                  NavigationControls(
+                  // Navigation controls (End + Mute buttons) - spacing only when navigating
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      if (!navState.isNavigating) return const SizedBox.shrink();
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 8),
+                          NavigationControls(
                     onNavigationEnded: () async {
                       setState(() {
                         _activeRoute = null;
@@ -1899,6 +1907,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       }
 
                       AppLogger.success('Navigation ended, route cleared', tag: 'NAVIGATION');
+                    },
+                  ),
+                        ],
+                      );
                     },
                   ),
                 ],
