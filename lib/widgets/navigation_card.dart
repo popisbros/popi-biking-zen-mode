@@ -607,44 +607,45 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                 ],
               ],
             ],
-
-              // Maneuvers Section (Collapsible, DEBUG)
-              const SizedBox(height: 8),
-              Divider(color: Colors.grey.shade300, height: 1),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _isManeuversExpanded = !_isManeuversExpanded;
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Text(
-                        'MANEUVERS (DEBUG)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple.shade700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        _isManeuversExpanded ? Icons.expand_less : Icons.expand_more,
-                        size: 18,
-                        color: Colors.purple.shade700,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_isManeuversExpanded) ..._buildManeuversSection(navState),
-
           ),
         ),
+
+        // Maneuvers Section (Collapsible, DEBUG)
+        const SizedBox(height: 8),
+        Divider(color: Colors.grey.shade300, height: 1),
+        InkWell(
+          onTap: () {
+            setState(() {
+              _isManeuversExpanded = !_isManeuversExpanded;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Text(
+                  'MANEUVERS (DEBUG)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple.shade700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _isManeuversExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                  color: Colors.purple.shade700,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_isManeuversExpanded) ..._buildManeuversSection(navState),
+      ],
       ),
+    ),
     );
   }
 
@@ -702,7 +703,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     for (final maneuver in allManeuvers) {
       // Calculate distance to this maneuver
       double distanceToManeuver = 0;
-      for (int i = 0; i < maneuver.segmentIndex && i < routePoints.length - 1; i++) {
+      for (int i = 0; i < maneuver.routePointIndex && i < routePoints.length - 1; i++) {
         distanceToManeuver += distance.as(
           LengthUnit.Meter,
           routePoints[i],
@@ -712,7 +713,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
 
       // Distance from current position (negative = passed, positive = ahead)
       final double relativeDistance = distanceToManeuver - currentDistanceAlongRoute;
-      final bool isNext = nextManeuver != null && maneuver.segmentIndex == nextManeuver.segmentIndex;
+      final bool isNext = nextManeuver != null && maneuver.routePointIndex == nextManeuver.routePointIndex;
 
       widgets.add(
         Container(
