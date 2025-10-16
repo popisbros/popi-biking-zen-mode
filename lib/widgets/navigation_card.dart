@@ -384,10 +384,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   const SizedBox(width: 4),
                   Builder(
                     builder: (context) {
-                      // Calculate countdown: 3 second check interval
+                      // Show time SINCE last update (not countdown)
                       if (navState.lastUpdateTime == null) {
                         return Text(
-                          navState.isOffRoute ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ?s' : 'ON - ?s',
+                          navState.isOffRoute ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - no update' : 'ON - no update',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -396,17 +396,13 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                         );
                       }
 
-                      final millisSinceUpdate = DateTime.now().difference(navState.lastUpdateTime!).inMilliseconds;
-                      final updateIntervalMillis = 3000; // 3 seconds
+                      final secondsSinceUpdate = DateTime.now().difference(navState.lastUpdateTime!).inSeconds;
 
-                      // Time until next check (countdown from 3000ms to 0ms)
-                      final millisUntilNext = updateIntervalMillis - (millisSinceUpdate % updateIntervalMillis);
-                      final secondsUntilNext = (millisUntilNext / 1000.0).ceil();
-
+                      // Show time since last check (should stay 0-3s if updates are happening)
                       return Text(
                         navState.isOffRoute
-                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ${secondsUntilNext}s'
-                          : 'ON - ${secondsUntilNext}s',
+                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ${secondsSinceUpdate}s ago'
+                          : 'ON - ${secondsSinceUpdate}s ago',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
