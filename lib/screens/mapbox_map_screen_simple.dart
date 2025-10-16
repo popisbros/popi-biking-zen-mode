@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1639,7 +1640,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           if (_isMapReady) ...[
             // Toggle buttons and zoom controls on the right side
             Positioned(
-              top: MediaQuery.of(context).padding.top + 10,
+              top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 30,
               right: 10,
               child: Column(
                 children: [
@@ -1795,7 +1796,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
             // Bottom-left controls: compass, center, reload
             Positioned(
-              bottom: 10,
+              bottom: kIsWeb ? 10 : 30,
               left: 10,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1919,7 +1920,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
             // Bottom-right controls: tiles selector, pitch selector, 2D/3D switch
             Positioned(
-              bottom: 10,
+              bottom: kIsWeb ? 10 : 30,
               right: 10,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1961,7 +1962,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Search button (top-left, yellow) - rendered on top
           if (_isMapReady)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 10,
+              top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 30,
               left: 10,
               child: FloatingActionButton(
                 mini: true,

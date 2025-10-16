@@ -2217,7 +2217,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Toggle buttons on the right side
           Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
+            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 30,
             right: 10,
             child: Column(
               children: [
@@ -2384,7 +2384,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Bottom-left controls: navigation mode, compass, center, reload
           Positioned(
-            bottom: 10,
+            bottom: kIsWeb ? 10 : 30,
             left: 10,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -2517,7 +2517,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
           // Bottom-right controls: tiles selector, 3D switch
           Positioned(
-            bottom: 10,
+            bottom: kIsWeb ? 10 : 30,
             right: 10,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -2549,7 +2549,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Search button (top-left, yellow) - rendered on top
           Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
+            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 30,
             left: 10,
             child: FloatingActionButton(
               mini: true,
