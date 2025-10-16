@@ -191,12 +191,14 @@ class NavigationNotifier extends Notifier<NavigationState> {
       return;
     }
 
-    // Throttle updates to max once per 1 second for testing (more responsive)
+    // Throttle updates to max once per 3 seconds
     final now = DateTime.now();
-    if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 1) {
+    if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 3) {
       return; // Skip this update
     }
     _lastUpdateTime = now;
+
+    print('[NAV UPDATE] === Processing navigation update at ${now.toIso8601String()} ===');
 
     final currentPos = LatLng(locationData.latitude, locationData.longitude);
     final route = state.activeRoute!;

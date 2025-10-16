@@ -384,7 +384,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   const SizedBox(width: 4),
                   Builder(
                     builder: (context) {
-                      // Calculate countdown: 1 second check interval
+                      // Calculate countdown: 3 second check interval
                       if (navState.lastUpdateTime == null) {
                         return Text(
                           navState.isOffRoute ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ?s' : 'ON - ?s',
@@ -397,9 +397,9 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                       }
 
                       final millisSinceUpdate = DateTime.now().difference(navState.lastUpdateTime!).inMilliseconds;
-                      final updateIntervalMillis = 1000; // 1 second
+                      final updateIntervalMillis = 3000; // 3 seconds
 
-                      // Time until next check (countdown from 1000ms to 0ms)
+                      // Time until next check (countdown from 3000ms to 0ms)
                       final millisUntilNext = updateIntervalMillis - (millisSinceUpdate % updateIntervalMillis);
                       final secondsUntilNext = (millisUntilNext / 1000.0).ceil();
 
