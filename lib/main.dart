@@ -14,7 +14,6 @@ import 'screens/mapbox_map_screen_simple.dart'
     if (dart.library.html) 'screens/mapbox_map_screen_simple_stub.dart';
 import 'utils/app_logger.dart';
 import 'utils/api_logger.dart';
-import 'providers/debug_provider.dart';
 
 void main() async {
   // Catch all errors
@@ -79,9 +78,6 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Initialize AppLogger with debugProvider (only once)
-    AppLogger.init(ref.read(debugProvider.notifier));
-
     AppLogger.info('Building MaterialApp', tag: 'MyApp');
 
     // Web starts with 2D map, Native starts directly with 3D map

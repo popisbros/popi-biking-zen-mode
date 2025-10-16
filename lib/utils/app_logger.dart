@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../providers/debug_provider.dart';
 
 /// Production-ready logging utility
 ///
@@ -13,14 +12,6 @@ import '../providers/debug_provider.dart';
 class AppLogger {
   // Private constructor to prevent instantiation
   AppLogger._();
-
-  // Static reference to debug notifier (set by main app)
-  static DebugNotifier? _debugNotifier;
-
-  /// Initialize AppLogger with debug notifier
-  static void init(DebugNotifier notifier) {
-    _debugNotifier = notifier;
-  }
 
   /// Log levels
   static const String _infoIcon = 'ℹ️';
@@ -36,28 +27,28 @@ class AppLogger {
   /// Info log - general information
   static void info(String message, {String? tag, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_infoIcon, tag ?? 'INFO', message, data, LogLevel.info);
+      _log(_infoIcon, tag ?? 'INFO', message, data);
     }
   }
 
   /// Debug log - detailed debugging information
   static void debug(String message, {String? tag, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_debugIcon, tag ?? 'DEBUG', message, data, LogLevel.debug);
+      _log(_debugIcon, tag ?? 'DEBUG', message, data);
     }
   }
 
   /// Warning log - potential issues
   static void warning(String message, {String? tag, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_warningIcon, tag ?? 'WARNING', message, data, LogLevel.warning);
+      _log(_warningIcon, tag ?? 'WARNING', message, data);
     }
   }
 
   /// Error log - errors and exceptions
   static void error(String message, {String? tag, Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_errorIcon, tag ?? 'ERROR', message, data, LogLevel.error);
+      _log(_errorIcon, tag ?? 'ERROR', message, data);
       if (error != null) {
         debugPrint('  ↳ Error: $error');
       }
@@ -70,7 +61,7 @@ class AppLogger {
   /// Success log - successful operations
   static void success(String message, {String? tag, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_successIcon, tag ?? 'SUCCESS', message, data, LogLevel.success);
+      _log(_successIcon, tag ?? 'SUCCESS', message, data);
     }
   }
 
@@ -79,21 +70,21 @@ class AppLogger {
   /// Map-related logs
   static void map(String message, {Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_mapIcon, 'MAP', message, data, LogLevel.map);
+      _log(_mapIcon, 'MAP', message, data);
     }
   }
 
   /// Location-related logs
   static void location(String message, {Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_locationIcon, 'LOCATION', message, data, LogLevel.location);
+      _log(_locationIcon, 'LOCATION', message, data);
     }
   }
 
   /// Firebase-related logs
   static void firebase(String message, {Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_firebaseIcon, 'FIREBASE', message, data, LogLevel.firebase);
+      _log(_firebaseIcon, 'FIREBASE', message, data);
       if (error != null) {
         debugPrint('  ↳ Error: $error');
       }
@@ -106,7 +97,7 @@ class AppLogger {
   /// API/Network-related logs
   static void api(String message, {Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_apiIcon, 'API', message, data, LogLevel.api);
+      _log(_apiIcon, 'API', message, data);
       if (error != null) {
         debugPrint('  ↳ Error: $error');
       }
@@ -119,12 +110,12 @@ class AppLogger {
   /// iOS-specific debug logs (maintains compatibility with existing iOS DEBUG logs)
   static void ios(String message, {Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      _log(_debugIcon, 'iOS DEBUG', message, data, LogLevel.debug);
+      _log(_debugIcon, 'iOS DEBUG', message, data);
     }
   }
 
   /// Internal logging method
-  static void _log(String icon, String tag, String message, Map<String, dynamic>? data, LogLevel level) {
+  static void _log(String icon, String tag, String message, Map<String, dynamic>? data) {
     final timestamp = DateTime.now().toIso8601String().substring(11, 23); // HH:mm:ss.mmm
     final buffer = StringBuffer();
     buffer.write('$icon [$tag] $message');
@@ -135,15 +126,6 @@ class AppLogger {
     }
 
     debugPrint('[$timestamp] ${buffer.toString()}');
-
-    // Send to debug overlay
-    _debugNotifier?.addLog(
-      icon: icon,
-      tag: tag,
-      message: message,
-      level: level,
-      data: data,
-    );
   }
 
   /// Performance timing utility
