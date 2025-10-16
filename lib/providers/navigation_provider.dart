@@ -150,7 +150,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       AppLogger.success('Screen wakelock enabled', tag: 'NAVIGATION');
       print('[WAKELOCK] Screen will stay on during navigation');
     }).catchError((error) {
-      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', error: error);
+      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
       print('[WAKELOCK] Error: $error');
     });
 
@@ -175,7 +175,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       AppLogger.success('Screen wakelock disabled', tag: 'NAVIGATION');
       print('[WAKELOCK] Screen can now sleep normally');
     }).catchError((error) {
-      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', error: error);
+      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
       print('[WAKELOCK] Error: $error');
     });
 
