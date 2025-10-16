@@ -233,10 +233,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       width: double.infinity,
       color: Colors.white,
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: MediaQuery.of(context).padding.top + 10, // Add status bar height
-        bottom: 10,
+        left: 6,
+        right: 6,
+        top: MediaQuery.of(context).padding.top + 6, // Add status bar height
+        bottom: 6,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
