@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/location_data.dart';
 import '../models/navigation_state.dart';
 import '../models/maneuver_instruction.dart';
@@ -144,6 +145,15 @@ class NavigationNotifier extends Notifier<NavigationState> {
       lastUpdateTime: DateTime.now(),
     );
 
+    // Enable wakelock to keep screen on during navigation
+    WakelockPlus.enable().then((_) {
+      AppLogger.success('Screen wakelock enabled', tag: 'NAVIGATION');
+      print('[WAKELOCK] Screen will stay on during navigation');
+    }).catchError((error) {
+      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', error: error);
+      print('[WAKELOCK] Error: $error');
+    });
+
     // Start listening to location updates (fire and forget, don't block navigation start)
     _startLocationTracking().then((_) {
       print('[GPS TRACKING] Location tracking initialization complete');
@@ -159,6 +169,15 @@ class NavigationNotifier extends Notifier<NavigationState> {
   /// Stop navigation
   void stopNavigation() {
     AppLogger.debug('Stopping navigation', tag: 'NAVIGATION');
+
+    // Disable wakelock to allow screen to sleep
+    WakelockPlus.disable().then((_) {
+      AppLogger.success('Screen wakelock disabled', tag: 'NAVIGATION');
+      print('[WAKELOCK] Screen can now sleep normally');
+    }).catchError((error) {
+      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', error: error);
+      print('[WAKELOCK] Error: $error');
+    });
 
     _locationSubscription?.cancel();
     _locationSubscription = null;

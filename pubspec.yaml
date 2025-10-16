@@ -27,6 +27,7 @@ dependencies:
   # Location
   geolocator: ^14.0.2
   flutter_compass: ^0.8.0
+  wakelock_plus: ^1.2.8
 
   # Firebase
   firebase_core: ^4.1.1
