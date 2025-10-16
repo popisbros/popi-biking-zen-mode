@@ -229,15 +229,19 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       navState.activeRoute?.points,
     );
 
-    return SafeArea(
-      child: Container(
-        width: double.infinity,
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: MediaQuery.of(context).padding.top + 10, // Add status bar height
+        bottom: 10,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               // Maneuver instruction
               if (navState.nextManeuver != null) ...[
                 Row(
@@ -618,10 +622,9 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                 ),
               ),
               if (_isManeuversExpanded) ..._buildManeuversSection(navState),
-          ], // End main Column children
-        ), // End Column
-      ), // End Container
-    ); // End SafeArea
+        ], // End main Column children
+      ), // End Column
+    ); // End Container
   }
 
   /// Build all maneuvers list with distances
