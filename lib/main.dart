@@ -14,6 +14,7 @@ import 'screens/mapbox_map_screen_simple.dart'
     if (dart.library.html) 'screens/mapbox_map_screen_simple_stub.dart';
 import 'utils/app_logger.dart';
 import 'utils/api_logger.dart';
+import 'services/toast_service.dart';
 
 void main() async {
   // Catch all errors
@@ -86,6 +87,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Popi Biking',
       theme: AppTheme.lightTheme,
+      navigatorKey: ToastService.navigatorKey,
       home: SplashScreen(
         child: kIsWeb ? const MapScreen() : const MapboxMapScreenSimple(),
       ),
