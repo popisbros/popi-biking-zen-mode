@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Global toast service for showing quick messages
@@ -14,6 +15,10 @@ class ToastService {
     final context = navigatorKey.currentContext;
     if (context == null) return;
 
+    // For native apps, use fixed bottom position (30px from bottom)
+    // For web/PWA, use standard vertical margin (10px)
+    final bottomMargin = kIsWeb ? 10.0 : 30.0;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -26,7 +31,12 @@ class ToastService {
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
+        margin: EdgeInsets.only(
+          left: 60,
+          right: 60,
+          bottom: bottomMargin,
+          top: 10,
+        ),
       ),
     );
   }

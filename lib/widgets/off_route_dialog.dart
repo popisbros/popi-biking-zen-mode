@@ -67,6 +67,10 @@ class OffRouteDialog extends ConsumerWidget {
                 Navigator.of(dialogContext).pop();
 
                 // Show loading indicator
+                // For native apps, use fixed bottom position (30px from bottom)
+                // For web/PWA, use standard vertical margin (10px)
+                final bottomMargin = kIsWeb ? 10.0 : 30.0;
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
@@ -88,7 +92,12 @@ class OffRouteDialog extends ConsumerWidget {
                     ),
                     duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
+                    margin: EdgeInsets.only(
+                      left: 60,
+                      right: 60,
+                      bottom: bottomMargin,
+                      top: 10,
+                    ),
                   ),
                 );
 

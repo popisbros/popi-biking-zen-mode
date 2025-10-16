@@ -718,6 +718,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // Show loading indicator
     if (mounted) {
+      // For native apps, use fixed bottom position (30px from bottom)
+      // For web/PWA, use standard vertical margin (10px)
+      final bottomMargin = kIsWeb ? 10.0 : 30.0;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -736,7 +740,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
           duration: const Duration(seconds: 30),
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
+          margin: EdgeInsets.only(
+            left: 60,
+            right: 60,
+            bottom: bottomMargin,
+            top: 10,
+          ),
         ),
       );
     }
