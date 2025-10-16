@@ -384,10 +384,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   const SizedBox(width: 4),
                   Builder(
                     builder: (context) {
-                      // Show time SINCE last update (not countdown)
+                      // Show last update time (updates every 3 seconds when GPS updates)
                       if (navState.lastUpdateTime == null) {
                         return Text(
-                          navState.isOffRoute ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - no update' : 'ON - no update',
+                          navState.isOffRoute ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF' : 'ON',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -396,13 +396,15 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                         );
                       }
 
-                      final secondsSinceUpdate = DateTime.now().difference(navState.lastUpdateTime!).inSeconds;
+                      // Format time as HH:MM:SS
+                      final time = navState.lastUpdateTime!;
+                      final timeStr = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
 
-                      // Show time since last check (should stay 0-3s if updates are happening)
+                      // Show current status + last update time (changes every 3s)
                       return Text(
                         navState.isOffRoute
-                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ${secondsSinceUpdate}s ago'
-                          : 'ON - ${secondsSinceUpdate}s ago',
+                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF @$timeStr'
+                          : 'ON @$timeStr',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
