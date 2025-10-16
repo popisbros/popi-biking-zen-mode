@@ -67,9 +67,6 @@ class OffRouteDialog extends ConsumerWidget {
                 Navigator.of(dialogContext).pop();
 
                 // Show loading indicator
-                final screenWidth = MediaQuery.of(context).size.width;
-                final toastWidth = screenWidth - 120;
-
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
@@ -91,8 +88,7 @@ class OffRouteDialog extends ConsumerWidget {
                     ),
                     duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
-                    margin: const EdgeInsets.all(10),
-                    width: toastWidth,
+                    margin: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
                   ),
                 );
 

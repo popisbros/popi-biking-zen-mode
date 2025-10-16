@@ -667,9 +667,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Show loading indicator
     if (mounted) {
-      final screenWidth = MediaQuery.of(context).size.width;
-      final toastWidth = screenWidth - 120;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -688,8 +685,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           ),
           duration: const Duration(seconds: 30),
           behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(10),
-          width: toastWidth,
+          margin: const EdgeInsets.symmetric(horizontal: 60, vertical: 10),
         ),
       );
     }
