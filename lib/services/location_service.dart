@@ -172,10 +172,14 @@ class LocationService {
         'note': 'Removed timeLimit - may not be supported on iOS',
       });
 
+      print('[LOCATION SERVICE] About to call Geolocator.getPositionStream()...');
+
       _positionStream = Geolocator.getPositionStream(
         locationSettings: locationSettings,
       ).listen(
         (Position position) {
+          print('[LOCATION SERVICE] ✅ Position update received from Geolocator! lat=${position.latitude}, lon=${position.longitude}');
+
           AppLogger.location('Position update received', data: {
             'lat': position.latitude,
             'lng': position.longitude,
@@ -194,9 +198,11 @@ class LocationService {
 
           _currentLocation = locationData;
           _locationController.add(locationData);
+          print('[LOCATION SERVICE] Broadcast location to ${_locationController.hasListener ? "active" : "NO"} listeners');
           AppLogger.location('Location data broadcast to listeners');
         },
         onError: (error, stackTrace) {
+          print('[LOCATION SERVICE] ❌ Stream ERROR: $error');
           AppLogger.error('Position stream error', tag: 'LOCATION', error: error, stackTrace: stackTrace);
           AppLogger.debug('Error type', tag: 'LOCATION', data: {
             'errorType': error.runtimeType.toString(),
@@ -204,11 +210,13 @@ class LocationService {
           });
         },
         onDone: () {
+          print('[LOCATION SERVICE] ⚠️ Stream DONE/COMPLETED');
           AppLogger.warning('Position stream completed unexpectedly', tag: 'LOCATION');
           AppLogger.debug('Stream ended - this should not happen unless tracking was stopped', tag: 'LOCATION');
         },
       );
 
+      print('[LOCATION SERVICE] getPositionStream().listen() completed, subscription active');
       AppLogger.success('Location tracking started successfully', tag: 'LOCATION');
     } catch (e) {
       AppLogger.error('Error starting tracking', tag: 'LOCATION', error: e);
