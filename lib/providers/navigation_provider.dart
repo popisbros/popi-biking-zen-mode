@@ -144,8 +144,13 @@ class NavigationNotifier extends Notifier<NavigationState> {
       lastUpdateTime: DateTime.now(),
     );
 
-    // Start listening to location updates
-    _startLocationTracking();
+    // Start listening to location updates (fire and forget, don't block navigation start)
+    _startLocationTracking().then((_) {
+      print('[GPS TRACKING] Location tracking initialization complete');
+    }).catchError((error) {
+      print('[GPS TRACKING] ERROR starting location tracking: $error');
+      AppLogger.error('Failed to start location tracking', tag: 'NAVIGATION', error: error);
+    });
 
     AppLogger.success('Navigation started', tag: 'NAVIGATION');
     AppLogger.separator();
@@ -165,13 +170,15 @@ class NavigationNotifier extends Notifier<NavigationState> {
   }
 
   /// Start listening to location updates from LocationService
-  void _startLocationTracking() {
+  Future<void> _startLocationTracking() async {
     final locationService = LocationService();
 
     AppLogger.debug('Starting location tracking for navigation', tag: 'NAVIGATION');
 
-    // IMPORTANT: Start the GPS position stream in LocationService
-    locationService.startLocationTracking();
+    // IMPORTANT: Start the GPS position stream in LocationService (await it!)
+    print('[GPS TRACKING] About to call startLocationTracking()...');
+    await locationService.startLocationTracking();
+    print('[GPS TRACKING] startLocationTracking() completed');
     AppLogger.debug('Called LocationService.startLocationTracking()', tag: 'NAVIGATION');
 
     _locationSubscription = locationService.locationStream.listen(
@@ -180,13 +187,16 @@ class NavigationNotifier extends Notifier<NavigationState> {
       },
       onError: (error) {
         AppLogger.error('Location stream error during navigation', tag: 'NAVIGATION', error: error);
+        print('[GPS TRACKING] Stream error: $error');
       },
       onDone: () {
         AppLogger.debug('Location stream completed', tag: 'NAVIGATION');
+        print('[GPS TRACKING] Stream completed/done');
       },
     );
 
     AppLogger.success('Location tracking active', tag: 'NAVIGATION');
+    print('[GPS TRACKING] Subscribed to location stream');
   }
 
   /// Handle location update from GPS
