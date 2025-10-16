@@ -265,7 +265,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               'Choose 3D Map Style',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             ...MapboxStyleType.values.map((style) {
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
@@ -308,7 +308,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               'Choose Camera Pitch',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             ..._pitchOptions.map((pitch) {
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),

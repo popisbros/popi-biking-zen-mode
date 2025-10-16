@@ -1185,9 +1185,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           children: [
             const Text(
               'Choose Map Layer',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             ...MapLayerType.values.map((layer) {
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
