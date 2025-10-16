@@ -1190,6 +1190,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             const SizedBox(height: 8),
             ...MapLayerType.values.map((layer) {
               return ListTile(
+                dense: true,
+                visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 leading: Icon(
                   _getLayerIcon(layer),

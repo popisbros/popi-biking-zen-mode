@@ -268,6 +268,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             const SizedBox(height: 8),
             ...MapboxStyleType.values.map((style) {
               return ListTile(
+                dense: true,
+                visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 leading: Icon(
                   _getStyleIcon(style),
@@ -311,6 +313,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             const SizedBox(height: 8),
             ..._pitchOptions.map((pitch) {
               return ListTile(
+                dense: true,
+                visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 leading: Icon(
                   Icons.height,
