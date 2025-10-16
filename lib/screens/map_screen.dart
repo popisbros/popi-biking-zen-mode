@@ -1974,17 +1974,58 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final isNavigating = navigationState.isNavigating;
 
     return Scaffold(
-      body: Column(
-        children: [
-          // Navigation card at top (only when navigating)
-          if (isNavigating) const NavigationCard(),
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          final isLandscape = orientation == Orientation.landscape;
 
-          // Map and controls in expanded area below
-          Expanded(
-            child: Stack(
+          if (isLandscape && isNavigating) {
+            // Landscape layout: Navigation card on left (50%), map on right (50%)
+            return Row(
               children: [
-                // Main map content
-                locationAsync.when(
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  child: const NavigationCard(),
+                ),
+                Expanded(
+                  child: Stack(
+                    children: _buildMapAndControls(context, locationAsync, poisAsync, communityPOIsAsync, warningsAsync, mapState, markers, mapCenter),
+                  ),
+                ),
+              ],
+            );
+          } else {
+            // Portrait layout: Navigation card at top, map below
+            return Column(
+              children: [
+                if (isNavigating) const NavigationCard(),
+                Expanded(
+                  child: Stack(
+                    children: _buildMapAndControls(context, locationAsync, poisAsync, communityPOIsAsync, warningsAsync, mapState, markers, mapCenter),
+                  ),
+                ),
+              ],
+            );
+          }
+        },
+      ),
+      floatingActionButtonLocation: null,
+    );
+  }
+
+  /// Build map and controls (reused in both orientations)
+  List<Widget> _buildMapAndControls(
+    BuildContext context,
+    AsyncValue<LocationData?> locationAsync,
+    AsyncValue<List<dynamic>> poisAsync,
+    AsyncValue<List<dynamic>> communityPOIsAsync,
+    AsyncValue<List<dynamic>> warningsAsync,
+    MapState mapState,
+    List<Marker> markers,
+    LatLng mapCenter,
+  ) {
+    return [
+      // Main map content
+      locationAsync.when(
             data: (location) {
               if (location == null) {
                 AppLogger.warning('Location is NULL - showing loading indicator', tag: 'MAP');
@@ -2547,15 +2588,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // Debug overlay - on top of everything
-          const DebugOverlay(),
-              ], // End Stack children
-            ), // End Stack
-          ), // End Expanded
-        ], // End Column children
-      ), // End Column
-      floatingActionButtonLocation: null,
-    ); // End Scaffold
+      // Debug overlay - on top of everything
+      const DebugOverlay(),
+    ]; // End map and controls list
   }
 }
 
