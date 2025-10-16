@@ -606,47 +606,44 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   ],
                 ],
               ],
-            ],
-          ),
-        ),
 
-        // Maneuvers Section (Collapsible, DEBUG)
-        const SizedBox(height: 8),
-        Divider(color: Colors.grey.shade300, height: 1),
-        InkWell(
-          onTap: () {
-            setState(() {
-              _isManeuversExpanded = !_isManeuversExpanded;
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Text(
-                  'MANEUVERS (DEBUG)',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple.shade700,
-                    letterSpacing: 0.5,
+              // Maneuvers Section (Collapsible, DEBUG)
+              const SizedBox(height: 8),
+              Divider(color: Colors.grey.shade300, height: 1),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isManeuversExpanded = !_isManeuversExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        'MANEUVERS (DEBUG)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple.shade700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _isManeuversExpanded ? Icons.expand_less : Icons.expand_more,
+                        size: 18,
+                        color: Colors.purple.shade700,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 4),
-                Icon(
-                  _isManeuversExpanded ? Icons.expand_less : Icons.expand_more,
-                  size: 18,
-                  color: Colors.purple.shade700,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_isManeuversExpanded) ..._buildManeuversSection(navState),
-      ], // End Column children
-      ), // End Column
-    ), // End Container
-    ), // End Material
+              ),
+              if (_isManeuversExpanded) ..._buildManeuversSection(navState),
+            ], // End main Column children
+          ), // End Column
+        ), // End Container
+      ), // End Material
     ); // End Positioned
   }
 
