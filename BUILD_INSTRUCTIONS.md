@@ -29,6 +29,41 @@ GRAPHHOPPER_API_KEY=your_actual_key_here
 
 ---
 
+## Running on iOS Device (Development)
+
+### Option 1: Using the Run Script (Easiest) ⭐
+
+```bash
+# Run on your default device (00008103-000908642279001E)
+./run_ios_device.sh
+
+# Or specify a different device
+./run_ios_device.sh <your-device-id>
+```
+
+This script will:
+- ✅ Read API keys from `.env`
+- ✅ Validate all keys are present
+- ✅ Run `flutter run --release` with keys injected
+- ✅ Deploy to your iPhone
+
+### Option 2: Manual Run Command
+
+```bash
+# Load environment variables
+export $(cat .env | grep -v '^#' | xargs)
+
+# Run on device
+flutter run --release -d 00008103-000908642279001E \
+    --dart-define=THUNDERFOREST_API_KEY="$THUNDERFOREST_API_KEY" \
+    --dart-define=MAPTILER_API_KEY="$MAPTILER_API_KEY" \
+    --dart-define=MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN" \
+    --dart-define=LOCATIONIQ_API_KEY="$LOCATIONIQ_API_KEY" \
+    --dart-define=GRAPHHOPPER_API_KEY="$GRAPHHOPPER_API_KEY"
+```
+
+---
+
 ## Building for iOS
 
 ### Option 1: Using the Build Script (Easiest) ⭐
