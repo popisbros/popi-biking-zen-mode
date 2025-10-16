@@ -375,22 +375,45 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Off-route distance (DEBUG) with timer
+                  // Off-route distance (DEBUG) with countdown timer until next check
                   Icon(
                     Icons.warning_amber_rounded,
                     size: 16,
                     color: navState.isOffRoute ? Colors.red.shade600 : Colors.green.shade600,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    navState.isOffRoute
-                      ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ${navState.lastUpdateTime != null ? DateTime.now().difference(navState.lastUpdateTime!).inSeconds : "?"}s'
-                      : 'ON - ${navState.lastUpdateTime != null ? DateTime.now().difference(navState.lastUpdateTime!).inSeconds : "?"}s',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800,
-                    ),
+                  Builder(
+                    builder: (context) {
+                      // Calculate countdown: 1 second check interval
+                      if (navState.lastUpdateTime == null) {
+                        return Text(
+                          navState.isOffRoute ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ?s' : 'ON - ?s',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800,
+                          ),
+                        );
+                      }
+
+                      final millisSinceUpdate = DateTime.now().difference(navState.lastUpdateTime!).inMilliseconds;
+                      final updateIntervalMillis = 1000; // 1 second
+
+                      // Time until next check (countdown from 1000ms to 0ms)
+                      final millisUntilNext = updateIntervalMillis - (millisSinceUpdate % updateIntervalMillis);
+                      final secondsUntilNext = (millisUntilNext / 1000.0).ceil();
+
+                      return Text(
+                        navState.isOffRoute
+                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ${secondsUntilNext}s'
+                          : 'ON - ${secondsUntilNext}s',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800,
+                        ),
+                      );
+                    },
                   ),
                   const Spacer(),
                   // ETA
