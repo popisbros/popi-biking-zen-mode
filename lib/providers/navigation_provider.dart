@@ -187,13 +187,17 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
   /// Handle location update from GPS
   void _onLocationUpdate(LocationData locationData) {
+    print('[GPS RAW] Location update received: lat=${locationData.latitude}, lon=${locationData.longitude}');
+
     if (!state.isNavigating || state.activeRoute == null) {
+      print('[GPS RAW] Skipping - not navigating or no route');
       return;
     }
 
     // Throttle updates to max once per 3 seconds
     final now = DateTime.now();
     if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 3) {
+      print('[GPS RAW] Throttled - too soon (${now.difference(_lastUpdateTime!).inSeconds}s since last)');
       return; // Skip this update
     }
     _lastUpdateTime = now;
