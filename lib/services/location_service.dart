@@ -144,8 +144,18 @@ class LocationService {
         return;
       }
 
+      // Check if location services are enabled on device
+      final serviceEnabled = await isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        AppLogger.error('Cannot start tracking - location services DISABLED on device', tag: 'LOCATION');
+        print('[LOCATION SERVICE] ❌ Location services are DISABLED on device!');
+        return;
+      }
+      print('[LOCATION SERVICE] ✅ Location services are enabled');
+
       final permission = await checkPermission();
       AppLogger.debug('Current permission status', tag: 'LOCATION', data: {'permission': permission.name});
+      print('[LOCATION SERVICE] Permission status: ${permission.name}');
 
       if (permission == LocationPermission.denied) {
         AppLogger.location('Permission denied, requesting');
