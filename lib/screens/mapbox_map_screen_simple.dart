@@ -1543,6 +1543,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final isNavigating = navState.isNavigating;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: OrientationBuilder(
         builder: (context, orientation) {
           final isLandscape = orientation == Orientation.landscape;

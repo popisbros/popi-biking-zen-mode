@@ -1974,6 +1974,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final isNavigating = navigationState.isNavigating;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: OrientationBuilder(
         builder: (context, orientation) {
           final isLandscape = orientation == Orientation.landscape;
