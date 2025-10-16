@@ -72,9 +72,9 @@ class OffRouteDialog extends ConsumerWidget {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Row(
+                    content: Row(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
@@ -82,8 +82,8 @@ class OffRouteDialog extends ConsumerWidget {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Text(
+                        const SizedBox(width: 12),
+                        const Text(
                           'Recalculating route...',
                           style: TextStyle(fontSize: 12),
                         ),
