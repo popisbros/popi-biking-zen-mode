@@ -164,12 +164,14 @@ class LocationService {
 
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 1, // Update every 1 meter for testing (more frequent updates)
+        distanceFilter: 0, // 0 = update continuously regardless of movement
+        timeLimit: Duration(seconds: 3), // Update at least every 3 seconds
       );
 
       AppLogger.location('Starting position stream', data: {
-        'distanceFilter': '1m (testing)',
-        'note': 'Removed timeLimit - may not be supported on iOS',
+        'distanceFilter': '0m (continuous updates)',
+        'timeLimit': '3 seconds',
+        'note': 'Will update every 3 seconds even if stationary',
       });
 
       print('[LOCATION SERVICE] About to call Geolocator.getPositionStream()...');
