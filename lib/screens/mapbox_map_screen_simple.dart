@@ -1538,9 +1538,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Use cached initial camera or default
     final initialCamera = _initialCamera ?? _getDefaultCamera();
 
+    // Watch navigation state to determine layout
+    final navState = ref.watch(navigationProvider);
+    final isNavigating = navState.isNavigating;
+
     return Scaffold(
-      body: Stack(
+      body: Column(
         children: [
+          // Navigation card at top (only when navigating)
+          if (isNavigating) const NavigationCard(),
+
+          // Map and controls in expanded area below
+          Expanded(
+            child: Stack(
+              children: [
           // Mapbox Map Widget (Simplified) with long-press gesture
           GestureDetector(
             onLongPressStart: (details) async {
@@ -2012,14 +2023,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Route navigation sheet (persistent bottom sheet, non-modal)
           // Hidden when turn-by-turn navigation is active (new NavigationCard is used instead)
 
-          // Turn-by-turn navigation card overlay
-          const NavigationCard(),
-
           // Debug overlay - on top of everything
           const DebugOverlay(),
-        ],
-      ),
-    );
+              ], // End Stack children
+            ), // End Stack
+          ), // End Expanded
+        ], // End Column children
+      ), // End Column
+    ); // End Scaffold
   }
 
   /// Called when the Mapbox map is created and ready

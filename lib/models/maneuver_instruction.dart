@@ -89,7 +89,7 @@ class ManeuverInstruction {
       case ManeuverType.uTurn:
         return 'Make a U-turn';
       case ManeuverType.arrive:
-        return 'You have arrived at your destination';
+        return 'Arrived at your destination';
       case ManeuverType.depart:
         return 'Start your route';
     }

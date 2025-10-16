@@ -403,6 +403,8 @@ class NavigationNotifier extends Notifier<NavigationState> {
       final timeSinceLastReroute = DateTime.now().difference(_lastRerouteTime!).inSeconds;
       print('[REROUTE DEBUG] Time since last reroute: ${timeSinceLastReroute}s (cooldown: ${_rerouteCooldownSeconds}s)');
       if (timeSinceLastReroute < _rerouteCooldownSeconds) {
+        final remainingSeconds = _rerouteCooldownSeconds - timeSinceLastReroute;
+        ToastService.info('Rerouting on cooldown, wait ${remainingSeconds}s');
         AppLogger.debug('Rerouting cooldown active', tag: 'NAVIGATION', data: {
           'timeSince': '${timeSinceLastReroute}s',
           'cooldown': '${_rerouteCooldownSeconds}s',
@@ -424,7 +426,8 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
       if (distance < _reroutePositionThreshold) {
         // Same position as last successful reroute - abort
-        ToastService.warning('Recalculation aborted - same position than 10s ago');
+        final metersNeeded = (_reroutePositionThreshold - distance).toInt();
+        ToastService.warning('Rerouting blocked: Move ${metersNeeded}m+ more');
         AppLogger.warning('Rerouting aborted - same position', tag: 'NAVIGATION', data: {
           'distance': '${distance.toStringAsFixed(1)}m',
           'threshold': '${_reroutePositionThreshold}m',

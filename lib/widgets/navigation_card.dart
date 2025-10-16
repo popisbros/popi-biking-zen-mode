@@ -229,31 +229,30 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       navState.activeRoute?.points,
     );
 
-    return Positioned(
-      top: MediaQuery.of(context).padding.top + 1, // 5px lower than before (-4 + 5 = 1)
-      left: 16,
-      right: 16,
-      child: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                Colors.grey.shade50,
-              ],
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  Colors.grey.shade50,
+                ],
+              ),
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Maneuver instruction
               if (navState.nextManeuver != null) ...[
                 Row(
@@ -386,10 +385,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     builder: (context) {
                       final color = navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800;
 
-                      // Status text (ON or OFF)
-                      final statusText = navState.isOffRoute ? 'OFF' : 'ON';
-
-                      // Distance text (only show if off-route)
+                      // Distance text
                       final distanceText = navState.isOffRoute
                         ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m'
                         : '0m';
@@ -401,9 +397,9 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                         timeText = '${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
                       }
 
-                      // Format: "ON 0m @12:34" or "OFF 25m @12:34"
+                      // Format: "0m @12:34" or "25m @12:34"
                       return Text(
-                        '$statusText $distanceText @$timeText',
+                        '$distanceText @$timeText',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -641,7 +637,8 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
           ), // End Column
         ), // End Container
       ), // End Material
-    ); // End Positioned
+      ), // End Padding
+    ); // End SafeArea
   }
 
   /// Build all maneuvers list with distances

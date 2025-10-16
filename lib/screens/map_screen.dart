@@ -1969,11 +1969,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ? LatLng(locationAsync.value!.latitude, locationAsync.value!.longitude)
             : const LatLng(0, 0));
 
+    // Watch navigation state to determine layout
+    final navigationState = ref.watch(navigationProvider);
+    final isNavigating = navigationState.isNavigating;
+
     return Scaffold(
-      body: Stack(
+      body: Column(
         children: [
-          // Main map content
-          locationAsync.when(
+          // Navigation card at top (only when navigating)
+          if (isNavigating) const NavigationCard(),
+
+          // Map and controls in expanded area below
+          Expanded(
+            child: Stack(
+              children: [
+                // Main map content
+                locationAsync.when(
             data: (location) {
               if (location == null) {
                 AppLogger.warning('Location is NULL - showing loading indicator', tag: 'MAP');
@@ -2536,15 +2547,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // Navigation card - shown during turn-by-turn navigation
-          const NavigationCard(),
-
           // Debug overlay - on top of everything
           const DebugOverlay(),
-        ],
-      ),
+              ], // End Stack children
+            ), // End Stack
+          ), // End Expanded
+        ], // End Column children
+      ), // End Column
       floatingActionButtonLocation: null,
-    );
+    ); // End Scaffold
   }
 }
 
