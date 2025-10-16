@@ -17,7 +17,7 @@ class ToastService {
 
     // For native apps, use fixed bottom position (0px from bottom)
     // For web/PWA, use standard vertical margin (10px)
-    final bottomMargin = kIsWeb ? 10.0 : 0;
+    final bottomMargin = kIsWeb ? 10.0 : 0.0;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
