@@ -384,31 +384,30 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   const SizedBox(width: 4),
                   Builder(
                     builder: (context) {
-                      // Show last update time (updates every 3 seconds when GPS updates)
-                      if (navState.lastUpdateTime == null) {
-                        return Text(
-                          navState.isOffRoute ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF' : 'ON',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800,
-                          ),
-                        );
+                      final color = navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800;
+
+                      // Status text (ON or OFF)
+                      final statusText = navState.isOffRoute ? 'OFF' : 'ON';
+
+                      // Distance text (only show if off-route)
+                      final distanceText = navState.isOffRoute
+                        ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m'
+                        : '0m';
+
+                      // Time as MM:SS (not full timestamp)
+                      String timeText = '--:--';
+                      if (navState.lastUpdateTime != null) {
+                        final time = navState.lastUpdateTime!;
+                        timeText = '${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
                       }
 
-                      // Format time as HH:MM:SS
-                      final time = navState.lastUpdateTime!;
-                      final timeStr = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
-
-                      // Show current status + last update time (changes every 3s)
+                      // Format: "ON 0m @12:34" or "OFF 25m @12:34"
                       return Text(
-                        navState.isOffRoute
-                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF @$timeStr'
-                          : 'ON @$timeStr',
+                        '$statusText $distanceText @$timeText',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800,
+                          color: color,
                         ),
                       );
                     },

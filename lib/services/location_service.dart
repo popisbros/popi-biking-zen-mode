@@ -11,6 +11,7 @@ class LocationService {
   LocationService._internal();
 
   StreamSubscription<Position>? _positionStream;
+  Timer? _pollTimer;
   final StreamController<LocationData> _locationController =
       StreamController<LocationData>.broadcast();
 
@@ -133,14 +134,15 @@ class LocationService {
     }
   }
 
-  /// Start continuous location tracking
+  /// Start continuous location tracking with timer-based polling
   Future<void> startLocationTracking() async {
     try {
-      AppLogger.separator('Starting continuous location tracking');
+      AppLogger.separator('Starting continuous location tracking (TIMER-BASED)');
 
       // Check if already tracking
-      if (_positionStream != null) {
-        AppLogger.warning('Position stream already running, skipping startLocationTracking', tag: 'LOCATION');
+      if (_pollTimer != null) {
+        AppLogger.warning('Timer already running, skipping startLocationTracking', tag: 'LOCATION');
+        print('[LOCATION SERVICE] ⚠️ Already tracking with timer');
         return;
       }
 
@@ -172,74 +174,88 @@ class LocationService {
         return;
       }
 
-      const locationSettings = LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 0, // 0 = update continuously regardless of movement
-        timeLimit: Duration(seconds: 3), // Update at least every 3 seconds
-      );
-
-      AppLogger.location('Starting position stream', data: {
-        'distanceFilter': '0m (continuous updates)',
-        'timeLimit': '3 seconds',
-        'note': 'Will update every 3 seconds even if stationary',
+      AppLogger.location('Starting timer-based polling', data: {
+        'interval': '3 seconds',
+        'accuracy': 'LocationAccuracy.high',
+        'note': 'Will poll GPS every 3 seconds regardless of movement',
       });
 
-      print('[LOCATION SERVICE] About to call Geolocator.getPositionStream()...');
+      print('[LOCATION SERVICE] Starting 3-second timer for GPS polling...');
 
-      _positionStream = Geolocator.getPositionStream(
-        locationSettings: locationSettings,
-      ).listen(
-        (Position position) {
-          print('[LOCATION SERVICE] ✅ Position update received from Geolocator! lat=${position.latitude}, lon=${position.longitude}');
+      // Get initial position immediately
+      await _pollPosition();
 
-          AppLogger.location('Position update received', data: {
-            'lat': position.latitude,
-            'lng': position.longitude,
-            'accuracy': '${position.accuracy}m',
-          });
+      // Start timer to poll every 3 seconds
+      _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+        await _pollPosition();
+      });
 
-          final locationData = LocationData(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            altitude: position.altitude,
-            accuracy: position.accuracy,
-            speed: position.speed,
-            heading: position.heading,
-            timestamp: position.timestamp,
-          );
-
-          _currentLocation = locationData;
-          _locationController.add(locationData);
-          print('[LOCATION SERVICE] Broadcast location to ${_locationController.hasListener ? "active" : "NO"} listeners');
-          AppLogger.location('Location data broadcast to listeners');
-        },
-        onError: (error, stackTrace) {
-          print('[LOCATION SERVICE] ❌ Stream ERROR: $error');
-          AppLogger.error('Position stream error', tag: 'LOCATION', error: error, stackTrace: stackTrace);
-          AppLogger.debug('Error type', tag: 'LOCATION', data: {
-            'errorType': error.runtimeType.toString(),
-            'errorMessage': error.toString(),
-          });
-        },
-        onDone: () {
-          print('[LOCATION SERVICE] ⚠️ Stream DONE/COMPLETED');
-          AppLogger.warning('Position stream completed unexpectedly', tag: 'LOCATION');
-          AppLogger.debug('Stream ended - this should not happen unless tracking was stopped', tag: 'LOCATION');
-        },
-      );
-
-      print('[LOCATION SERVICE] getPositionStream().listen() completed, subscription active');
-      AppLogger.success('Location tracking started successfully', tag: 'LOCATION');
+      print('[LOCATION SERVICE] Timer started, will poll every 3 seconds');
+      AppLogger.success('Location tracking started successfully (timer-based)', tag: 'LOCATION');
     } catch (e) {
       AppLogger.error('Error starting tracking', tag: 'LOCATION', error: e);
+      print('[LOCATION SERVICE] ❌ Error starting tracking: $e');
+    }
+  }
+
+  /// Poll GPS position once
+  Future<void> _pollPosition() async {
+    try {
+      print('[LOCATION SERVICE] 📍 Polling GPS position...');
+
+      const locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        // No distanceFilter or timeLimit - just get current position
+      );
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
+      );
+
+      print('[LOCATION SERVICE] ✅ Position received! lat=${position.latitude}, lon=${position.longitude}, accuracy=${position.accuracy}m');
+
+      AppLogger.location('Position update received (polled)', data: {
+        'lat': position.latitude,
+        'lng': position.longitude,
+        'accuracy': '${position.accuracy}m',
+        'speed': '${position.speed}m/s',
+        'heading': '${position.heading}°',
+      });
+
+      final locationData = LocationData(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude: position.altitude,
+        accuracy: position.accuracy,
+        speed: position.speed,
+        heading: position.heading,
+        timestamp: position.timestamp,
+      );
+
+      _currentLocation = locationData;
+      _locationController.add(locationData);
+      print('[LOCATION SERVICE] Broadcast location to ${_locationController.hasListener ? "active" : "NO"} listeners');
+      AppLogger.location('Location data broadcast to listeners');
+    } catch (e, stackTrace) {
+      print('[LOCATION SERVICE] ❌ Error polling position: $e');
+      AppLogger.error('Error polling position', tag: 'LOCATION', error: e, stackTrace: stackTrace);
     }
   }
 
   /// Stop location tracking
   Future<void> stopLocationTracking() async {
     AppLogger.debug('Stopping location tracking', tag: 'LOCATION');
+    print('[LOCATION SERVICE] Stopping timer and stream...');
+
+    // Cancel timer if running
+    _pollTimer?.cancel();
+    _pollTimer = null;
+
+    // Cancel stream subscription if exists
     await _positionStream?.cancel();
     _positionStream = null;
+
+    print('[LOCATION SERVICE] Tracking stopped');
     AppLogger.success('Location tracking stopped', tag: 'LOCATION');
   }
 

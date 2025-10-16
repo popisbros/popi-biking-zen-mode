@@ -169,6 +169,33 @@ class NavigationNotifier extends Notifier<NavigationState> {
     AppLogger.success('Navigation stopped', tag: 'NAVIGATION');
   }
 
+  /// Dismiss off-route dialog without rerouting
+  void dismissOffRouteDialog() {
+    AppLogger.debug('Dismissing off-route dialog', tag: 'NAVIGATION');
+    state = state.copyWith(
+      showingOffRouteDialog: false,
+    );
+  }
+
+  /// Manually trigger route recalculation from current position
+  Future<void> recalculateRoute() async {
+    AppLogger.debug('Manual route recalculation requested', tag: 'NAVIGATION');
+
+    if (!state.isNavigating || state.currentPosition == null) {
+      AppLogger.warning('Cannot recalculate - not navigating or no position', tag: 'NAVIGATION');
+      ToastService.warning('Cannot recalculate route - no current position');
+      return;
+    }
+
+    // Dismiss dialog first
+    state = state.copyWith(
+      showingOffRouteDialog: false,
+    );
+
+    // Trigger rerouting
+    await _handleAutomaticRerouting(state.currentPosition!);
+  }
+
   /// Start listening to location updates from LocationService
   Future<void> _startLocationTracking() async {
     final locationService = LocationService();
