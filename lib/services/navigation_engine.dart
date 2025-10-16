@@ -65,31 +65,50 @@ class NavigationEngine {
   /// Calculate perpendicular distance from point to line segment
   static double _distanceToSegment(LatLng point, LatLng segmentStart, LatLng segmentEnd) {
     final distanceToStart = _distance.as(LengthUnit.Meter, point, segmentStart);
-    final distanceToEnd = _distance.as(LengthUnit.Meter, point, segmentEnd);
     final segmentLength = _distance.as(LengthUnit.Meter, segmentStart, segmentEnd);
 
-    // If segment is very short, return distance to start
+    // If segment is very short (< 1m), return distance to start
     if (segmentLength < 1.0) return distanceToStart;
 
-    // Use closest endpoint if point is before/after segment
-    final minEndpointDistance = math.min(distanceToStart, distanceToEnd);
+    // Calculate projection parameter t
+    // t = 0 means point projects to segmentStart
+    // t = 1 means point projects to segmentEnd
+    // 0 < t < 1 means point projects somewhere on the segment
 
-    // Calculate perpendicular distance using cross product
-    final lat1 = segmentStart.latitude;
-    final lon1 = segmentStart.longitude;
-    final lat2 = segmentEnd.latitude;
-    final lon2 = segmentEnd.longitude;
-    final latP = point.latitude;
-    final lonP = point.longitude;
+    // Convert to radians for accurate calculation
+    final lat1Rad = segmentStart.latitude * math.pi / 180;
+    final lon1Rad = segmentStart.longitude * math.pi / 180;
+    final lat2Rad = segmentEnd.latitude * math.pi / 180;
+    final lon2Rad = segmentEnd.longitude * math.pi / 180;
+    final latPRad = point.latitude * math.pi / 180;
+    final lonPRad = point.longitude * math.pi / 180;
 
-    final numerator = ((lat2 - lat1) * (lon1 - lonP) - (lon2 - lon1) * (lat1 - latP)).abs();
-    final denominator = math.sqrt(math.pow(lat2 - lat1, 2) + math.pow(lon2 - lon1, 2));
+    // Use dot product to find projection parameter
+    // Vector from start to end
+    final dx = (lon2Rad - lon1Rad) * math.cos((lat1Rad + lat2Rad) / 2);
+    final dy = lat2Rad - lat1Rad;
 
-    if (denominator < 0.0000001) return distanceToStart;
+    // Vector from start to point
+    final dpx = (lonPRad - lon1Rad) * math.cos((lat1Rad + latPRad) / 2);
+    final dpy = latPRad - lat1Rad;
 
-    final perpDistance = (numerator / denominator) * 111320; // degrees to meters
+    // Calculate projection parameter
+    final dotProduct = dpx * dx + dpy * dy;
+    final segmentLengthSquared = dx * dx + dy * dy;
 
-    return math.min(perpDistance, minEndpointDistance);
+    if (segmentLengthSquared < 0.0000000001) return distanceToStart;
+
+    final t = (dotProduct / segmentLengthSquared).clamp(0.0, 1.0);
+
+    // Find the projected point on the segment
+    final projectedLat = segmentStart.latitude + t * (segmentEnd.latitude - segmentStart.latitude);
+    final projectedLon = segmentStart.longitude + t * (segmentEnd.longitude - segmentStart.longitude);
+    final projectedPoint = LatLng(projectedLat, projectedLon);
+
+    // Calculate distance from point to projected point
+    final distanceToProjection = _distance.as(LengthUnit.Meter, point, projectedPoint);
+
+    return distanceToProjection;
   }
 
   /// Check if current position is off the route
