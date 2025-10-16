@@ -170,6 +170,10 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     AppLogger.debug('Starting location tracking for navigation', tag: 'NAVIGATION');
 
+    // IMPORTANT: Start the GPS position stream in LocationService
+    locationService.startLocationTracking();
+    AppLogger.debug('Called LocationService.startLocationTracking()', tag: 'NAVIGATION');
+
     _locationSubscription = locationService.locationStream.listen(
       (locationData) {
         _onLocationUpdate(locationData);
