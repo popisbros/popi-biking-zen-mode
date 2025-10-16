@@ -718,20 +718,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // Show loading indicator
     if (mounted) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final toastWidth = screenWidth - 120;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               ),
-              SizedBox(width: 12),
-              Text('Calculating routes...'),
+              const SizedBox(width: 12),
+              const Text(
+                'Calculating routes...',
+                style: TextStyle(fontSize: 12),
+              ),
             ],
           ),
-          duration: Duration(seconds: 30),
+          duration: const Duration(seconds: 30),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(10),
+          width: toastWidth,
         ),
       );
     }
@@ -2217,7 +2226,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Toggle buttons on the right side
           Positioned(
-            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 30,
+            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
             right: 10,
             child: Column(
               children: [
@@ -2549,7 +2558,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Search button (top-left, yellow) - rendered on top
           Positioned(
-            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 30,
+            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
             left: 10,
             child: FloatingActionButton(
               mini: true,

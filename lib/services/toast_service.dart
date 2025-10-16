@@ -14,16 +14,24 @@ class ToastService {
     final context = navigatorKey.currentContext;
     if (context == null) return;
 
+    // Get screen width for toast sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+    final toastWidth = screenWidth - 120;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
-          style: TextStyle(color: textColor),
+          style: TextStyle(
+            color: textColor,
+            fontSize: 12,
+          ),
         ),
         backgroundColor: backgroundColor,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(10),
+        width: toastWidth,
       ),
     );
   }
