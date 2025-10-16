@@ -1704,7 +1704,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   // Zoom in
                   FloatingActionButton(
                     mini: true,

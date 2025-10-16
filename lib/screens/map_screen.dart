@@ -2290,7 +2290,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Zoom controls
                 FloatingActionButton(
