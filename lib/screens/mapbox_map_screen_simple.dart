@@ -1664,7 +1664,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             },
                             tooltip: 'Toggle OSM POIs',
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           // Community POI toggle
                           _buildToggleButton(
                             isActive: mapState.showPOIs,
@@ -1682,7 +1682,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             },
                             tooltip: 'Toggle Community POIs',
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           // Warning toggle
                           _buildToggleButton(
                             isActive: mapState.showWarnings,
@@ -1704,7 +1704,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   // Zoom in
                   FloatingActionButton(
                     mini: true,
@@ -1727,7 +1727,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     },
                     child: const Icon(Icons.add),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
 
                   // Zoom level display
                   Container(
@@ -1745,7 +1745,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
 
                   // Zoom out
                   FloatingActionButton(
@@ -1836,7 +1836,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Center on Location',
                     child: const Icon(Icons.my_location),
                   ),
-                  const SizedBox(height: 12), // Match top toggle buttons spacing
+                  const SizedBox(height: 8),
                   // Reload POIs button
                   FloatingActionButton(
                     mini: true, // Match zoom button size
@@ -1851,7 +1851,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Reload POIs',
                     child: const Icon(Icons.refresh),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   // Debug toggle button
                   Builder(
                     builder: (context) {
@@ -1869,61 +1869,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
-                  const SizedBox(height: 12),
-                  // iOS Native Navigation Test Button (Phase 1, Step 1.2)
-                  if (Platform.isIOS)
-                    FloatingActionButton(
-                      mini: true,
-                      heroTag: 'test_ios_nav',
-                      onPressed: () async {
-                        AppLogger.map('Testing iOS native navigation with real route data');
-
-                        // Check if we have an active route
-                        if (_activeRoute == null) {
-                          AppLogger.warning('No route available - please calculate a route first');
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please calculate a route first (tap a POI → Calculate Route)'),
-                                duration: Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
-                        AppLogger.map('Using active route', data: {
-                          'type': _activeRoute!.type.toString(),
-                          'points': _activeRoute!.points.length,
-                          'distance': _activeRoute!.distanceKm,
-                          'duration': _activeRoute!.durationMin,
-                        });
-
-                        final navService = IOSNavigationService();
-
-                        try {
-                          await navService.startNavigation(
-                            routePoints: _activeRoute!.points,
-                            destinationName: 'Route Destination (${_activeRoute!.distanceKm}km)',
-                          );
-                        } catch (e) {
-                          AppLogger.error('Navigation test failed', error: e);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Navigation failed: $e'),
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
-                      tooltip: 'Test iOS Navigation (Step 1.2)',
-                      child: const Icon(Icons.navigation),
-                    ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   // Navigation controls (End + Mute buttons)
                   NavigationControls(
                     onNavigationEnded: () async {
@@ -1971,7 +1917,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Change Map Style',
                     child: const Icon(Icons.layers),
                   ),
-                  const SizedBox(height: 12), // Match top toggle buttons spacing
+                  const SizedBox(height: 8),
                   // Pitch selector button
                   FloatingActionButton(
                     mini: true, // Match zoom button size
@@ -1981,7 +1927,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Change Pitch: ${_currentPitch.toInt()}°',
                     child: Text('${_currentPitch.toInt()}°', style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(height: 12), // Match top toggle buttons spacing
+                  const SizedBox(height: 8),
                   // Switch to 2D button
                   FloatingActionButton(
                     mini: true, // Match zoom button size

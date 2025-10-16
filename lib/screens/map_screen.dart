@@ -2246,7 +2246,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           },
                           tooltip: 'Toggle OSM POIs',
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Community POI toggle with count
                         _buildToggleButton(
@@ -2266,7 +2266,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           },
                           tooltip: 'Toggle Community POIs',
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
 
                         // Warning toggle with count
                         _buildToggleButton(
@@ -2290,7 +2290,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
                 // Zoom controls
                 FloatingActionButton(
@@ -2315,7 +2315,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   },
                   child: const Icon(Icons.add),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
 
                 // Zoom level display
                 if (_isMapReady)
@@ -2335,7 +2335,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                   ),
                 if (_isMapReady)
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
 
                 // Zoom out button
                 FloatingActionButton(
@@ -2458,7 +2458,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   tooltip: 'Center on Location',
                   child: const Icon(Icons.my_location),
                 ),
-                const SizedBox(height: 12), // Match top toggle buttons spacing
+                const SizedBox(height: 8),
                 // Reload POIs button
                 FloatingActionButton(
                   mini: true, // Match zoom button size
@@ -2471,7 +2471,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   tooltip: 'Reload POIs',
                   child: const Icon(Icons.refresh),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 // Debug toggle button
                 Builder(
                   builder: (context) {
@@ -2489,7 +2489,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 // Navigation controls (End + Mute buttons)
                 NavigationControls(
                   onNavigationEnded: () {
@@ -2519,7 +2519,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 // 3D Map button - only show on Native (not on web/PWA)
                 if (!kIsWeb) ...[
-                  const SizedBox(height: 12), // Match top toggle buttons spacing
+                  const SizedBox(height: 8),
                   FloatingActionButton(
                     mini: true, // Match zoom button size
                     heroTag: '3d_map',
