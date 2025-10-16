@@ -1635,8 +1635,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           if (_isMapReady) ...[
             // Toggle buttons and zoom controls on the right side
             Positioned(
-              top: MediaQuery.of(context).padding.top + 16, // Match bottom button spacing
-              right: 16,
+              top: MediaQuery.of(context).padding.top + 10,
+              right: 10,
               child: Column(
                 children: [
                   // Check zoom level - disable toggles if zoom <= 11
@@ -1791,8 +1791,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
             // Bottom-left controls: compass, center, reload
             Positioned(
-              bottom: 16,
-              left: 16,
+              bottom: 10,
+              left: 10,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -1903,8 +1903,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
             // Bottom-right controls: tiles selector, pitch selector, 2D/3D switch
             Positioned(
-              bottom: 16,
-              right: 16,
+              bottom: 10,
+              right: 10,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -1945,8 +1945,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Search button (top-left, yellow) - rendered on top
           if (_isMapReady)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 16, // Match bottom button spacing
-              left: 16,
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 10,
               child: FloatingActionButton(
                 mini: true,
                 heroTag: 'search_button_3d',
