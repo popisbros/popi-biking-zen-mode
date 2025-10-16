@@ -1602,7 +1602,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           if (_isMapReady) ...[
             // Toggle buttons and zoom controls on the right side
             Positioned(
-              top: MediaQuery.of(context).padding.top + 96, // 16 + 80
+              top: MediaQuery.of(context).padding.top + 16, // Match bottom button spacing
               right: 16,
               child: Column(
                 children: [
@@ -1966,7 +1966,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Search button (top-left, yellow) - rendered on top
           if (_isMapReady)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 96, // 16 + 80
+              top: MediaQuery.of(context).padding.top + 16, // Match bottom button spacing
               left: 16,
               child: FloatingActionButton(
                 mini: true,

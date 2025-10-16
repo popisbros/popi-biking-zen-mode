@@ -230,29 +230,14 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     );
 
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-        child: Material(
-          elevation: 8,
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  Colors.grey.shade50,
-                ],
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+      child: Container(
+        width: double.infinity,
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               // Maneuver instruction
               if (navState.nextManeuver != null) ...[
                 Row(
@@ -633,11 +618,9 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                 ),
               ),
               if (_isManeuversExpanded) ..._buildManeuversSection(navState),
-            ], // End main Column children
-          ), // End Column
-        ), // End Container
-      ), // End Material
-      ), // End Padding
+          ], // End main Column children
+        ), // End Column
+      ), // End Container
     ); // End SafeArea
   }
 
