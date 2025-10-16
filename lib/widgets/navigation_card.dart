@@ -643,10 +643,11 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
           ),
         ),
         if (_isManeuversExpanded) ..._buildManeuversSection(navState),
-      ],
-      ),
-    ),
-    );
+      ], // End Column children
+      ), // End Column
+    ), // End Container
+    ), // End Material
+    ); // End Positioned
   }
 
   /// Build all maneuvers list with distances
