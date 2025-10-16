@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -157,20 +154,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       print('[WAKELOCK] Error: $error');
     });
 
-    // Lock orientation to portrait during navigation (native only)
-    if (!kIsWeb) {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]).then((_) {
-        AppLogger.success('Orientation locked to portrait', tag: 'NAVIGATION');
-        print('[ORIENTATION] Locked to portrait for navigation');
-      }).catchError((error) {
-        AppLogger.warning('Failed to lock orientation', tag: 'NAVIGATION', data: {'error': error.toString()});
-        print('[ORIENTATION] Error: $error');
-      });
-    }
-
     // Start listening to location updates (fire and forget, don't block navigation start)
     _startLocationTracking().then((_) {
       print('[GPS TRACKING] Location tracking initialization complete');
@@ -195,22 +178,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
       print('[WAKELOCK] Error: $error');
     });
-
-    // Unlock orientation (allow all orientations when not navigating)
-    if (!kIsWeb) {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]).then((_) {
-        AppLogger.success('Orientation unlocked', tag: 'NAVIGATION');
-        print('[ORIENTATION] All orientations now allowed');
-      }).catchError((error) {
-        AppLogger.warning('Failed to unlock orientation', tag: 'NAVIGATION', data: {'error': error.toString()});
-        print('[ORIENTATION] Error: $error');
-      });
-    }
 
     _locationSubscription?.cancel();
     _locationSubscription = null;

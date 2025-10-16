@@ -1543,17 +1543,48 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final isNavigating = navState.isNavigating;
 
     return Scaffold(
-      body: Column(
-        children: [
-          // Navigation card at top (only when navigating)
-          if (isNavigating) const NavigationCard(),
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          final isLandscape = orientation == Orientation.landscape;
 
-          // Map and controls in expanded area below
-          Expanded(
-            child: Stack(
+          if (isLandscape && isNavigating) {
+            // Landscape layout: Navigation card on left (50%), map on right (50%)
+            return Row(
               children: [
-          // Mapbox Map Widget (Simplified) with long-press gesture
-          GestureDetector(
+                SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  child: const NavigationCard(),
+                ),
+                Expanded(
+                  child: Stack(
+                    children: _buildMapAndControls(context, mapState),
+                  ),
+                ),
+              ],
+            );
+          } else {
+            // Portrait layout: Navigation card at top, map below
+            return Column(
+              children: [
+                if (isNavigating) const NavigationCard(),
+                Expanded(
+                  child: Stack(
+                    children: _buildMapAndControls(context, mapState),
+                  ),
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  /// Build map and controls (reused in both orientations)
+  List<Widget> _buildMapAndControls(BuildContext context, MapState mapState) {
+    return [
+      // Mapbox Map Widget (Simplified) with long-press gesture
+      GestureDetector(
             onLongPressStart: (details) async {
               if (!_isMapReady || _mapboxMap == null) return;
 
@@ -1571,7 +1602,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             },
             child: MapWidget(
               key: const ValueKey("mapboxWidgetSimple"),
-              cameraOptions: initialCamera,
+              cameraOptions: _initialCamera ?? _getDefaultCamera(),
               styleUri: mapState.mapboxStyleUri,
               onMapCreated: _onMapCreated,
             ),
@@ -2020,17 +2051,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             ),
           ),
 
-          // Route navigation sheet (persistent bottom sheet, non-modal)
-          // Hidden when turn-by-turn navigation is active (new NavigationCard is used instead)
+      // Route navigation sheet (persistent bottom sheet, non-modal)
+      // Hidden when turn-by-turn navigation is active (new NavigationCard is used instead)
 
-          // Debug overlay - on top of everything
-          const DebugOverlay(),
-              ], // End Stack children
-            ), // End Stack
-          ), // End Expanded
-        ], // End Column children
-      ), // End Column
-    ); // End Scaffold
+      // Debug overlay - on top of everything
+      const DebugOverlay(),
+    ]; // End map and controls list
   }
 
   /// Called when the Mapbox map is created and ready
