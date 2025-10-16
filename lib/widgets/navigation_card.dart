@@ -240,6 +240,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start, // Align content to top
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
               // Maneuver instruction
