@@ -127,6 +127,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       activeRoute: routeWithHazards,
       currentPosition: initialPosition,
       currentSegmentIndex: 0,
+      allManeuvers: _detectedManeuvers,
       nextManeuver: nextManeuver,
       distanceToNextManeuver: nextManeuver != null
           ? NavigationEngine.calculateDistanceToManeuver(
@@ -206,6 +207,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Check if off route and get distance
     final isOffRoute = NavigationEngine.isOffRoute(currentPos, route.points);
     final offRouteDistance = NavigationEngine.getDistanceToRoute(currentPos, route.points);
+
+    // Debug: Log off-route status every update
+    print('[OFF-ROUTE DEBUG] Distance to route: ${offRouteDistance.toStringAsFixed(1)}m, isOffRoute: $isOffRoute (threshold: 10m)');
 
     // Calculate remaining distance
     final remainingDistance = NavigationEngine.calculateRemainingDistance(

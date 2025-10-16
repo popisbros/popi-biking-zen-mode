@@ -17,6 +17,7 @@ class NavigationCard extends ConsumerStatefulWidget {
 
 class _NavigationCardState extends ConsumerState<NavigationCard> {
   bool _isGraphHopperDataExpanded = false;
+  bool _isManeuversExpanded = false;
 
   /// Get current GraphHopper instruction based on segment index
   RouteInstruction? _getCurrentInstruction(int segmentIndex, List<RouteInstruction>? instructions) {
@@ -374,7 +375,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Off-route distance (DEBUG)
+                  // Off-route distance (DEBUG) with timer
                   Icon(
                     Icons.warning_amber_rounded,
                     size: 16,
@@ -383,10 +384,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   const SizedBox(width: 4),
                   Text(
                     navState.isOffRoute
-                      ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF'
-                      : 'ON',
+                      ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m OFF - ${navState.lastUpdateTime != null ? DateTime.now().difference(navState.lastUpdateTime!).inSeconds : "?"}s'
+                      : 'ON - ${navState.lastUpdateTime != null ? DateTime.now().difference(navState.lastUpdateTime!).inSeconds : "?"}s',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800,
                     ),
@@ -583,10 +584,160 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                 ],
               ],
             ],
+
+              // Maneuvers Section (Collapsible, DEBUG)
+              const SizedBox(height: 8),
+              Divider(color: Colors.grey.shade300, height: 1),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isManeuversExpanded = !_isManeuversExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        'MANEUVERS (DEBUG)',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple.shade700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _isManeuversExpanded ? Icons.expand_less : Icons.expand_more,
+                        size: 18,
+                        color: Colors.purple.shade700,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (_isManeuversExpanded) ..._buildManeuversSection(navState),
+
           ),
         ),
       ),
     );
+  }
+
+  /// Build all maneuvers list with distances
+  List<Widget> _buildManeuversSection(NavigationState navState) {
+    final allManeuvers = navState.allManeuvers;
+    final currentPosition = navState.currentPosition;
+    final routePoints = navState.activeRoute?.points;
+    final nextManeuver = navState.nextManeuver;
+
+    if (allManeuvers.isEmpty) {
+      return [
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.purple.shade50,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: const Text(
+            'No maneuvers detected on this route.',
+            style: TextStyle(fontSize: 11, color: Colors.black87),
+          ),
+        ),
+      ];
+    }
+
+    if (currentPosition == null || routePoints == null) {
+      return [const SizedBox(height: 8)];
+    }
+
+    // Calculate current distance along route
+    final Distance distance = const Distance();
+    double currentDistanceAlongRoute = 0;
+    final currentSegmentIndex = navState.currentSegmentIndex;
+
+    for (int i = 0; i < currentSegmentIndex && i < routePoints.length - 1; i++) {
+      currentDistanceAlongRoute += distance.as(
+        LengthUnit.Meter,
+        routePoints[i],
+        routePoints[i + 1],
+      );
+    }
+    if (currentSegmentIndex < routePoints.length) {
+      currentDistanceAlongRoute += distance.as(
+        LengthUnit.Meter,
+        routePoints[currentSegmentIndex],
+        currentPosition,
+      );
+    }
+
+    // Build list of maneuvers with distances
+    final List<Widget> widgets = [const SizedBox(height: 8)];
+
+    for (final maneuver in allManeuvers) {
+      // Calculate distance to this maneuver
+      double distanceToManeuver = 0;
+      for (int i = 0; i < maneuver.segmentIndex && i < routePoints.length - 1; i++) {
+        distanceToManeuver += distance.as(
+          LengthUnit.Meter,
+          routePoints[i],
+          routePoints[i + 1],
+        );
+      }
+
+      // Distance from current position (negative = passed, positive = ahead)
+      final double relativeDistance = distanceToManeuver - currentDistanceAlongRoute;
+      final bool isNext = nextManeuver != null && maneuver.segmentIndex == nextManeuver.segmentIndex;
+
+      widgets.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isNext ? Colors.green.shade50 : Colors.purple.shade50,
+            borderRadius: BorderRadius.circular(6),
+            border: isNext ? Border.all(color: Colors.green.shade700, width: 2) : null,
+          ),
+          child: Row(
+            children: [
+              // Maneuver icon
+              Text(
+                maneuver.icon,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 8),
+              // Maneuver instruction
+              Expanded(
+                child: Text(
+                  maneuver.instruction,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Distance indicator
+              Text(
+                relativeDistance >= 0
+                    ? '+${relativeDistance.toStringAsFixed(0)}m'
+                    : '${relativeDistance.toStringAsFixed(0)}m',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: relativeDistance >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return widgets;
   }
 
   /// Build a surface warning triangle sign

@@ -22,6 +22,9 @@ class NavigationState {
   /// Index of current route segment user is on
   final int currentSegmentIndex;
 
+  /// All detected maneuvers on this route
+  final List<ManeuverInstruction> allManeuvers;
+
   /// Next maneuver instruction
   final ManeuverInstruction? nextManeuver;
 
@@ -62,6 +65,7 @@ class NavigationState {
     this.currentSpeed,
     this.currentHeading,
     this.currentSegmentIndex = 0,
+    this.allManeuvers = const [],
     this.nextManeuver,
     this.distanceToNextManeuver = 0,
     this.totalDistanceRemaining = 0,
@@ -137,6 +141,7 @@ class NavigationState {
     double? currentSpeed,
     double? currentHeading,
     int? currentSegmentIndex,
+    List<ManeuverInstruction>? allManeuvers,
     ManeuverInstruction? nextManeuver,
     double? distanceToNextManeuver,
     double? totalDistanceRemaining,
@@ -156,6 +161,7 @@ class NavigationState {
       currentSpeed: currentSpeed ?? this.currentSpeed,
       currentHeading: currentHeading ?? this.currentHeading,
       currentSegmentIndex: currentSegmentIndex ?? this.currentSegmentIndex,
+      allManeuvers: allManeuvers ?? this.allManeuvers,
       nextManeuver: nextManeuver ?? this.nextManeuver,
       distanceToNextManeuver: distanceToNextManeuver ?? this.distanceToNextManeuver,
       totalDistanceRemaining: totalDistanceRemaining ?? this.totalDistanceRemaining,
