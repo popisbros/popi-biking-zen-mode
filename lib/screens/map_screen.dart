@@ -710,6 +710,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         final location = locationAsync.value;
         if (location != null && _isMapReady) {
           _mapController.move(LatLng(location.latitude, location.longitude), 16.0);
+
+          // Calculate initial bearing from current location to first route point
+          if (route.points.isNotEmpty) {
+            final userPosition = LatLng(location.latitude, location.longitude);
+            final firstRoutePoint = route.points.first;
+            final initialBearing = GeoUtils.calculateBearing(userPosition, firstRoutePoint);
+
+            // Rotate map to face the route direction
+            _mapController.rotate(-initialBearing); // Negative: up = direction of travel
+            _lastNavigationBearing = initialBearing;
+
+            AppLogger.debug('Map rotated to initial route bearing', tag: 'ROUTING', data: {
+              'bearing': '${initialBearing.toStringAsFixed(1)}°',
+            });
+          }
+
           AppLogger.debug('Map centered on user location for navigation', tag: 'ROUTING');
         } else {
           AppLogger.warning('Cannot center map - location not available or map not ready', tag: 'ROUTING');

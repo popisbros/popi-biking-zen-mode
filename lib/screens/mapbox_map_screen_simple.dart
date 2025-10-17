@@ -724,7 +724,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final currentLocation = ref.read(locationNotifierProvider).value;
     if (currentLocation != null && _mapboxMap != null) {
       final navigationZoom = NavigationUtils.calculateNavigationZoom(currentLocation.speed);
-      final bearing = currentLocation.heading ?? 0.0;
+
+      // Calculate initial bearing from current location to first route point
+      double bearing = currentLocation.heading ?? 0.0; // Fallback to GPS heading
+      if (route.points.isNotEmpty) {
+        final userPosition = latlong.LatLng(currentLocation.latitude, currentLocation.longitude);
+        final firstRoutePoint = route.points.first;
+        final initialBearing = GeoUtils.calculateBearing(userPosition, firstRoutePoint);
+        bearing = initialBearing;
+        _lastNavigationBearing = initialBearing;
+
+        AppLogger.debug('Initial route bearing calculated', tag: 'NAVIGATION', data: {
+          'bearing': '${initialBearing.toStringAsFixed(1)}°',
+        });
+      }
+
       final screenHeight = MediaQuery.of(context).size.height;
       final offsetPixels = screenHeight / 4; // User at 3/4 from top
 
