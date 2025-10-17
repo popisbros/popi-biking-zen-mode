@@ -33,17 +33,16 @@ class NavigationUtils {
   /// mapController.move(position, zoom);
   /// ```
   static double calculateNavigationZoom(double? speedMps) {
-    if (speedMps == null || speedMps < 0.28) {
-      return 19.0; // Stationary (< 1 km/h) - closer view
+    // Stationary/walking/very slow: use default navigation zoom (matches start)
+    if (speedMps == null || speedMps < 2.78) {
+      return 16.0; // < 10 km/h - default navigation view
     }
-    if (speedMps < 1.39) return 18.5; // 1-5 km/h (walking) - closer view
-    if (speedMps < 2.78) return 18.0; // 5-10 km/h (slow biking) - closer view
-    if (speedMps < 4.17) return 17.5; // 10-15 km/h (normal biking) - closer view
-    if (speedMps < 5.56) return 17.0; // 15-20 km/h (fast biking) - closer view
-    if (speedMps < 6.94) return 16.5; // 20-25 km/h (very fast) - closer view
-    if (speedMps < 8.33) return 16.0; // 25-30 km/h (racing) - closer view
-    if (speedMps < 11.11) return 15.5; // 30-40 km/h (electric bike) - closer view
-    return 15.0; // 40+ km/h (crazy fast!) - closer view
+    if (speedMps < 4.17) return 18.0; // 10-15 km/h (slow biking) - closer view
+    if (speedMps < 5.56) return 17.5; // 15-20 km/h (normal biking)
+    if (speedMps < 6.94) return 17.0; // 20-25 km/h (fast biking)
+    if (speedMps < 8.33) return 16.5; // 25-30 km/h (very fast)
+    if (speedMps < 11.11) return 16.0; // 30-40 km/h (racing)
+    return 15.5; // 40+ km/h (electric bike/crazy fast)
   }
 
   /// Convert speed from meters per second to kilometers per hour
