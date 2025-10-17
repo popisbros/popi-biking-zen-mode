@@ -34,6 +34,7 @@ import '../widgets/dialogs/poi_detail_dialog.dart';
 import '../widgets/dialogs/warning_detail_dialog.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
 import '../widgets/dialogs/community_poi_detail_dialog.dart';
+import '../widgets/map_toggle_button.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../services/route_surface_helper.dart';
@@ -1272,65 +1273,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  /// Build toggle button with count badge
-  Widget _buildToggleButton({
-    required bool isActive,
-    required IconData icon,
-    required Color activeColor,
-    required int count,
-    required VoidCallback onPressed,
-    required String tooltip,
-    bool showFullCount = false, // If true, shows actual count. If false, shows "99+" for counts > 99
-    bool enabled = true, // If false, button is disabled (greyed out)
-  }) {
-    return Tooltip(
-      message: enabled ? tooltip : '$tooltip (disabled at zoom ≤ 12)',
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          FloatingActionButton(
-            mini: true,
-            backgroundColor: enabled
-                ? (isActive ? activeColor : Colors.grey.shade300)
-                : Colors.grey.shade200,
-            foregroundColor: enabled ? Colors.white : Colors.grey.shade400,
-            onPressed: enabled ? onPressed : null,
-            heroTag: tooltip,
-            child: Icon(icon),
-          ),
-          // Only show count when toggle is active AND count > 0
-          if (isActive && count > 0)
-            Positioned(
-              right: -4,
-              top: -4,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                constraints: const BoxConstraints(
-                  minWidth: 20,
-                  minHeight: 20,
-                ),
-                child: Center(
-                  child: Text(
-                    showFullCount ? count.toString() : (count > 99 ? '99+' : count.toString()),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     AppLogger.debug('Building widget', tag: 'MapScreen');
@@ -1802,7 +1744,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     return Column(
                       children: [
                         // OSM POI toggle with count (no limit)
-                        _buildToggleButton(
+                        MapToggleButton(
                           isActive: mapState.showOSMPOIs,
                           icon: Icons.public,
                           activeColor: Colors.blue,
@@ -1823,7 +1765,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         const SizedBox(height: 8),
 
                         // Community POI toggle with count
-                        _buildToggleButton(
+                        MapToggleButton(
                           isActive: mapState.showPOIs,
                           icon: Icons.location_on,
                           activeColor: Colors.green,
@@ -1843,7 +1785,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         const SizedBox(height: 8),
 
                         // Warning toggle with count
-                        _buildToggleButton(
+                        MapToggleButton(
                           isActive: mapState.showWarnings,
                           icon: Icons.warning,
                           activeColor: Colors.orange,
