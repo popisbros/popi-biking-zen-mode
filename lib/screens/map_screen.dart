@@ -17,6 +17,7 @@ import '../providers/navigation_mode_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../services/toast_service.dart';
+import '../services/conditional_poi_loader.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
@@ -342,50 +343,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Load OSM POIs only if data doesn't exist or bounds changed significantly
   void _loadOSMPOIsIfNeeded() {
-    final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-    final currentData = ref.read(osmPOIsNotifierProvider).value;
-
-    // If no data exists, load it
-    if (currentData == null || currentData.isEmpty) {
-      AppLogger.map('OSM POIs: No data, loading...');
-      final camera = _mapController.camera;
-      final bounds = _calculateExtendedBounds(camera.visibleBounds);
-      osmPOIsNotifier.loadPOIsInBackground(bounds);
-    } else {
-      AppLogger.map('OSM POIs: Data exists (${currentData.length} items), showing without reload');
-    }
+    final camera = _mapController.camera;
+    final bounds = _calculateExtendedBounds(camera.visibleBounds);
+    ConditionalPOILoader.loadOSMPOIsIfNeeded(
+      ref: ref,
+      extendedBounds: bounds,
+    );
   }
 
   /// Load Community POIs only if data doesn't exist
   void _loadCommunityPOIsIfNeeded() {
-    final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-    final currentData = ref.read(cyclingPOIsBoundsNotifierProvider).value;
-
-    // If no data exists, load it
-    if (currentData == null || currentData.isEmpty) {
-      AppLogger.map('Community POIs: No data, loading...');
-      final camera = _mapController.camera;
-      final bounds = _calculateExtendedBounds(camera.visibleBounds);
-      communityPOIsNotifier.loadPOIsInBackground(bounds);
-    } else {
-      AppLogger.map('Community POIs: Data exists (${currentData.length} items), showing without reload');
-    }
+    final camera = _mapController.camera;
+    final bounds = _calculateExtendedBounds(camera.visibleBounds);
+    ConditionalPOILoader.loadCommunityPOIsIfNeeded(
+      ref: ref,
+      extendedBounds: bounds,
+    );
   }
 
   /// Load Warnings only if data doesn't exist
   void _loadWarningsIfNeeded() {
-    final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
-    final currentData = ref.read(communityWarningsBoundsNotifierProvider).value;
-
-    // If no data exists, load it
-    if (currentData == null || currentData.isEmpty) {
-      AppLogger.map('Warnings: No data, loading...');
-      final camera = _mapController.camera;
-      final bounds = _calculateExtendedBounds(camera.visibleBounds);
-      warningsNotifier.loadWarningsInBackground(bounds);
-    } else {
-      AppLogger.map('Warnings: Data exists (${currentData.length} items), showing without reload');
-    }
+    final camera = _mapController.camera;
+    final bounds = _calculateExtendedBounds(camera.visibleBounds);
+    ConditionalPOILoader.loadWarningsIfNeeded(
+      ref: ref,
+      extendedBounds: bounds,
+    );
   }
 
   /// Handle map events

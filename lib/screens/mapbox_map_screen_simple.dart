@@ -22,6 +22,7 @@ import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../services/ios_navigation_service.dart';
 import '../services/toast_service.dart';
+import '../services/conditional_poi_loader.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
@@ -1884,148 +1885,127 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Load OSM POIs only if needed (cache empty)
   void _loadOSMPOIsIfNeeded() async {
-    final osmPOIsNotifier = ref.read(osmPOIsNotifierProvider.notifier);
-    final currentData = ref.read(osmPOIsNotifierProvider).value;
+    try {
+      final cameraState = await _mapboxMap?.getCameraState();
+      if (cameraState == null) return;
 
-    if (currentData == null || currentData.isEmpty) {
-      AppLogger.map('OSM POIs: No data, loading...');
+      final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+        CameraOptions(
+          center: cameraState.center,
+          zoom: cameraState.zoom,
+          pitch: cameraState.pitch,
+          bearing: cameraState.bearing,
+        )
+      );
 
-      try {
-        final cameraState = await _mapboxMap?.getCameraState();
-        if (cameraState == null) return;
+      if (coordinateBounds == null) return;
 
-        final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
-          CameraOptions(
-            center: cameraState.center,
-            zoom: cameraState.zoom,
-            pitch: cameraState.pitch,
-            bearing: cameraState.bearing,
-          )
-        );
+      final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+      final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+      final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+      final east = coordinateBounds.northeast.coordinates.lng.toDouble();
 
-        if (coordinateBounds == null) return;
+      final latDiff = north - south;
+      final lngDiff = east - west;
 
-        final south = coordinateBounds.southwest.coordinates.lat.toDouble();
-        final west = coordinateBounds.southwest.coordinates.lng.toDouble();
-        final north = coordinateBounds.northeast.coordinates.lat.toDouble();
-        final east = coordinateBounds.northeast.coordinates.lng.toDouble();
+      final bounds = BoundingBox(
+        south: south - latDiff,
+        west: west - lngDiff,
+        north: north + latDiff,
+        east: east + lngDiff,
+      );
 
-        final latDiff = north - south;
-        final lngDiff = east - west;
-
-        final bounds = BoundingBox(
-          south: south - latDiff,
-          west: west - lngDiff,
-          north: north + latDiff,
-          east: east + lngDiff,
-        );
-
-        await osmPOIsNotifier.loadPOIsInBackground(bounds);
-        _addMarkers();
-      } catch (e) {
-        AppLogger.error('Failed to load OSM POIs', error: e);
-      }
-    } else {
-      AppLogger.map('OSM POIs: Data exists (${currentData.length} items), showing without reload');
-      _addMarkers();
+      await ConditionalPOILoader.loadOSMPOIsIfNeeded(
+        ref: ref,
+        extendedBounds: bounds,
+        onComplete: _addMarkers,
+      );
+    } catch (e) {
+      AppLogger.error('Failed to load OSM POIs', error: e);
     }
   }
 
   /// Load Community POIs only if needed (cache empty)
   void _loadCommunityPOIsIfNeeded() async {
-    final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-    final currentData = ref.read(cyclingPOIsBoundsNotifierProvider).value;
+    try {
+      final cameraState = await _mapboxMap?.getCameraState();
+      if (cameraState == null) return;
 
-    if (currentData == null || currentData.isEmpty) {
-      AppLogger.map('Community POIs: No data, loading...');
+      final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+        CameraOptions(
+          center: cameraState.center,
+          zoom: cameraState.zoom,
+          pitch: cameraState.pitch,
+          bearing: cameraState.bearing,
+        )
+      );
 
-      try {
-        final cameraState = await _mapboxMap?.getCameraState();
-        if (cameraState == null) return;
+      if (coordinateBounds == null) return;
 
-        final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
-          CameraOptions(
-            center: cameraState.center,
-            zoom: cameraState.zoom,
-            pitch: cameraState.pitch,
-            bearing: cameraState.bearing,
-          )
-        );
+      final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+      final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+      final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+      final east = coordinateBounds.northeast.coordinates.lng.toDouble();
 
-        if (coordinateBounds == null) return;
+      final latDiff = north - south;
+      final lngDiff = east - west;
 
-        final south = coordinateBounds.southwest.coordinates.lat.toDouble();
-        final west = coordinateBounds.southwest.coordinates.lng.toDouble();
-        final north = coordinateBounds.northeast.coordinates.lat.toDouble();
-        final east = coordinateBounds.northeast.coordinates.lng.toDouble();
+      final bounds = BoundingBox(
+        south: south - latDiff,
+        west: west - lngDiff,
+        north: north + latDiff,
+        east: east + lngDiff,
+      );
 
-        final latDiff = north - south;
-        final lngDiff = east - west;
-
-        final bounds = BoundingBox(
-          south: south - latDiff,
-          west: west - lngDiff,
-          north: north + latDiff,
-          east: east + lngDiff,
-        );
-
-        await communityPOIsNotifier.loadPOIsInBackground(bounds);
-        _addMarkers();
-      } catch (e) {
-        AppLogger.error('Failed to load Community POIs', error: e);
-      }
-    } else {
-      AppLogger.map('Community POIs: Data exists (${currentData.length} items), showing without reload');
-      _addMarkers();
+      await ConditionalPOILoader.loadCommunityPOIsIfNeeded(
+        ref: ref,
+        extendedBounds: bounds,
+        onComplete: _addMarkers,
+      );
+    } catch (e) {
+      AppLogger.error('Failed to load Community POIs', error: e);
     }
   }
 
   /// Load Warnings only if needed (cache empty)
   void _loadWarningsIfNeeded() async {
-    final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
-    final currentData = ref.read(communityWarningsBoundsNotifierProvider).value;
+    try {
+      final cameraState = await _mapboxMap?.getCameraState();
+      if (cameraState == null) return;
 
-    if (currentData == null || currentData.isEmpty) {
-      AppLogger.map('Warnings: No data, loading...');
+      final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+        CameraOptions(
+          center: cameraState.center,
+          zoom: cameraState.zoom,
+          pitch: cameraState.pitch,
+          bearing: cameraState.bearing,
+        )
+      );
 
-      try {
-        final cameraState = await _mapboxMap?.getCameraState();
-        if (cameraState == null) return;
+      if (coordinateBounds == null) return;
 
-        final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
-          CameraOptions(
-            center: cameraState.center,
-            zoom: cameraState.zoom,
-            pitch: cameraState.pitch,
-            bearing: cameraState.bearing,
-          )
-        );
+      final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+      final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+      final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+      final east = coordinateBounds.northeast.coordinates.lng.toDouble();
 
-        if (coordinateBounds == null) return;
+      final latDiff = north - south;
+      final lngDiff = east - west;
 
-        final south = coordinateBounds.southwest.coordinates.lat.toDouble();
-        final west = coordinateBounds.southwest.coordinates.lng.toDouble();
-        final north = coordinateBounds.northeast.coordinates.lat.toDouble();
-        final east = coordinateBounds.northeast.coordinates.lng.toDouble();
+      final bounds = BoundingBox(
+        south: south - latDiff,
+        west: west - lngDiff,
+        north: north + latDiff,
+        east: east + lngDiff,
+      );
 
-        final latDiff = north - south;
-        final lngDiff = east - west;
-
-        final bounds = BoundingBox(
-          south: south - latDiff,
-          west: west - lngDiff,
-          north: north + latDiff,
-          east: east + lngDiff,
-        );
-
-        await warningsNotifier.loadWarningsInBackground(bounds);
-        _addMarkers();
-      } catch (e) {
-        AppLogger.error('Failed to load Warnings', error: e);
-      }
-    } else {
-      AppLogger.map('Warnings: Data exists (${currentData.length} items), showing without reload');
-      _addMarkers();
+      await ConditionalPOILoader.loadWarningsIfNeeded(
+        ref: ref,
+        extendedBounds: bounds,
+        onComplete: _addMarkers,
+      );
+    } catch (e) {
+      AppLogger.error('Failed to load Warnings', error: e);
     }
   }
 
