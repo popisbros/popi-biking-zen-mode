@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 /// Production-ready logging utility
 ///
 /// In DEBUG mode: Prints all logs with emojis and formatting
 /// In RELEASE mode: Completely removed by tree-shaking (zero overhead)
+/// Errors are sent to Firebase Crashlytics on native platforms
 ///
 /// Usage:
 /// AppLogger.info('User logged in');
@@ -46,7 +48,8 @@ class AppLogger {
   }
 
   /// Error log - errors and exceptions
-  static void error(String message, {String? tag, Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
+  /// Also sends non-fatal errors to Crashlytics in production (on native platforms)
+  static void error(String message, {String? tag, Object? error, StackTrace? stackTrace, Map<String, dynamic>? data, bool fatal = false}) {
     if (kDebugMode) {
       _log(_errorIcon, tag ?? 'ERROR', message, data);
       if (error != null) {
@@ -54,6 +57,23 @@ class AppLogger {
       }
       if (stackTrace != null) {
         debugPrint('  ↳ Stack: ${stackTrace.toString().split('\n').take(3).join('\n')}');
+      }
+    }
+
+    // Send to Crashlytics (works in both debug and release, on native platforms only)
+    if (!kIsWeb && error != null) {
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          error,
+          stackTrace,
+          reason: '[$tag] $message',
+          fatal: fatal,
+        );
+      } catch (e) {
+        // Silently ignore if Crashlytics fails (e.g., not initialized)
+        if (kDebugMode) {
+          debugPrint('  ↳ Failed to send to Crashlytics: $e');
+        }
       }
     }
   }

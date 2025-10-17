@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
 import 'constants/app_theme.dart';
 import 'screens/map_screen.dart';
@@ -17,12 +18,6 @@ import 'utils/api_logger.dart';
 import 'services/toast_service.dart';
 
 void main() async {
-  // Catch all errors
-  FlutterError.onError = (FlutterErrorDetails details) {
-    AppLogger.error('Flutter error', error: details.exception, stackTrace: details.stack);
-    FlutterError.presentError(details);
-  };
-
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set system UI overlay style (status bar and navigation bar)
@@ -57,6 +52,34 @@ void main() async {
     AppLogger.success('Firebase initialized successfully', tag: 'FIREBASE', data: {
       'platform': kIsWeb ? "WEB" : "MOBILE",
     });
+
+    // Initialize Firebase Crashlytics (only on native platforms, not web)
+    if (!kIsWeb) {
+      AppLogger.info('Initializing Firebase Crashlytics', tag: 'CRASHLYTICS');
+
+      // Pass all uncaught "fatal" errors from the framework to Crashlytics
+      FlutterError.onError = (FlutterErrorDetails details) {
+        AppLogger.error('Flutter error (sent to Crashlytics)', error: details.exception, stackTrace: details.stack);
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      };
+
+      // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
+      PlatformDispatcher.instance.onError = (error, stack) {
+        AppLogger.error('Async error (sent to Crashlytics)', error: error, stackTrace: stack);
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+
+      AppLogger.success('Crashlytics initialized successfully', tag: 'CRASHLYTICS');
+    } else {
+      AppLogger.info('Crashlytics skipped on web platform', tag: 'CRASHLYTICS');
+
+      // Still log Flutter errors locally on web
+      FlutterError.onError = (FlutterErrorDetails details) {
+        AppLogger.error('Flutter error', error: details.exception, stackTrace: details.stack);
+        FlutterError.presentError(details);
+      };
+    }
 
     // Initialize log cleanup (runs on app startup)
     AppLogger.info('Initializing log cleanup (2h retention)', tag: 'FIREBASE');
