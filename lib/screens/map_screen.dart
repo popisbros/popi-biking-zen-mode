@@ -31,10 +31,7 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
 import '../widgets/navigation_controls.dart';
-import '../widgets/dialogs/poi_detail_dialog.dart';
-import '../widgets/dialogs/warning_detail_dialog.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
-import '../widgets/dialogs/community_poi_detail_dialog.dart';
 import '../widgets/map_toggle_button.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
@@ -754,28 +751,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  /// Display route directly (without selection dialog) - legacy method
-  void _displayRoute(List<LatLng> routePoints) {
-    // Store route in provider
-    ref.read(searchProvider.notifier).setRoute(routePoints);
-
-    // Toggle POIs: OSM OFF, Community OFF, Hazards ON
-    ref.read(mapProvider.notifier).setPOIVisibility(
-      showOSM: false,
-      showCommunity: false,
-      showHazards: true,
-    );
-
-    // Zoom map to fit the entire route
-    _fitRouteBounds(routePoints);
-
-    AppLogger.success('Route displayed', tag: 'ROUTING', data: {
-      'points': routePoints.length,
-    });
-
-    ToastService.info('Route calculated (${routePoints.length} points)');
-  }
-
   /// Show dialog to select between multiple routes
   void _showRouteSelectionDialog(List<RouteResult> routes) {
     RouteSelectionDialog.show(
@@ -831,32 +806,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     setState(() {
       _activeRoute = route;
     });
-  }
-
-
-  /// Stop navigation and clear route
-  void _stopNavigation() {
-    // Clear route from provider
-    ref.read(searchProvider.notifier).clearRoute();
-
-    // Exit navigation mode
-    ref.read(navigationModeProvider.notifier).stopRouteNavigation();
-
-    // Stop turn-by-turn navigation
-    ref.read(navigationProvider.notifier).stopNavigation();
-
-    // Keep current map rotation (don't reset to north)
-
-    // Clear breadcrumbs
-    _breadcrumbs.clear();
-    _lastNavigationBearing = null;
-
-    // Clear active route sheet
-    setState(() {
-      _activeRoute = null;
-    });
-
-    AppLogger.map('Navigation stopped - route cleared');
   }
 
   /// Fit map bounds to show entire route
@@ -2117,57 +2066,4 @@ class _LocationBreadcrumb {
     required this.timestamp,
     this.speed,
   });
-}
-
-/// Route stat widget for navigation modal
-class _RouteStatWidget extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _RouteStatWidget({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, size: 24, color: Colors.blue),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-        const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-}
-
-/// Custom painter for triangle warning sign border
-class _TriangleBorderPainter extends CustomPainter {
-  final Color color;
-
-  _TriangleBorderPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    // Draw triangle pointing up
-    path.moveTo(size.width / 2, 6); // Top center
-    path.lineTo(size.width - 6, size.height - 6); // Bottom right
-    path.lineTo(6, size.height - 6); // Bottom left
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_TriangleBorderPainter oldDelegate) => false;
 }
