@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../utils/app_logger.dart';
 
 class DebugState {
   final bool isVisible;
@@ -23,7 +24,10 @@ class DebugNotifier extends Notifier<DebugState> {
 
   void toggleVisibility() {
     final newVisibility = !state.isVisible;
-    print('[toggleVisibility] Changing from ${state.isVisible} to $newVisibility');
+    AppLogger.debug('Changing visibility', tag: 'DEBUG', data: {
+      'from': state.isVisible,
+      'to': newVisibility,
+    });
     state = state.copyWith(
       isVisible: newVisibility,
       messages: state.isVisible ? '' : state.messages, // Clear when closing
@@ -31,10 +35,13 @@ class DebugNotifier extends Notifier<DebugState> {
   }
 
   void addDebugMessage(String message) {
-    print('[addDebugMessage] Called with: $message, isVisible: ${state.isVisible}');
+    AppLogger.debug('Called', tag: 'DEBUG', data: {
+      'message': message,
+      'isVisible': state.isVisible,
+    });
 
     if (!state.isVisible) {
-      print('[addDebugMessage] Skipped - overlay not visible');
+      AppLogger.debug('Skipped - overlay not visible', tag: 'DEBUG');
       return; // Only collect when sheet is open
     }
 
@@ -47,7 +54,10 @@ class DebugNotifier extends Notifier<DebugState> {
       updatedMessages = updatedMessages.substring(0, 10000);
     }
 
-    print('[addDebugMessage] Adding message, current length: ${state.messages.length}, new length: ${updatedMessages.length}');
+    AppLogger.debug('Adding message', tag: 'DEBUG', data: {
+      'currentLength': state.messages.length,
+      'newLength': updatedMessages.length,
+    });
     state = state.copyWith(messages: updatedMessages);
   }
 

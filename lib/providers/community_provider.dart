@@ -567,7 +567,7 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
           'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
         );
       } catch (e) {
-        print('[DEBUG] Warnings background fetch debug message failed: $e');
+        AppLogger.debug('Warnings background fetch debug message failed', tag: 'DEBUG', error: e);
       }
 
       final newWarnings = await _firebaseService.getWarningsInBounds(
@@ -580,10 +580,10 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
       try {
         ref.read(debugProvider.notifier).addDebugMessage('API: Got ${newWarnings.length} warnings');
       } catch (e) {
-        print('[DEBUG] Warnings background result debug message failed: $e');
+        AppLogger.debug('Warnings background result debug message failed', tag: 'DEBUG', error: e);
       }
 
-      AppLogger.success('Loaded ${newWarnings.length} warnings in background');
+      AppLogger.success('Loaded warnings in background', tag: 'COMMUNITY', data: {'count': newWarnings.length});
 
       // Filter existing warnings to keep only those within the new bounds
       final currentWarnings = state.value ?? [];
@@ -738,7 +738,7 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
           'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
         );
       } catch (e) {
-        print('[DEBUG] POIs background fetch debug message failed: $e');
+        AppLogger.debug('POIs background fetch debug message failed', tag: 'DEBUG', error: e);
       }
 
       final newPOIs = await _firebaseService.getPOIsInBounds(
@@ -751,10 +751,10 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
       try {
         ref.read(debugProvider.notifier).addDebugMessage('API: Got ${newPOIs.length} POIs');
       } catch (e) {
-        print('[DEBUG] POIs background result debug message failed: $e');
+        AppLogger.debug('POIs background result debug message failed', tag: 'DEBUG', error: e);
       }
 
-      AppLogger.success('Loaded ${newPOIs.length} POIs in background');
+      AppLogger.success('Loaded POIs in background', tag: 'COMMUNITY', data: {'count': newPOIs.length});
 
       // Filter existing POIs to keep only those within the new bounds
       final currentPOIs = state.value ?? [];

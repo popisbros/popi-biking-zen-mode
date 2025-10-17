@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../utils/app_logger.dart';
 
 /// User action tracking for debugging
 class UserAction {
@@ -65,9 +66,15 @@ class DebugService {
     }
 
     _actionsController.add(_actions);
-    
-    // Also print to console for immediate debugging
-    print('DebugService.logAction: $userAction');
+
+    // Also log to AppLogger for immediate debugging
+    AppLogger.debug('logAction', tag: 'DEBUG', data: {
+      'action': action,
+      'screen': screen,
+      'parameters': parameters,
+      'result': result,
+      'error': error,
+    });
   }
 
   /// Log a button click

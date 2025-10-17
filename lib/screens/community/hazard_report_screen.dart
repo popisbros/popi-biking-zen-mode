@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../constants/app_colors.dart';
 import '../../providers/community_provider.dart';
 import '../../models/community_warning.dart';
+import '../../utils/app_logger.dart';
 
 class HazardReportScreenWithLocation extends ConsumerStatefulWidget {
   final double initialLatitude;
@@ -55,7 +56,10 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
       _editingWarningId = widget.editingWarningId;
       _loadWarningForEditing();
     }
-    print('⚠️ Hazard Report: Initialized with location ${widget.initialLatitude}, ${widget.initialLongitude}');
+    AppLogger.debug('Initialized with location', tag: 'HAZARD', data: {
+      'latitude': widget.initialLatitude,
+      'longitude': widget.initialLongitude,
+    });
   }
 
   @override
@@ -81,7 +85,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
         _startEditingWarning(warning);
       }
     } catch (e) {
-      print('❌ Hazard Report: Failed to load warning for editing: $e');
+      AppLogger.error('Failed to load warning for editing', tag: 'HAZARD', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -101,7 +105,10 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
       _selectedSeverity = warning.severity;
       _descriptionController.text = warning.description;
     });
-    print('⚠️ Hazard Report: Started editing warning: ${warning.title}');
+    AppLogger.debug('Started editing warning', tag: 'HAZARD', data: {
+      'title': warning.title,
+      'type': warning.type,
+    });
   }
 
   void _cancelEditing() {
@@ -109,7 +116,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
       _editingWarningId = null;
       _clearForm();
     });
-    print('⚠️ Hazard Report: Cancelled editing');
+    AppLogger.debug('Cancelled editing', tag: 'HAZARD');
   }
 
   void _clearForm() {
@@ -156,7 +163,9 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
         final warningsNotifier = ref.read(communityWarningsNotifierProvider.notifier);
         await warningsNotifier.deleteWarning(warningId);
 
-        print('✅ Hazard Report: Successfully deleted warning: $warningId');
+        AppLogger.success('Successfully deleted warning', tag: 'HAZARD', data: {
+          'warningId': warningId,
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +177,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
           _cancelEditing();
         }
       } catch (e) {
-        print('❌ Hazard Report: Failed to delete warning: $e');
+        AppLogger.error('Failed to delete warning', tag: 'HAZARD', error: e);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -206,14 +215,22 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
       final warningsNotifier = ref.read(communityWarningsNotifierProvider.notifier);
 
       if (_isEditing) {
-        print('⚠️ Hazard Report: Updating warning: ${warning.title}');
+        AppLogger.debug('Updating warning', tag: 'HAZARD', data: {
+          'title': warning.title,
+          'type': warning.type,
+        });
         await warningsNotifier.updateWarning(_editingWarningId!, warning);
       } else {
-        print('⚠️ Hazard Report: Submitting new warning: ${warning.title}');
+        AppLogger.debug('Submitting new warning', tag: 'HAZARD', data: {
+          'title': warning.title,
+          'type': warning.type,
+        });
         await warningsNotifier.submitWarning(warning);
       }
 
-      print('✅ Hazard Report: Successfully saved warning: ${warning.title}');
+      AppLogger.success('Successfully saved warning', tag: 'HAZARD', data: {
+        'title': warning.title,
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -225,7 +242,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
         Navigator.pop(context); // Close the screen after successful save
       }
     } catch (e) {
-      print('❌ Hazard Report: Failed to save warning: $e');
+      AppLogger.error('Failed to save warning', tag: 'HAZARD', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
