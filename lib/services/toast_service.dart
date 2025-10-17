@@ -36,7 +36,8 @@ class ToastService {
 
     // When navigation is active, position toast on the right side
     // to avoid covering the navigation card (which takes 50% left side)
-    final leftMargin = _isNavigationActive ? MediaQuery.of(context).size.width * 0.5 + 20 : 60.0;
+    // Add 60px padding on top of the 50% to keep consistent spacing
+    final leftMargin = _isNavigationActive ? MediaQuery.of(context).size.width * 0.5 + 60 : 60.0;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -112,7 +113,8 @@ class ToastService {
     final bottomMargin = kIsWeb ? 10.0 : 0.0;
 
     // When navigation is active, position toast on the right side
-    final leftMargin = _isNavigationActive ? MediaQuery.of(context).size.width * 0.5 + 20 : 60.0;
+    // Add 60px padding on top of the 50% to keep consistent spacing
+    final leftMargin = _isNavigationActive ? MediaQuery.of(context).size.width * 0.5 + 60 : 60.0;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
