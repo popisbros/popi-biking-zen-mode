@@ -678,9 +678,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     if (routes == null || routes.isEmpty) {
       AppLogger.warning('Route calculation failed', tag: 'ROUTING');
+      ToastService.dismiss(); // Dismiss loading toast
       ToastService.error('Unable to calculate routes');
       return;
     }
+
+    // Dismiss loading toast on success
+    ToastService.dismiss();
 
     // Store current pitch and set to 10° BEFORE zooming to routes
     _pitchBeforeRouteCalculation = _currentPitch;

@@ -14,6 +14,13 @@ class ToastService {
     _isNavigationActive = active;
   }
 
+  /// Dismiss any currently showing toast
+  static void dismiss() {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  }
+
   /// Show a toast message
   static void show(String message, {
     Duration duration = const Duration(seconds: 3),
@@ -90,11 +97,15 @@ class ToastService {
   /// Displays a circular progress indicator next to the message
   /// Useful for indicating background operations
   ///
+  /// Note: This toast auto-dismisses when another toast is shown
+  ///
   /// Example:
   /// ```dart
   /// ToastService.loading('Calculating routes...');
+  /// // ... do work ...
+  /// ToastService.success('Routes calculated!'); // Auto-dismisses loading toast
   /// ```
-  static void loading(String message, {Duration duration = const Duration(seconds: 30)}) {
+  static void loading(String message, {Duration duration = const Duration(seconds: 10)}) {
     final context = navigatorKey.currentContext;
     if (context == null) return;
 

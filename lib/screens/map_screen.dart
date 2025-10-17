@@ -729,9 +729,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     if (routes == null || routes.isEmpty) {
       AppLogger.warning('Route calculation failed', tag: 'ROUTING');
+      ToastService.dismiss(); // Dismiss loading toast
       ToastService.error('Unable to calculate routes');
       return;
     }
+
+    // Dismiss loading toast on success
+    ToastService.dismiss();
 
     AppLogger.debug('Routes received', tag: 'ROUTING', data: {
       'count': routes.length,
