@@ -6,6 +6,14 @@ import 'package:flutter/material.dart';
 class ToastService {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+  /// Track if navigation is active to adjust toast positioning
+  static bool _isNavigationActive = false;
+
+  /// Set navigation state (call from navigation provider)
+  static void setNavigationActive(bool active) {
+    _isNavigationActive = active;
+  }
+
   /// Show a toast message
   static void show(String message, {
     Duration duration = const Duration(seconds: 3),
@@ -18,6 +26,10 @@ class ToastService {
     // For native apps, use fixed bottom position (0px from bottom)
     // For web/PWA, use standard vertical margin (10px)
     final bottomMargin = kIsWeb ? 10.0 : 0.0;
+
+    // When navigation is active, position toast on the right side
+    // to avoid covering the navigation card (which takes 50% left side)
+    final leftMargin = _isNavigationActive ? MediaQuery.of(context).size.width * 0.5 + 20 : 60.0;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -32,7 +44,7 @@ class ToastService {
         duration: duration,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.only(
-          left: 60,
+          left: leftMargin,
           right: 60,
           bottom: bottomMargin,
           top: 10,
@@ -88,6 +100,9 @@ class ToastService {
 
     final bottomMargin = kIsWeb ? 10.0 : 0.0;
 
+    // When navigation is active, position toast on the right side
+    final leftMargin = _isNavigationActive ? MediaQuery.of(context).size.width * 0.5 + 20 : 60.0;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -107,7 +122,7 @@ class ToastService {
         duration: duration,
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.only(
-          left: 60,
+          left: leftMargin,
           right: 60,
           bottom: bottomMargin,
           top: 10,

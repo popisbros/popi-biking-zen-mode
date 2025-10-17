@@ -160,6 +160,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
       AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
     });
 
+    // Notify ToastService that navigation is active (adjust toast positioning)
+    ToastService.setNavigationActive(true);
+
     // Start listening to location updates (fire and forget, don't block navigation start)
     _startLocationTracking().then((_) {
       AppLogger.success('Location tracking initialized', tag: 'GPS');
@@ -181,6 +184,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
     }).catchError((error) {
       AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
     });
+
+    // Notify ToastService that navigation is no longer active
+    ToastService.setNavigationActive(false);
 
     _locationSubscription?.cancel();
     _locationSubscription = null;
