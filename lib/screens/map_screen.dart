@@ -25,6 +25,7 @@ import '../utils/app_logger.dart';
 import '../utils/geo_utils.dart';
 import '../utils/navigation_utils.dart';
 import '../utils/poi_dialog_handler.dart';
+import '../utils/route_calculation_helper.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -687,120 +688,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Calculate route from current user location to destination
   Future<void> _calculateRouteTo(double destLat, double destLon) async {
-    if (_lastGPSPosition == null) {
-      AppLogger.warning('Cannot calculate route - user location not available', tag: 'ROUTING');
-      ToastService.error('Unable to calculate route - location not available');
-      return;
-    }
-
-    AppLogger.map('Calculating multiple routes', data: {
-      'from': '${_lastGPSPosition!.latitude},${_lastGPSPosition!.longitude}',
-      'to': '$destLat,$destLon',
-    });
-
-    // Show loading indicator
-    ToastService.loading('Calculating routes...');
-
-    final routingService = RoutingService();
-    final routes = await routingService.calculateMultipleRoutes(
-      startLat: _lastGPSPosition!.latitude,
-      startLon: _lastGPSPosition!.longitude,
-      endLat: destLat,
-      endLon: destLon,
-    );
-
-    if (routes == null || routes.isEmpty) {
-      AppLogger.warning('Route calculation failed', tag: 'ROUTING');
-      ToastService.dismiss(); // Dismiss loading toast
-      ToastService.error('Unable to calculate routes');
-      return;
-    }
-
-    // Dismiss loading toast on success
-    ToastService.dismiss();
-
-    AppLogger.debug('Routes received', tag: 'ROUTING', data: {
-      'count': routes.length,
-      'types': routes.map((r) => r.type.name).join(', '),
-    });
-
-    // Set preview routes in state (to display on map)
-    if (routes.length >= 2) {
-      final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
-      final safest = routes.where((r) => r.type == RouteType.safest).firstOrNull;
-      final shortest = routes.where((r) => r.type == RouteType.shortest).firstOrNull;
-
-      ref.read(searchProvider.notifier).setPreviewRoutes(
-        fastest.points,
-        safest?.points ?? shortest!.points, // Use safest or shortest as second route
-        routes.length == 3 ? shortest?.points : null, // Add third route if we have 3
-      );
-
-      // Auto-zoom to fit all routes on screen
-      final allPoints = [
-        ...fastest.points,
-        if (safest != null) ...safest.points,
-        if (shortest != null) ...shortest.points,
-      ];
-      _fitRouteBounds(allPoints);
-    }
-
-    // Show route selection dialog
-    if (mounted) {
-      _showRouteSelectionDialog(routes);
-    }
-  }
-
-  /// Show dialog to select between multiple routes
-  void _showRouteSelectionDialog(List<RouteResult> routes) {
-    RouteSelectionDialog.show(
+    await RouteCalculationHelper.calculateAndShowRoutes(
       context: context,
-      routes: routes,
-      onRouteSelected: (route) {
-        ref.read(searchProvider.notifier).clearPreviewRoutes();
-        _displaySelectedRoute(route);
-      },
-      onCancel: () {
-        ref.read(searchProvider.notifier).clearPreviewRoutes();
-      },
+      ref: ref,
+      destLat: destLat,
+      destLon: destLon,
+      fitBoundsCallback: _fitRouteBounds,
+      onRouteSelected: _displaySelectedRoute,
       transparentBarrier: true,
     );
   }
 
   /// Display the selected route on the map
   void _displaySelectedRoute(RouteResult route) {
-    // Store route in provider
-    ref.read(searchProvider.notifier).setRoute(route.points);
-
-    // Toggle POIs: OSM OFF, Community OFF, Hazards ON
-    ref.read(mapProvider.notifier).setPOIVisibility(
-      showOSM: false,
-      showCommunity: false,
-      showHazards: true,
+    RouteCalculationHelper.displaySelectedRoute(
+      ref: ref,
+      route: route,
+      onCenterMap: () {
+        // Center on user's GPS location for navigation (instead of showing entire route)
+        final locationAsync = ref.read(locationNotifierProvider);
+        final location = locationAsync.value;
+        if (location != null && _isMapReady) {
+          _mapController.move(LatLng(location.latitude, location.longitude), 16.0);
+          AppLogger.debug('Map centered on user location for navigation', tag: 'ROUTING');
+        } else {
+          AppLogger.warning('Cannot center map - location not available or map not ready', tag: 'ROUTING');
+        }
+      },
     );
-
-    // Activate navigation mode automatically
-    ref.read(navigationModeProvider.notifier).startRouteNavigation();
-
-    // Start turn-by-turn navigation with the new navigation provider
-    ref.read(navigationProvider.notifier).startNavigation(route);
-
-    // Center on user's GPS location for navigation (instead of showing entire route)
-    final locationAsync = ref.read(locationNotifierProvider);
-    final location = locationAsync.value;
-    if (location != null && _isMapReady) {
-      _mapController.move(LatLng(location.latitude, location.longitude), 16.0);
-      AppLogger.debug('Map centered on user location for navigation', tag: 'ROUTING');
-    } else {
-      AppLogger.warning('Cannot center map - location not available or map not ready', tag: 'ROUTING');
-    }
-
-    final routeTypeLabel = route.type == RouteType.fastest ? 'Fastest' : 'Safest';
-    AppLogger.success('$routeTypeLabel route displayed', tag: 'ROUTING', data: {
-      'points': route.points.length,
-      'distance': route.distanceKm,
-      'duration': route.durationMin,
-    });
 
     // Store active route for state management
     setState(() {

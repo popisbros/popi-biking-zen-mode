@@ -30,6 +30,7 @@ import '../utils/app_logger.dart';
 import '../utils/geo_utils.dart';
 import '../utils/navigation_utils.dart';
 import '../utils/poi_dialog_handler.dart';
+import '../utils/route_calculation_helper.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -649,97 +650,27 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Calculate route from current user location to destination
   Future<void> _calculateRouteTo(double destLat, double destLon) async {
-    final locationAsync = ref.read(locationNotifierProvider);
-
-    // Extract location from AsyncValue
-    LocationData? location;
-    locationAsync.whenData((data) {
-      location = data;
-    });
-
-    if (location == null) {
-      AppLogger.warning('Cannot calculate route - user location not available', tag: 'ROUTING');
-      ToastService.error('Unable to calculate route - location not available');
-      return;
-    }
-
-    AppLogger.map('Calculating multiple routes', data: {
-      'from': '${location!.latitude},${location!.longitude}',
-      'to': '$destLat,$destLon',
-    });
-
-    // Show loading indicator
-    ToastService.loading('Calculating routes...');
-
-    final routingService = RoutingService();
-    final routes = await routingService.calculateMultipleRoutes(
-      startLat: location!.latitude,
-      startLon: location!.longitude,
-      endLat: destLat,
-      endLon: destLon,
-    );
-
-    if (routes == null || routes.isEmpty) {
-      AppLogger.warning('Route calculation failed', tag: 'ROUTING');
-      ToastService.dismiss(); // Dismiss loading toast
-      ToastService.error('Unable to calculate routes');
-      return;
-    }
-
-    // Dismiss loading toast on success
-    ToastService.dismiss();
-
-    // Store current pitch and set to 10° BEFORE zooming to routes
-    _pitchBeforeRouteCalculation = _currentPitch;
-    if (_mapboxMap != null) {
-      await _mapboxMap!.easeTo(
-        CameraOptions(pitch: 10.0),
-        MapAnimationOptions(duration: 500),
-      );
-      _currentPitch = 10.0;
-    }
-
-    // Set preview routes in state (to display on map)
-    if (routes.length >= 2) {
-      final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
-      final safest = routes.where((r) => r.type == RouteType.safest).firstOrNull;
-      final shortest = routes.where((r) => r.type == RouteType.shortest).firstOrNull;
-
-      ref.read(searchProvider.notifier).setPreviewRoutes(
-        fastest.points,
-        safest?.points ?? shortest!.points, // Use safest or shortest as second route
-        routes.length == 3 ? shortest?.points : null, // Add third route if we have 3
-      );
-
-      // Refresh markers to show preview routes on map
-      _addMarkers();
-
-      // Auto-zoom to fit all routes on screen (AFTER pitch is set)
-      final allPoints = [
-        ...fastest.points,
-        if (safest != null) ...safest.points,
-        if (shortest != null) ...shortest.points,
-      ];
-      await _fitRouteBounds(allPoints);
-    }
-
-    // Show route selection dialog
-    if (mounted) {
-      _showRouteSelectionDialog(routes);
-    }
-  }
-
-  /// Show dialog to select between multiple routes
-  void _showRouteSelectionDialog(List<RouteResult> routes) {
-    RouteSelectionDialog.show(
+    await RouteCalculationHelper.calculateAndShowRoutes(
       context: context,
-      routes: routes,
-      onRouteSelected: (route) {
-        ref.read(searchProvider.notifier).clearPreviewRoutes();
-        _displaySelectedRoute(route);
+      ref: ref,
+      destLat: destLat,
+      destLon: destLon,
+      onPreRoutesCalculated: () async {
+        // Store current pitch and set to 10° BEFORE zooming to routes
+        _pitchBeforeRouteCalculation = _currentPitch;
+        if (_mapboxMap != null) {
+          await _mapboxMap!.easeTo(
+            CameraOptions(pitch: 10.0),
+            MapAnimationOptions(duration: 500),
+          );
+          _currentPitch = 10.0;
+        }
+        // Refresh markers to show preview routes on map
+        _addMarkers();
       },
+      fitBoundsCallback: (points) async => await _fitRouteBounds(points),
+      onRouteSelected: _displaySelectedRoute,
       onCancel: () {
-        ref.read(searchProvider.notifier).clearPreviewRoutes();
         // Refresh markers to remove preview routes from map
         _addMarkers();
         // Restore previous pitch
@@ -758,26 +689,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Display the selected route on the map
   Future<void> _displaySelectedRoute(RouteResult route) async {
-    // Store route in provider
-    ref.read(searchProvider.notifier).setRoute(route.points);
-
-    // Toggle POIs: OSM OFF, Community OFF, Hazards ON
-    ref.read(mapProvider.notifier).setPOIVisibility(
-      showOSM: false,
-      showCommunity: false,
-      showHazards: true,
+    // Use helper for common route display logic
+    RouteCalculationHelper.displaySelectedRoute(
+      ref: ref,
+      route: route,
+      onCenterMap: () {}, // Camera positioning handled below for 3D specifics
     );
 
-    // Activate navigation mode and set active route
-    ref.read(navigationModeProvider.notifier).startRouteNavigation();
+    // 3D-specific: Set active route state
     setState(() {
       _activeRoute = route;
     });
 
-    // Refresh map to show selected route and clear preview routes
+    // 3D-specific: Refresh map to show selected route and clear preview routes
     _addMarkers();
 
-    // Restore previous pitch (pitch was already set to 10° before dialog)
+    // 3D-specific: Restore previous pitch (pitch was already set to 10° before dialog)
     if (_mapboxMap != null && _pitchBeforeRouteCalculation != null) {
       await _mapboxMap!.easeTo(
         CameraOptions(pitch: _pitchBeforeRouteCalculation!),
@@ -786,16 +713,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _currentPitch = _pitchBeforeRouteCalculation!;
       _pitchBeforeRouteCalculation = null;
     }
-
-    AppLogger.success('Route displayed', tag: 'ROUTING', data: {
-      'type': route.type.name,
-      'points': route.points.length,
-      'distance': route.distanceKm,
-      'duration': route.durationMin,
-    });
-
-    // Start turn-by-turn navigation automatically
-    ref.read(navigationProvider.notifier).startNavigation(route);
     AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
 
     // Store current pitch and set navigation pitch (35° for better forward view)
