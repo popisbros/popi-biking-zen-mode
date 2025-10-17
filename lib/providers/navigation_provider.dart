@@ -157,7 +157,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     WakelockPlus.enable().then((_) {
       AppLogger.success('Screen wakelock enabled - screen will stay on', tag: 'NAVIGATION');
     }).catchError((error) {
-      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', error: error);
+      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
     });
 
     // Start listening to location updates (fire and forget, don't block navigation start)
@@ -179,7 +179,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     WakelockPlus.disable().then((_) {
       AppLogger.success('Screen wakelock disabled - screen can sleep', tag: 'NAVIGATION');
     }).catchError((error) {
-      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', error: error);
+      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
     });
 
     _locationSubscription?.cancel();

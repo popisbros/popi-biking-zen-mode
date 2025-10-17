@@ -6,8 +6,8 @@ import '../models/cycling_poi.dart';
 import '../services/firebase_service.dart';
 import '../services/debug_service.dart';
 import '../utils/app_logger.dart';
+import '../utils/debug_message_helper.dart';
 import 'osm_poi_provider.dart'; // Import BoundingBox
-import 'debug_provider.dart';
 
 /// Provider for Firebase service
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -495,13 +495,11 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
     state = const AsyncValue.loading();
 
     try {
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage(
-          'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
-        );
-      } catch (e) {
-        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
-      }
+      DebugMessageHelper.addMessage(
+        ref,
+        'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
+        tag: 'COMMUNITY',
+      );
 
       final warnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
@@ -537,11 +535,7 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
       }).toList();
       */
 
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${warnings.length} warnings');
-      } catch (e) {
-        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
-      }
+      DebugMessageHelper.addMessage(ref, 'API: Got ${warnings.length} warnings', tag: 'COMMUNITY');
       AppLogger.success('Loaded ${warnings.length} warnings with bounds');
       state = AsyncValue.data(warnings);
       _lastLoadedBounds = bounds;
@@ -562,13 +556,11 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
     // Don't set loading state - keep existing data visible
 
     try {
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage(
-          'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
-        );
-      } catch (e) {
-        AppLogger.debug('Warnings background fetch debug message failed', tag: 'DEBUG', error: e);
-      }
+      DebugMessageHelper.addMessage(
+        ref,
+        'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
+        tag: 'COMMUNITY',
+      );
 
       final newWarnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
@@ -577,11 +569,7 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
         east: bounds.east,
       );
 
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${newWarnings.length} warnings');
-      } catch (e) {
-        AppLogger.debug('Warnings background result debug message failed', tag: 'DEBUG', error: e);
-      }
+      DebugMessageHelper.addMessage(ref, 'API: Got ${newWarnings.length} warnings', tag: 'COMMUNITY');
 
       AppLogger.success('Loaded warnings in background', tag: 'COMMUNITY', data: {'count': newWarnings.length});
 
@@ -666,13 +654,11 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
     state = const AsyncValue.loading();
 
     try {
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage(
-          'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
-        );
-      } catch (e) {
-        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
-      }
+      DebugMessageHelper.addMessage(
+        ref,
+        'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
+        tag: 'COMMUNITY',
+      );
 
       final pois = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
@@ -708,11 +694,7 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
       }).toList();
       */
 
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${pois.length} POIs');
-      } catch (e) {
-        AppLogger.debug('Debug message failed: $e', tag: 'DEBUG');
-      }
+      DebugMessageHelper.addMessage(ref, 'API: Got ${pois.length} POIs', tag: 'COMMUNITY');
       AppLogger.success('Loaded ${pois.length} POIs with bounds');
       state = AsyncValue.data(pois);
       _lastLoadedBounds = bounds;
@@ -733,13 +715,11 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
     // Don't set loading state - keep existing data visible
 
     try {
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage(
-          'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]'
-        );
-      } catch (e) {
-        AppLogger.debug('POIs background fetch debug message failed', tag: 'DEBUG', error: e);
-      }
+      DebugMessageHelper.addMessage(
+        ref,
+        'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
+        tag: 'COMMUNITY',
+      );
 
       final newPOIs = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
@@ -748,11 +728,7 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
         east: bounds.east,
       );
 
-      try {
-        ref.read(debugProvider.notifier).addDebugMessage('API: Got ${newPOIs.length} POIs');
-      } catch (e) {
-        AppLogger.debug('POIs background result debug message failed', tag: 'DEBUG', error: e);
-      }
+      DebugMessageHelper.addMessage(ref, 'API: Got ${newPOIs.length} POIs', tag: 'COMMUNITY');
 
       AppLogger.success('Loaded POIs in background', tag: 'COMMUNITY', data: {'count': newPOIs.length});
 

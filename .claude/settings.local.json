@@ -22,7 +22,8 @@
       "Bash(git gc:*)",
       "Bash(chmod:*)",
       "Bash(find:*)",
-      "Bash(cloc:*)"
+      "Bash(cloc:*)",
+      "Bash(git diff:*)"
     ],
     "deny": [],
     "ask": []

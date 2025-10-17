@@ -30,8 +30,7 @@ class DebugMessageHelper {
       AppLogger.debug(
         'Debug message failed',
         tag: tag,
-        error: e,
-        data: {'message': message},
+        data: {'message': message, 'error': e.toString()},
       );
     }
   }

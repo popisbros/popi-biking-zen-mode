@@ -16,6 +16,7 @@ import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
+import '../services/toast_service.dart';
 import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
@@ -31,6 +32,7 @@ import '../widgets/navigation_controls.dart';
 import '../widgets/dialogs/poi_detail_dialog.dart';
 import '../widgets/dialogs/warning_detail_dialog.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
+import '../widgets/dialogs/community_poi_detail_dialog.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../services/route_surface_helper.dart';
@@ -705,14 +707,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _calculateRouteTo(double destLat, double destLon) async {
     if (_lastGPSPosition == null) {
       AppLogger.warning('Cannot calculate route - user location not available', tag: 'ROUTING');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to calculate route - location not available'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+      ToastService.error('Unable to calculate route - location not available');
       return;
     }
 
@@ -722,38 +717,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
 
     // Show loading indicator
-    if (mounted) {
-      // For native apps, use fixed bottom position (0px from bottom)
-      // For web/PWA, use standard vertical margin (10px)
-      final bottomMargin = kIsWeb ? 10.0 : 0.0;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Calculating routes...',
-                style: TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-          duration: const Duration(seconds: 30),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.only(
-            left: 60,
-            right: 60,
-            bottom: bottomMargin,
-            top: 10,
-          ),
-        ),
-      );
-    }
+    ToastService.loading('Calculating routes...');
 
     final routingService = RoutingService();
     final routes = await routingService.calculateMultipleRoutes(
@@ -763,21 +727,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       endLon: destLon,
     );
 
-    // Hide loading indicator
-    if (mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    }
-
     if (routes == null || routes.isEmpty) {
       AppLogger.warning('Route calculation failed', tag: 'ROUTING');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to calculate routes'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+      ToastService.error('Unable to calculate routes');
       return;
     }
 
@@ -832,14 +784,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       'points': routePoints.length,
     });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Route calculated (${routePoints.length} points)'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+    ToastService.info('Route calculated (${routePoints.length} points)');
   }
 
   /// Show dialog to select between multiple routes
@@ -1325,116 +1270,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showCommunityPOIDetails(CyclingPOI poi) {
-    final typeEmoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
-    final typeLabel = POITypeConfig.getCommunityPOILabel(poi.type);
-
-    showDialog(
+    CommunityPOIDetailDialog.show(
       context: context,
-      barrierColor: Colors.transparent,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.6),
-        title: Text(poi.name),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500)),
-                  Text(typeEmoji, style: const TextStyle(fontSize: 16)),
-                  const SizedBox(width: 4),
-                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500)),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}'),
-              if (poi.description != null && poi.description!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.description!),
-              ],
-              if (poi.address != null && poi.address!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.address!),
-              ],
-              if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.phone!),
-              ],
-              if (poi.website != null && poi.website!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500)),
-                Text(poi.website!),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _calculateRouteTo(poi.latitude, poi.longitude);
-                },
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
-                    SizedBox(width: 4),
-                    Text('ROUTE TO', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Navigate to edit screen
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => POIManagementScreenWithLocation(
-                        initialLatitude: poi.latitude,
-                        initialLongitude: poi.longitude,
-                        editingPOIId: poi.id,
-                      ),
-                    ),
-                  ).then((_) {
-                    // Reload map data after edit
-                    if (mounted && _isMapReady) {
-                      _loadAllMapDataWithBounds(forceReload: true);
-                    }
-                  });
-                },
-                child: const Text('EDIT', style: TextStyle(fontSize: 12)),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  if (poi.id != null) {
-                    AppLogger.map('Deleting POI', data: {'id': poi.id});
-                    await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
-                    // Reload map data
-                    if (mounted && _isMapReady) {
-                      _loadAllMapDataWithBounds(forceReload: true);
-                    }
-                  }
-                },
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('DELETE', style: TextStyle(fontSize: 12)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
-        ],
-      ),
+      ref: ref,
+      poi: poi,
+      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
+      onDataChanged: () {
+        if (mounted && _isMapReady) {
+          _loadAllMapDataWithBounds(forceReload: true);
+        }
+      },
+      compact: false,
+      transparentBarrier: true,
     );
   }
 

@@ -72,4 +72,47 @@ class ToastService {
       backgroundColor: const Color(0xFF2196F3),
     );
   }
+
+  /// Show loading toast with progress indicator
+  ///
+  /// Displays a circular progress indicator next to the message
+  /// Useful for indicating background operations
+  ///
+  /// Example:
+  /// ```dart
+  /// ToastService.loading('Calculating routes...');
+  /// ```
+  static void loading(String message, {Duration duration = const Duration(seconds: 30)}) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    final bottomMargin = kIsWeb ? 10.0 : 0.0;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              message,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        duration: duration,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          left: 60,
+          right: 60,
+          bottom: bottomMargin,
+          top: 10,
+        ),
+      ),
+    );
+  }
 }
