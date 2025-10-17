@@ -2041,6 +2041,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final currentCenter = currentState.center;
         final currentZoom = currentState.zoom;
 
+        // Update current zoom for UI display
+        if (mounted && _currentZoom != currentZoom) {
+          setState(() {
+            _currentZoom = currentZoom;
+          });
+        }
+
         // Check if camera moved significantly
         if (_lastCameraCenter != null && _lastCameraZoom != null) {
           final latDiff = (currentCenter.coordinates.lat - _lastCameraCenter!.coordinates.lat).abs();
@@ -2054,6 +2061,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             _lastCameraZoom = currentZoom;
             _onCameraChanged();
           }
+        } else {
+          // First check - initialize tracking
+          _lastCameraCenter = currentCenter;
+          _lastCameraZoom = currentZoom;
         }
       } catch (e) {
         AppLogger.error('Error checking camera state', error: e);
