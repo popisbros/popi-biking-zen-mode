@@ -723,7 +723,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Zoom to current GPS position for navigation view (close-up)
     final currentLocation = ref.read(locationNotifierProvider).value;
     if (currentLocation != null && _mapboxMap != null) {
-      final navigationZoom = NavigationUtils.calculateNavigationZoom(currentLocation.speed);
+      // Use fixed zoom 16.0 at navigation start (matches 2D map)
+      // Dynamic zoom based on speed will take over as user moves
+      final navigationZoom = 16.0;
 
       // Calculate initial bearing from current location to first route point
       double bearing = currentLocation.heading ?? 0.0; // Fallback to GPS heading
