@@ -919,7 +919,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     bool enabled = true,
   }) {
     return Tooltip(
-      message: enabled ? tooltip : '$tooltip (disabled at zoom ≤ 11)',
+      message: enabled ? tooltip : '$tooltip (disabled at zoom ≤ 12)',
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -1241,10 +1241,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               right: 10,
               child: Column(
                 children: [
-                  // Check zoom level - disable toggles if zoom <= 11
+                  // Check zoom level - disable toggles if zoom <= 12
                   Builder(
                     builder: (context) {
-                      final togglesEnabled = _currentZoom > 11.0;
+                      final togglesEnabled = _currentZoom > 12.0;
 
                       return Column(
                         children: [
@@ -1365,8 +1365,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           pitch: _currentPitch, // Maintain pitch angle
                         ));
 
-                        // Auto-turn OFF all POI toggles if zooming to <= 11
-                        if (newZoom <= 11.0) {
+                        // Auto-turn OFF all POI toggles if zooming to <= 12
+                        if (newZoom <= 12.0) {
                           final mapState = ref.read(mapProvider);
                           if (mapState.showOSMPOIs) {
                             ref.read(mapProvider.notifier).toggleOSMPOIs();
@@ -1377,7 +1377,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           if (mapState.showWarnings) {
                             ref.read(mapProvider.notifier).toggleWarnings();
                           }
-                          AppLogger.map('Auto-disabled all POI toggles at zoom <= 11');
+                          AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
                         }
 
                         setState(() {
