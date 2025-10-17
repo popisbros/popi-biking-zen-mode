@@ -25,6 +25,8 @@ import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../models/location_data.dart';
 import '../utils/app_logger.dart';
+import '../utils/geo_utils.dart';
+import '../utils/navigation_utils.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -946,7 +948,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Zoom to current GPS position for navigation view (close-up)
     final currentLocation = ref.read(locationNotifierProvider).value;
     if (currentLocation != null && _mapboxMap != null) {
-      final navigationZoom = _calculateNavigationZoom(currentLocation.speed);
+      final navigationZoom = NavigationUtils.calculateNavigationZoom(currentLocation.speed);
       final bearing = currentLocation.heading ?? 0.0;
       final screenHeight = MediaQuery.of(context).size.height;
       final offsetPixels = screenHeight / 4; // User at 3/4 from top
@@ -3374,7 +3376,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Auto-center logic (threshold: navigation 3m, exploration 25m)
     if (_originalGPSReference != null) {
-      final distance = _calculateDistance(
+      final distance = GeoUtils.calculateDistance(
         _originalGPSReference!.latitude,
         _originalGPSReference!.longitude,
         newGPSPosition.latitude,
@@ -3389,7 +3391,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         if (isNavigationMode) {
           // Calculate target zoom (only if auto-zoom enabled)
           final mapState = ref.read(mapProvider);
-          final targetZoom = _calculateNavigationZoom(location.speed);
+          final targetZoom = NavigationUtils.calculateNavigationZoom(location.speed);
           _targetAutoZoom = targetZoom;
 
           // Determine actual zoom to use (with throttling if auto-zoom enabled)
@@ -3499,7 +3501,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Only add if moved significant distance from last breadcrumb
     if (_breadcrumbs.isNotEmpty) {
       final lastPos = _breadcrumbs.last.position;
-      final distance = _calculateDistance(
+      final distance = GeoUtils.calculateDistance(
         lastPos.latitude, lastPos.longitude,
         newPosition.latitude, newPosition.longitude,
       );
@@ -3525,7 +3527,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final start = _breadcrumbs.first.position;
     final end = _breadcrumbs.last.position;
 
-    final totalDistance = _calculateDistance(
+    final totalDistance = GeoUtils.calculateDistance(
       start.latitude, start.longitude,
       end.latitude, end.longitude,
     );
@@ -3533,7 +3535,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Need at least 8m total movement (slightly more than GPS accuracy)
     if (totalDistance < 8) return null;
 
-    final bearing = _calculateBearing(start, end);
+    final bearing = GeoUtils.calculateBearing(start, end);
 
     // Smooth bearing with last value (70% new, 30% old) - 3x more responsive
     if (_lastNavigationBearing != null) {
@@ -3546,27 +3548,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return bearing;
   }
 
-  /// Calculate dynamic zoom based on speed (navigation mode)
-  /// Optimized for walking/biking with 0.5 zoom steps
-  double _calculateNavigationZoom(double? speedMps) {
-    if (speedMps == null || speedMps < 0.28) return 19.0; // Stationary (< 1 km/h) - closer view
-    if (speedMps < 1.39) return 18.5;  // 1-5 km/h (walking) - closer view
-    if (speedMps < 2.78) return 18.0;  // 5-10 km/h (slow biking) - closer view
-    if (speedMps < 4.17) return 17.5;  // 10-15 km/h (normal biking) - closer view
-    if (speedMps < 5.56) return 17.0;  // 15-20 km/h (fast biking) - closer view
-    if (speedMps < 6.94) return 16.5;  // 20-25 km/h (very fast) - closer view
-    if (speedMps < 8.33) return 16.0;  // 25-30 km/h (racing) - closer view
-    if (speedMps < 11.11) return 15.5; // 30-40 km/h (electric bike) - closer view
-    return 15.0;                       // 40+ km/h (crazy fast!) - closer view
-  }
-
   /// Handle camera auto-follow for turn-by-turn navigation
   /// Positions user at 3/4 from top of screen for better forward view
   Future<void> _handleTurnByTurnCameraFollow(LocationData location) async {
     if (_mapboxMap == null) return;
 
     // Calculate target zoom based on speed
-    final targetZoom = _calculateNavigationZoom(location.speed);
+    final targetZoom = NavigationUtils.calculateNavigationZoom(location.speed);
 
     // Calculate bearing from travel direction (breadcrumbs) - matches 2D behavior
     // NOTE: Do NOT use location.heading for map rotation, only for marker arrow
@@ -3598,36 +3586,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       'speed': '${(location.speed ?? 0) * 3.6}km/h',
     });
   }
-
-  /// Calculate bearing between two points (0-360°, 0=North, 90=East)
-  double _calculateBearing(latlong.LatLng start, latlong.LatLng end) {
-    final lat1 = start.latitude * math.pi / 180;
-    final lat2 = end.latitude * math.pi / 180;
-    final dLon = (end.longitude - start.longitude) * math.pi / 180;
-
-    final y = math.sin(dLon) * math.cos(lat2);
-    final x = math.cos(lat1) * math.sin(lat2) -
-              math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
-
-    final bearing = math.atan2(y, x) * 180 / math.pi;
-    return (bearing + 360) % 360; // Normalize to 0-360
-  }
-
-  /// Calculate distance between two GPS coordinates in meters
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const earthRadius = 6371000.0; // meters
-    final dLat = (lat2 - lat1) * math.pi / 180;
-    final dLon = (lon2 - lon1) * math.pi / 180;
-
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-              math.cos(lat1 * math.pi / 180) *
-              math.cos(lat2 * math.pi / 180) *
-              math.sin(dLon / 2) * math.sin(dLon / 2);
-
-    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    return earthRadius * c;
-  }
-
 
   /// Stop navigation and clear route
   void _stopNavigation() {
