@@ -35,6 +35,8 @@ import '../widgets/navigation_card.dart';
 import '../services/route_surface_helper.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/arrival_dialog.dart';
+import '../widgets/dialogs/poi_detail_dialog.dart';
+import '../widgets/dialogs/warning_detail_dialog.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'map_screen.dart';
@@ -1146,213 +1148,48 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Show OSM POI details dialog
   void _showPOIDetails(OSMPOI poi) {
-    final typeEmoji = POITypeConfig.getOSMPOIEmoji(poi.type);
-    final typeLabel = POITypeConfig.getOSMPOILabel(poi.type);
-
-    showDialog(
+    POIDetailDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.9),
-        titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-        title: Text(poi.name, style: const TextStyle(fontSize: 14)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                  Text(typeEmoji, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Text(typeLabel, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text('Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}', style: const TextStyle(fontSize: 12)),
-              if (poi.description != null && poi.description!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                Text(poi.description!, style: const TextStyle(fontSize: 12)),
-              ],
-              if (poi.address != null && poi.address!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                const Text('Address:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                Text(poi.address!, style: const TextStyle(fontSize: 12)),
-              ],
-              if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                const Text('Phone:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                Text(poi.phone!, style: const TextStyle(fontSize: 12)),
-              ],
-              if (poi.website != null && poi.website!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                const Text('Website:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                Text(poi.website!, style: const TextStyle(fontSize: 12)),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _calculateRouteTo(poi.latitude, poi.longitude);
-            },
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
-                SizedBox(width: 4),
-                Text('ROUTE TO', style: TextStyle(fontSize: 12)),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
-          ),
-        ],
-      ),
+      poi: poi,
+      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
+      compact: true,
     );
   }
 
   /// Show warning details dialog
   void _showWarningDetails(CommunityWarning warning) {
-    // Get warning type emoji and label
-    final typeEmoji = POITypeConfig.getWarningEmoji(warning.type);
-    final typeLabel = POITypeConfig.getWarningLabel(warning.type);
-
-    // Get severity color
-    final severityColors = {
-      'low': AppColors.successGreen,
-      'medium': Colors.yellow[700],
-      'high': Colors.orange[700],
-      'critical': AppColors.dangerRed,
-    };
-    final severityColor = severityColors[warning.severity] ?? Colors.yellow[700];
-
-    showDialog(
+    WarningDetailDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.9),
-        titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-        title: Text(warning.title, style: const TextStyle(fontSize: 14)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Type with icon
-              Row(
-                children: [
-                  const Text('Type: ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.urbanBlue,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(typeEmoji, style: const TextStyle(fontSize: 14)),
-                        const SizedBox(width: 3),
-                        Text(
-                          typeLabel,
-                          style: const TextStyle(
-                            color: AppColors.surface,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              // Severity with colored badge
-              Row(
-                children: [
-                  const Text('Severity: ', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: severityColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      warning.severity.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppColors.surface,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text('Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}', style: const TextStyle(fontSize: 12)),
-              if (warning.description.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                const Text('Description:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
-                Text(warning.description, style: const TextStyle(fontSize: 12)),
-              ],
-            ],
+      warning: warning,
+      transparentBarrier: false,
+      compact: true,
+      onEdit: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HazardReportScreenWithLocation(
+              initialLatitude: warning.latitude,
+              initialLongitude: warning.longitude,
+              editingWarningId: warning.id,
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to edit screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => HazardReportScreenWithLocation(
-                    initialLatitude: warning.latitude,
-                    initialLongitude: warning.longitude,
-                    editingWarningId: warning.id,
-                  ),
-                ),
-              ).then((_) {
-                // Reload map data after edit
-                if (mounted && _isMapReady) {
-                  _loadAllPOIData();
-                  _addMarkers();
-                }
-              });
-            },
-            child: const Text('EDIT', style: TextStyle(fontSize: 12)),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              if (warning.id != null) {
-                AppLogger.map('Deleting warning', data: {'id': warning.id});
-                await ref.read(communityWarningsNotifierProvider.notifier).deleteWarning(warning.id!);
-                // Reload map data
-                if (mounted && _isMapReady) {
-                  _loadAllPOIData();
-                  _addMarkers();
-                }
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('DELETE', style: TextStyle(fontSize: 12)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
-          ),
-        ],
-      ),
+        ).then((_) {
+          if (mounted && _isMapReady) {
+            _loadAllPOIData();
+            _addMarkers();
+          }
+        });
+      },
+      onDelete: () async {
+        if (warning.id != null) {
+          AppLogger.map('Deleting warning', data: {'id': warning.id});
+          await ref.read(communityWarningsNotifierProvider.notifier).deleteWarning(warning.id!);
+          if (mounted && _isMapReady) {
+            _loadAllPOIData();
+            _addMarkers();
+          }
+        }
+      },
     );
   }
 
