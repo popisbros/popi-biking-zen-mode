@@ -3038,9 +3038,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
 
     // Refresh markers to remove route from map
-    _addMarkers();
-
-    AppLogger.map('Navigation stopped - route cleared from map');
+    // Add small delay to ensure provider state propagates
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _addMarkers();
+        AppLogger.map('Navigation stopped - route cleared from map');
+      }
+    });
   }
 }
 
