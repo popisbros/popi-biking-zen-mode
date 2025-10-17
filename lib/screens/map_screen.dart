@@ -1201,14 +1201,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'navMode': navState.mode.name,
         });
 
-        // Use compass heading on Native, or GPS heading as fallback
-        final heading = !kIsWeb && compassHeading != null ? compassHeading : location.heading;
+        // Use navigation bearing if available (from route or GPS movement),
+        // otherwise use compass/GPS heading as fallback
+        double? heading;
+        if (isNavigationMode && _lastNavigationBearing != null) {
+          // Use calculated navigation bearing (from route or breadcrumbs)
+          heading = _lastNavigationBearing;
+        } else {
+          // Fallback to compass heading on Native, or GPS heading
+          heading = !kIsWeb && compassHeading != null ? compassHeading : location.heading;
+        }
         final hasHeading = heading != null && heading >= 0;
 
         AppLogger.map('Marker heading', data: {
           'heading': heading?.toStringAsFixed(1),
           'hasHeading': hasHeading,
           'isNavigationMode': isNavigationMode,
+          'source': isNavigationMode && _lastNavigationBearing != null ? 'navigation' : 'gps/compass',
         });
 
         final userSize = MarkerConfig.getRadiusForType(POIMarkerType.userLocation) * 2;
