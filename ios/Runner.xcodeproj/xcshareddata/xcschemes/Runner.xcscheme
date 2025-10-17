@@ -73,6 +73,33 @@
             ReferencedContainer = "container:Runner.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "THUNDERFOREST_API_KEY"
+            value = "121a02b0d4754f5ca3d296c2cf0d97bb"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "MAPTILER_API_KEY"
+            value = "0n3hIGbHnipUHJE5pew7"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "MAPBOX_ACCESS_TOKEN"
+            value = "pk.eyJ1Ijoic3lsdmFpbmJyb3NzZXQiLCJhIjoiY21mdXoxZm5wMDF5azJpcXF5ZzRzdTFubyJ9.ekDTXkW79XiOFOAJtcHXdQ"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "LOCATIONIQ_API_KEY"
+            value = "pk.092190a364d11fb177752f5ff2d2b8ca"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "GRAPHHOPPER_API_KEY"
+            value = "f0a2e753-e8a8-4c16-af98-b5a77b5dc34e"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Profile"

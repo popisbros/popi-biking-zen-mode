@@ -68,18 +68,22 @@ class NavigationNotifier extends Notifier<NavigationState> {
     final boundsWarnings = ref.read(communityWarningsBoundsNotifierProvider);
     final allWarnings = ref.read(communityWarningsNotifierProvider);
 
-    print('[HAZARD DEBUG PROVIDER] boundsWarnings.hasValue: ${boundsWarnings.hasValue}, count: ${boundsWarnings.value?.length ?? 0}');
-    print('[HAZARD DEBUG PROVIDER] allWarnings.hasValue: ${allWarnings.hasValue}, count: ${allWarnings.value?.length ?? 0}');
+    AppLogger.debug('Checking hazard warnings providers', data: {
+      'boundsWarnings.hasValue': boundsWarnings.hasValue,
+      'boundsWarnings.count': boundsWarnings.value?.length ?? 0,
+      'allWarnings.hasValue': allWarnings.hasValue,
+      'allWarnings.count': allWarnings.value?.length ?? 0,
+    });
 
     // Prefer all warnings (complete set) if available, otherwise use bounds
     if (allWarnings.hasValue && allWarnings.value != null && allWarnings.value!.isNotEmpty) {
       warnings = allWarnings.value!;
-      print('[HAZARD DEBUG PROVIDER] Using ALL warnings: ${warnings.length}');
+      AppLogger.debug('Using ALL warnings', data: {'count': warnings.length});
     } else if (boundsWarnings.hasValue && boundsWarnings.value != null && boundsWarnings.value!.isNotEmpty) {
       warnings = boundsWarnings.value!;
-      print('[HAZARD DEBUG PROVIDER] Using BOUNDS warnings: ${warnings.length}');
+      AppLogger.debug('Using BOUNDS warnings', data: {'count': warnings.length});
     } else {
-      print('[HAZARD DEBUG PROVIDER] No warnings available from either provider');
+      AppLogger.warning('No warnings available from either provider');
     }
 
     List<RouteHazard> routeHazards = [];
@@ -94,12 +98,16 @@ class NavigationNotifier extends Notifier<NavigationState> {
         allHazards: warnings,
       );
 
-      print('[HAZARD DEBUG PROVIDER] Hazards detected: ${routeHazards.length}');
+      AppLogger.debug('Hazards detected', data: {'count': routeHazards.length});
 
       if (routeHazards.isNotEmpty) {
         AppLogger.success('Found ${routeHazards.length} hazards on route', tag: 'NAVIGATION');
         for (var i = 0; i < routeHazards.length; i++) {
-          print('[HAZARD DEBUG PROVIDER] Hazard $i: ${routeHazards[i].warning.title} at ${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m');
+          AppLogger.debug('Hazard $i detected', data: {
+            'index': i,
+            'title': routeHazards[i].warning.title,
+            'distanceAlongRoute': '${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m',
+          });
         }
       } else {
         AppLogger.debug('No hazards found on route', tag: 'NAVIGATION');
@@ -108,7 +116,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       AppLogger.warning('No community warnings available for hazard detection', tag: 'NAVIGATION');
     }
 
-    print('[HAZARD DEBUG PROVIDER] Creating route with ${routeHazards.length} hazards');
+    AppLogger.debug('Creating route with hazards', data: {'hazardCount': routeHazards.length});
 
     // Update route with detected hazards
     final routeWithHazards = route.copyWithHazards(routeHazards);
@@ -147,19 +155,16 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Enable wakelock to keep screen on during navigation
     WakelockPlus.enable().then((_) {
-      AppLogger.success('Screen wakelock enabled', tag: 'NAVIGATION');
-      print('[WAKELOCK] Screen will stay on during navigation');
+      AppLogger.success('Screen wakelock enabled - screen will stay on', tag: 'NAVIGATION');
     }).catchError((error) {
-      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
-      print('[WAKELOCK] Error: $error');
+      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', error: error);
     });
 
     // Start listening to location updates (fire and forget, don't block navigation start)
     _startLocationTracking().then((_) {
-      print('[GPS TRACKING] Location tracking initialization complete');
+      AppLogger.success('Location tracking initialized', tag: 'GPS');
     }).catchError((error) {
-      print('[GPS TRACKING] ERROR starting location tracking: $error');
-      AppLogger.error('Failed to start location tracking', tag: 'NAVIGATION', error: error);
+      AppLogger.error('Failed to start location tracking', tag: 'GPS', error: error);
     });
 
     AppLogger.success('Navigation started', tag: 'NAVIGATION');
@@ -172,11 +177,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Disable wakelock to allow screen to sleep
     WakelockPlus.disable().then((_) {
-      AppLogger.success('Screen wakelock disabled', tag: 'NAVIGATION');
-      print('[WAKELOCK] Screen can now sleep normally');
+      AppLogger.success('Screen wakelock disabled - screen can sleep', tag: 'NAVIGATION');
     }).catchError((error) {
-      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
-      print('[WAKELOCK] Error: $error');
+      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', error: error);
     });
 
     _locationSubscription?.cancel();
@@ -222,47 +225,51 @@ class NavigationNotifier extends Notifier<NavigationState> {
     AppLogger.debug('Starting location tracking for navigation', tag: 'NAVIGATION');
 
     // IMPORTANT: Start the GPS position stream in LocationService (await it!)
-    print('[GPS TRACKING] About to call startLocationTracking()...');
+    AppLogger.debug('Calling startLocationTracking()', tag: 'GPS');
     await locationService.startLocationTracking();
-    print('[GPS TRACKING] startLocationTracking() completed');
-    AppLogger.debug('Called LocationService.startLocationTracking()', tag: 'NAVIGATION');
+    AppLogger.debug('startLocationTracking() completed', tag: 'GPS');
 
     _locationSubscription = locationService.locationStream.listen(
       (locationData) {
         _onLocationUpdate(locationData);
       },
       onError: (error) {
-        AppLogger.error('Location stream error during navigation', tag: 'NAVIGATION', error: error);
-        print('[GPS TRACKING] Stream error: $error');
+        AppLogger.error('Location stream error during navigation', tag: 'GPS', error: error);
       },
       onDone: () {
-        AppLogger.debug('Location stream completed', tag: 'NAVIGATION');
-        print('[GPS TRACKING] Stream completed/done');
+        AppLogger.debug('Location stream completed', tag: 'GPS');
       },
     );
 
-    AppLogger.success('Location tracking active', tag: 'NAVIGATION');
-    print('[GPS TRACKING] Subscribed to location stream');
+    AppLogger.success('Subscribed to location stream - tracking active', tag: 'GPS');
   }
 
   /// Handle location update from GPS
   void _onLocationUpdate(LocationData locationData) {
-    print('[GPS RAW] Location update received: lat=${locationData.latitude}, lon=${locationData.longitude}');
+    AppLogger.debug('Location update received', tag: 'GPS', data: {
+      'latitude': locationData.latitude,
+      'longitude': locationData.longitude,
+    });
 
     if (!state.isNavigating || state.activeRoute == null) {
-      print('[GPS RAW] Skipping - not navigating or no route');
+      AppLogger.debug('Skipping location update - not navigating or no route', tag: 'GPS');
       return;
     }
 
     // Throttle updates to max once per 3 seconds
     final now = DateTime.now();
     if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 3) {
-      print('[GPS RAW] Throttled - too soon (${now.difference(_lastUpdateTime!).inSeconds}s since last)');
+      AppLogger.debug('Location update throttled', tag: 'GPS', data: {
+        'secondsSinceLastUpdate': now.difference(_lastUpdateTime!).inSeconds,
+        'throttleLimit': '3s',
+      });
       return; // Skip this update
     }
     _lastUpdateTime = now;
 
-    print('[NAV UPDATE] === Processing navigation update at ${now.toIso8601String()} ===');
+    AppLogger.debug('Processing navigation update', tag: 'NAVIGATION', data: {
+      'timestamp': now.toIso8601String(),
+    });
 
     final currentPos = LatLng(locationData.latitude, locationData.longitude);
     final route = state.activeRoute!;
@@ -275,7 +282,11 @@ class NavigationNotifier extends Notifier<NavigationState> {
     final offRouteDistance = NavigationEngine.getDistanceToRoute(currentPos, route.points);
 
     // Debug: Log off-route status every update
-    print('[OFF-ROUTE DEBUG] Distance to route: ${offRouteDistance.toStringAsFixed(1)}m, isOffRoute: $isOffRoute (threshold: 10m)');
+    AppLogger.debug('Off-route check', tag: 'NAVIGATION', data: {
+      'distanceToRoute': '${offRouteDistance.toStringAsFixed(1)}m',
+      'isOffRoute': isOffRoute,
+      'threshold': '10m',
+    });
 
     // Calculate remaining distance
     final remainingDistance = NavigationEngine.calculateRemainingDistance(
@@ -392,7 +403,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Automatic rerouting if off route
     if (isOffRoute && !_isRerouting) {
-      print('[REROUTE DEBUG] Off route detected! Distance: ${offRouteDistance.toStringAsFixed(1)}m');
+      AppLogger.warning('Off route detected', tag: 'REROUTE', data: {
+        'distance': '${offRouteDistance.toStringAsFixed(1)}m',
+      });
 
       // Show toast notification when going off-route
       if (!state.isOffRoute) {
@@ -400,10 +413,10 @@ class NavigationNotifier extends Notifier<NavigationState> {
         ToastService.warning('Off route: ${offRouteDistance.toStringAsFixed(0)}m from path');
       }
 
-      print('[REROUTE DEBUG] Calling _handleAutomaticRerouting');
+      AppLogger.debug('Initiating automatic rerouting', tag: 'REROUTE');
       _handleAutomaticRerouting(currentPos);
     } else if (isOffRoute && _isRerouting) {
-      print('[REROUTE DEBUG] Off route but already rerouting...');
+      AppLogger.debug('Off route but rerouting already in progress', tag: 'REROUTE');
       ToastService.info('Rerouting in progress...');
     }
   }
@@ -417,18 +430,21 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
   /// Handle automatic rerouting when off route
   Future<void> _handleAutomaticRerouting(LatLng currentPos) async {
-    print('[REROUTE DEBUG] _handleAutomaticRerouting called');
+    AppLogger.debug('_handleAutomaticRerouting called', tag: 'REROUTE');
 
     // Check if we're still navigating
     if (!state.isNavigating || state.activeRoute == null) {
-      print('[REROUTE DEBUG] Not navigating or no active route, aborting');
+      AppLogger.debug('Rerouting aborted - not navigating or no active route', tag: 'REROUTE');
       return;
     }
 
     // Check cooldown period
     if (_lastRerouteTime != null) {
       final timeSinceLastReroute = DateTime.now().difference(_lastRerouteTime!).inSeconds;
-      print('[REROUTE DEBUG] Time since last reroute: ${timeSinceLastReroute}s (cooldown: ${_rerouteCooldownSeconds}s)');
+      AppLogger.debug('Checking reroute cooldown', tag: 'REROUTE', data: {
+        'timeSinceLastReroute': '${timeSinceLastReroute}s',
+        'cooldown': '${_rerouteCooldownSeconds}s',
+      });
       if (timeSinceLastReroute < _rerouteCooldownSeconds) {
         final remainingSeconds = _rerouteCooldownSeconds - timeSinceLastReroute;
         ToastService.info('Rerouting on cooldown, wait ${remainingSeconds}s');
@@ -436,7 +452,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
           'timeSince': '${timeSinceLastReroute}s',
           'cooldown': '${_rerouteCooldownSeconds}s',
         });
-        print('[REROUTE DEBUG] Cooldown active, aborting');
+        AppLogger.debug('Rerouting aborted - cooldown active', tag: 'REROUTE');
         return;
       }
     }
@@ -449,7 +465,10 @@ class NavigationNotifier extends Notifier<NavigationState> {
         _lastReroutePosition!,
       );
 
-      print('[REROUTE DEBUG] Distance from last reroute position: ${distance.toStringAsFixed(1)}m (threshold: ${_reroutePositionThreshold}m)');
+      AppLogger.debug('Checking reroute position threshold', tag: 'REROUTE', data: {
+        'distanceFromLastReroute': '${distance.toStringAsFixed(1)}m',
+        'threshold': '${_reroutePositionThreshold}m',
+      });
 
       if (distance < _reroutePositionThreshold) {
         // Same position as last successful reroute - abort
@@ -460,7 +479,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
           'threshold': '${_reroutePositionThreshold}m',
         });
 
-        print('[REROUTE DEBUG] Same position, aborting');
+        AppLogger.debug('Rerouting aborted - same position, updating cooldown', tag: 'REROUTE');
 
         // Update cooldown to prevent spam
         _lastRerouteTime = DateTime.now();
@@ -469,7 +488,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     }
 
     // Start rerouting
-    print('[REROUTE DEBUG] Starting reroute process...');
+    AppLogger.debug('Starting reroute process', tag: 'REROUTE');
     _isRerouting = true;
     final routeType = state.activeRoute!.type;
     final destination = state.activeRoute!.points.last;
@@ -480,7 +499,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
         : routeType == RouteType.safest
             ? 'Safest'
             : 'Shortest';
-    print('[REROUTE DEBUG] Showing toast: Calculating new $routeTypeName route...');
+    AppLogger.debug('Showing reroute toast', tag: 'REROUTE', data: {
+      'routeType': routeTypeName,
+    });
     ToastService.info('Calculating new $routeTypeName route...');
 
     AppLogger.separator('Automatic Rerouting');
@@ -489,7 +510,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'from': '${currentPos.latitude},${currentPos.longitude}',
       'to': '${destination.latitude},${destination.longitude}',
     });
-    print('[REROUTE DEBUG] Calling routing service...');
+    AppLogger.debug('Calling routing service', tag: 'REROUTE');
 
     try {
       final routingService = RoutingService();

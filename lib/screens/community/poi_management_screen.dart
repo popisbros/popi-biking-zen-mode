@@ -4,6 +4,7 @@ import '../../constants/app_colors.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../models/cycling_poi.dart';
+import '../../utils/app_logger.dart';
 
 class POIManagementScreenWithLocation extends ConsumerStatefulWidget {
   final double initialLatitude;
@@ -60,7 +61,10 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
       _loadPOIForEditing();
     }
 
-    print('📝 POI Management: Initialized with location ${widget.initialLatitude}, ${widget.initialLongitude}');
+    AppLogger.debug('POI Management initialized', tag: 'POI', data: {
+      'latitude': widget.initialLatitude,
+      'longitude': widget.initialLongitude,
+    });
   }
 
   @override
@@ -85,7 +89,10 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
           _latitudeController.text = location.latitude.toStringAsFixed(6);
           _longitudeController.text = location.longitude.toStringAsFixed(6);
         });
-        print('📝 POI Management: Updated coordinates from GPS: ${location.latitude}, ${location.longitude}');
+        AppLogger.debug('Updated coordinates from GPS', tag: 'POI', data: {
+          'latitude': location.latitude,
+          'longitude': location.longitude,
+        });
       }
     });
   }
@@ -106,7 +113,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
         _startEditingPOI(poi);
       }
     } catch (e) {
-      print('❌ POI Management: Failed to load POI for editing: $e');
+      AppLogger.error('Failed to load POI for editing', tag: 'POI', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -133,7 +140,10 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
       _websiteController.text = poi.website ?? '';
     });
 
-    print('📝 POI Management: Started editing POI: ${poi.name}');
+    AppLogger.debug('Started editing POI', tag: 'POI', data: {
+      'poiName': poi.name,
+      'poiId': poi.id,
+    });
   }
 
   void _cancelEditing() {
@@ -141,7 +151,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
       _editingPOIId = null;
       _clearForm();
     });
-    print('📝 POI Management: Cancelled editing');
+    AppLogger.debug('Cancelled editing POI', tag: 'POI');
   }
 
   void _clearForm() {
@@ -194,7 +204,9 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
         final communityNotifier = ref.read(cyclingPOIsNotifierProvider.notifier);
         await communityNotifier.deletePOI(poiId);
 
-        print('✅ POI Management: Successfully deleted POI: $poiId');
+        AppLogger.success('POI deleted successfully', tag: 'POI', data: {
+          'poiId': poiId,
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -206,7 +218,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
           _cancelEditing();
         }
       } catch (e) {
-        print('❌ POI Management: Failed to delete POI: $e');
+        AppLogger.error('Failed to delete POI', tag: 'POI', error: e);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -244,14 +256,22 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
       final communityNotifier = ref.read(cyclingPOIsNotifierProvider.notifier);
 
       if (_isEditing) {
-        print('📝 POI Management: Updating POI: ${poi.name}');
+        AppLogger.debug('Updating POI', tag: 'POI', data: {
+          'poiName': poi.name,
+          'poiId': _editingPOIId,
+        });
         await communityNotifier.updatePOI(_editingPOIId!, poi);
       } else {
-        print('📝 POI Management: Creating new POI: ${poi.name}');
+        AppLogger.debug('Creating new POI', tag: 'POI', data: {
+          'poiName': poi.name,
+        });
         await communityNotifier.addPOI(poi);
       }
 
-      print('✅ POI Management: Successfully saved POI: ${poi.name}');
+      AppLogger.success('POI saved successfully', tag: 'POI', data: {
+        'poiName': poi.name,
+        'action': _isEditing ? 'updated' : 'created',
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -263,7 +283,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
         Navigator.pop(context); // Close the screen after successful save
       }
     } catch (e) {
-      print('❌ POI Management: Failed to save POI: $e');
+      AppLogger.error('Failed to save POI', tag: 'POI', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

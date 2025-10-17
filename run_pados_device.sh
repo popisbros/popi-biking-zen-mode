@@ -2,10 +2,10 @@
 
 # Run script for iOS device with API keys from .env file
 # Usage: ./run_ios_device.sh [device_id]
-# Example: ./run_ios_device.sh 00008140-000014180C6A801C
+# Example: ./run_ios_device.sh 00008103-000908642279001E
 
-# Default device ID (your iPhone)
-DEFAULT_DEVICE_ID="00008140-000014180C6A801C"
+# Default device ID (your iPad)
+DEFAULT_DEVICE_ID="00008103-000908642279001E"
 DEVICE_ID="${1:-$DEFAULT_DEVICE_ID}"
 
 # Check if .env file exists

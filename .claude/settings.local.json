@@ -17,7 +17,10 @@
       "Bash(python3:*)",
       "Bash(curl -s \"https://api.github.com/repos/popisbros/popi-biking-zen-mode/actions/runs?per_page=10\")",
       "Bash(git show:*)",
-      "Bash(curl -s \"https://api.github.com/repos/popisbros/popi-biking-zen-mode/actions/runs?per_page=3\")"
+      "Bash(curl -s \"https://api.github.com/repos/popisbros/popi-biking-zen-mode/actions/runs?per_page=3\")",
+      "Bash(git reflog:*)",
+      "Bash(git gc:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

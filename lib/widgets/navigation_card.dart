@@ -5,6 +5,7 @@ import '../models/navigation_state.dart';
 import '../providers/navigation_provider.dart';
 import '../services/routing_service.dart';
 import '../services/route_hazard_detector.dart';
+import '../utils/app_logger.dart';
 
 /// Navigation card overlay showing turn-by-turn instructions
 /// Option B design: Medium-sized card at top of map
@@ -817,8 +818,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
   /// Build hazard warning section
   List<Widget> _buildHazardSection(NavigationState navState) {
     // DEBUG: Check if we have hazards on the route
-    print('[HAZARD DEBUG] activeRoute: ${navState.activeRoute != null}');
-    print('[HAZARD DEBUG] routeHazards: ${navState.activeRoute?.routeHazards?.length ?? 0}');
+    AppLogger.debug('Building hazard section', tag: 'HAZARD', data: {
+      'hasActiveRoute': navState.activeRoute != null,
+      'routeHazards': navState.activeRoute?.routeHazards?.length ?? 0,
+    });
 
     if (navState.activeRoute?.routeHazards == null || navState.activeRoute!.routeHazards!.isEmpty) {
       // No hazards - show positive message
@@ -849,13 +852,19 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     final currentPosition = navState.currentPosition;
     final routePoints = navState.activeRoute!.points;
 
-    print('[HAZARD DEBUG] Total hazards on route: ${routeHazards.length}');
+    AppLogger.debug('Total hazards on route', tag: 'HAZARD', data: {
+      'count': routeHazards.length,
+    });
     for (int i = 0; i < routeHazards.length; i++) {
-      print('[HAZARD DEBUG] Hazard $i: ${routeHazards[i].warning.title} at ${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m');
+      AppLogger.debug('Hazard $i', tag: 'HAZARD', data: {
+        'index': i,
+        'title': routeHazards[i].warning.title,
+        'distanceAlongRoute': '${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m',
+      });
     }
 
     if (currentPosition == null || routePoints.isEmpty) {
-      print('[HAZARD DEBUG] No current position or route points');
+      AppLogger.debug('No current position or route points', tag: 'HAZARD');
       return [];
     }
 
@@ -882,7 +891,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       );
     }
 
-    print('[HAZARD DEBUG] Current distance along route: ${currentDistanceAlongRoute.toStringAsFixed(0)}m (segment index: $currentSegmentIndex)');
+    AppLogger.debug('Current position on route', tag: 'HAZARD', data: {
+      'distanceAlongRoute': '${currentDistanceAlongRoute.toStringAsFixed(0)}m',
+      'segmentIndex': currentSegmentIndex,
+    });
 
     // Find all upcoming hazards (ahead of current position)
     final List<Map<String, dynamic>> upcomingHazards = [];
@@ -895,19 +907,27 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
           'hazard': hazard,
           'distanceAhead': distanceAhead,
         });
-        print('[HAZARD DEBUG] Upcoming hazard: ${hazard.warning.title} in ${distanceAhead.toStringAsFixed(0)}m');
+        AppLogger.debug('Upcoming hazard', tag: 'HAZARD', data: {
+          'title': hazard.warning.title,
+          'distanceAhead': '${distanceAhead.toStringAsFixed(0)}m',
+        });
       } else {
-        print('[HAZARD DEBUG] Passed hazard: ${hazard.warning.title} (was at ${hazard.distanceAlongRoute.toStringAsFixed(0)}m)');
+        AppLogger.debug('Passed hazard', tag: 'HAZARD', data: {
+          'title': hazard.warning.title,
+          'distanceAlongRoute': '${hazard.distanceAlongRoute.toStringAsFixed(0)}m',
+        });
       }
     }
 
     // Sort by distance ahead
     upcomingHazards.sort((a, b) => (a['distanceAhead'] as double).compareTo(b['distanceAhead'] as double));
 
-    print('[HAZARD DEBUG] Total upcoming hazards: ${upcomingHazards.length}');
+    AppLogger.debug('Total upcoming hazards', tag: 'HAZARD', data: {
+      'count': upcomingHazards.length,
+    });
 
     if (upcomingHazards.isEmpty) {
-      print('[HAZARD DEBUG] No upcoming hazards, returning empty');
+      AppLogger.debug('No upcoming hazards, returning empty', tag: 'HAZARD');
       return [];
     }
 

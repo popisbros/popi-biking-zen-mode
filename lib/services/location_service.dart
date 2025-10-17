@@ -142,7 +142,6 @@ class LocationService {
       // Check if already tracking
       if (_pollTimer != null) {
         AppLogger.warning('Timer already running, skipping startLocationTracking', tag: 'LOCATION');
-        print('[LOCATION SERVICE] ⚠️ Already tracking with timer');
         return;
       }
 
@@ -150,14 +149,12 @@ class LocationService {
       final serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
         AppLogger.error('Cannot start tracking - location services DISABLED on device', tag: 'LOCATION');
-        print('[LOCATION SERVICE] ❌ Location services are DISABLED on device!');
         return;
       }
-      print('[LOCATION SERVICE] ✅ Location services are enabled');
+      AppLogger.success('Location services are enabled', tag: 'LOCATION');
 
       final permission = await checkPermission();
       AppLogger.debug('Current permission status', tag: 'LOCATION', data: {'permission': permission.name});
-      print('[LOCATION SERVICE] Permission status: ${permission.name}');
 
       if (permission == LocationPermission.denied) {
         AppLogger.location('Permission denied, requesting');
@@ -180,7 +177,7 @@ class LocationService {
         'note': 'Will poll GPS every 3 seconds regardless of movement',
       });
 
-      print('[LOCATION SERVICE] Starting 3-second timer for GPS polling...');
+      AppLogger.debug('Starting 3-second timer for GPS polling', tag: 'LOCATION');
 
       // Get initial position immediately
       await _pollPosition();
@@ -190,18 +187,18 @@ class LocationService {
         await _pollPosition();
       });
 
-      print('[LOCATION SERVICE] Timer started, will poll every 3 seconds');
-      AppLogger.success('Location tracking started successfully (timer-based)', tag: 'LOCATION');
+      AppLogger.success('Location tracking started successfully (timer-based)', tag: 'LOCATION', data: {
+        'pollInterval': '3s',
+      });
     } catch (e) {
       AppLogger.error('Error starting tracking', tag: 'LOCATION', error: e);
-      print('[LOCATION SERVICE] ❌ Error starting tracking: $e');
     }
   }
 
   /// Poll GPS position once
   Future<void> _pollPosition() async {
     try {
-      print('[LOCATION SERVICE] 📍 Polling GPS position...');
+      AppLogger.debug('Polling GPS position', tag: 'LOCATION');
 
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
@@ -211,8 +208,6 @@ class LocationService {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: locationSettings,
       );
-
-      print('[LOCATION SERVICE] ✅ Position received! lat=${position.latitude}, lon=${position.longitude}, accuracy=${position.accuracy}m');
 
       AppLogger.location('Position update received (polled)', data: {
         'lat': position.latitude,
@@ -234,10 +229,10 @@ class LocationService {
 
       _currentLocation = locationData;
       _locationController.add(locationData);
-      print('[LOCATION SERVICE] Broadcast location to ${_locationController.hasListener ? "active" : "NO"} listeners');
-      AppLogger.location('Location data broadcast to listeners');
+      AppLogger.location('Location data broadcast to listeners', data: {
+        'hasListeners': _locationController.hasListener,
+      });
     } catch (e, stackTrace) {
-      print('[LOCATION SERVICE] ❌ Error polling position: $e');
       AppLogger.error('Error polling position', tag: 'LOCATION', error: e, stackTrace: stackTrace);
     }
   }
@@ -245,7 +240,6 @@ class LocationService {
   /// Stop location tracking
   Future<void> stopLocationTracking() async {
     AppLogger.debug('Stopping location tracking', tag: 'LOCATION');
-    print('[LOCATION SERVICE] Stopping timer and stream...');
 
     // Cancel timer if running
     _pollTimer?.cancel();
@@ -255,7 +249,6 @@ class LocationService {
     await _positionStream?.cancel();
     _positionStream = null;
 
-    print('[LOCATION SERVICE] Tracking stopped');
     AppLogger.success('Location tracking stopped', tag: 'LOCATION');
   }
 
