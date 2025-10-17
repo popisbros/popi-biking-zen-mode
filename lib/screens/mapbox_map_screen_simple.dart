@@ -29,6 +29,7 @@ import '../models/location_data.dart';
 import '../utils/app_logger.dart';
 import '../utils/geo_utils.dart';
 import '../utils/navigation_utils.dart';
+import '../utils/poi_dialog_handler.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -937,54 +938,35 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Show OSM POI details dialog
   void _showPOIDetails(OSMPOI poi) {
-    POIDetailDialog.show(
+    POIDialogHandler.showPOIDetails(
       context: context,
       poi: poi,
       onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
       compact: true,
+      transparentBarrier: false,
     );
   }
 
   /// Show warning details dialog
   void _showWarningDetails(CommunityWarning warning) {
-    WarningDetailDialog.show(
+    POIDialogHandler.showWarningDetails(
       context: context,
+      ref: ref,
       warning: warning,
-      transparentBarrier: false,
-      compact: true,
-      onEdit: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HazardReportScreenWithLocation(
-              initialLatitude: warning.latitude,
-              initialLongitude: warning.longitude,
-              editingWarningId: warning.id,
-            ),
-          ),
-        ).then((_) {
-          if (mounted && _isMapReady) {
-            _loadAllPOIData();
-            _addMarkers();
-          }
-        });
-      },
-      onDelete: () async {
-        if (warning.id != null) {
-          AppLogger.map('Deleting warning', data: {'id': warning.id});
-          await ref.read(communityWarningsNotifierProvider.notifier).deleteWarning(warning.id!);
-          if (mounted && _isMapReady) {
-            _loadAllPOIData();
-            _addMarkers();
-          }
+      onDataChanged: () {
+        if (mounted && _isMapReady) {
+          _loadAllPOIData();
+          _addMarkers();
         }
       },
+      transparentBarrier: false,
+      compact: true,
     );
   }
 
   /// Show Community POI details dialog
   void _showCommunityPOIDetails(CyclingPOI poi) {
-    CommunityPOIDetailDialog.show(
+    POIDialogHandler.showCommunityPOIDetails(
       context: context,
       ref: ref,
       poi: poi,
@@ -996,6 +978,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         }
       },
       compact: true,
+      transparentBarrier: false,
     );
   }
 

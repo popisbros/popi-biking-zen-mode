@@ -24,6 +24,7 @@ import '../models/location_data.dart';
 import '../utils/app_logger.dart';
 import '../utils/geo_utils.dart';
 import '../utils/navigation_utils.dart';
+import '../utils/poi_dialog_handler.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -1214,7 +1215,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showPOIDetails(OSMPOI poi) {
-    POIDetailDialog.show(
+    POIDialogHandler.showPOIDetails(
       context: context,
       poi: poi,
       onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
@@ -1224,41 +1225,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   void _showWarningDetails(CommunityWarning warning) {
-    WarningDetailDialog.show(
+    POIDialogHandler.showWarningDetails(
       context: context,
+      ref: ref,
       warning: warning,
-      transparentBarrier: true,
-      compact: false,
-      onEdit: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HazardReportScreenWithLocation(
-              initialLatitude: warning.latitude,
-              initialLongitude: warning.longitude,
-              editingWarningId: warning.id,
-            ),
-          ),
-        ).then((_) {
-          if (mounted && _isMapReady) {
-            _loadAllMapDataWithBounds(forceReload: true);
-          }
-        });
-      },
-      onDelete: () async {
-        if (warning.id != null) {
-          AppLogger.map('Deleting warning', data: {'id': warning.id});
-          await ref.read(communityWarningsNotifierProvider.notifier).deleteWarning(warning.id!);
-          if (mounted && _isMapReady) {
-            _loadAllMapDataWithBounds(forceReload: true);
-          }
+      onDataChanged: () {
+        if (mounted && _isMapReady) {
+          _loadAllMapDataWithBounds(forceReload: true);
         }
       },
+      transparentBarrier: true,
+      compact: false,
     );
   }
 
   void _showCommunityPOIDetails(CyclingPOI poi) {
-    CommunityPOIDetailDialog.show(
+    POIDialogHandler.showCommunityPOIDetails(
       context: context,
       ref: ref,
       poi: poi,
