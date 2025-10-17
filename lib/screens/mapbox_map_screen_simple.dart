@@ -37,6 +37,7 @@ import '../widgets/navigation_controls.dart';
 import '../widgets/arrival_dialog.dart';
 import '../widgets/dialogs/poi_detail_dialog.dart';
 import '../widgets/dialogs/warning_detail_dialog.dart';
+import '../widgets/dialogs/route_selection_dialog.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'map_screen.dart';
@@ -771,132 +772,28 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Show dialog to select between multiple routes
   void _showRouteSelectionDialog(List<RouteResult> routes) {
-    showDialog(
+    RouteSelectionDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).size.height * 0.05, // 5% from bottom
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(
-                maxWidth: 400, // Maximum width
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6), // 60% opacity
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: IntrinsicWidth(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Title
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                      child: const Text(
-                        'Choose Your Route',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    // Routes list
-                    ...routes.map((route) {
-                      // Determine icon, color, label based on route type
-                      final IconData icon;
-                      final Color color;
-                      final String label;
-                      final String description;
-
-                      switch (route.type) {
-                        case RouteType.fastest:
-                          icon = Icons.directions_car;
-                          color = Colors.red;
-                          label = 'Fastest Route (car)';
-                          description = 'Optimized for speed';
-                          break;
-                        case RouteType.safest:
-                          icon = Icons.shield;
-                          color = Colors.green;
-                          label = 'Safest Route (bike)';
-                          description = 'Prioritizes cycle lanes & quiet roads';
-                          break;
-                        case RouteType.shortest:
-                          icon = Icons.directions_walk;
-                          color = Colors.blue;
-                          label = 'Walking Route (foot)';
-                          description = 'Walking/pedestrian route';
-                          break;
-                      }
-
-                      return InkWell(
-                        onTap: () {
-                          Navigator.pop(context);
-                          // Clear preview routes before showing selected route
-                          ref.read(searchProvider.notifier).clearPreviewRoutes();
-                          _displaySelectedRoute(route);
-                        },
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
-                          leading: Icon(icon, color: color, size: 28),
-                          title: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(description, style: const TextStyle(fontSize: 11)),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${route.distanceKm} km • ${route.durationMin} min',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    // Cancel button
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            // Clear preview routes when canceling
-                            ref.read(searchProvider.notifier).clearPreviewRoutes();
-                            // Refresh markers to remove preview routes from map
-                            _addMarkers();
-                            // Restore previous pitch
-                            if (_pitchBeforeRouteCalculation != null) {
-                              _mapboxMap?.easeTo(
-                                CameraOptions(pitch: _pitchBeforeRouteCalculation!),
-                                MapAnimationOptions(duration: 500),
-                              );
-                              _currentPitch = _pitchBeforeRouteCalculation!;
-                              _pitchBeforeRouteCalculation = null;
-                            }
-                          },
-                          child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      routes: routes,
+      onRouteSelected: (route) {
+        ref.read(searchProvider.notifier).clearPreviewRoutes();
+        _displaySelectedRoute(route);
+      },
+      onCancel: () {
+        ref.read(searchProvider.notifier).clearPreviewRoutes();
+        // Refresh markers to remove preview routes from map
+        _addMarkers();
+        // Restore previous pitch
+        if (_pitchBeforeRouteCalculation != null) {
+          _mapboxMap?.easeTo(
+            CameraOptions(pitch: _pitchBeforeRouteCalculation!),
+            MapAnimationOptions(duration: 500),
+          );
+          _currentPitch = _pitchBeforeRouteCalculation!;
+          _pitchBeforeRouteCalculation = null;
+        }
+      },
+      transparentBarrier: false,
     );
   }
 
