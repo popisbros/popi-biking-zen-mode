@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' hide Path; // Hide Path from latlong2 to avoid conflict with Flutter UI Path
 import '../models/navigation_state.dart';
+import '../models/route_warning.dart';
 import '../providers/navigation_provider.dart';
 import '../services/routing_service.dart';
-import '../services/route_hazard_detector.dart';
-import '../utils/app_logger.dart';
 
 /// Navigation card overlay showing turn-by-turn instructions
 /// Option B design: Medium-sized card at top of map
@@ -466,8 +465,8 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                 ),
               ],
 
-              // Hazard Section (above GraphHopper data)
-              ..._buildHazardSection(navState),
+              // Warnings Section (community + road surface)
+              ..._buildWarningsSection(navState),
 
               // GraphHopper Path Details Section (Collapsible)
               if (streetName != null || lanes != null || roadClass != null || maxSpeed != null || surface != null) ...[
@@ -815,31 +814,31 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     );
   }
 
-  /// Build hazard warning section
-  List<Widget> _buildHazardSection(NavigationState navState) {
-    // DEBUG: Check if we have hazards on the route
-    AppLogger.debug('Building hazard section', tag: 'HAZARD', data: {
-      'hasActiveRoute': navState.activeRoute != null,
-      'routeHazards': navState.activeRoute?.routeHazards?.length ?? 0,
-    });
+  /// Build unified warnings section (community + road surface)
+  List<Widget> _buildWarningsSection(NavigationState navState) {
+    final warnings = navState.routeWarnings;
 
-    if (navState.activeRoute?.routeHazards == null || navState.activeRoute!.routeHazards!.isEmpty) {
-      // No hazards - show positive message
+    // No warnings - show positive message
+    if (warnings.isEmpty) {
       return [
         const SizedBox(height: 12),
         Divider(color: Colors.grey.shade300, height: 1),
         const SizedBox(height: 8),
-        // Positive message (no title to save space)
         Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green.shade600, size: 18),
-            const SizedBox(width: 8),
             const Text(
-              'Route clear, enjoy your ride ✌️',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+              '🚴🏾‍♀️',
+              style: TextStyle(fontSize: 18),
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Clear road ahead - Enjoy your ride safely',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ],
@@ -847,123 +846,77 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       ];
     }
 
-    // Get upcoming hazards
-    final routeHazards = navState.activeRoute!.routeHazards!;
-    final currentPosition = navState.currentPosition;
-    final routePoints = navState.activeRoute!.points;
-
-    AppLogger.debug('Total hazards on route', tag: 'HAZARD', data: {
-      'count': routeHazards.length,
-    });
-    for (int i = 0; i < routeHazards.length; i++) {
-      AppLogger.debug('Hazard $i', tag: 'HAZARD', data: {
-        'index': i,
-        'title': routeHazards[i].warning.title,
-        'distanceAlongRoute': '${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m',
-      });
-    }
-
-    if (currentPosition == null || routePoints.isEmpty) {
-      AppLogger.debug('No current position or route points', tag: 'HAZARD');
-      return [];
-    }
-
-    // Calculate current position's distance along route
-    final Distance distance = const Distance();
-    double currentDistanceAlongRoute = 0;
-
-    // Find current segment and calculate distance from start
-    final currentSegmentIndex = navState.currentSegmentIndex;
-    for (int i = 0; i < currentSegmentIndex && i < routePoints.length - 1; i++) {
-      currentDistanceAlongRoute += distance.as(
-        LengthUnit.Meter,
-        routePoints[i],
-        routePoints[i + 1],
-      );
-    }
-
-    // Add distance from current segment start to current position
-    if (currentSegmentIndex < routePoints.length) {
-      currentDistanceAlongRoute += distance.as(
-        LengthUnit.Meter,
-        routePoints[currentSegmentIndex],
-        currentPosition,
-      );
-    }
-
-    AppLogger.debug('Current position on route', tag: 'HAZARD', data: {
-      'distanceAlongRoute': '${currentDistanceAlongRoute.toStringAsFixed(0)}m',
-      'segmentIndex': currentSegmentIndex,
-    });
-
-    // Find all upcoming hazards (ahead of current position)
-    final List<Map<String, dynamic>> upcomingHazards = [];
-
-    for (final hazard in routeHazards) {
-      // Only consider hazards ahead on the route
-      if (hazard.distanceAlongRoute > currentDistanceAlongRoute) {
-        final distanceAhead = hazard.distanceAlongRoute - currentDistanceAlongRoute;
-        upcomingHazards.add({
-          'hazard': hazard,
-          'distanceAhead': distanceAhead,
-        });
-        AppLogger.debug('Upcoming hazard', tag: 'HAZARD', data: {
-          'title': hazard.warning.title,
-          'distanceAhead': '${distanceAhead.toStringAsFixed(0)}m',
-        });
-      } else {
-        AppLogger.debug('Passed hazard', tag: 'HAZARD', data: {
-          'title': hazard.warning.title,
-          'distanceAlongRoute': '${hazard.distanceAlongRoute.toStringAsFixed(0)}m',
-        });
-      }
-    }
-
-    // Sort by distance ahead
-    upcomingHazards.sort((a, b) => (a['distanceAhead'] as double).compareTo(b['distanceAhead'] as double));
-
-    AppLogger.debug('Total upcoming hazards', tag: 'HAZARD', data: {
-      'count': upcomingHazards.length,
-    });
-
-    if (upcomingHazards.isEmpty) {
-      AppLogger.debug('No upcoming hazards, returning empty', tag: 'HAZARD');
-      return [];
-    }
-
-    // Build UI for all upcoming hazards
-    final List<Widget> hazardWidgets = [
+    // Has warnings - show header + list
+    final List<Widget> warningWidgets = [
       const SizedBox(height: 12),
       Divider(color: Colors.grey.shade300, height: 1),
       const SizedBox(height: 8),
     ];
 
-    // Add each hazard as a row
-    for (int i = 0; i < upcomingHazards.length; i++) {
-      final hazardData = upcomingHazards[i];
-      final RouteHazard hazard = hazardData['hazard'] as RouteHazard;
-      final double distanceAhead = hazardData['distanceAhead'] as double;
-      final hazardIcon = _getHazardIcon(hazard.warning.type);
-
-      if (i > 0) {
-        hazardWidgets.add(const SizedBox(height: 6)); // Spacing between hazards
-      }
-
-      hazardWidgets.add(
-        Container(
+    // Header: "⚠️ Warnings (N) ▼/▶" - tap to toggle
+    warningWidgets.add(
+      GestureDetector(
+        onTap: () {
+          ref.read(navigationProvider.notifier).toggleWarningsExpanded();
+        },
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.red.shade50,
+            color: Colors.grey.shade100,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.red.shade200),
           ),
           child: Row(
             children: [
-              Icon(hazardIcon, color: Colors.red.shade700, size: 18),
+              const Text('⚠️', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text(
+                'Warnings (${warnings.length})',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                navState.warningsExpanded ? Icons.expand_less : Icons.expand_more,
+                size: 20,
+                color: Colors.grey.shade700,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Show warnings based on expanded state
+    final warningsToShow = navState.warningsExpanded
+        ? warnings
+        : (warnings.isNotEmpty ? [warnings.first] : <RouteWarning>[]);
+
+    for (int i = 0; i < warningsToShow.length; i++) {
+      final warning = warningsToShow[i];
+
+      warningWidgets.add(const SizedBox(height: 6));
+
+      warningWidgets.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: warning.backgroundColor,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: warning.borderColor),
+          ),
+          child: Row(
+            children: [
+              Text(
+                warning.icon,
+                style: const TextStyle(fontSize: 16),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  hazard.warning.title,
+                  warning.title,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -975,10 +928,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
               ),
               const SizedBox(width: 8),
               Text(
-                '${distanceAhead.toStringAsFixed(0)}m',
+                warning.distanceText,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.red.shade700,
+                  color: warning.textColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -988,7 +941,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       );
     }
 
-    return hazardWidgets;
+    return warningWidgets;
   }
 
   /// Format distance in meters to human-readable string
