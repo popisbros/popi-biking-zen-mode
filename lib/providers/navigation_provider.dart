@@ -6,11 +6,13 @@ import '../models/location_data.dart';
 import '../models/navigation_state.dart';
 import '../models/maneuver_instruction.dart';
 import '../models/community_warning.dart';
+import '../models/route_warning.dart';
 import '../services/routing_service.dart';
 import '../services/navigation_engine.dart';
 import '../services/location_service.dart';
 import '../services/toast_service.dart';
 import '../services/route_hazard_detector.dart';
+import '../services/road_surface_analyzer.dart';
 import '../utils/app_logger.dart';
 import 'community_provider.dart';
 
@@ -127,6 +129,35 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'count': _detectedManeuvers.length,
     });
 
+    // Merge community warnings and road surface warnings
+    final List<RouteWarning> mergedWarnings = [];
+
+    // 1. Add community warnings (from RouteHazard)
+    for (final hazard in routeHazards) {
+      mergedWarnings.add(RouteWarning(
+        type: RouteWarningType.community,
+        distanceAlongRoute: hazard.distanceAlongRoute,
+        distanceFromUser: hazard.distanceAlongRoute, // Will be updated on location updates
+        communityWarning: hazard.warning,
+      ));
+    }
+
+    // 2. Add road surface warnings
+    final surfaceWarnings = RoadSurfaceAnalyzer.analyzeRouteSurface(
+      route: route,
+      currentPosition: null, // No position yet at start
+    );
+    mergedWarnings.addAll(surfaceWarnings);
+
+    // 3. Sort by distance along route
+    mergedWarnings.sort((a, b) => a.distanceAlongRoute.compareTo(b.distanceAlongRoute));
+
+    AppLogger.success('Warnings merged', tag: 'NAVIGATION', data: {
+      'community': routeHazards.length,
+      'surface': surfaceWarnings.length,
+      'total': mergedWarnings.length,
+    });
+
     // Initialize navigation state
     final initialPosition = route.points.first;
     final nextManeuver = NavigationEngine.findNextManeuver(_detectedManeuvers, 0);
@@ -151,6 +182,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
       isOffRoute: false,
       showingOffRouteDialog: false,
       lastUpdateTime: DateTime.now(),
+      routeWarnings: mergedWarnings,
+      warningsExpanded: true,
+      warningsExpandedAt: DateTime.now(),
     );
 
     // Enable wakelock to keep screen on during navigation
@@ -202,6 +236,19 @@ class NavigationNotifier extends Notifier<NavigationState> {
     AppLogger.debug('Dismissing off-route dialog', tag: 'NAVIGATION');
     state = state.copyWith(
       showingOffRouteDialog: false,
+    );
+  }
+
+  /// Toggle warnings section expanded/collapsed
+  void toggleWarningsExpanded() {
+    final newExpanded = !state.warningsExpanded;
+    AppLogger.debug('Toggling warnings', tag: 'NAVIGATION', data: {
+      'expanded': newExpanded,
+    });
+
+    state = state.copyWith(
+      warningsExpanded: newExpanded,
+      warningsExpandedAt: newExpanded ? DateTime.now() : null,
     );
   }
 
@@ -300,6 +347,17 @@ class NavigationNotifier extends Notifier<NavigationState> {
       route.points,
       closestSegment,
     );
+
+    // Calculate current distance along route (for warnings)
+    final Distance distance = const Distance();
+    double currentDistanceAlongRoute = 0.0;
+    for (int i = 0; i < closestSegment && i < route.points.length - 1; i++) {
+      currentDistanceAlongRoute += distance.as(
+        LengthUnit.Meter,
+        route.points[i],
+        route.points[i + 1],
+      );
+    }
 
     // Find next maneuver
     final nextManeuver = NavigationEngine.findNextManeuver(
@@ -413,6 +471,46 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'avgWithoutStops': '${(newAvgSpeedWithoutStops * 3.6).toStringAsFixed(1)} km/h',
     });
 
+    // Auto-collapse warnings after 10 seconds
+    bool warningsExpanded = state.warningsExpanded;
+    DateTime? warningsExpandedAt = state.warningsExpandedAt;
+
+    if (warningsExpanded && warningsExpandedAt != null) {
+      final secondsSinceExpanded = now.difference(warningsExpandedAt).inSeconds;
+      if (secondsSinceExpanded >= 10) {
+        warningsExpanded = false;
+        warningsExpandedAt = null;
+        AppLogger.debug('Auto-collapsing warnings after 10s', tag: 'NAVIGATION');
+      }
+    }
+
+    // Update warnings with current distance from user
+    final List<RouteWarning> updatedWarnings = [];
+    for (final warning in state.routeWarnings) {
+      // Only include warnings ahead of user
+      final distanceFromUser = warning.distanceAlongRoute - currentDistanceAlongRoute;
+      if (distanceFromUser > 0) {
+        // Create updated warning with new distanceFromUser
+        if (warning.type == RouteWarningType.community) {
+          updatedWarnings.add(RouteWarning(
+            type: warning.type,
+            distanceAlongRoute: warning.distanceAlongRoute,
+            distanceFromUser: distanceFromUser,
+            communityWarning: warning.communityWarning,
+          ));
+        } else {
+          updatedWarnings.add(RouteWarning(
+            type: warning.type,
+            distanceAlongRoute: warning.distanceAlongRoute,
+            distanceFromUser: distanceFromUser,
+            surfaceQuality: warning.surfaceQuality,
+            surfaceLength: warning.surfaceLength,
+            surfaceType: warning.surfaceType,
+          ));
+        }
+      }
+    }
+
     // Update state
     state = state.copyWith(
       currentPosition: currentPos,
@@ -434,6 +532,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
       totalDistanceTraveled: newTotalDistanceTraveled,
       totalTimeElapsed: newTotalTimeElapsed,
       totalTimeMoving: newTotalTimeMoving,
+      routeWarnings: updatedWarnings,
+      warningsExpanded: warningsExpanded,
+      warningsExpandedAt: warningsExpandedAt,
     );
 
     // Log navigation update (every update for debugging)
