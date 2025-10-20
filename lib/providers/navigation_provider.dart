@@ -371,6 +371,48 @@ class NavigationNotifier extends Notifier<NavigationState> {
       isApproaching = false;
     }
 
+    // Calculate speed averages and tracking
+    final timeSinceLastUpdate = state.lastUpdateTime != null
+        ? now.difference(state.lastUpdateTime!).inSeconds
+        : 3;
+
+    // Calculate distance traveled since last update
+    double distanceTraveled = 0.0;
+    if (state.currentPosition != null) {
+      final Distance distance = const Distance();
+      distanceTraveled = distance.as(
+        LengthUnit.Meter,
+        state.currentPosition!,
+        currentPos,
+      );
+    }
+
+    // Update totals
+    final newTotalDistanceTraveled = state.totalDistanceTraveled + distanceTraveled;
+    final newTotalTimeElapsed = state.totalTimeElapsed + timeSinceLastUpdate;
+
+    // Track time moving (speed >= 0.5 m/s)
+    final isMoving = speed >= 0.5;
+    final newTotalTimeMoving = state.totalTimeMoving + (isMoving ? timeSinceLastUpdate : 0);
+
+    // Calculate averages
+    final newAvgSpeedWithStops = newTotalTimeElapsed > 0
+        ? newTotalDistanceTraveled / newTotalTimeElapsed
+        : 0.0;
+
+    final newAvgSpeedWithoutStops = newTotalTimeMoving > 0
+        ? newTotalDistanceTraveled / newTotalTimeMoving
+        : 0.0;
+
+    AppLogger.debug('Speed tracking', tag: 'NAVIGATION', data: {
+      'distanceTraveled': '${distanceTraveled.toStringAsFixed(1)}m',
+      'totalDistance': '${newTotalDistanceTraveled.toStringAsFixed(0)}m',
+      'totalTime': '${newTotalTimeElapsed}s',
+      'timeMoving': '${newTotalTimeMoving}s',
+      'avgWithStops': '${(newAvgSpeedWithStops * 3.6).toStringAsFixed(1)} km/h',
+      'avgWithoutStops': '${(newAvgSpeedWithoutStops * 3.6).toStringAsFixed(1)} km/h',
+    });
+
     // Update state
     state = state.copyWith(
       currentPosition: currentPos,
@@ -387,6 +429,11 @@ class NavigationNotifier extends Notifier<NavigationState> {
       isApproachingDestination: isApproaching,
       hasArrived: hasArrived,
       arrivalZoneEntryTime: arrivalZoneEntry,
+      averageSpeedWithStops: newAvgSpeedWithStops,
+      averageSpeedWithoutStops: newAvgSpeedWithoutStops,
+      totalDistanceTraveled: newTotalDistanceTraveled,
+      totalTimeElapsed: newTotalTimeElapsed,
+      totalTimeMoving: newTotalTimeMoving,
     );
 
     // Log navigation update (every update for debugging)

@@ -58,6 +58,21 @@ class NavigationState {
   /// Timestamp when user first entered arrival zone
   final DateTime? arrivalZoneEntryTime;
 
+  /// Average speed including stops (m/s) - for pessimistic ETA
+  final double averageSpeedWithStops;
+
+  /// Average speed excluding stops (m/s) - for optimistic ETA
+  final double averageSpeedWithoutStops;
+
+  /// Total distance traveled during navigation (meters)
+  final double totalDistanceTraveled;
+
+  /// Total time elapsed during navigation (seconds)
+  final int totalTimeElapsed;
+
+  /// Total time spent moving (speed >= 0.5 m/s) in seconds
+  final int totalTimeMoving;
+
   const NavigationState({
     this.isNavigating = false,
     this.activeRoute,
@@ -77,6 +92,11 @@ class NavigationState {
     this.isApproachingDestination = false,
     this.hasArrived = false,
     this.arrivalZoneEntryTime,
+    this.averageSpeedWithStops = 0.0,
+    this.averageSpeedWithoutStops = 0.0,
+    this.totalDistanceTraveled = 0.0,
+    this.totalTimeElapsed = 0,
+    this.totalTimeMoving = 0,
   });
 
   /// Get human-readable remaining distance
@@ -108,9 +128,29 @@ class NavigationState {
     return currentSpeed! * 3.6;
   }
 
-  /// Get formatted speed string
+  /// Get formatted speed string with averages
+  /// Format: "Live - AvgWithStops / AvgWithoutStops"
   String get speedText {
-    return '${speedKmh.toStringAsFixed(1)} km/h';
+    final live = speedKmh.toStringAsFixed(1);
+    final avgWithStops = (averageSpeedWithStops * 3.6).toStringAsFixed(1);
+    final avgWithoutStops = (averageSpeedWithoutStops * 3.6).toStringAsFixed(1);
+
+    // Show averages only if we have meaningful data (at least 30 seconds of navigation)
+    if (totalTimeElapsed < 30) {
+      return '$live km/h';
+    }
+
+    return '$live - $avgWithStops / $avgWithoutStops km/h';
+  }
+
+  /// Get average speed including stops in km/h
+  double get averageSpeedWithStopsKmh {
+    return averageSpeedWithStops * 3.6;
+  }
+
+  /// Get average speed excluding stops in km/h
+  double get averageSpeedWithoutStopsKmh {
+    return averageSpeedWithoutStops * 3.6;
   }
 
   /// Get estimated time of arrival
@@ -124,6 +164,75 @@ class NavigationState {
     final eta = estimatedArrival;
     if (eta == null) return '--:--';
     return '${eta.hour.toString().padLeft(2, '0')}:${eta.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Calculate ETA range using both speed averages
+  /// Returns [pessimistic_seconds, optimistic_seconds]
+  List<int> get etaRangeSeconds {
+    if (totalDistanceRemaining == 0) return [0, 0];
+
+    // Pessimistic: using average with stops (slower)
+    int pessimisticSeconds = estimatedTimeRemaining;
+    if (averageSpeedWithStops > 0.5) {
+      pessimisticSeconds = (totalDistanceRemaining / averageSpeedWithStops).round();
+    }
+
+    // Optimistic: using average without stops (faster)
+    int optimisticSeconds = estimatedTimeRemaining;
+    if (averageSpeedWithoutStops > 0.5) {
+      optimisticSeconds = (totalDistanceRemaining / averageSpeedWithoutStops).round();
+    }
+
+    return [pessimisticSeconds, optimisticSeconds];
+  }
+
+  /// Get formatted ETA range as text
+  /// Format: "10:30 - 10:45" (pessimistic to optimistic)
+  String get etaRangeText {
+    if (!isNavigating || lastUpdateTime == null || totalTimeElapsed < 30) {
+      return etaText; // Fall back to single ETA if not enough data
+    }
+
+    final range = etaRangeSeconds;
+    final pessimisticEta = lastUpdateTime!.add(Duration(seconds: range[0]));
+    final optimisticEta = lastUpdateTime!.add(Duration(seconds: range[1]));
+
+    final pessimisticStr = '${pessimisticEta.hour.toString().padLeft(2, '0')}:${pessimisticEta.minute.toString().padLeft(2, '0')}';
+    final optimisticStr = '${optimisticEta.hour.toString().padLeft(2, '0')}:${optimisticEta.minute.toString().padLeft(2, '0')}';
+
+    // If same minute, just show one time
+    if (pessimisticStr == optimisticStr) {
+      return pessimisticStr;
+    }
+
+    return '$pessimisticStr - $optimisticStr';
+  }
+
+  /// Get formatted remaining time range
+  /// Format: "25-30 min" (optimistic to pessimistic)
+  String get remainingTimeRangeText {
+    if (totalTimeElapsed < 30) {
+      return remainingTimeText; // Fall back to single time if not enough data
+    }
+
+    final range = etaRangeSeconds;
+    final optimisticMin = (range[1] / 60).round();
+    final pessimisticMin = (range[0] / 60).round();
+
+    // If difference is small, show single value
+    if ((pessimisticMin - optimisticMin).abs() <= 1) {
+      return remainingTimeText;
+    }
+
+    if (optimisticMin < 60 && pessimisticMin < 60) {
+      return '$optimisticMin-$pessimisticMin min';
+    } else {
+      final optHours = (optimisticMin / 60).floor();
+      final optMins = optimisticMin % 60;
+      final pessHours = (pessimisticMin / 60).floor();
+      final pessMins = pessimisticMin % 60;
+      return '${optHours}h${optMins}min - ${pessHours}h${pessMins}min';
+    }
   }
 
   /// Get navigation progress (0.0 to 1.0)
@@ -153,6 +262,11 @@ class NavigationState {
     bool? isApproachingDestination,
     bool? hasArrived,
     DateTime? arrivalZoneEntryTime,
+    double? averageSpeedWithStops,
+    double? averageSpeedWithoutStops,
+    double? totalDistanceTraveled,
+    int? totalTimeElapsed,
+    int? totalTimeMoving,
   }) {
     return NavigationState(
       isNavigating: isNavigating ?? this.isNavigating,
@@ -173,6 +287,11 @@ class NavigationState {
       isApproachingDestination: isApproachingDestination ?? this.isApproachingDestination,
       hasArrived: hasArrived ?? this.hasArrived,
       arrivalZoneEntryTime: arrivalZoneEntryTime ?? this.arrivalZoneEntryTime,
+      averageSpeedWithStops: averageSpeedWithStops ?? this.averageSpeedWithStops,
+      averageSpeedWithoutStops: averageSpeedWithoutStops ?? this.averageSpeedWithoutStops,
+      totalDistanceTraveled: totalDistanceTraveled ?? this.totalDistanceTraveled,
+      totalTimeElapsed: totalTimeElapsed ?? this.totalTimeElapsed,
+      totalTimeMoving: totalTimeMoving ?? this.totalTimeMoving,
     );
   }
 

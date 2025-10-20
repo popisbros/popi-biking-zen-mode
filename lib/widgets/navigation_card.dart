@@ -419,7 +419,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          navState.etaText,
+                          navState.etaRangeText,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
