@@ -309,27 +309,25 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   ),
                 ),
               ),
-              // Current speed (if available)
-              if (navState.currentSpeed != null && navState.currentSpeed! > 0) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.speed,
-                      size: 16,
+              // Current speed (always visible)
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.speed,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    navState.speedText,
+                    style: TextStyle(
+                      fontSize: 12,
                       color: Colors.grey.shade600,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      navState.speedText,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
 
               // Warnings Section (community + road surface)
               ..._buildWarningsSection(navState),
