@@ -53,86 +53,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     return null;
   }
 
-  /// Get next segment info (surface type and distance)
-  /// currentSegmentIndex = current POINT index (not segment range)
-  /// GraphHopper segment = range of points with same surface (e.g., [0-50] = points 0 to 50)
-  Map<String, dynamic>? _getNextSegmentInfo(int currentPointIndex, Map<String, dynamic>? pathDetails, List<LatLng>? routePoints) {
-    if (pathDetails == null || !pathDetails.containsKey('surface') || routePoints == null) return null;
-
-    final surfaceList = pathDetails['surface'] as List?;
-    if (surfaceList == null || surfaceList.isEmpty) return null;
-
-    // Find which GraphHopper segment the current point is in
-    int? currentSegmentEnd;
-    String? currentSurface;
-
-    for (final detail in surfaceList) {
-      final detailData = detail as List;
-      final start = detailData[0] as int;
-      final end = detailData[1] as int;
-      final surfaceType = detailData[2] as String;
-
-      // Check if current point is within this segment's range
-      if (currentPointIndex >= start && currentPointIndex < end) {
-        currentSegmentEnd = end;
-        currentSurface = surfaceType;
-        break;
-      }
-    }
-
-    if (currentSegmentEnd == null) return null;
-
-    // Find the IMMEDIATE next segment (smallest start index > currentSegmentEnd)
-    int? nextSegmentStart;
-    int? nextSegmentEnd;
-    String? nextSurface;
-
-    for (final detail in surfaceList) {
-      final detailData = detail as List;
-      final start = detailData[0] as int;
-      final end = detailData[1] as int;
-      final surfaceType = detailData[2] as String;
-
-      // Look for segments that start after current segment ends
-      if (start >= currentSegmentEnd) {
-        if (nextSegmentStart == null || start < nextSegmentStart) {
-          nextSegmentStart = start;
-          nextSegmentEnd = end;
-          nextSurface = surfaceType;
-        }
-      }
-    }
-
-    if (nextSegmentStart == null || nextSegmentEnd == null || nextSurface == null) {
-      return null;
-    }
-
-    // Calculate distance from current point to the start of next segment
-    double distanceToSegment = 0;
-    for (int i = currentPointIndex; i < nextSegmentStart && i < routePoints.length - 1; i++) {
-      distanceToSegment += const Distance().as(
-        LengthUnit.Meter,
-        routePoints[i],
-        routePoints[i + 1],
-      );
-    }
-
-    // Calculate length of the next segment
-    double segmentLength = 0;
-    for (int i = nextSegmentStart; i < nextSegmentEnd && i < routePoints.length - 1; i++) {
-      segmentLength += const Distance().as(
-        LengthUnit.Meter,
-        routePoints[i],
-        routePoints[i + 1],
-      );
-    }
-
-    return {
-      'surface': nextSurface,
-      'distanceToSegment': distanceToSegment,
-      'segmentLength': segmentLength,
-    };
-  }
 
   /// Check if surface requires warning (not excellent or good)
   bool _surfaceNeedsWarning(dynamic surface) {
@@ -222,13 +142,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       'surface',
     );
 
-    // Get next segment info
-    final nextSegmentInfo = _getNextSegmentInfo(
-      navState.currentSegmentIndex,
-      navState.activeRoute?.pathDetails,
-      navState.activeRoute?.points,
-    );
-
     return Container(
       width: double.infinity,
       color: Colors.white,
@@ -288,26 +201,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          // Next segment info (only show if next segment has a warning)
-                          if (nextSegmentInfo != null && _surfaceNeedsWarning(nextSegmentInfo['surface'])) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.warning, size: 14, color: Colors.orange),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    'In ${(nextSegmentInfo['distanceToSegment'] as double).toInt()}m ${nextSegmentInfo['surface']} during ${(nextSegmentInfo['segmentLength'] as double).toInt()}m',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.orange.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -950,28 +843,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       return '${(meters / 10).round() * 10} meters';
     } else {
       return '${(meters / 1000).toStringAsFixed(1)} km';
-    }
-  }
-
-  /// Get icon for hazard type
-  IconData _getHazardIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'pothole':
-        return Icons.warning;
-      case 'broken_glass':
-        return Icons.dangerous;
-      case 'roadwork':
-        return Icons.construction;
-      case 'debris':
-        return Icons.warning_amber;
-      case 'poor_surface':
-        return Icons.terrain;
-      case 'traffic':
-        return Icons.traffic;
-      case 'accident':
-        return Icons.car_crash;
-      default:
-        return Icons.warning;
     }
   }
 
