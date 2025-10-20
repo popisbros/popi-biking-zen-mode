@@ -151,13 +151,14 @@ class AppLogger {
 
   /// Internal logging method
   static void _log(String icon, String tag, String message, Map<String, dynamic>? data) {
-    // Format timestamp in local time (HH:mm:ss.mmm)
+    // Format timestamp in local time (HH:mm:ss.mmm) for console only
     final now = DateTime.now();
     final hours = now.hour.toString().padLeft(2, '0');
     final minutes = now.minute.toString().padLeft(2, '0');
     final seconds = now.second.toString().padLeft(2, '0');
     final millis = now.millisecond.toString().padLeft(3, '0');
     final timestamp = '$hours:$minutes:$seconds.$millis';
+
     final buffer = StringBuffer();
     buffer.write('$icon [$tag] $message');
 
@@ -166,18 +167,19 @@ class AppLogger {
       buffer.write(data.entries.map((e) => '${e.key}: ${e.value}').join(', '));
     }
 
-    final formattedMessage = '[$timestamp] ${buffer.toString()}';
+    final logMessage = buffer.toString();
+    final consoleMessage = '[$timestamp] $logMessage';
 
-    // Print to console
-    debugPrint(formattedMessage);
+    // Print to console with timestamp
+    debugPrint(consoleMessage);
 
-    // Add to buffer and stream (only in debug mode)
+    // Add to buffer and stream WITHOUT timestamp (for debug overlay)
     if (kDebugMode) {
-      _logBuffer.add(formattedMessage);
+      _logBuffer.add(logMessage);
       if (_logBuffer.length > _maxBufferSize) {
         _logBuffer.removeAt(0);
       }
-      _logStreamController.add(formattedMessage);
+      _logStreamController.add(logMessage);
     }
   }
 
