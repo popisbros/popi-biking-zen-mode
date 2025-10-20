@@ -2,19 +2,26 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/app_logger.dart';
 
+class DebugLogEntry {
+  final String message;
+  final DateTime timestamp;
+
+  DebugLogEntry(this.message, this.timestamp);
+}
+
 class DebugState {
   final bool isVisible;
-  final String messages;
+  final List<DebugLogEntry> logEntries;
 
   const DebugState({
     this.isVisible = false,
-    this.messages = '',
+    this.logEntries = const [],
   });
 
-  DebugState copyWith({bool? isVisible, String? messages}) {
+  DebugState copyWith({bool? isVisible, List<DebugLogEntry>? logEntries}) {
     return DebugState(
       isVisible: isVisible ?? this.isVisible,
-      messages: messages ?? this.messages,
+      logEntries: logEntries ?? this.logEntries,
     );
   }
 }
@@ -37,9 +44,11 @@ class DebugNotifier extends Notifier<DebugState> {
     });
 
     // Load existing logs from AppLogger buffer
-    final existingLogs = AppLogger.recentLogs.join('\n');
+    final existingLogs = AppLogger.recentLogs
+        .map((msg) => DebugLogEntry(msg, DateTime.now()))
+        .toList();
 
-    return DebugState(messages: existingLogs);
+    return DebugState(logEntries: existingLogs);
   }
 
   void toggleVisibility() {
@@ -47,8 +56,10 @@ class DebugNotifier extends Notifier<DebugState> {
 
     if (newVisibility) {
       // When opening, load all recent logs from AppLogger
-      final allLogs = AppLogger.recentLogs.join('\n');
-      state = state.copyWith(isVisible: true, messages: allLogs);
+      final allLogs = AppLogger.recentLogs
+          .map((msg) => DebugLogEntry(msg, DateTime.now()))
+          .toList();
+      state = state.copyWith(isVisible: true, logEntries: allLogs);
     } else {
       // When closing, keep messages but hide overlay
       state = state.copyWith(isVisible: false);
@@ -58,19 +69,20 @@ class DebugNotifier extends Notifier<DebugState> {
   void _addLogMessage(String logMessage) {
     if (!state.isVisible) return;
 
-    // Add new log at the top
-    var updatedMessages = '$logMessage\n${state.messages}';
+    // Add new log at the top with current timestamp
+    final newEntry = DebugLogEntry(logMessage, DateTime.now());
+    final updatedEntries = [newEntry, ...state.logEntries];
 
-    // Limit to 10,000 characters
-    if (updatedMessages.length > 10000) {
-      updatedMessages = updatedMessages.substring(0, 10000);
-    }
+    // Limit to 50 entries (last 50 lines)
+    final limitedEntries = updatedEntries.length > 50
+        ? updatedEntries.sublist(0, 50)
+        : updatedEntries;
 
-    state = state.copyWith(messages: updatedMessages);
+    state = state.copyWith(logEntries: limitedEntries);
   }
 
   void clearMessages() {
-    state = state.copyWith(messages: '');
+    state = state.copyWith(logEntries: []);
   }
 }
 
