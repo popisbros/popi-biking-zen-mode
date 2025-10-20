@@ -1,6 +1,7 @@
 import 'package:latlong2/latlong.dart';
 import '../services/routing_service.dart';
 import 'maneuver_instruction.dart';
+import 'route_warning.dart';
 
 /// State for turn-by-turn navigation
 class NavigationState {
@@ -73,6 +74,15 @@ class NavigationState {
   /// Total time spent moving (speed >= 0.5 m/s) in seconds
   final int totalTimeMoving;
 
+  /// Unified warnings list (community + road surface)
+  final List<RouteWarning> routeWarnings;
+
+  /// Whether warnings section is expanded
+  final bool warningsExpanded;
+
+  /// When warnings section was last expanded (for 10s auto-collapse)
+  final DateTime? warningsExpandedAt;
+
   const NavigationState({
     this.isNavigating = false,
     this.activeRoute,
@@ -97,6 +107,9 @@ class NavigationState {
     this.totalDistanceTraveled = 0.0,
     this.totalTimeElapsed = 0,
     this.totalTimeMoving = 0,
+    this.routeWarnings = const [],
+    this.warningsExpanded = true,
+    this.warningsExpandedAt,
   });
 
   /// Get human-readable remaining distance
@@ -267,6 +280,9 @@ class NavigationState {
     double? totalDistanceTraveled,
     int? totalTimeElapsed,
     int? totalTimeMoving,
+    List<RouteWarning>? routeWarnings,
+    bool? warningsExpanded,
+    DateTime? warningsExpandedAt,
   }) {
     return NavigationState(
       isNavigating: isNavigating ?? this.isNavigating,
@@ -292,6 +308,9 @@ class NavigationState {
       totalDistanceTraveled: totalDistanceTraveled ?? this.totalDistanceTraveled,
       totalTimeElapsed: totalTimeElapsed ?? this.totalTimeElapsed,
       totalTimeMoving: totalTimeMoving ?? this.totalTimeMoving,
+      routeWarnings: routeWarnings ?? this.routeWarnings,
+      warningsExpanded: warningsExpanded ?? this.warningsExpanded,
+      warningsExpandedAt: warningsExpandedAt ?? this.warningsExpandedAt,
     );
   }
 
