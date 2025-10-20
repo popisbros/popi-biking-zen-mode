@@ -152,6 +152,28 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          // GraphHopper instruction (for comparison)
+                          if (currentInstruction != null) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade50,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.amber.shade300, width: 1),
+                              ),
+                              child: Text(
+                                'GH: ${currentInstruction.text}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.amber.shade900,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
