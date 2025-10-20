@@ -145,6 +145,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   ),
                   zoom: mapState.zoom, // Use zoom from state (stored in Mapbox scale)
                   pitch: _currentPitch, // Dynamic pitch angle
+                  bearing: 0.0, // North up (exploration mode)
                 )
               : _getDefaultCamera();
 
@@ -196,6 +197,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ),
       zoom: mapState.zoom, // Use zoom from state (synced with 2D map)
       pitch: _currentPitch, // Dynamic pitch angle
+      bearing: 0.0, // North up (exploration mode)
     );
   }
 
@@ -1350,15 +1352,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       // Refresh markers to remove route polyline
                       _addMarkers();
 
-                      // Restore pitch to previous value (only in 3D mode)
+                      // Restore pitch and reset bearing to North
                       if (_mapboxMap != null && _pitchBeforeNavigation != null) {
                         await _mapboxMap!.easeTo(
-                          CameraOptions(pitch: _pitchBeforeNavigation!),
+                          CameraOptions(
+                            pitch: _pitchBeforeNavigation!,
+                            bearing: 0.0, // Reset to North up (exploration mode)
+                          ),
                           MapAnimationOptions(duration: 500),
                         );
                         _currentPitch = _pitchBeforeNavigation!;
-                        AppLogger.debug('Restored pitch after navigation', tag: 'NAVIGATION', data: {
+                        AppLogger.debug('Restored pitch and reset bearing after navigation', tag: 'NAVIGATION', data: {
                           'pitch': '${_pitchBeforeNavigation!}°',
+                          'bearing': '0° (North)',
                         });
                         _pitchBeforeNavigation = null;
                       }
