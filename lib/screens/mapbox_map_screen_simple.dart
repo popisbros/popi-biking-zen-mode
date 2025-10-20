@@ -2407,6 +2407,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Check if turn-by-turn navigation is active
     final turnByTurnNavState = ref.read(navigationProvider);
 
+    AppLogger.debug('Route rendering decision', tag: 'MAP', data: {
+      'isNavigating': turnByTurnNavState.isNavigating,
+      'hasActiveRoute': turnByTurnNavState.activeRoute != null,
+      'hasRoutePoints': routePoints != null && routePoints!.isNotEmpty,
+    });
+
     // Use navigation route if active, otherwise use selected route
     List<latlong.LatLng>? routeToRender;
     bool isNavigating = false;
@@ -2427,6 +2433,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'points': routeToRender.length,
       });
     } else {
+      AppLogger.debug('No route to render - layers/sources cleared', tag: 'MAP');
       return; // No route to render
     }
 
