@@ -1337,8 +1337,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       setState(() {
                         _activeRoute = null;
                       });
+
+                      // Stop turn-by-turn navigation
+                      ref.read(navigationProvider.notifier).stopNavigation();
+
+                      // Stop route navigation mode
+                      ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+
                       // Clear route from search provider to remove from map
                       ref.read(searchProvider.notifier).clearRoute();
+
                       // Refresh markers to remove route polyline
                       _addMarkers();
 
