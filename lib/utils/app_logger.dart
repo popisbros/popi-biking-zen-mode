@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
@@ -14,6 +15,20 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 class AppLogger {
   // Private constructor to prevent instantiation
   AppLogger._();
+
+  /// Log stream for debug overlay (only active in debug mode)
+  static final StreamController<String> _logStreamController =
+      kDebugMode ? StreamController<String>.broadcast() : StreamController<String>();
+
+  /// Stream of formatted log messages for debug overlay
+  static Stream<String> get logStream => _logStreamController.stream;
+
+  /// Recent logs buffer (last 200 entries, only in debug mode)
+  static final List<String> _logBuffer = kDebugMode ? [] : const [];
+  static const int _maxBufferSize = 200;
+
+  /// Get recent logs
+  static List<String> get recentLogs => kDebugMode ? List.unmodifiable(_logBuffer) : const [];
 
   /// Log levels
   static const String _infoIcon = 'ℹ️';
@@ -145,7 +160,19 @@ class AppLogger {
       buffer.write(data.entries.map((e) => '${e.key}: ${e.value}').join(', '));
     }
 
-    debugPrint('[$timestamp] ${buffer.toString()}');
+    final formattedMessage = '[$timestamp] ${buffer.toString()}';
+
+    // Print to console
+    debugPrint(formattedMessage);
+
+    // Add to buffer and stream (only in debug mode)
+    if (kDebugMode) {
+      _logBuffer.add(formattedMessage);
+      if (_logBuffer.length > _maxBufferSize) {
+        _logBuffer.removeAt(0);
+      }
+      _logStreamController.add(formattedMessage);
+    }
   }
 
   /// Performance timing utility

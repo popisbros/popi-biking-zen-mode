@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/app_logger.dart';
 
@@ -19,45 +20,52 @@ class DebugState {
 }
 
 class DebugNotifier extends Notifier<DebugState> {
+  StreamSubscription<String>? _logSubscription;
+
   @override
-  DebugState build() => const DebugState();
+  DebugState build() {
+    // Subscribe to AppLogger stream
+    _logSubscription = AppLogger.logStream.listen((logMessage) {
+      if (state.isVisible) {
+        _addLogMessage(logMessage);
+      }
+    });
+
+    // Clean up subscription when provider is disposed
+    ref.onDispose(() {
+      _logSubscription?.cancel();
+    });
+
+    // Load existing logs from AppLogger buffer
+    final existingLogs = AppLogger.recentLogs.join('\n');
+
+    return DebugState(messages: existingLogs);
+  }
 
   void toggleVisibility() {
     final newVisibility = !state.isVisible;
-    AppLogger.debug('Changing visibility', tag: 'DEBUG', data: {
-      'from': state.isVisible,
-      'to': newVisibility,
-    });
-    state = state.copyWith(
-      isVisible: newVisibility,
-      messages: state.isVisible ? '' : state.messages, // Clear when closing
-    );
+
+    if (newVisibility) {
+      // When opening, load all recent logs from AppLogger
+      final allLogs = AppLogger.recentLogs.join('\n');
+      state = state.copyWith(isVisible: true, messages: allLogs);
+    } else {
+      // When closing, keep messages but hide overlay
+      state = state.copyWith(isVisible: false);
+    }
   }
 
-  void addDebugMessage(String message) {
-    AppLogger.debug('Called', tag: 'DEBUG', data: {
-      'message': message,
-      'isVisible': state.isVisible,
-    });
+  void _addLogMessage(String logMessage) {
+    if (!state.isVisible) return;
 
-    if (!state.isVisible) {
-      AppLogger.debug('Skipped - overlay not visible', tag: 'DEBUG');
-      return; // Only collect when sheet is open
-    }
-
-    final timestamp = DateTime.now().toIso8601String().substring(11, 23);
-    final newMessage = '[$timestamp] $message\n';
-    var updatedMessages = newMessage + state.messages;
+    // Add new log at the top
+    var updatedMessages = '$logMessage\n${state.messages}';
 
     // Limit to 10,000 characters
     if (updatedMessages.length > 10000) {
       updatedMessages = updatedMessages.substring(0, 10000);
     }
 
-    AppLogger.debug('Adding message', tag: 'DEBUG', data: {
-      'currentLength': state.messages.length,
-      'newLength': updatedMessages.length,
-    });
     state = state.copyWith(messages: updatedMessages);
   }
 

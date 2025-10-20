@@ -63,7 +63,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   MapboxMap? _mapboxMap;
   bool _isMapReady = false;
   CameraOptions? _initialCamera;
-  String _debugMessage = 'Tap GPS button to test';
   PointAnnotationManager? _pointAnnotationManager;
   Timer? _debounceTimer;
   DateTime? _lastPOILoadTime;
@@ -202,16 +201,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   Future<void> _centerOnUserLocation() async {
     AppLogger.map('GPS button clicked');
-    setState(() => _debugMessage = 'GPS button clicked...');
 
     if (_mapboxMap == null) {
       AppLogger.error('Map not ready', tag: 'Mapbox3D');
-      setState(() => _debugMessage = 'ERROR: Map not ready');
       return;
     }
 
     try {
-      setState(() => _debugMessage = 'Requesting location...');
       AppLogger.map('Reading location from provider');
 
       final locationAsync = ref.read(locationNotifierProvider);
@@ -223,7 +219,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               'lat': location.latitude,
               'lng': location.longitude,
             });
-            setState(() => _debugMessage = 'Got location: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}');
 
             _mapboxMap!.flyTo(
               CameraOptions(
@@ -238,26 +233,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
             Future.delayed(const Duration(seconds: 2), () {
               if (mounted) {
-                setState(() => _debugMessage = 'SUCCESS! Centered on your location');
+                AppLogger.success('Centered on your location', tag: 'Mapbox3D');
               }
             });
           } else {
             AppLogger.error('Location is NULL', tag: 'Mapbox3D');
-            setState(() => _debugMessage = 'ERROR: Location is null (permission denied?)');
           }
         },
         loading: () {
           AppLogger.ios('Location still loading', data: {'screen': 'Mapbox3D'});
-          setState(() => _debugMessage = 'Location is loading...');
         },
         error: (error, _) {
           AppLogger.error('Location error', tag: 'Mapbox3D', error: error);
-          setState(() => _debugMessage = 'ERROR: $error');
         },
       );
     } catch (e) {
       AppLogger.error('Exception', tag: 'Mapbox3D', error: e);
-      setState(() => _debugMessage = 'ERROR: $e');
     }
   }
 
@@ -299,7 +290,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   _pointAnnotationManager = await _mapboxMap?.annotations.createPointAnnotationManager();
                   _addMarkers();
                   Navigator.pop(context);
-                  setState(() => _debugMessage = 'Style changed to ${mapService.getStyleName(style)}');
+                  AppLogger.map('Style changed to ${mapService.getStyleName(style)}');
                 },
               );
             }),
