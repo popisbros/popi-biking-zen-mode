@@ -771,6 +771,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       LatLng(maxLat, maxLon),
     );
 
+    // First, reset rotation to North-up for route preview
+    _mapController.rotate(0.0);
+
+    // Then fit bounds with padding
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
@@ -778,11 +782,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
 
-    AppLogger.debug('Map fitted to route bounds', tag: 'ROUTING', data: {
+    AppLogger.debug('Map fitted to route bounds (North-up)', tag: 'ROUTING', data: {
       'minLat': minLat,
       'maxLat': maxLat,
       'minLon': minLon,
       'maxLon': maxLon,
+      'rotation': '0° (North)',
     });
   }
 
@@ -1458,12 +1463,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         bounds: LatLngBounds(mapState.southWest!, mapState.northEast!),
                         padding: const EdgeInsets.all(0),
                       ),
+                      initialRotation: 0.0, // North-up (exploration mode)
                       onMapEvent: _onMapEvent,
                       onLongPress: _onMapLongPress,
                     )
                   : MapOptions(
                       initialCenter: LatLng(location.latitude, location.longitude),
                       initialZoom: mapState.zoom - 1.0, // Convert from Mapbox zoom scale
+                      initialRotation: 0.0, // North-up (exploration mode)
                       onMapEvent: _onMapEvent,
                       onLongPress: _onMapLongPress,
                     );
@@ -1895,6 +1902,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             setState(() {
                               _activeRoute = null;
                             });
+                            // Reset rotation to North-up after ending navigation
+                            _mapController.rotate(0.0);
+                            AppLogger.debug('Reset map rotation to North after navigation ended', tag: 'NAVIGATION');
                           },
                         ),
                       ],
