@@ -33,9 +33,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
   bool _isRerouting = false;
 
   // Arrival detection constants
-  static const double _arrivalDistanceThreshold = 10.0; // 10 meters to destination
-  static const double _arrivalSpeedThreshold = 5.0; // 5 km/h (slow/stopped)
-  static const int _arrivalConfirmationSeconds = 3; // Stay in zone for 3 seconds
+  static const double _arrivalDistanceThreshold = 20.0; // 20 meters to destination
   static const double _arrivalGpsAccuracyThreshold = 10.0; // GPS accuracy < 10m
 
   // Rerouting constants
@@ -387,46 +385,20 @@ class NavigationNotifier extends Notifier<NavigationState> {
     final speedKmh = speed * 3.6; // Convert m/s to km/h
     final gpsAccuracy = locationData.accuracy ?? 999;
 
-    // Check arrival conditions
+    // Check arrival conditions (simplified: distance + GPS accuracy only)
     final bool withinArrivalZone = distanceToDestination < _arrivalDistanceThreshold;
-    final bool movingSlowly = speedKmh < _arrivalSpeedThreshold;
     final bool goodGpsAccuracy = gpsAccuracy < _arrivalGpsAccuracyThreshold;
 
-    // Determine arrival states
-    bool isApproaching = false;
+    // Determine arrival state
     bool hasArrived = false;
-    DateTime? arrivalZoneEntry = state.arrivalZoneEntryTime;
 
     if (withinArrivalZone && goodGpsAccuracy) {
-      // User is in arrival zone with good GPS
-      if (arrivalZoneEntry == null) {
-        // Just entered arrival zone
-        arrivalZoneEntry = DateTime.now();
-        isApproaching = true;
-        AppLogger.success('Approaching destination...', tag: 'NAVIGATION', data: {
-          'distance': '${distanceToDestination.toStringAsFixed(1)}m',
-          'speed': '${speedKmh.toStringAsFixed(1)}km/h',
-        });
-      } else {
-        // Already in arrival zone - check if confirmed
-        final timeInZone = DateTime.now().difference(arrivalZoneEntry).inSeconds;
-
-        if (timeInZone >= _arrivalConfirmationSeconds && movingSlowly) {
-          // Confirmed arrival: in zone for 3+ seconds AND moving slowly/stopped
-          hasArrived = true;
-          AppLogger.success('ARRIVED at destination!', tag: 'NAVIGATION', data: {
-            'timeInZone': '${timeInZone}s',
-            'finalDistance': '${distanceToDestination.toStringAsFixed(1)}m',
-          });
-        } else {
-          // Still approaching
-          isApproaching = true;
-        }
-      }
-    } else {
-      // Outside arrival zone or poor GPS - reset
-      arrivalZoneEntry = null;
-      isApproaching = false;
+      // Immediate arrival: within 20m with good GPS accuracy
+      hasArrived = true;
+      AppLogger.success('ARRIVED at destination!', tag: 'NAVIGATION', data: {
+        'distance': '${distanceToDestination.toStringAsFixed(1)}m',
+        'gpsAccuracy': '${gpsAccuracy.toStringAsFixed(1)}m',
+      });
     }
 
     // Calculate speed averages and tracking
@@ -524,9 +496,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
       isOffRoute: isOffRoute,
       offRouteDistanceMeters: offRouteDistance,
       lastUpdateTime: DateTime.now(),
-      isApproachingDestination: isApproaching,
       hasArrived: hasArrived,
-      arrivalZoneEntryTime: arrivalZoneEntry,
       averageSpeedWithStops: newAvgSpeedWithStops,
       averageSpeedWithoutStops: newAvgSpeedWithoutStops,
       totalDistanceTraveled: newTotalDistanceTraveled,
@@ -545,7 +515,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'remaining': '${(remainingDistance / 1000).toStringAsFixed(2)}km',
       'speed': '${speedKmh.toStringAsFixed(1)}km/h',
       'offRoute': isOffRoute,
-      'approaching': isApproaching,
       'arrived': hasArrived,
     });
 
@@ -580,6 +549,12 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Keep navigation active but mark as arrived
     // User can manually stop navigation
     AppLogger.success('Arrived at destination', tag: 'NAVIGATION');
+
+    // Show toast notification
+    ToastService.success('You have arrived at your destination!');
+
+    // TODO: Add voice announcement if voice guidance is enabled
+    // This would require integration with a TTS (Text-to-Speech) service
   }
 
   /// Handle automatic rerouting when off route
@@ -707,7 +682,12 @@ class NavigationNotifier extends Notifier<NavigationState> {
       _lastRerouteTime = DateTime.now();
 
       // Restart navigation with new route
+      // Add delay between stop and start to ensure proper route clearing
       stopNavigation();
+
+      // Wait for map to clear old route before showing new one
+      await Future.delayed(const Duration(milliseconds: 150));
+
       startNavigation(newRoute);
 
       AppLogger.separator();

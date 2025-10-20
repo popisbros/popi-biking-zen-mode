@@ -23,7 +23,16 @@
       "Bash(chmod:*)",
       "Bash(find:*)",
       "Bash(cloc:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(wc -l echo \"\" echo \"2. _stopNavigation (lines 838-860):\" sed -n '838,860p' /Users/sylvain/Cursor/popi_biking_fresh/lib/screens/map_screen.dart)",
+      "Bash(wc -l echo \"\" echo \"3. _RouteStatWidget (lines 2123-2146):\" sed -n '2123,2146p' /Users/sylvain/Cursor/popi_biking_fresh/lib/screens/map_screen.dart)",
+      "Bash(wc -l echo \"\" echo \"Note: _TriangleBorderPainter (lines 2149-2173) is USED in navigation_card.dart - NOT dead code\" echo \"\" echo \"Total truly dead code: 20 + 23 + 24 = 67 lines\" echo \"Plus 3 unused imports + 3 unused fields = 73 lines total\")",
+      "Bash(rm:*)",
+      "Bash(pod install)"
     ],
     "deny": [],
     "ask": []

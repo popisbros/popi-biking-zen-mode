@@ -56,9 +56,6 @@ class NavigationState {
   /// Whether user has arrived at destination
   final bool hasArrived;
 
-  /// Timestamp when user first entered arrival zone
-  final DateTime? arrivalZoneEntryTime;
-
   /// Average speed including stops (m/s) - for pessimistic ETA
   final double averageSpeedWithStops;
 
@@ -101,7 +98,6 @@ class NavigationState {
     this.lastUpdateTime,
     this.isApproachingDestination = false,
     this.hasArrived = false,
-    this.arrivalZoneEntryTime,
     this.averageSpeedWithStops = 0.0,
     this.averageSpeedWithoutStops = 0.0,
     this.totalDistanceTraveled = 0.0,
@@ -274,7 +270,6 @@ class NavigationState {
     DateTime? lastUpdateTime,
     bool? isApproachingDestination,
     bool? hasArrived,
-    DateTime? arrivalZoneEntryTime,
     double? averageSpeedWithStops,
     double? averageSpeedWithoutStops,
     double? totalDistanceTraveled,
@@ -302,7 +297,6 @@ class NavigationState {
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
       isApproachingDestination: isApproachingDestination ?? this.isApproachingDestination,
       hasArrived: hasArrived ?? this.hasArrived,
-      arrivalZoneEntryTime: arrivalZoneEntryTime ?? this.arrivalZoneEntryTime,
       averageSpeedWithStops: averageSpeedWithStops ?? this.averageSpeedWithStops,
       averageSpeedWithoutStops: averageSpeedWithoutStops ?? this.averageSpeedWithoutStops,
       totalDistanceTraveled: totalDistanceTraveled ?? this.totalDistanceTraveled,
