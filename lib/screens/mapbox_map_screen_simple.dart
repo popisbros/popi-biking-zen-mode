@@ -1503,22 +1503,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.error('Failed to disable pitch gestures', error: e);
     }
 
-    // TEMPORARY: Enable built-in location component for testing with 3D puck
+    // Enable built-in location component with 3D arrow
     try {
       await mapboxMap.location.updateSettings(LocationComponentSettings(
-        enabled: true, // TESTING: Enable default Mapbox 3D location puck
+        enabled: true,
         puckBearingEnabled: true, // Show direction arrow
-        pulsingEnabled: true, // Add pulsing effect for better visibility
+        pulsingEnabled: false, // Disable pulsing for cleaner look
         locationPuck: LocationPuck(
           locationPuck3D: LocationPuck3D(
-            // Using Duck model - simple and easy to see direction
-            modelUri: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Embedded/Duck.gltf",
-            modelScale: [10.0, 10.0, 10.0], // 10x scale for visibility
-            modelRotation: [0.0, 0.0, -90.0], // Rotate -90° to correct direction (beak was pointing right)
+            // Using simple cone as directional arrow
+            modelUri: "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Cone/glTF/Cone.gltf",
+            modelScale: [30.0, 30.0, 50.0], // Taller (50x) for arrow-like appearance
+            modelRotation: [0.0, 0.0, 0.0], // Cone points forward naturally
           ),
         ),
       ));
-      AppLogger.success('Built-in 3D location puck ENABLED (10x scale) for testing', tag: 'MAP');
+      AppLogger.success('Built-in 3D arrow location puck enabled', tag: 'MAP');
     } catch (e) {
       AppLogger.error('Failed to enable 3D location component', error: e);
     }
