@@ -4,7 +4,6 @@ import 'package:geolocator/geolocator.dart';
 import '../models/location_data.dart';
 import '../services/location_service.dart';
 import '../utils/app_logger.dart';
-import 'debug_provider.dart';
 
 /// Provider for location service
 final locationServiceProvider = Provider<LocationService>((ref) {
@@ -86,15 +85,16 @@ class LocationNotifier extends Notifier<AsyncValue<LocationData?>> {
               'lng': location.longitude.toStringAsFixed(6),
               'acc': '${location.accuracy?.toStringAsFixed(1) ?? 'unknown'}m'
             });
-            // Visible debug for GPS location
+            // Log GPS location to AppLogger (visible in debug overlay)
             final headingStr = location.heading != null ? '${location.heading!.toStringAsFixed(0)}°' : 'N/A';
             final speedStr = location.speed != null ? '${(location.speed! * 3.6).toStringAsFixed(1)}km/h' : '0km/h';
-            ref.read(debugProvider.notifier).addDebugMessage(
-              'GPS: ${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)} | '
-              'Acc: ±${location.accuracy?.toStringAsFixed(1) ?? '?'}m | '
-              'Speed: $speedStr | '
-              'Heading: $headingStr'
-            );
+            AppLogger.location('GPS Update', data: {
+              'lat': location.latitude.toStringAsFixed(6),
+              'lon': location.longitude.toStringAsFixed(6),
+              'accuracy': '±${location.accuracy?.toStringAsFixed(1) ?? '?'}m',
+              'speed': speedStr,
+              'heading': headingStr,
+            });
             state = AsyncValue.data(location);
           },
           onError: (error, stackTrace) {

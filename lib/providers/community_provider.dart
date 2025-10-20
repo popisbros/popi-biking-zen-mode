@@ -1,12 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:latlong2/latlong.dart';
 import '../models/community_warning.dart';
 import '../models/cycling_poi.dart';
 import '../services/firebase_service.dart';
 import '../services/debug_service.dart';
 import '../utils/app_logger.dart';
-import '../utils/debug_message_helper.dart';
 import 'osm_poi_provider.dart'; // Import BoundingBox
 
 /// Provider for Firebase service
@@ -495,11 +492,12 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
     state = const AsyncValue.loading();
 
     try {
-      DebugMessageHelper.addMessage(
-        ref,
-        'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
-        tag: 'COMMUNITY',
-      );
+      AppLogger.firebase('Fetching warnings in bounds', data: {
+        'south': bounds.south.toStringAsFixed(2),
+        'west': bounds.west.toStringAsFixed(2),
+        'north': bounds.north.toStringAsFixed(2),
+        'east': bounds.east.toStringAsFixed(2),
+      });
 
       final warnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
@@ -535,8 +533,8 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
       }).toList();
       */
 
-      DebugMessageHelper.addMessage(ref, 'API: Got ${warnings.length} warnings', tag: 'COMMUNITY');
-      AppLogger.success('Loaded ${warnings.length} warnings with bounds');
+      AppLogger.firebase('Got ${warnings.length} warnings', data: {'count': warnings.length});
+      AppLogger.success('Loaded warnings with bounds', data: {'count': warnings.length});
       state = AsyncValue.data(warnings);
       _lastLoadedBounds = bounds;
     } catch (error, stackTrace) {
@@ -556,11 +554,12 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
     // Don't set loading state - keep existing data visible
 
     try {
-      DebugMessageHelper.addMessage(
-        ref,
-        'API: Fetching warnings [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
-        tag: 'COMMUNITY',
-      );
+      AppLogger.firebase('Fetching warnings in bounds', data: {
+        'south': bounds.south.toStringAsFixed(2),
+        'west': bounds.west.toStringAsFixed(2),
+        'north': bounds.north.toStringAsFixed(2),
+        'east': bounds.east.toStringAsFixed(2),
+      });
 
       final newWarnings = await _firebaseService.getWarningsInBounds(
         south: bounds.south,
@@ -569,9 +568,9 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
         east: bounds.east,
       );
 
-      DebugMessageHelper.addMessage(ref, 'API: Got ${newWarnings.length} warnings', tag: 'COMMUNITY');
+      AppLogger.firebase('Got ${newWarnings.length} warnings', data: {'count': newWarnings.length});
 
-      AppLogger.success('Loaded warnings in background', tag: 'COMMUNITY', data: {'count': newWarnings.length});
+      AppLogger.success('Loaded warnings in background', data: {'count': newWarnings.length});
 
       // Filter existing warnings to keep only those within the new bounds
       final currentWarnings = state.value ?? [];
@@ -654,11 +653,12 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
     state = const AsyncValue.loading();
 
     try {
-      DebugMessageHelper.addMessage(
-        ref,
-        'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
-        tag: 'COMMUNITY',
-      );
+      AppLogger.firebase('Fetching POIs in bounds', data: {
+        'south': bounds.south.toStringAsFixed(2),
+        'west': bounds.west.toStringAsFixed(2),
+        'north': bounds.north.toStringAsFixed(2),
+        'east': bounds.east.toStringAsFixed(2),
+      });
 
       final pois = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
@@ -694,8 +694,8 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
       }).toList();
       */
 
-      DebugMessageHelper.addMessage(ref, 'API: Got ${pois.length} POIs', tag: 'COMMUNITY');
-      AppLogger.success('Loaded ${pois.length} POIs with bounds');
+      AppLogger.firebase('Got ${pois.length} POIs', data: {'count': pois.length});
+      AppLogger.success('Loaded POIs with bounds', data: {'count': pois.length});
       state = AsyncValue.data(pois);
       _lastLoadedBounds = bounds;
     } catch (error, stackTrace) {
@@ -715,11 +715,12 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
     // Don't set loading state - keep existing data visible
 
     try {
-      DebugMessageHelper.addMessage(
-        ref,
-        'API: Fetching POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
-        tag: 'COMMUNITY',
-      );
+      AppLogger.firebase('Fetching POIs in bounds', data: {
+        'south': bounds.south.toStringAsFixed(2),
+        'west': bounds.west.toStringAsFixed(2),
+        'north': bounds.north.toStringAsFixed(2),
+        'east': bounds.east.toStringAsFixed(2),
+      });
 
       final newPOIs = await _firebaseService.getPOIsInBounds(
         south: bounds.south,
@@ -728,9 +729,9 @@ class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
         east: bounds.east,
       );
 
-      DebugMessageHelper.addMessage(ref, 'API: Got ${newPOIs.length} POIs', tag: 'COMMUNITY');
+      AppLogger.firebase('Got ${newPOIs.length} POIs', data: {'count': newPOIs.length});
 
-      AppLogger.success('Loaded POIs in background', tag: 'COMMUNITY', data: {'count': newPOIs.length});
+      AppLogger.success('Loaded POIs in background', data: {'count': newPOIs.length});
 
       // Filter existing POIs to keep only those within the new bounds
       final currentPOIs = state.value ?? [];

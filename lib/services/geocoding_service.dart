@@ -7,7 +7,6 @@ import '../config/api_keys.dart';
 import '../models/search_result.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
-import '../providers/debug_provider.dart';
 
 /// Service for geocoding and coordinate parsing
 class GeocodingService {
@@ -23,10 +22,6 @@ class GeocodingService {
       'bounded': '1',
     });
 
-    ref?.read(debugProvider.notifier).addDebugMessage(
-      'API: LocationIQ search "$query" near ${mapCenter.latitude.toStringAsFixed(4)},${mapCenter.longitude.toStringAsFixed(4)}'
-    );
-
     try {
       // Try LocationIQ first with bounded=1
       final results = await _searchLocationIQ(query, mapCenter, bounded: '1');
@@ -34,9 +29,6 @@ class GeocodingService {
         AppLogger.success('LocationIQ bounded search successful', tag: 'GEOCODING', data: {
           'results': results.length,
         });
-        ref?.read(debugProvider.notifier).addDebugMessage(
-          'API: Got ${results.length} search results'
-        );
         return results;
       }
     } catch (e) {
@@ -69,18 +61,11 @@ class GeocodingService {
       'limit': 20,
     });
 
-    ref?.read(debugProvider.notifier).addDebugMessage(
-      'API: LocationIQ EXTENDED search "$query" (unbounded)'
-    );
-
     try {
       final results = await _searchLocationIQ(query, mapCenter, bounded: '0', limit: 20);
       AppLogger.success('LocationIQ unbounded search successful', tag: 'GEOCODING', data: {
         'results': results.length,
       });
-      ref?.read(debugProvider.notifier).addDebugMessage(
-        'API: Got ${results.length} extended search results'
-      );
       return results;
     } catch (e) {
       AppLogger.error('LocationIQ unbounded search failed', tag: 'GEOCODING', error: e);

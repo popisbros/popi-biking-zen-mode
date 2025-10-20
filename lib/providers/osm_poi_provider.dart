@@ -4,7 +4,6 @@ import 'package:latlong2/latlong.dart';
 import '../models/cycling_poi.dart';
 import '../services/osm_service.dart';
 import '../utils/app_logger.dart';
-import '../utils/debug_message_helper.dart';
 
 /// Provider for OSM service
 final osmServiceProvider = Provider<OSMService>((ref) {
@@ -120,21 +119,19 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
     });
 
     try {
-      DebugMessageHelper.addMessage(
-        ref,
-        'API: Fetching OSM POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
-        tag: 'OSM_POI',
-      );
+      AppLogger.api('Fetching OSM POIs in bounds', data: {
+        'south': bounds.south.toStringAsFixed(2),
+        'west': bounds.west.toStringAsFixed(2),
+        'north': bounds.north.toStringAsFixed(2),
+        'east': bounds.east.toStringAsFixed(2),
+      });
 
-      AppLogger.debug('Calling _osmService.getPOIsInBounds', tag: 'OSM_POI');
       final pois = await _osmService.getPOIsInBounds(
         south: bounds.south,
         west: bounds.west,
         north: bounds.north,
         east: bounds.east,
       );
-
-      DebugMessageHelper.addMessage(ref, 'API: Got ${pois.length} OSM POIs', tag: 'OSM_POI');
       AppLogger.success('Loaded POIs with actual bounds', tag: 'OSM_POI', data: {'count': pois.length});
       state = AsyncValue.data(pois);
 
@@ -162,11 +159,12 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
     // Don't set loading state - keep existing data visible
 
     try {
-      DebugMessageHelper.addMessage(
-        ref,
-        'API: Fetching OSM POIs [${bounds.south.toStringAsFixed(2)},${bounds.west.toStringAsFixed(2)} to ${bounds.north.toStringAsFixed(2)},${bounds.east.toStringAsFixed(2)}]',
-        tag: 'OSM_POI',
-      );
+      AppLogger.api('Fetching OSM POIs in bounds', data: {
+        'south': bounds.south.toStringAsFixed(2),
+        'west': bounds.west.toStringAsFixed(2),
+        'north': bounds.north.toStringAsFixed(2),
+        'east': bounds.east.toStringAsFixed(2),
+      });
 
       final newPOIs = await _osmService.getPOIsInBounds(
         south: bounds.south,
@@ -174,8 +172,6 @@ class OSMPOIsNotifier extends Notifier<AsyncValue<List<OSMPOI>>> {
         north: bounds.north,
         east: bounds.east,
       );
-
-      DebugMessageHelper.addMessage(ref, 'API: Got ${newPOIs.length} OSM POIs', tag: 'OSM_POI');
 
       AppLogger.success('Loaded POIs in background', tag: 'OSM_POI', data: {'count': newPOIs.length});
 
