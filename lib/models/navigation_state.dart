@@ -187,7 +187,7 @@ class NavigationState {
   }
 
   /// Get formatted ETA range as text
-  /// Format: "10:30 - 10:45" (pessimistic to optimistic)
+  /// Format: "10:30-10:45" (pessimistic to optimistic)
   String get etaRangeText {
     if (!isNavigating || lastUpdateTime == null || totalTimeElapsed < 30) {
       return etaText; // Fall back to single ETA if not enough data
@@ -205,7 +205,7 @@ class NavigationState {
       return pessimisticStr;
     }
 
-    return '$pessimisticStr - $optimisticStr';
+    return '$pessimisticStr-$optimisticStr';
   }
 
   /// Get formatted remaining time range
