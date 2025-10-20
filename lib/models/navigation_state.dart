@@ -129,7 +129,7 @@ class NavigationState {
   }
 
   /// Get formatted speed string with averages
-  /// Format: "Live - AvgWithStops / AvgWithoutStops"
+  /// Format: "Live km/h - (Avg: AvgWithStops-AvgWithoutStops km/h)"
   String get speedText {
     final live = speedKmh.toStringAsFixed(1);
     final avgWithStops = (averageSpeedWithStops * 3.6).toStringAsFixed(1);
@@ -140,7 +140,7 @@ class NavigationState {
       return '$live km/h';
     }
 
-    return '$live - $avgWithStops / $avgWithoutStops km/h';
+    return '$live km/h - (Avg: $avgWithStops-$avgWithoutStops km/h)';
   }
 
   /// Get average speed including stops in km/h
