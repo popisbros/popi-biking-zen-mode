@@ -45,6 +45,37 @@ class NavigationUtils {
     return 15.0; // 40+ km/h (electric bike/crazy fast)
   }
 
+  /// Convert logical zoom level to Flutter_map zoom
+  ///
+  /// Flutter_map (using OSM tiles) uses zoom levels +1.0 higher than Mapbox
+  /// for the same visual scale. This method converts our logical zoom reference
+  /// (based on Mapbox) to Flutter_map zoom.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logicalZoom = 16.0; // Mapbox reference
+  /// final flutterMapZoom = NavigationUtils.toFlutterMapZoom(logicalZoom); // 17.0
+  /// mapController.move(position, flutterMapZoom);
+  /// ```
+  static double toFlutterMapZoom(double logicalZoom) {
+    return logicalZoom + 1.0;
+  }
+
+  /// Convert logical zoom level to Mapbox zoom
+  ///
+  /// Mapbox zoom matches our logical zoom reference, so this returns the value as-is.
+  /// This method exists for symmetry and code clarity.
+  ///
+  /// Example:
+  /// ```dart
+  /// final logicalZoom = 16.0;
+  /// final mapboxZoom = NavigationUtils.toMapboxZoom(logicalZoom); // 16.0
+  /// mapboxMap.easeTo(CameraOptions(zoom: mapboxZoom));
+  /// ```
+  static double toMapboxZoom(double logicalZoom) {
+    return logicalZoom;
+  }
+
   /// Convert speed from meters per second to kilometers per hour
   ///
   /// Example:

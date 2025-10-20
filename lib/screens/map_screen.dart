@@ -451,7 +451,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           if (isNavigationMode) {
             // Calculate target zoom (only if auto-zoom enabled)
             final mapState = ref.read(mapProvider);
-            final targetZoom = NavigationUtils.calculateNavigationZoom(location.speed);
+            final logicalZoom = NavigationUtils.calculateNavigationZoom(location.speed);
+            final targetZoom = NavigationUtils.toFlutterMapZoom(logicalZoom);
             _targetAutoZoom = targetZoom;
 
             // Determine actual zoom to use (with throttling if auto-zoom enabled)
@@ -709,7 +710,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         final locationAsync = ref.read(locationNotifierProvider);
         final location = locationAsync.value;
         if (location != null && _isMapReady) {
-          _mapController.move(LatLng(location.latitude, location.longitude), 16.0);
+          _mapController.move(
+            LatLng(location.latitude, location.longitude),
+            NavigationUtils.toFlutterMapZoom(16.0), // 17.0 - matches Mapbox 16.0 visual zoom
+          );
 
           // Calculate initial bearing from current location to first route point
           if (route.points.isNotEmpty) {
