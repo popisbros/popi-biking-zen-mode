@@ -209,7 +209,7 @@ class NavigationState {
   }
 
   /// Get formatted remaining time range
-  /// Format: "25-30 min" (optimistic to pessimistic)
+  /// Format: "25-30min" (optimistic to pessimistic)
   String get remainingTimeRangeText {
     if (totalTimeElapsed < 30) {
       return remainingTimeText; // Fall back to single time if not enough data
@@ -225,13 +225,13 @@ class NavigationState {
     }
 
     if (optimisticMin < 60 && pessimisticMin < 60) {
-      return '$optimisticMin-$pessimisticMin min';
+      return '$optimisticMin-${pessimisticMin}min';
     } else {
       final optHours = (optimisticMin / 60).floor();
       final optMins = optimisticMin % 60;
       final pessHours = (pessimisticMin / 60).floor();
       final pessMins = pessimisticMin % 60;
-      return '${optHours}h${optMins}min - ${pessHours}h${pessMins}min';
+      return '${optHours}h${optMins < 10 ? '0' : ''}$optMins-${pessHours}h${pessMins < 10 ? '0' : ''}$pessMins';
     }
   }
 
