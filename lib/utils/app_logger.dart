@@ -16,19 +16,18 @@ class AppLogger {
   // Private constructor to prevent instantiation
   AppLogger._();
 
-  /// Log stream for debug overlay (only active in debug mode)
-  static final StreamController<String> _logStreamController =
-      kDebugMode ? StreamController<String>.broadcast() : StreamController<String>();
+  /// Log stream for debug overlay (always active for debug overlay in all modes)
+  static final StreamController<String> _logStreamController = StreamController<String>.broadcast();
 
   /// Stream of formatted log messages for debug overlay
   static Stream<String> get logStream => _logStreamController.stream;
 
-  /// Recent logs buffer (last 200 entries, only in debug mode)
-  static final List<String> _logBuffer = kDebugMode ? [] : const [];
+  /// Recent logs buffer (last 200 entries, always available for debug overlay)
+  static final List<String> _logBuffer = [];
   static const int _maxBufferSize = 200;
 
   /// Get recent logs
-  static List<String> get recentLogs => kDebugMode ? List.unmodifiable(_logBuffer) : const [];
+  static List<String> get recentLogs => List.unmodifiable(_logBuffer);
 
   /// Log levels
   static const String _infoIcon = 'ℹ️';
@@ -170,17 +169,17 @@ class AppLogger {
     final logMessage = buffer.toString();
     final consoleMessage = '[$timestamp] $logMessage';
 
-    // Print to console with timestamp
-    debugPrint(consoleMessage);
-
-    // Add to buffer and stream WITHOUT timestamp (for debug overlay)
+    // Print to console with timestamp (only in debug mode for performance)
     if (kDebugMode) {
-      _logBuffer.add(logMessage);
-      if (_logBuffer.length > _maxBufferSize) {
-        _logBuffer.removeAt(0);
-      }
-      _logStreamController.add(logMessage);
+      debugPrint(consoleMessage);
     }
+
+    // ALWAYS add to buffer and stream (for debug overlay in all modes)
+    _logBuffer.add(logMessage);
+    if (_logBuffer.length > _maxBufferSize) {
+      _logBuffer.removeAt(0);
+    }
+    _logStreamController.add(logMessage);
   }
 
   /// Performance timing utility
