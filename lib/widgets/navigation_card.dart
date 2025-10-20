@@ -867,8 +867,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
           ),
           child: Row(
             children: [
-              const Text('⚠️', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 6),
               Text(
                 'Warnings (${warnings.length})',
                 style: const TextStyle(
