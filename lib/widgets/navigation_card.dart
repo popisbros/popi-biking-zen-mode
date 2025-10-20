@@ -53,55 +53,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     return null;
   }
 
-
-  /// Check if surface requires warning (not excellent or good)
-  bool _surfaceNeedsWarning(dynamic surface) {
-    if (surface == null) return false;
-    final surfaceStr = surface.toString().toLowerCase();
-
-    // Excellent surfaces (no warning)
-    if (surfaceStr.contains('asphalt') ||
-        surfaceStr.contains('concrete') ||
-        surfaceStr.contains('paved')) {
-      return false;
-    }
-
-    // Good surfaces (no warning)
-    if (surfaceStr.contains('compacted') ||
-        surfaceStr.contains('fine_gravel')) {
-      return false;
-    }
-
-    // Everything else needs warning
-    return true;
-  }
-
-  /// Get icon for surface type
-  IconData _getSurfaceIcon(dynamic surface) {
-    if (surface == null) return Icons.help_outline;
-    final surfaceStr = surface.toString().toLowerCase();
-
-    // Moderate surfaces (gravel, unpaved)
-    if (surfaceStr.contains('gravel') || surfaceStr.contains('unpaved')) {
-      return Icons.texture;
-    }
-
-    // Poor surfaces (dirt, sand, grass, mud)
-    if (surfaceStr.contains('dirt') ||
-        surfaceStr.contains('sand') ||
-        surfaceStr.contains('grass') ||
-        surfaceStr.contains('mud')) {
-      return Icons.warning;
-    }
-
-    // Special surfaces (cobblestone, sett)
-    if (surfaceStr.contains('cobble') || surfaceStr.contains('sett')) {
-      return Icons.grid_4x4;
-    }
-
-    return Icons.warning;
-  }
-
   @override
   Widget build(BuildContext context) {
     final navState = ref.watch(navigationProvider);
@@ -204,11 +155,11 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                         ],
                       ),
                     ),
-                    // Surface warning triangle (only for moderate/poor/special surfaces)
-                    if (_surfaceNeedsWarning(surface))
+                    // Next warning triangle (show if next warning is < 100m away)
+                    if (navState.routeWarnings.isNotEmpty && navState.routeWarnings.first.distanceFromUser < 100)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: _buildSurfaceWarningSign(surface),
+                        child: _buildWarningTriangleSign(navState.routeWarnings.first),
                       ),
                     // Speed limit traffic sign (same size as maneuver icon: 48x48)
                     _buildSpeedLimitSign(maxSpeed),
@@ -636,15 +587,20 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     return widgets;
   }
 
-  /// Build a surface warning triangle sign
-  Widget _buildSurfaceWarningSign(dynamic surface) {
+  /// Build a warning triangle sign for next upcoming warning
+  Widget _buildWarningTriangleSign(RouteWarning warning) {
+    // Determine border color based on warning type
+    final borderColor = warning.type == RouteWarningType.community
+        ? Colors.red.shade700
+        : Colors.orange.shade700;
+
     return Container(
       width: 48,
       height: 48,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(
-          color: Colors.red.shade700,
+          color: borderColor,
           width: 3,
         ),
         borderRadius: BorderRadius.circular(4),
@@ -657,12 +613,11 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
         ],
       ),
       child: CustomPaint(
-        painter: _TriangleBorderPainter(Colors.red.shade700),
+        painter: _TriangleBorderPainter(borderColor),
         child: Center(
-          child: Icon(
-            _getSurfaceIcon(surface),
-            size: 24,
-            color: Colors.black87,
+          child: Text(
+            warning.icon,
+            style: const TextStyle(fontSize: 24),
           ),
         ),
       ),
