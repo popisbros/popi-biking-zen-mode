@@ -90,7 +90,7 @@ class RouteWarning {
         return communityWarning?.title ?? 'Warning';
 
       case RouteWarningType.roadSurface:
-        final qualityText = surfaceQuality == RoadSurfaceQuality.poor ? 'Poor' : 'Unknown';
+        final qualityText = surfaceQuality == RoadSurfaceQuality.poor ? 'Poor' : 'Unknown surface';
         final lengthText = surfaceLength != null
             ? (surfaceLength! >= 1000
                 ? '${(surfaceLength! / 1000).toStringAsFixed(1)}km'
