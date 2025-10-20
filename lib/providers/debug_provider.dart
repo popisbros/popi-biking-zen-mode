@@ -54,6 +54,13 @@ class DebugNotifier extends Notifier<DebugState> {
       final allLogs = AppLogger.recentLogs
           .map((msg) => DebugLogEntry(msg, DateTime.now()))
           .toList();
+
+      // Debug: print how many logs we're loading
+      print('DEBUG OVERLAY: Loading ${allLogs.length} logs from AppLogger buffer');
+      if (allLogs.isNotEmpty) {
+        print('DEBUG OVERLAY: First log: ${allLogs.first.message}');
+      }
+
       state = state.copyWith(isVisible: true, logEntries: allLogs);
     } else {
       // When closing, keep messages but hide overlay
