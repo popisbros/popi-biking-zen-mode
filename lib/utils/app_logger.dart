@@ -42,30 +42,26 @@ class AppLogger {
 
   /// Info log - general information
   static void info(String message, {String? tag, Map<String, dynamic>? data}) {
-    if (kDebugMode) {
-      _log(_infoIcon, tag ?? 'INFO', message, data);
-    }
+    _log(_infoIcon, tag ?? 'INFO', message, data);
   }
 
   /// Debug log - detailed debugging information
   static void debug(String message, {String? tag, Map<String, dynamic>? data}) {
-    if (kDebugMode) {
-      _log(_debugIcon, tag ?? 'DEBUG', message, data);
-    }
+    _log(_debugIcon, tag ?? 'DEBUG', message, data);
   }
 
   /// Warning log - potential issues
   static void warning(String message, {String? tag, Map<String, dynamic>? data}) {
-    if (kDebugMode) {
-      _log(_warningIcon, tag ?? 'WARNING', message, data);
-    }
+    _log(_warningIcon, tag ?? 'WARNING', message, data);
   }
 
   /// Error log - errors and exceptions
   /// Also sends non-fatal errors to Crashlytics in production (on native platforms)
   static void error(String message, {String? tag, Object? error, StackTrace? stackTrace, Map<String, dynamic>? data, bool fatal = false}) {
+    _log(_errorIcon, tag ?? 'ERROR', message, data);
+
+    // Print error details only in debug mode
     if (kDebugMode) {
-      _log(_errorIcon, tag ?? 'ERROR', message, data);
       if (error != null) {
         debugPrint('  ↳ Error: $error');
       }
@@ -94,31 +90,27 @@ class AppLogger {
 
   /// Success log - successful operations
   static void success(String message, {String? tag, Map<String, dynamic>? data}) {
-    if (kDebugMode) {
-      _log(_successIcon, tag ?? 'SUCCESS', message, data);
-    }
+    _log(_successIcon, tag ?? 'SUCCESS', message, data);
   }
 
   // Domain-specific loggers for better categorization
 
   /// Map-related logs
   static void map(String message, {Map<String, dynamic>? data}) {
-    if (kDebugMode) {
-      _log(_mapIcon, 'MAP', message, data);
-    }
+    _log(_mapIcon, 'MAP', message, data);
   }
 
   /// Location-related logs
   static void location(String message, {Map<String, dynamic>? data}) {
-    if (kDebugMode) {
-      _log(_locationIcon, 'LOCATION', message, data);
-    }
+    _log(_locationIcon, 'LOCATION', message, data);
   }
 
   /// Firebase-related logs
   static void firebase(String message, {Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
+    _log(_firebaseIcon, 'FIREBASE', message, data);
+
+    // Print error details only in debug mode
     if (kDebugMode) {
-      _log(_firebaseIcon, 'FIREBASE', message, data);
       if (error != null) {
         debugPrint('  ↳ Error: $error');
       }
@@ -130,8 +122,10 @@ class AppLogger {
 
   /// API/Network-related logs
   static void api(String message, {Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
+    _log(_apiIcon, 'API', message, data);
+
+    // Print error details only in debug mode
     if (kDebugMode) {
-      _log(_apiIcon, 'API', message, data);
       if (error != null) {
         debugPrint('  ↳ Error: $error');
       }
@@ -143,9 +137,7 @@ class AppLogger {
 
   /// iOS-specific debug logs (maintains compatibility with existing iOS DEBUG logs)
   static void ios(String message, {Map<String, dynamic>? data}) {
-    if (kDebugMode) {
-      _log(_debugIcon, 'iOS DEBUG', message, data);
-    }
+    _log(_debugIcon, 'iOS DEBUG', message, data);
   }
 
   /// Internal logging method
