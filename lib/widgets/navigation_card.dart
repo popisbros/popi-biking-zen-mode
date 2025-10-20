@@ -594,30 +594,18 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
         ? Colors.red.shade700
         : Colors.orange.shade700;
 
-    return Container(
+    return SizedBox(
       width: 48,
       height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: borderColor,
-          width: 3,
-        ),
-        borderRadius: BorderRadius.circular(4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: CustomPaint(
-        painter: _TriangleBorderPainter(borderColor),
+        painter: _WarningTrianglePainter(borderColor),
         child: Center(
-          child: Text(
-            warning.icon,
-            style: const TextStyle(fontSize: 24),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4), // Slight offset to center in triangle
+            child: Text(
+              warning.icon,
+              style: const TextStyle(fontSize: 20),
+            ),
           ),
         ),
       ),
@@ -841,29 +829,40 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
   }
 }
 
-/// Custom painter for triangle border in warning sign
-class _TriangleBorderPainter extends CustomPainter {
-  final Color color;
+/// Custom painter for warning triangle sign (like European road signs)
+class _WarningTrianglePainter extends CustomPainter {
+  final Color borderColor;
 
-  _TriangleBorderPainter(this.color);
+  _WarningTrianglePainter(this.borderColor);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke;
-
     final path = Path();
-    // Draw triangle pointing up
-    path.moveTo(size.width / 2, 8); // Top center
-    path.lineTo(size.width - 8, size.height - 8); // Bottom right
-    path.lineTo(8, size.height - 8); // Bottom left
+    // Draw triangle pointing up (equilateral-ish)
+    final double margin = 2;
+    path.moveTo(size.width / 2, margin); // Top center
+    path.lineTo(size.width - margin, size.height - margin); // Bottom right
+    path.lineTo(margin, size.height - margin); // Bottom left
     path.close();
 
-    canvas.drawPath(path, paint);
+    // Fill with white
+    final fillPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(path, fillPaint);
+
+    // Draw border
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(path, borderPaint);
+
+    // Add shadow
+    canvas.drawShadow(path, Colors.black26, 3.0, false);
   }
 
   @override
-  bool shouldRepaint(_TriangleBorderPainter oldDelegate) => false;
+  bool shouldRepaint(_WarningTrianglePainter oldDelegate) =>
+      oldDelegate.borderColor != borderColor;
 }
