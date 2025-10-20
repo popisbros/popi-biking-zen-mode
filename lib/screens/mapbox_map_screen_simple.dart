@@ -657,10 +657,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       destLon: destLon,
       onPreRoutesCalculated: () async {
         // Store current pitch and set to 10° BEFORE zooming to routes
+        // Also reset bearing to 0 (North up) for route preview
         _pitchBeforeRouteCalculation = _currentPitch;
         if (_mapboxMap != null) {
           await _mapboxMap!.easeTo(
-            CameraOptions(pitch: 10.0),
+            CameraOptions(pitch: 10.0, bearing: 0.0),
             MapAnimationOptions(duration: 500),
           );
           _currentPitch = 10.0;
@@ -819,7 +820,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           bottom: padding.bottom,
           right: padding.right,
         ),
-        null, // bearing
+        0.0, // bearing - North up for route preview
         _currentPitch, // pitch
       );
 
@@ -829,7 +830,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           center: cameraOptions.center,
           zoom: cameraOptions.zoom,
           pitch: _currentPitch,
-          bearing: cameraOptions.bearing,
+          bearing: 0.0, // North up for route preview
         ),
         MapAnimationOptions(duration: 1500),
       );
