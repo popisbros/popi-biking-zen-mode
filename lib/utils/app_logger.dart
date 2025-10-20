@@ -153,7 +153,11 @@ class AppLogger {
   static void _log(String icon, String tag, String message, Map<String, dynamic>? data) {
     // Format timestamp in local time (HH:mm:ss.mmm)
     final now = DateTime.now();
-    final timestamp = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}.${now.millisecond.toString().padLeft(3, '0')}';
+    final hours = now.hour.toString().padLeft(2, '0');
+    final minutes = now.minute.toString().padLeft(2, '0');
+    final seconds = now.second.toString().padLeft(2, '0');
+    final millis = now.millisecond.toString().padLeft(3, '0');
+    final timestamp = '$hours:$minutes:$seconds.$millis';
     final buffer = StringBuffer();
     buffer.write('$icon [$tag] $message');
 
