@@ -31,11 +31,10 @@ class DebugNotifier extends Notifier<DebugState> {
 
   @override
   DebugState build() {
-    // Subscribe to AppLogger stream
+    // Subscribe to AppLogger stream for NEW logs only
     _logSubscription = AppLogger.logStream.listen((logMessage) {
-      if (state.isVisible) {
-        _addLogMessage(logMessage);
-      }
+      // Add new log entry when it arrives
+      _addLogMessage(logMessage);
     });
 
     // Clean up subscription when provider is disposed
@@ -43,19 +42,15 @@ class DebugNotifier extends Notifier<DebugState> {
       _logSubscription?.cancel();
     });
 
-    // Load existing logs from AppLogger buffer
-    final existingLogs = AppLogger.recentLogs
-        .map((msg) => DebugLogEntry(msg, DateTime.now()))
-        .toList();
-
-    return DebugState(logEntries: existingLogs);
+    // Start with empty state - logs will be loaded when overlay is opened
+    return const DebugState();
   }
 
   void toggleVisibility() {
     final newVisibility = !state.isVisible;
 
     if (newVisibility) {
-      // When opening, load all recent logs from AppLogger
+      // When opening, load all recent logs from AppLogger buffer (ONE TIME ONLY)
       final allLogs = AppLogger.recentLogs
           .map((msg) => DebugLogEntry(msg, DateTime.now()))
           .toList();
@@ -67,7 +62,12 @@ class DebugNotifier extends Notifier<DebugState> {
   }
 
   void _addLogMessage(String logMessage) {
+    // Only add if overlay is visible
     if (!state.isVisible) return;
+
+    // Check if this message is already in the list (prevent duplicates)
+    final isDuplicate = state.logEntries.any((entry) => entry.message == logMessage);
+    if (isDuplicate) return;
 
     // Add new log at the top with current timestamp
     final newEntry = DebugLogEntry(logMessage, DateTime.now());
