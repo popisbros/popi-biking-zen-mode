@@ -84,6 +84,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Active route for persistent navigation sheet
   RouteResult? _activeRoute;
 
+  // Track last route point index to avoid unnecessary redraws
+  int? _lastRoutePointIndex;
+
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
   double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
@@ -2871,7 +2874,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.success('Starting camera follow for turn-by-turn', tag: 'CAMERA');
       _lastGPSPosition = newGPSPosition;
       await _handleTurnByTurnCameraFollow(location);
-      _addMarkers(); // Update user marker position
+
+      // Update traveled route segments only when position changes significantly
+      await _updateTraveledRouteIfNeeded(location);
+
       return; // Skip regular navigation mode camera (turn-by-turn takes priority)
     }
 
@@ -3068,6 +3074,48 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     return finalBearing;
+  }
+
+  /// Update traveled route segments only when position changes significantly
+  /// Avoids redrawing entire map every 3 seconds
+  Future<void> _updateTraveledRouteIfNeeded(LocationData location) async {
+    final navState = ref.read(navigationProvider);
+    if (!navState.isNavigating || navState.activeRoute == null) return;
+
+    final routePoints = navState.activeRoute!.points;
+    if (routePoints.isEmpty) return;
+
+    // Find current point index
+    double minDistance = double.infinity;
+    int closestIndex = 0;
+
+    for (int i = 0; i < routePoints.length; i++) {
+      final distance = GeoUtils.calculateDistance(
+        location.latitude,
+        location.longitude,
+        routePoints[i].latitude,
+        routePoints[i].longitude,
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+
+    // Only redraw route if we've moved significantly (50+ points along route)
+    // This prevents constant redraws while still updating traveled segments smoothly
+    if (_lastRoutePointIndex == null || (closestIndex - _lastRoutePointIndex!).abs() >= 50) {
+      _lastRoutePointIndex = closestIndex;
+
+      // Only redraw the route, not all markers/POIs
+      await _addRoutePolyline();
+
+      AppLogger.debug('Updated traveled route segments', tag: 'MAP', data: {
+        'pointIndex': closestIndex,
+        'totalPoints': routePoints.length,
+      });
+    }
   }
 
   /// Handle camera auto-follow for turn-by-turn navigation
