@@ -3051,15 +3051,36 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     final bearing = GeoUtils.calculateBearing(start, end);
 
+    AppLogger.debug('Bearing calculation', tag: 'BEARING', data: {
+      'startLat': start.latitude.toStringAsFixed(6),
+      'startLon': start.longitude.toStringAsFixed(6),
+      'endLat': end.latitude.toStringAsFixed(6),
+      'endLon': end.longitude.toStringAsFixed(6),
+      'calculatedBearing': '${bearing.toStringAsFixed(1)}°',
+      'direction': GeoUtils.formatBearing(bearing),
+    });
+
     // Smooth bearing with last value (90% new, 10% old) - very responsive
+    double finalBearing = bearing;
     if (_lastNavigationBearing != null) {
       final diff = (bearing - _lastNavigationBearing!).abs();
       if (diff < 180) {
-        return bearing * 0.9 + _lastNavigationBearing! * 0.1;
+        finalBearing = bearing * 0.9 + _lastNavigationBearing! * 0.1;
+        AppLogger.debug('Bearing smoothed', tag: 'BEARING', data: {
+          'oldBearing': '${_lastNavigationBearing!.toStringAsFixed(1)}°',
+          'newBearing': '${bearing.toStringAsFixed(1)}°',
+          'smoothedBearing': '${finalBearing.toStringAsFixed(1)}°',
+          'appliedToMap': '${(-finalBearing).toStringAsFixed(1)}°',
+        });
       }
+    } else {
+      AppLogger.debug('First bearing (no smoothing)', tag: 'BEARING', data: {
+        'bearing': '${finalBearing.toStringAsFixed(1)}°',
+        'appliedToMap': '${(-finalBearing).toStringAsFixed(1)}°',
+      });
     }
 
-    return bearing;
+    return finalBearing;
   }
 
   /// Handle camera auto-follow for turn-by-turn navigation
