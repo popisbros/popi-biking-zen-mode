@@ -1,6 +1,6 @@
 # Popi Biking Zen Mode - Complete Feature Inventory
 
-**Last Updated:** 2025-10-21
+**Last Updated:** 2025-01-21
 **App Version:** Flutter Cycling Navigation App
 
 ---
@@ -155,16 +155,29 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **Off-Route Toast Notifications** - Distance from route displayed
 - **Manual Recalculation** - User can trigger reroute from dialog
 
-### 2.4 Arrival Detection
+### 2.4 Arrival Detection & Parking Finder
 **Availability:** Both maps
 **Key Files:**
 - `lib/providers/navigation_provider.dart`
+- `lib/widgets/arrival_dialog.dart`
+- `lib/screens/mapbox_map_screen_simple.dart`
+- `lib/screens/map_screen.dart`
 
 **Features:**
 - **Arrival Threshold**: 20 meters to destination
 - **GPS Accuracy Check**: < 10m accuracy required
-- **Arrival Toast Notification**
-- **Navigation State Persistence** - Keeps navigation active for manual end
+- **Arrival Dialog** - Shows when user reaches destination with:
+  - Congratulations message
+  - Final distance traveled
+  - "End Navigation" button (red, ends navigation and closes dialog)
+  - "Find a parking" button (blue, searches for nearby bicycle parking)
+- **Find a Parking Feature**:
+  - Automatically ends navigation
+  - Zooms to 500m radius around destination
+  - Enables OSM POIs and filters to bike_parking type only
+  - Loads and displays all bicycle parking spots within 500m
+  - Shows toast notification
+- **Navigation State Persistence** - Keeps navigation active until user action
 
 ### 2.5 Navigation Controls
 **Availability:** Both maps
@@ -202,17 +215,26 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - `lib/services/osm_service.dart`
 - `lib/providers/osm_poi_provider.dart`
 - `lib/models/cycling_poi.dart`
+- `lib/widgets/osm_poi_selector_button.dart`
+- `lib/utils/poi_utils.dart`
 
 **Features:**
 - **POI Types** (8 categories):
-  - Bicycle Parking
-  - Repair Station
-  - Charging Station (bicycle)
-  - Bike Shop
-  - Drinking Water
-  - Water Tap
-  - Toilets
-  - Shelter
+  - Bicycle Parking 🅿️
+  - Repair Station 🔧
+  - Charging Station ⚡ (bicycle)
+  - Bike Shop 🛒
+  - Drinking Water 💧
+  - Water Tap 🚰
+  - Toilets 🚻
+  - Shelter 🏠
+- **Multi-Choice POI Selector** - Dropdown menu with:
+  - "None of these" (grey button, hides all POIs)
+  - Individual POI type checkboxes with emojis
+  - "All of these" (blue button, shows all 8 types)
+  - Auto-closes on selection
+  - Counter badge shows filtered POI count
+- **Client-Side Filtering** - Fetch all POIs once, filter instantly on selection change
 - **Overpass API Integration** - Queries OSM data in real-time
 - **Smart Bounding Box** - Extended 3x3 bounds for smooth panning
 - **Timeout Handling** - Fallback to 50% smaller bounds on 504 errors
@@ -220,8 +242,8 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **POI Markers** - Blue circular markers with emoji icons
 - **POI Detail Dialog** - Shows name, type, address, phone, website
 - **Route to POI** - Calculate route from context menu
-- **Toggle Visibility** - Blue button on right side
 - **Zoom-Based Visibility** - Auto-disable at zoom ≤ 12
+- **Shared Filtering Logic** - POIUtils.filterPOIsByType() used by both 2D and 3D maps
 
 ### 3.2 Community POIs (User-Contributed)
 **Availability:** Both maps
@@ -745,14 +767,30 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 ### Performance Optimizations
 - **Traveled Route Delta Updates** - Only updates segments that change state instead of full redraw
 - **Segment Property Updates** - Uses `setStyleLayerProperty()` for efficient color/width changes
-- **No More Blinking** - Removed full marker/route redraw every 3 seconds during navigation
+- **No More Blinking** - Removed full marker/route redraw on GPS updates:
+  - Fixed in turn-by-turn navigation mode
+  - Fixed in exploration mode
+  - User location shown by Mapbox location puck (auto-updated)
+  - POIs/warnings/route update only via listeners when data changes
 - **Smart Caching** - Route segment metadata cached for instant updates
+- **Client-Side POI Filtering** - Fetch all POIs once, filter instantly without API calls
+- **Efficient POI Counter** - Shows accurate filtered count on selector badge
 
 ### Navigation Enhancements
 - **Breadcrumb Trail** - Visual distinction between traveled and remaining route
 - **Bearing Smoothing** - 90/10 ratio for stable map rotation
 - **Speed-Based Off-Route** - Dynamic thresholds based on cycling speed
 - **ETA Range Display** - Shows realistic time window with buffer
+- **Arrival Dialog** - Congratulations message with parking finder option
+- **Find a Parking** - Auto-zoom to 500m radius and show bicycle parking at destination
+
+### User Experience Improvements
+- **Multi-Choice POI Selector** - Replace toggle with dropdown menu:
+  - Individual type selection with checkboxes
+  - "All of these" and "None of these" options
+  - Counter shows filtered POI count
+  - Instant filtering without API reload
+- **Shared Code Architecture** - POIUtils for common filtering logic between 2D and 3D maps
 
 ### Logging Cleanup
 - **Reduced Log Volume** - ~60-70% reduction in high-frequency logs
