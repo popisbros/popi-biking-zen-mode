@@ -44,9 +44,22 @@ class MapNotifier extends Notifier<MapState> {
   /// - null = show all types
   /// - Specific types = show only those types
   void setSelectedOSMPOITypes(Set<String>? types) {
-    state = state.copyWith(
-      selectedOSMPOITypes: types,
+    // Directly create new state to properly handle null value
+    state = MapState(
+      current2DLayer: state.current2DLayer,
+      tileUrl: state.tileUrl,
+      attribution: state.attribution,
+      current3DStyle: state.current3DStyle,
+      mapboxStyleUri: state.mapboxStyleUri,
+      showPOIs: state.showPOIs,
       showOSMPOIs: types == null || types.isNotEmpty, // Enable if null (all) or has types
+      showWarnings: state.showWarnings,
+      selectedOSMPOITypes: types, // Directly set null or value
+      autoZoomEnabled: state.autoZoomEnabled,
+      center: state.center,
+      zoom: state.zoom,
+      southWest: state.southWest,
+      northEast: state.northEast,
     );
   }
 

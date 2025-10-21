@@ -1663,7 +1663,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       children: [
                         // OSM POI selector (multi-choice dropdown)
                         OSMPOISelectorButton(
-                          count: poisAsync.value?.length ?? 0,
+                          count: poisAsync.value != null
+                              ? POIUtils.filterPOIsByType(
+                                  poisAsync.value!.cast<OSMPOI>(),
+                                  mapState.selectedOSMPOITypes,
+                                ).length
+                              : 0,
                           enabled: togglesEnabled,
                         ),
                         const SizedBox(height: 8),

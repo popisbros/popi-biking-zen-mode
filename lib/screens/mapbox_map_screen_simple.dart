@@ -1199,7 +1199,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         children: [
                           // OSM POI selector (multi-choice dropdown)
                           OSMPOISelectorButton(
-                            count: ref.watch(osmPOIsNotifierProvider).value?.length ?? 0,
+                            count: ref.watch(osmPOIsNotifierProvider).value != null
+                                ? POIUtils.filterPOIsByType(
+                                    ref.watch(osmPOIsNotifierProvider).value!.cast<OSMPOI>(),
+                                    mapState.selectedOSMPOITypes,
+                                  ).length
+                                : 0,
                             enabled: togglesEnabled,
                           ),
                           const SizedBox(height: 8),
