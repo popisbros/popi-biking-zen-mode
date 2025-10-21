@@ -1,4 +1,4 @@
-import '../models/osm_poi.dart';
+import '../models/cycling_poi.dart';
 
 /// Utility functions for POI filtering and management
 class POIUtils {

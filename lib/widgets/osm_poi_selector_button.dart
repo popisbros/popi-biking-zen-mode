@@ -97,9 +97,9 @@ class OSMPOISelectorButton extends ConsumerWidget {
         buttonPosition.dx + 250, // menu width
         buttonPosition.dy,
       ),
-      items: [
+      items: <PopupMenuEntry<String>>[
         // "None of these" option
-        PopupMenuItem(
+        PopupMenuItem<String>(
           value: 'none',
           child: Row(
             children: [
@@ -121,13 +121,13 @@ class OSMPOISelectorButton extends ConsumerWidget {
         // Individual POI types
         ...POITypeConfig.osmPOITypes.entries
             .where((entry) => entry.key != 'unknown') // Exclude 'unknown'
-            .map((entry) {
+            .map<PopupMenuEntry<String>>((entry) {
           final poiType = entry.key;
           final label = entry.value['label']!;
           final emoji = entry.value['emoji']!;
           final isSelected = selectedTypes.contains(poiType);
 
-          return PopupMenuItem(
+          return PopupMenuItem<String>(
             value: poiType,
             child: Row(
               children: [
@@ -151,7 +151,7 @@ class OSMPOISelectorButton extends ConsumerWidget {
         const PopupMenuDivider(),
 
         // "All of these" option
-        PopupMenuItem(
+        PopupMenuItem<String>(
           value: 'all',
           child: Row(
             children: [
