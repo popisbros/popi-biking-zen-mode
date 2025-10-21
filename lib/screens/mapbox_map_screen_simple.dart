@@ -1336,21 +1336,35 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           const SizedBox(height: 8),
                           NavigationControls(
                     onNavigationEnded: () async {
+                      AppLogger.debug('Navigation ended - starting cleanup', tag: 'NAVIGATION');
+
                       setState(() {
                         _activeRoute = null;
                       });
 
                       // Stop turn-by-turn navigation
                       ref.read(navigationProvider.notifier).stopNavigation();
+                      AppLogger.debug('Stopped turn-by-turn navigation', tag: 'NAVIGATION');
 
                       // Stop route navigation mode
                       ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+                      AppLogger.debug('Stopped route navigation mode', tag: 'NAVIGATION');
 
                       // Clear route from search provider to remove from map
                       ref.read(searchProvider.notifier).clearRoute();
+                      AppLogger.debug('Cleared route from search provider', tag: 'NAVIGATION');
+
+                      // Log search provider state after clearing
+                      final searchState = ref.read(searchProvider);
+                      AppLogger.debug('Search provider state after clearRoute', tag: 'NAVIGATION', data: {
+                        'hasRoutePoints': searchState.routePoints != null && searchState.routePoints!.isNotEmpty,
+                        'routePointsCount': searchState.routePoints?.length ?? 0,
+                        'hasPreviewRoutes': searchState.previewFastestRoute != null,
+                      });
 
                       // Refresh markers to remove route polyline
                       _addMarkers();
+                      AppLogger.debug('Refreshed markers after navigation ended', tag: 'NAVIGATION');
 
                       // Restore pitch and reset bearing to North
                       if (_mapboxMap != null && _pitchBeforeNavigation != null) {
@@ -2429,8 +2443,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     } else if (routePoints != null && routePoints.isNotEmpty) {
       routeToRender = routePoints;
       isNavigating = false;
-      AppLogger.debug('Rendering selected route (green)', tag: 'MAP', data: {
+      AppLogger.warning('STILL RENDERING selected route even though navigation ended!', tag: 'MAP', data: {
         'points': routeToRender.length,
+        'routePointsFromSearchProvider': routePoints.length,
       });
     } else {
       AppLogger.debug('No route to render - layers/sources cleared', tag: 'MAP');
