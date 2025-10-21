@@ -1023,26 +1023,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Listen for map state changes (toggle buttons) and refresh markers INSTANTLY
     ref.listen<MapState>(mapProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
-        // Check if visibility toggles changed
+        // Check if visibility toggles changed OR if selected types changed
+        // Type changes trigger marker refresh to filter client-side (no API reload)
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
             previous?.showPOIs != next.showPOIs ||
-            previous?.showWarnings != next.showWarnings) {
-          _addMarkers(); // This is already instant - no delay
+            previous?.showWarnings != next.showWarnings ||
+            previous?.selectedOSMPOITypes != next.selectedOSMPOITypes) {
+          _addMarkers(); // This is already instant - no delay, filters client-side
         }
 
-        // Check if OSM POI types changed
-        final previousTypes = previous?.selectedOSMPOITypes;
-        final nextTypes = next.selectedOSMPOITypes;
+        // Only reload POI data from API when first enabled
         final osmJustEnabled = (previous?.showOSMPOIs ?? false) == false && next.showOSMPOIs;
-        final typesChanged = next.showOSMPOIs && previousTypes != nextTypes;
-
-        if (osmJustEnabled || typesChanged) {
-          AppLogger.map('OSM POI types changed, reloading POIs', data: {
-            'justEnabled': osmJustEnabled,
-            'typesChanged': typesChanged,
-            'previousTypes': previousTypes?.join(',') ?? 'null',
-            'nextTypes': nextTypes?.join(',') ?? 'null',
-          });
+        if (osmJustEnabled) {
+          AppLogger.map('OSM POIs enabled, loading data');
           _reloadPOIData();
         }
       }
