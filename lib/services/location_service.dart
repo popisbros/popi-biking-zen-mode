@@ -25,14 +25,12 @@ class LocationService {
   /// Check if location services are enabled
   Future<bool> isLocationServiceEnabled() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
-    AppLogger.location('Location services enabled', data: {'enabled': enabled});
     return enabled;
   }
 
   /// Check location permission status
   Future<LocationPermission> checkPermission() async {
     final permission = await Geolocator.checkPermission();
-    AppLogger.location('Current permission', data: {'permission': permission.toString()});
     return permission;
   }
 
@@ -64,52 +62,31 @@ class LocationService {
   /// Get current position once
   Future<LocationData?> getCurrentPosition() async {
     try {
-      AppLogger.separator('Starting getCurrentPosition');
-      AppLogger.location('Timestamp', data: {'time': DateTime.now().toIso8601String()});
-
       final permission = await checkPermission();
-      AppLogger.location('Initial permission check', data: {'permission': permission.toString()});
 
       if (permission == LocationPermission.denied) {
-        AppLogger.location('Permission denied, requesting');
         final newPermission = await requestPermission();
-        AppLogger.location('Permission after request', data: {'permission': newPermission.toString()});
         if (newPermission == LocationPermission.denied) {
-          AppLogger.error('Permission still DENIED after request', tag: 'LOCATION');
+          AppLogger.error('Permission denied after request', tag: 'LOCATION');
           return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        AppLogger.error('Permission DENIED FOREVER - User must enable in Settings', tag: 'LOCATION');
+        AppLogger.error('Permission denied forever - enable in Settings', tag: 'LOCATION');
         return null;
       }
 
       final serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
-        AppLogger.error('Location services are DISABLED on device', tag: 'LOCATION');
+        AppLogger.error('Location services disabled', tag: 'LOCATION');
         return null;
       }
-
-      AppLogger.location('Calling Geolocator.getCurrentPosition', data: {
-        'accuracy': 'HIGH',
-        'timeout': '10s',
-      });
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
       );
-
-      AppLogger.success('Got GPS position', tag: 'LOCATION', data: {
-        'lat': position.latitude,
-        'lng': position.longitude,
-        'altitude': '${position.altitude}m',
-        'accuracy': '${position.accuracy}m',
-        'speed': '${position.speed}m/s',
-        'heading': '${position.heading}°',
-        'timestamp': position.timestamp.toString(),
-      });
 
       final locationData = LocationData(
         latitude: position.latitude,
@@ -122,14 +99,9 @@ class LocationService {
       );
 
       _currentLocation = locationData;
-      AppLogger.success('Location data cached in service', tag: 'LOCATION');
-      AppLogger.separator();
-
       return locationData;
     } catch (e, stackTrace) {
-      AppLogger.separator('ERROR in getCurrentPosition');
       AppLogger.error('getCurrentPosition failed', tag: 'LOCATION', error: e, stackTrace: stackTrace);
-      AppLogger.separator();
       return null;
     }
   }
@@ -137,29 +109,23 @@ class LocationService {
   /// Start continuous location tracking with timer-based polling
   Future<void> startLocationTracking() async {
     try {
-      AppLogger.separator('Starting continuous location tracking (TIMER-BASED)');
-
       // Check if already tracking
       if (_pollTimer != null) {
-        AppLogger.warning('Timer already running, skipping startLocationTracking', tag: 'LOCATION');
+        AppLogger.warning('Location tracking already running', tag: 'LOCATION');
         return;
       }
 
       // Check if location services are enabled on device
       final serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
-        AppLogger.error('Cannot start tracking - location services DISABLED on device', tag: 'LOCATION');
+        AppLogger.error('Cannot start tracking - location services disabled', tag: 'LOCATION');
         return;
       }
-      AppLogger.success('Location services are enabled', tag: 'LOCATION');
 
       final permission = await checkPermission();
-      AppLogger.debug('Current permission status', tag: 'LOCATION', data: {'permission': permission.name});
 
       if (permission == LocationPermission.denied) {
-        AppLogger.location('Permission denied, requesting');
         final newPermission = await requestPermission();
-        AppLogger.debug('New permission status', tag: 'LOCATION', data: {'permission': newPermission.name});
         if (newPermission == LocationPermission.denied) {
           AppLogger.error('Cannot start tracking - permission denied', tag: 'LOCATION');
           return;
@@ -171,14 +137,6 @@ class LocationService {
         return;
       }
 
-      AppLogger.location('Starting timer-based polling', data: {
-        'interval': '3 seconds',
-        'accuracy': 'LocationAccuracy.high',
-        'note': 'Will poll GPS every 3 seconds regardless of movement',
-      });
-
-      AppLogger.debug('Starting 3-second timer for GPS polling', tag: 'LOCATION');
-
       // Get initial position immediately
       await _pollPosition();
 
@@ -187,9 +145,7 @@ class LocationService {
         await _pollPosition();
       });
 
-      AppLogger.success('Location tracking started successfully (timer-based)', tag: 'LOCATION', data: {
-        'pollInterval': '3s',
-      });
+      AppLogger.success('Location tracking started', tag: 'LOCATION');
     } catch (e) {
       AppLogger.error('Error starting tracking', tag: 'LOCATION', error: e);
     }
@@ -198,8 +154,6 @@ class LocationService {
   /// Poll GPS position once
   Future<void> _pollPosition() async {
     try {
-      AppLogger.debug('Polling GPS position', tag: 'LOCATION');
-
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
         // No distanceFilter or timeLimit - just get current position
@@ -208,14 +162,6 @@ class LocationService {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: locationSettings,
       );
-
-      AppLogger.location('Position update received (polled)', data: {
-        'lat': position.latitude,
-        'lng': position.longitude,
-        'accuracy': '${position.accuracy}m',
-        'speed': '${position.speed}m/s',
-        'heading': '${position.heading}°',
-      });
 
       final locationData = LocationData(
         latitude: position.latitude,
@@ -229,9 +175,6 @@ class LocationService {
 
       _currentLocation = locationData;
       _locationController.add(locationData);
-      AppLogger.location('Location data broadcast to listeners', data: {
-        'hasListeners': _locationController.hasListener,
-      });
     } catch (e, stackTrace) {
       AppLogger.error('Error polling position', tag: 'LOCATION', error: e, stackTrace: stackTrace);
     }
@@ -239,8 +182,6 @@ class LocationService {
 
   /// Stop location tracking
   Future<void> stopLocationTracking() async {
-    AppLogger.debug('Stopping location tracking', tag: 'LOCATION');
-
     // Cancel timer if running
     _pollTimer?.cancel();
     _pollTimer = null;
@@ -257,11 +198,7 @@ class LocationService {
     double lat1, double lon1,
     double lat2, double lon2,
   ) {
-    final distance = Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
-    AppLogger.debug('Distance calculated', tag: 'LOCATION', data: {
-      'distance': '${distance.toStringAsFixed(2)}m',
-    });
-    return distance;
+    return Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
   }
 
   /// Calculate bearing between two points
@@ -269,16 +206,11 @@ class LocationService {
     double lat1, double lon1,
     double lat2, double lon2,
   ) {
-    final bearing = Geolocator.bearingBetween(lat1, lon1, lat2, lon2);
-    AppLogger.debug('Bearing calculated', tag: 'LOCATION', data: {
-      'bearing': '${bearing.toStringAsFixed(2)}°',
-    });
-    return bearing;
+    return Geolocator.bearingBetween(lat1, lon1, lat2, lon2);
   }
 
   /// Dispose resources
   void dispose() {
-    AppLogger.debug('Disposing location service', tag: 'LOCATION');
     stopLocationTracking();
     _locationController.close();
   }
