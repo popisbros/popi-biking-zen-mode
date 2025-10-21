@@ -87,6 +87,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Track last route point index to avoid unnecessary redraws
   int? _lastRoutePointIndex;
 
+  // Track which route segments are currently marked as "traveled"
+  final Set<int> _traveledSegmentIndices = {};
+
+  // Cache segment metadata for efficient updates
+  final List<_RouteSegmentMetadata> _routeSegments = [];
+
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
   double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
@@ -2506,6 +2512,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       if (isNavigating && pathDetails != null && pathDetails.containsKey('surface')) {
         final segments = RouteSurfaceHelper.createSurfaceSegments(routeToRender, pathDetails);
 
+        // Clear and rebuild segment metadata cache
+        _routeSegments.clear();
+        _traveledSegmentIndices.clear();
+
         AppLogger.debug('Rendering ${segments.length} surface segments', tag: 'MAP', data: {
           'currentPointIndex': currentPointIndex ?? 0,
         });
@@ -2536,6 +2546,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Compare segment's end coordinate index with current position's coordinate index
           final segmentEndIndex = segment.endIndex;
           final isTraveled = currentPointIndex != null && segmentEndIndex < currentPointIndex;
+
+          // Cache segment metadata for efficient updates
+          _routeSegments.add(_RouteSegmentMetadata(
+            index: i,
+            endIndex: segmentEndIndex,
+            originalColor: segment.color,
+          ));
+
+          if (isTraveled) {
+            _traveledSegmentIndices.add(i);
+          }
 
           // Use lighter color for traveled segments, normal color for remaining
           final segmentColor = isTraveled
@@ -3076,9 +3097,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return finalBearing;
   }
 
-  /// Update traveled route segments only when position changes significantly
-  /// Avoids redrawing entire map every 3 seconds
+  /// Update traveled route segments efficiently by only updating changed segments
+  /// Only updates individual layer properties instead of redrawing entire route
   Future<void> _updateTraveledRouteIfNeeded(LocationData location) async {
+    if (_mapboxMap == null || _routeSegments.isEmpty) return;
+
     final navState = ref.read(navigationProvider);
     if (!navState.isNavigating || navState.activeRoute == null) return;
 
@@ -3103,17 +3126,66 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     }
 
-    // Only redraw route if we've moved significantly (50+ points along route)
-    // This prevents constant redraws while still updating traveled segments smoothly
-    if (_lastRoutePointIndex == null || (closestIndex - _lastRoutePointIndex!).abs() >= 50) {
+    // Only update if position changed significantly
+    if (_lastRoutePointIndex == null || closestIndex == _lastRoutePointIndex) {
       _lastRoutePointIndex = closestIndex;
+      return;
+    }
 
-      // Only redraw the route, not all markers/POIs
-      await _addRoutePolyline();
+    _lastRoutePointIndex = closestIndex;
 
-      AppLogger.debug('Updated traveled route segments', tag: 'MAP', data: {
+    // Find segments that changed state (from remaining → traveled)
+    final segmentsToUpdate = <int>[];
+
+    for (final segment in _routeSegments) {
+      final shouldBeTraveled = segment.endIndex < closestIndex;
+      final isTraveled = _traveledSegmentIndices.contains(segment.index);
+
+      // State changed: need to update this segment
+      if (shouldBeTraveled != isTraveled) {
+        segmentsToUpdate.add(segment.index);
+
+        if (shouldBeTraveled) {
+          _traveledSegmentIndices.add(segment.index);
+        } else {
+          _traveledSegmentIndices.remove(segment.index);
+        }
+      }
+    }
+
+    // Update only the segments that changed
+    if (segmentsToUpdate.isNotEmpty) {
+      for (final segmentIndex in segmentsToUpdate) {
+        final segment = _routeSegments[segmentIndex];
+        final isTraveled = _traveledSegmentIndices.contains(segmentIndex);
+
+        // Calculate new color and width
+        final newColor = isTraveled
+            ? _getLighterColor(segment.originalColor)
+            : segment.originalColor.value;
+        final newWidth = isTraveled ? 4.0 : 6.0;
+
+        try {
+          // Update layer properties efficiently (no redraw needed)
+          await _mapboxMap!.style.setStyleLayerProperty(
+            'route-layer-$segmentIndex',
+            'line-color',
+            newColor,
+          );
+          await _mapboxMap!.style.setStyleLayerProperty(
+            'route-layer-$segmentIndex',
+            'line-width',
+            newWidth,
+          );
+        } catch (e) {
+          AppLogger.warning('Failed to update segment $segmentIndex', tag: 'MAP', error: e);
+        }
+      }
+
+      AppLogger.debug('Updated ${segmentsToUpdate.length} route segments', tag: 'MAP', data: {
         'pointIndex': closestIndex,
-        'totalPoints': routePoints.length,
+        'segmentsChanged': segmentsToUpdate.length,
+        'totalSegments': _routeSegments.length,
       });
     }
   }
@@ -3214,6 +3286,19 @@ class _LocationBreadcrumb {
     required this.position,
     required this.timestamp,
     this.speed,
+  });
+}
+
+/// Helper class to cache route segment metadata for efficient updates
+class _RouteSegmentMetadata {
+  final int index;
+  final int endIndex;
+  final Color originalColor;
+
+  _RouteSegmentMetadata({
+    required this.index,
+    required this.endIndex,
+    required this.originalColor,
   });
 }
 
