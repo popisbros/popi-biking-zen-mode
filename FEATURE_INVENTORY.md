@@ -1,0 +1,823 @@
+# Popi Biking Zen Mode - Complete Feature Inventory
+
+**Last Updated:** 2025-10-21
+**App Version:** Flutter Cycling Navigation App
+
+---
+
+## Overview
+This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D map capabilities, turn-by-turn navigation, Points of Interest (POIs), community hazard reporting, and real-time location tracking.
+
+---
+
+## 1. MAP VISUALIZATION & DISPLAY
+
+### 1.1 2D Map System (MapScreen)
+**Availability:** Both platforms (Web & Native)
+**Key Files:**
+- `lib/screens/map_screen.dart`
+- `lib/providers/map_provider.dart`
+- `lib/services/map_service.dart`
+
+**Features:**
+- **Multiple Map Layers** (7 options):
+  - OpenStreetMap Standard (Free baseline)
+  - OpenCycleMap (Thunderforest - cycling-specific with bike routes)
+  - Thunderforest Cycle (Premium cycling map with elevation)
+  - Thunderforest Outdoors (Off-road cycling)
+  - CyclOSM (Community cycling map focused on bike infrastructure)
+  - Satellite (MapTiler aerial imagery)
+  - Terrain (MapTiler topographic with elevation)
+- **Layer Picker Dialog** - Bottom sheet to switch between map styles
+- **Real-time GPS Location** - Blue puck showing user position
+- **User Location Marker** - Changes between dot (exploration) and arrow (navigation)
+- **Route Rendering** - Polylines with color-coded segments
+- **Smart Map Bounds** - 3x3 extended bounds loading for smooth panning
+- **Auto-reload Logic** - 10% buffer zone triggers before reloading POIs
+- **Map Rotation** - Supports rotation in navigation mode
+- **Zoom Controls** - Manual zoom in/out with current zoom level display
+- **Auto-center on GPS** - Configurable threshold (3m navigation, 25m exploration)
+
+### 1.2 3D Map System (MapboxMapScreenSimple)
+**Availability:** Native only (iOS/Android)
+**Key Files:**
+- `lib/screens/mapbox_map_screen_simple.dart`
+- `lib/screens/mapbox_map_screen_simple_stub.dart` (Web stub)
+
+**Features:**
+- **3D Mapbox Styles** (3 options):
+  - Mapbox Streets 3D
+  - Mapbox Outdoors 3D (terrain optimized for cycling)
+  - Wike 3D (Custom cycling style)
+- **3D Buildings & Terrain**
+- **Seamless 2D/3D Switching** - Preserves map bounds between views
+- **Same Navigation Features** as 2D map
+- **Platform Detection** - Automatically disabled on Web
+
+### 1.3 Map Interaction
+**Availability:** Both 2D and 3D maps
+**Key Files:**
+- `lib/screens/map_screen.dart`
+
+**Features:**
+- **Long Press Context Menu**:
+  - "Add Community POI here"
+  - "Report Hazard here"
+  - "Calculate a route to"
+- **Tap on Markers** - Opens detail dialogs
+- **Search Result Marker** - Grey circle with red + symbol
+- **Center on Location Button** - Snap back to GPS position
+- **Manual POI Reload Button** - Orange refresh button
+- **Compass Rotation Toggle** (Native only) - Purple button
+
+---
+
+## 2. NAVIGATION SYSTEM
+
+### 2.1 Route Planning & Calculation
+**Availability:** Both maps
+**Key Files:**
+- `lib/services/routing_service.dart`
+- `lib/utils/route_calculation_helper.dart`
+- `lib/widgets/dialogs/route_selection_dialog.dart`
+
+**Features:**
+- **Multi-route Calculation** - Calculates 3 routes simultaneously:
+  - **Fastest Route** (Car profile - red line)
+  - **Safest Route** (Bike profile - green line)
+  - **Shortest Route** (Foot/walking profile - blue line)
+- **Route Preview** - Shows all 3 routes on map before selection
+- **Route Selection Dialog** - Displays distance, duration, and route type
+- **Route Metadata**:
+  - Distance (km)
+  - Duration (minutes)
+  - Turn-by-turn instructions (GraphHopper)
+  - Path details (street names, lanes, road class, max speed, surface)
+- **Route Polylines** - Rendered below markers with white borders
+- **GraphHopper API Integration** - Powered by GraphHopper Routing API
+
+### 2.2 Turn-by-Turn Navigation
+**Availability:** Both maps
+**Key Files:**
+- `lib/providers/navigation_provider.dart`
+- `lib/services/navigation_engine.dart`
+- `lib/widgets/navigation_card.dart`
+- `lib/models/maneuver_instruction.dart`
+
+**Features:**
+- **Navigation Card Overlay** - Persistent top card with:
+  - Next maneuver icon and instruction
+  - Distance to next maneuver
+  - Remaining distance and time
+  - Progress bar
+  - Current speed
+  - ETA range (with +/- 15 min buffer)
+  - Off-route distance indicator with timestamp
+- **Maneuver Detection**:
+  - Turn left/right
+  - Slight left/right
+  - Sharp left/right
+  - Continue straight
+  - U-turn
+  - Roundabout entry/exit
+- **Navigation Modes**:
+  - Exploration Mode (North-up, manual zoom)
+  - Navigation Mode (Direction-up, auto-zoom)
+- **Auto-Zoom** - Speed-based zoom adjustment:
+  - Stopped: Zoom 18
+  - Slow (< 5 km/h): Zoom 17.5
+  - Medium (5-15 km/h): Zoom 17
+  - Fast (15-25 km/h): Zoom 16.5
+  - Very fast (> 25 km/h): Zoom 16
+- **Map Rotation** - Rotates map to face direction of travel
+- **GPS Breadcrumb Tracking** - 5 breadcrumbs over 20s for smooth rotation
+- **Bearing Smoothing** - 90% new bearing, 10% old bearing for stable rotation
+- **Wakelock** - Keeps screen on during navigation (Native only)
+- **Landscape Mode Support** - Navigation card on left, map on right
+
+### 2.3 Off-Route & Rerouting
+**Availability:** Both maps
+**Key Files:**
+- `lib/providers/navigation_provider.dart`
+- `lib/services/navigation_engine.dart`
+
+**Features:**
+- **Speed-Based Off-Route Detection**:
+  - **< 15 km/h**: 20m threshold (base)
+  - **15-30 km/h**: 30m threshold
+  - **30-50 km/h**: 40m threshold
+  - **> 50 km/h**: 50m threshold
+- **Automatic Rerouting**:
+  - 10-second cooldown between reroutes
+  - 10-meter position threshold to prevent duplicate reroutes
+  - Maintains original route type (fastest/safest/shortest)
+  - Toast notifications for reroute status
+- **Off-Route Toast Notifications** - Distance from route displayed
+- **Manual Recalculation** - User can trigger reroute from dialog
+
+### 2.4 Arrival Detection
+**Availability:** Both maps
+**Key Files:**
+- `lib/providers/navigation_provider.dart`
+
+**Features:**
+- **Arrival Threshold**: 20 meters to destination
+- **GPS Accuracy Check**: < 10m accuracy required
+- **Arrival Toast Notification**
+- **Navigation State Persistence** - Keeps navigation active for manual end
+
+### 2.5 Navigation Controls
+**Availability:** Both maps
+**Key Files:**
+- `lib/widgets/navigation_controls.dart`
+
+**Features:**
+- **End Navigation Button** - Red stop button
+- **Mute Voice Button** (UI only, voice not implemented)
+- **Auto-Zoom Toggle** (2D & 3D) - Enable/disable speed-based zoom
+
+### 2.6 Traveled Route Visualization
+**Availability:** Both maps (during navigation)
+**Key Files:**
+- `lib/screens/mapbox_map_screen_simple.dart`
+- `lib/screens/map_screen.dart`
+
+**Features:**
+- **Breadcrumb Trail Effect** - Route behind you shown in lighter color
+- **Efficient Delta Updates** - Only updates segments that changed state (remaining → traveled)
+- **Visual Styling**:
+  - **Traveled segments**: Lighter color (70% original + 30% white, 60% opacity)
+  - **Traveled line width**: 4.0px (thinner)
+  - **Remaining segments**: Original surface color, 6.0px width
+- **Smart Updates** - Uses `setStyleLayerProperty()` to update only changed segments
+- **Performance Optimized** - Caches segment metadata to avoid full route redraws
+
+---
+
+## 3. POINTS OF INTEREST (POIs)
+
+### 3.1 OSM POIs (OpenStreetMap)
+**Availability:** Both maps
+**Key Files:**
+- `lib/services/osm_service.dart`
+- `lib/providers/osm_poi_provider.dart`
+- `lib/models/cycling_poi.dart`
+
+**Features:**
+- **POI Types** (8 categories):
+  - Bicycle Parking
+  - Repair Station
+  - Charging Station (bicycle)
+  - Bike Shop
+  - Drinking Water
+  - Water Tap
+  - Toilets
+  - Shelter
+- **Overpass API Integration** - Queries OSM data in real-time
+- **Smart Bounding Box** - Extended 3x3 bounds for smooth panning
+- **Timeout Handling** - Fallback to 50% smaller bounds on 504 errors
+- **Background Loading** - Non-blocking POI refresh
+- **POI Markers** - Blue circular markers with emoji icons
+- **POI Detail Dialog** - Shows name, type, address, phone, website
+- **Route to POI** - Calculate route from context menu
+- **Toggle Visibility** - Blue button on right side
+- **Zoom-Based Visibility** - Auto-disable at zoom ≤ 12
+
+### 3.2 Community POIs (User-Contributed)
+**Availability:** Both maps
+**Key Files:**
+- `lib/providers/community_provider.dart`
+- `lib/services/firebase_service.dart`
+- `lib/screens/community/poi_management_screen.dart`
+- `lib/widgets/dialogs/community_poi_detail_dialog.dart`
+
+**Features:**
+- **Firebase Firestore Backend** - Cloud storage for community data
+- **POI Types** - Same as OSM categories
+- **Add POI Screen**:
+  - Name, type, description
+  - Address, phone, website
+  - GPS coordinates (auto-filled from long-press)
+  - Metadata support
+- **Edit POI** - Update existing community POIs
+- **Delete POI** - Remove community POIs
+- **POI Markers** - Green circular markers with emoji icons
+- **POI Detail Dialog** - Shows full POI information with edit/delete options
+- **Route to POI** - Calculate route from detail dialog
+- **Toggle Visibility** - Green button on right side
+- **Bounds-Based Loading** - Only loads POIs in visible area
+- **Background Refresh** - Auto-reloads after CRUD operations
+
+---
+
+## 4. HAZARD & WARNING SYSTEM
+
+### 4.1 Community Hazards
+**Availability:** Both maps
+**Key Files:**
+- `lib/providers/community_provider.dart`
+- `lib/services/firebase_service.dart`
+- `lib/screens/community/hazard_report_screen.dart`
+- `lib/widgets/dialogs/warning_detail_dialog.dart`
+- `lib/models/community_warning.dart`
+
+**Features:**
+- **Hazard Types**:
+  - Road Hazard (pothole, debris, etc.)
+  - Construction/Road Work
+  - Traffic Alert
+  - Weather Condition
+  - Other
+- **Severity Levels**: Low, Medium, High, Critical
+- **Report Hazard Screen**:
+  - Title and description
+  - Type and severity selection
+  - GPS coordinates (auto-filled from long-press)
+  - Expiration date (optional)
+  - Reported by (optional)
+- **Edit Hazard** - Update existing warnings
+- **Delete Hazard** - Remove warnings
+- **Warning Markers** - Orange circular markers with emoji icons
+- **Warning Detail Dialog** - Shows full warning details with edit/delete
+- **Toggle Visibility** - Orange button on right side
+- **Bounds-Based Loading** - Only loads warnings in visible area
+- **Expiration Support** - Warnings can auto-expire
+
+### 4.2 Route Hazard Detection
+**Availability:** Both maps (during navigation)
+**Key Files:**
+- `lib/services/route_hazard_detector.dart`
+- `lib/models/route_warning.dart`
+
+**Features:**
+- **On-Route Detection** - Detects community hazards within 20m of route
+- **Distance Calculation** - Calculates distance along route to each hazard
+- **Hazard Markers on Map** - Shows warning icons on route
+- **Warning List in Navigation Card** - Expandable section with all warnings
+- **Distance to Warning** - Real-time distance updates
+- **Warning Icon in Maneuver Area** - Shows next warning < 100m away
+
+### 4.3 Road Surface Warnings
+**Availability:** Both maps (during navigation)
+**Key Files:**
+- `lib/services/road_surface_analyzer.dart`
+- `lib/services/route_surface_helper.dart`
+
+**Features:**
+- **Surface Detection** - Analyzes GraphHopper path details
+- **Surface Types**:
+  - Gravel/Unpaved
+  - Dirt/Sand/Grass/Mud
+  - Cobblestone
+- **Surface Warning Markers** - Orange circular markers with surface-specific icons
+- **Color-Coded Route Segments**:
+  - Green: Paved surface
+  - Orange: Gravel/Unpaved
+  - Red: Dirt/Poor surface
+- **Warning Distance** - Shows distance to surface changes
+- **Merged Warning System** - Combines community and surface warnings
+
+---
+
+## 5. SEARCH & GEOCODING
+
+### 5.1 Address Search
+**Availability:** Both maps
+**Key Files:**
+- `lib/providers/search_provider.dart`
+- `lib/services/geocoding_service.dart`
+- `lib/widgets/search_bar_widget.dart`
+- `lib/models/search_result.dart`
+
+**Features:**
+- **Search Bar** - Slides down from top when yellow button pressed
+- **3-Second Debounce** - Auto-search after 3s of typing
+- **Manual Search** - Press search button or ENTER key
+- **Coordinate Parsing** - Supports lat,lon or lat lon formats
+- **Geocoding APIs**:
+  - Nominatim (primary, free)
+  - Photon (fallback)
+- **Bounded Search** - Searches within map viewport first
+- **Expand Search** - "Extend the search" button for unbounded results
+- **Search Results List** - Shows up to 20 results with icons
+- **Result Tap** - Centers map and shows marker
+- **Routing Dialog** - Tap result to calculate route
+- **Clear Search** - X button to clear query
+- **Close Search** - Dismisses search bar
+
+### 5.2 Search Result Interaction
+**Availability:** Both maps
+**Key Files:**
+- `lib/widgets/search_result_tile.dart`
+
+**Features:**
+- **Result Marker** - Grey circle with red + on map
+- **Route Calculation** - Single-option dialog for routing
+- **Result Icons** - Type-specific icons (address, city, POI, etc.)
+- **Distance from Center** - Shows distance in result list
+
+---
+
+## 6. LOCATION & GPS
+
+### 6.1 Location Tracking
+**Availability:** Both maps
+**Key Files:**
+- `lib/services/location_service.dart`
+- `lib/providers/location_provider.dart`
+- `lib/models/location_data.dart`
+
+**Features:**
+- **Geolocator Package** - Native GPS access
+- **Real-time Location Stream** - Continuous GPS updates (every 3 seconds)
+- **Location Permissions** - Request & handle permissions
+- **Location Accuracy** - Displays GPS accuracy in meters
+- **Speed Tracking** - Current speed in m/s and km/h
+- **Heading** - Compass direction (0-360°)
+- **Altitude** - Elevation data
+- **iOS & Android Support** - Platform-specific implementations
+- **Web Support** - Browser geolocation API
+
+### 6.2 Compass (Native Only)
+**Availability:** Native only (iOS/Android)
+**Key Files:**
+- `lib/providers/compass_provider.dart`
+
+**Features:**
+- **Compass Heading** - Magnetic north direction
+- **Compass Rotation Toggle** - Purple button (2D map only)
+- **Threshold-Based Rotation** - Only rotates on 5° change
+- **Automatic in Navigation** - Uses travel direction instead of compass
+
+---
+
+## 7. DEBUG & LOGGING
+
+### 7.1 Debug Overlay
+**Availability:** Both maps
+**Key Files:**
+- `lib/widgets/debug_overlay.dart`
+- `lib/providers/debug_provider.dart`
+
+**Features:**
+- **Debug Toggle** - Red bug button on map
+- **Floating Debug Panel** - Top-right overlay
+- **Message Log** - Last 10 debug messages
+- **Color Coding**:
+  - Red: Errors
+  - Orange: Warnings
+  - Blue: Info
+  - Green: Success
+- **Auto-Fade** - Messages fade after 10s
+- **No Duplicates** - Prevents duplicate consecutive messages
+- **Release Mode Support** - Works in both debug and release builds
+
+### 7.2 Logging Services
+**Availability:** Both platforms
+**Key Files:**
+- `lib/utils/app_logger.dart`
+- `lib/utils/api_logger.dart`
+- `lib/services/debug_service.dart`
+
+**Features:**
+- **AppLogger** - Console logging with tags and colors
+- **ApiLogger** - Logs all API calls to Firestore
+- **DebugService** - Tracks user actions
+- **Log Categories**:
+  - API calls
+  - Firebase operations
+  - Location updates
+  - Map events
+  - Navigation events
+  - Routing
+  - POI loading
+  - Errors & warnings
+- **Circular Buffer** - Keeps last 100 log entries in memory
+- **Broadcast Stream** - Real-time log updates to debug overlay
+
+---
+
+## 8. UI/UX FEATURES
+
+### 8.1 Responsive Design
+**Availability:** Both maps
+**Key Files:**
+- `lib/utils/responsive_helper.dart`
+
+**Features:**
+- **Orientation Support** - Portrait & landscape layouts
+- **Landscape Navigation** - Card on left (50%), map on right (50%)
+- **Portrait Navigation** - Card on top, map below
+- **Platform Detection** - Web vs Native optimizations
+- **Safe Area Padding** - Respects notches and status bars
+
+### 8.2 Toast Notifications
+**Availability:** Both maps
+**Key Files:**
+- `lib/services/toast_service.dart`
+
+**Features:**
+- **Toast Types**:
+  - Success (green)
+  - Error (red)
+  - Warning (orange)
+  - Info (blue)
+- **Navigation-Aware Positioning** - Adjusts position when nav card is visible
+- **Duration Control** - Short/long display times
+- **Dismissible** - Swipe to dismiss
+
+### 8.3 Dialogs & Bottom Sheets
+**Availability:** Both maps
+**Key Files:**
+- `lib/widgets/dialogs/`
+
+**Features:**
+- **POI Detail Dialog** - Shows OSM POI details
+- **Community POI Detail Dialog** - Shows community POI with edit/delete
+- **Warning Detail Dialog** - Shows hazard details with edit/delete
+- **Route Selection Dialog** - Choose between 3 route types
+- **Arrival Dialog** - Congratulates on arrival
+- **Off-Route Dialog** - Offers reroute or dismiss
+- **Layer Picker** - Bottom sheet for map style selection
+- **Transparent Barriers** - See-through dialog backgrounds
+
+### 8.4 Map Toggle Buttons
+**Availability:** Both maps
+**Key Files:**
+- `lib/widgets/map_toggle_button.dart`
+
+**Features:**
+- **OSM POI Toggle** - Blue button with count badge
+- **Community POI Toggle** - Green button with count badge
+- **Warning Toggle** - Orange button with count badge
+- **Disabled State** - Grey when zoom ≤ 12
+- **Count Display** - Shows number of visible items
+- **99+ Limit** - OSM POIs show full count, others cap at 99+
+
+---
+
+## 9. NAVIGATION CARD FEATURES (Detailed)
+
+### 9.1 Main Display
+**Availability:** Both maps (during navigation)
+**Key Files:**
+- `lib/widgets/navigation_card.dart`
+
+**Features:**
+- **Next Maneuver Section**:
+  - Maneuver icon (48x48)
+  - Instruction text
+  - Distance to maneuver
+  - GraphHopper comparison (amber box)
+  - Warning triangle (if warning < 100m)
+  - Speed limit sign (European circular style)
+- **Route Summary**:
+  - Remaining distance (km)
+  - Remaining time (min)
+  - Off-route indicator with timestamp
+  - ETA range badge (optimistic-pessimistic)
+- **Progress Bar** - Visual route completion
+- **Current Speed** - Real-time km/h display
+- **Speed Averages**:
+  - Average with stops (slower → faster)
+  - Average without stops
+
+### 9.2 Warnings Section
+**Availability:** Both maps (during navigation)
+**Features:**
+- **Expandable/Collapsible** - Tap header to toggle
+- **Auto-Collapse** - Collapses after 10s
+- **Merged Warnings** - Community + surface warnings
+- **Color-Coded Cards**:
+  - Red: Community hazards
+  - Orange: Surface warnings
+- **Distance Display** - Real-time distance to each warning
+- **Warning Icons** - Type-specific emojis
+- **Clear Road Message** - Shows when no warnings
+
+### 9.3 GraphHopper Data Section (Collapsible)
+**Availability:** Both maps (during navigation)
+**Features:**
+- **Live Path Details**:
+  - Street name
+  - Street reference (e.g., "A1")
+  - Street destination
+  - Lanes
+  - Road class
+  - Max speed
+  - Surface type
+- **Data Chips** - Color-coded badges for each detail
+- **GraphHopper Instruction** - Full text instruction from API
+
+### 9.4 Maneuvers Section (Debug, Collapsible)
+**Availability:** Both maps (during navigation)
+**Features:**
+- **All Maneuvers List** - Shows every turn on route
+- **Distance Indicators** - Positive (ahead) or negative (passed)
+- **Current Maneuver Highlight** - Green border
+- **Maneuver Icons** - Type-specific emojis
+- **Relative Distances** - Distance from current position
+
+---
+
+## 10. ANALYTICS & STATISTICS
+
+### 10.1 Speed Tracking
+**Availability:** Both maps (during navigation)
+**Key Files:**
+- `lib/providers/navigation_provider.dart`
+- `lib/models/navigation_state.dart`
+
+**Features:**
+- **Current Speed** - Instant speed in km/h
+- **Average Speed (with stops)** - Total distance / total time
+- **Average Speed (without stops)** - Total distance / moving time
+- **Moving Time Tracking** - Only counts when speed ≥ 0.5 m/s
+- **Distance Traveled** - Cumulative distance since navigation start
+- **Time Elapsed** - Total time since navigation start
+- **Time Moving** - Time spent moving (not stopped)
+
+### 10.2 ETA Calculation
+**Availability:** Both maps (during navigation)
+**Features:**
+- **Base ETA** - Calculated from remaining distance and current speed
+- **ETA Range** - Shows ± 15 minutes buffer
+- **Dynamic Updates** - Recalculates every 3 seconds
+- **Display Format** - Optimistic time - Pessimistic time (e.g., "10:30-10:45")
+
+---
+
+## 11. PLATFORM-SPECIFIC FEATURES
+
+### 11.1 Native-Only Features
+**Availability:** iOS & Android only
+
+**Features:**
+- **3D Mapbox Maps** - Full 3D terrain and buildings
+- **Compass Rotation** - Magnetic heading support
+- **Better GPS Accuracy** - Native location services
+- **Wakelock** - Screen stays on during navigation
+- **Haptic Feedback** - Vibration on long-press
+- **Background Location** - Continues tracking in background
+
+### 11.2 Web-Specific Features
+**Availability:** Web/PWA only
+
+**Features:**
+- **Browser Geolocation** - HTML5 Geolocation API
+- **2D Maps Only** - 3D button hidden
+- **No Compass** - Compass features disabled
+- **Responsive Layout** - Adapts to browser window
+- **Progressive Web App** - Can be installed on home screen
+
+---
+
+## 12. BACKEND & DATA SOURCES
+
+### 12.1 External APIs
+**Key Files:**
+- `lib/config/api_keys.dart`
+
+**Services:**
+- **GraphHopper** - Routing & turn-by-turn navigation
+- **Nominatim** - Geocoding (free)
+- **Photon** - Geocoding fallback (free)
+- **Overpass API** - OSM POI queries (free)
+- **Thunderforest** - Cycling map tiles (API key required)
+- **MapTiler** - Satellite & terrain tiles (API key required)
+- **Mapbox** - 3D maps (API key required)
+
+### 12.2 Firebase Integration
+**Key Files:**
+- `lib/services/firebase_service.dart`
+
+**Features:**
+- **Firestore Database**:
+  - `cyclingPOIs` collection - Community POIs
+  - `communityWarnings` collection - Hazard reports
+  - `apiLogs` collection - API call logs
+  - `debugActions` collection - User action logs
+- **Geohashing** - Efficient spatial queries
+- **Bounds Queries** - Latitude/longitude range filtering
+- **Real-time Streams** - Live data updates
+- **CRUD Operations** - Create, Read, Update, Delete for POIs & warnings
+
+---
+
+## 13. CONFIGURATION & CONSTANTS
+
+### 13.1 Marker Configuration
+**Key Files:**
+- `lib/config/marker_config.dart`
+
+**Features:**
+- **Marker Types**:
+  - User Location (12px radius)
+  - OSM POI (9px radius)
+  - Community POI (9px radius)
+  - Warning (10px radius)
+  - Search Result (12px radius)
+- **Color Schemes**:
+  - User: Blue (#2196F3)
+  - OSM POI: Blue (#0000FF)
+  - Community POI: Green (#4CAF50)
+  - Warning: Orange (#FFE0B2)
+  - Search: Grey
+- **Stroke Width** - 2px for all markers
+
+### 13.2 POI Type Configuration
+**Key Files:**
+- `lib/config/poi_type_config.dart`
+
+**Features:**
+- **POI Emojis** - Type-specific icons (🚲, 🔧, ⚡, 🚰, 🚻, etc.)
+- **Warning Emojis** - Hazard-specific icons (⚠️, 🚧, 🚦, ❄️, etc.)
+- **POI Names** - Human-readable labels
+- **Type Mapping** - OSM tags to internal types
+
+### 13.3 App Theme
+**Key Files:**
+- `lib/constants/app_theme.dart`
+- `lib/constants/app_colors.dart`
+
+**Features:**
+- **Color Palette**:
+  - Urban Blue (#1976D2)
+  - Cycling Green (#4CAF50)
+  - Safety Orange (#FF9800)
+  - Alert Red (#F44336)
+- **Typography** - Consistent font sizes and weights
+- **Component Themes** - Buttons, cards, dialogs
+
+---
+
+## FEATURE MATRIX
+
+| Feature Category | 2D Map | 3D Map | Web | Native |
+|-----------------|--------|--------|-----|--------|
+| **Map Display** | ✅ | ✅ | ✅ | ✅ |
+| Multiple Map Layers | ✅ | ✅ | ✅ | ✅ |
+| 3D Buildings/Terrain | ❌ | ✅ | ❌ | ✅ |
+| **Navigation** | ✅ | ✅ | ✅ | ✅ |
+| Turn-by-Turn | ✅ | ✅ | ✅ | ✅ |
+| Auto-Zoom | ✅ | ✅ | ✅ | ✅ |
+| Map Rotation | ✅ | ✅ | ✅ | ✅ |
+| Traveled Route Trail | ✅ | ✅ | ✅ | ✅ |
+| Off-Route Detection | ✅ | ✅ | ✅ | ✅ |
+| Automatic Rerouting | ✅ | ✅ | ✅ | ✅ |
+| **POIs** | ✅ | ✅ | ✅ | ✅ |
+| OSM POIs | ✅ | ✅ | ✅ | ✅ |
+| Community POIs | ✅ | ✅ | ✅ | ✅ |
+| Add/Edit/Delete POIs | ✅ | ✅ | ✅ | ✅ |
+| **Hazards** | ✅ | ✅ | ✅ | ✅ |
+| Community Warnings | ✅ | ✅ | ✅ | ✅ |
+| Route Hazard Detection | ✅ | ✅ | ✅ | ✅ |
+| Surface Warnings | ✅ | ✅ | ✅ | ✅ |
+| **Search** | ✅ | ✅ | ✅ | ✅ |
+| Address Search | ✅ | ✅ | ✅ | ✅ |
+| Coordinate Parsing | ✅ | ✅ | ✅ | ✅ |
+| **Platform Features** | | | | |
+| Compass Rotation | ✅ | ✅ | ❌ | ✅ |
+| Haptic Feedback | ✅ | ✅ | ❌ | ✅ |
+| Wakelock | ✅ | ✅ | ❌ | ✅ |
+| Debug Overlay | ✅ | ✅ | ✅ | ✅ |
+
+---
+
+## SUMMARY STATISTICS
+
+- **Total Screens**: 6 (Splash, 2D Map, 3D Map, POI Management, Hazard Report, Stubs)
+- **Total Providers**: 9 (Navigation, Map, Location, Search, Community, OSM POI, Compass, Debug, Navigation Mode)
+- **Total Services**: 16+ (Routing, OSM, Firebase, Location, Geocoding, Navigation Engine, Map, Toast, Debug, Error, Route Hazard Detector, Road Surface Analyzer, Route Surface Helper, API Logger, Conditional POI Loader, iOS Navigation)
+- **Total Models**: 7+ (LocationData, CyclingPOI, CommunityWarning, SearchResult, ManeuverInstruction, RouteWarning, NavigationState)
+- **Map Layers (2D)**: 7
+- **Map Styles (3D)**: 3
+- **POI Types**: 8
+- **Hazard Types**: 5
+- **Route Types**: 3 (Fastest, Safest, Shortest)
+- **External APIs**: 7
+- **Firebase Collections**: 4
+
+---
+
+## RECENT OPTIMIZATIONS & IMPROVEMENTS
+
+### Performance Optimizations
+- **Traveled Route Delta Updates** - Only updates segments that change state instead of full redraw
+- **Segment Property Updates** - Uses `setStyleLayerProperty()` for efficient color/width changes
+- **No More Blinking** - Removed full marker/route redraw every 3 seconds during navigation
+- **Smart Caching** - Route segment metadata cached for instant updates
+
+### Navigation Enhancements
+- **Breadcrumb Trail** - Visual distinction between traveled and remaining route
+- **Bearing Smoothing** - 90/10 ratio for stable map rotation
+- **Speed-Based Off-Route** - Dynamic thresholds based on cycling speed
+- **ETA Range Display** - Shows realistic time window with buffer
+
+### Logging Cleanup
+- **Reduced Log Volume** - ~60-70% reduction in high-frequency logs
+- **Preserved Critical Logs** - Kept errors, warnings, navigation milestones, user actions
+- **Release Mode Support** - Debug overlay now works in production builds
+
+---
+
+## KNOWN LIMITATIONS
+
+1. **Voice Navigation** - UI button present but not implemented
+2. **Route Profiles** - Limited to 3 GraphHopper profiles (car, bike, foot)
+3. **Offline Maps** - No offline tile caching
+4. **Multi-Language** - Currently English only
+5. **Elevation Display** - Not shown in navigation card
+6. **Weather Integration** - No real-time weather data
+7. **Traffic Data** - No live traffic information
+8. **User Authentication** - No user accounts for community features
+9. **POI Photos** - No image upload for community POIs
+10. **Turn Announcement Audio** - No voice guidance
+
+---
+
+## FUTURE ENHANCEMENT OPPORTUNITIES
+
+### Navigation
+- Voice turn-by-turn guidance
+- Lane guidance with arrows
+- Speed camera alerts
+- Live traffic integration
+- Alternative route suggestions during navigation
+- Route waypoints/via points
+
+### POIs & Community
+- User authentication system
+- Photo upload for POIs/hazards
+- Upvote/downvote system for community reports
+- User reputation/trust scores
+- POI/hazard expiration reminders
+- Comments on community reports
+
+### Map Features
+- Offline map downloads
+- Custom route drawing
+- Route history/favorites
+- Multiple destination routing
+- Route sharing (export GPX/KML)
+- Heatmap of popular cycling routes
+
+### Analytics
+- Ride statistics dashboard
+- Calorie tracking
+- Elevation profile display
+- Speed graphs
+- Route comparison
+- Monthly/yearly summaries
+
+### Social Features
+- Friend following
+- Group rides
+- Route recommendations
+- Community leaderboards
+- Achievement badges
+- Ride sharing
+
+---
+
+This comprehensive cycling navigation app provides safe, efficient cycling with community-driven safety features, extensive POI coverage, intelligent turn-by-turn navigation, and flexible 2D/3D visualization. 🚴‍♂️
