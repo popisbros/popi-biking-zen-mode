@@ -9,11 +9,13 @@ import '../constants/app_colors.dart';
 class ArrivalDialog extends ConsumerStatefulWidget {
   final String destinationName;
   final double finalDistance;
+  final VoidCallback? onFindParking; // Callback when "Find a parking" is pressed
 
   const ArrivalDialog({
     super.key,
     required this.destinationName,
     required this.finalDistance,
+    this.onFindParking,
   });
 
   @override
@@ -152,22 +154,24 @@ class _ArrivalDialogState extends ConsumerState<ArrivalDialog> {
 
                 const SizedBox(width: 12),
 
-                // OK button (dismiss but keep navigation active)
+                // Find a parking button (shows nearby bicycle parking)
                 Expanded(
-                  child: OutlinedButton(
+                  child: OutlinedButton.icon(
                     onPressed: () {
                       _countdownTimer?.cancel();
                       Navigator.of(context).pop();
+                      widget.onFindParking?.call();
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.mossGreen,
-                      side: BorderSide(color: AppColors.mossGreen),
+                      foregroundColor: Colors.blue,
+                      side: const BorderSide(color: Colors.blue),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('OK'),
+                    icon: const Icon(Icons.local_parking, size: 20),
+                    label: const Text('Find a parking'),
                   ),
                 ),
               ],

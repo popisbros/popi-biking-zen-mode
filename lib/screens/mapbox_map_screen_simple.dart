@@ -837,6 +837,91 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
   }
 
+  /// Find bicycle parking near destination (500m radius)
+  Future<void> _findParkingNearDestination() async {
+    AppLogger.success('Finding parking near destination', tag: 'PARKING');
+
+    // Get destination from navigation state
+    final navState = ref.read(navigationProvider);
+    if (!navState.isNavigating || navState.activeRoute == null) {
+      AppLogger.warning('No active navigation to find parking', tag: 'PARKING');
+      return;
+    }
+
+    final destination = navState.activeRoute!.points.last;
+
+    // Calculate 500m bounds around destination
+    final radiusKm = 0.5; // 500 meters
+    const earthRadiusKm = 6371.0;
+
+    final latDelta = (radiusKm / earthRadiusKm) * (180 / 3.14159265359);
+    final lonDelta = (radiusKm / earthRadiusKm) * (180 / 3.14159265359) /
+                     (3.14159265359 * destination.latitude / 180).abs();
+
+    final north = destination.latitude + latDelta;
+    final south = destination.latitude - latDelta;
+    final east = destination.longitude + lonDelta;
+    final west = destination.longitude - lonDelta;
+
+    AppLogger.debug('Parking search bounds', tag: 'PARKING', data: {
+      'center': '${destination.latitude},${destination.longitude}',
+      'radius': '500m',
+      'north': north,
+      'south': south,
+      'east': east,
+      'west': west,
+    });
+
+    // Update map bounds to show 500m area
+    ref.read(mapProvider.notifier).updateBounds(
+      southWest: latlong.LatLng(south, west),
+      northEast: latlong.LatLng(north, east),
+    );
+
+    // Enable OSM POIs (bicycle parking will be included)
+    ref.read(mapProvider.notifier).setPOIVisibility(showOSM: true);
+
+    // Zoom to show the parking search area
+    if (_mapboxMap != null) {
+      final coordinates = [
+        Point(coordinates: Position(west, north)),
+        Point(coordinates: Position(east, south)),
+      ];
+
+      try {
+        final cameraOptions = await _mapboxMap!.cameraForCoordinates(
+          coordinates,
+          MbxEdgeInsets(top: 100, left: 50, bottom: 100, right: 50),
+          null, // bearing
+          null, // pitch
+        );
+
+        await _mapboxMap!.easeTo(
+          CameraOptions(
+            center: cameraOptions.center,
+            zoom: cameraOptions.zoom,
+            pitch: _currentPitch,
+            bearing: 0.0, // North up
+          ),
+          MapAnimationOptions(duration: 1000),
+        );
+
+        AppLogger.success('Zoomed to parking search area', tag: 'PARKING', data: {
+          'zoom': cameraOptions.zoom,
+        });
+
+        // Reload POIs to ensure parking markers appear
+        await _loadAllPOIData();
+        _addMarkers();
+
+        // Show toast
+        ToastService.info('Showing bicycle parking within 500m');
+      } catch (e) {
+        AppLogger.error('Failed to zoom to parking area', tag: 'PARKING', error: e);
+      }
+    }
+  }
+
   /// Handle marker tap - show appropriate dialog based on marker type
   void _handleMarkerTap(double lat, double lng) {
     AppLogger.map('Handling marker tap', data: {'lat': lat, 'lng': lng});
@@ -976,6 +1061,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           builder: (context) => ArrivalDialog(
             destinationName: 'Your Destination',
             finalDistance: distance,
+            onFindParking: () => _findParkingNearDestination(),
           ),
         );
       }
