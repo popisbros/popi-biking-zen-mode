@@ -34,9 +34,11 @@ import '../widgets/navigation_card.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
 import '../widgets/map_toggle_button.dart';
+import '../widgets/osm_poi_selector_button.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../services/route_surface_helper.dart';
+import '../utils/poi_utils.dart';
 // Conditional import for 3D map button - use stub on Web
 import 'mapbox_map_screen_simple.dart'
     if (dart.library.html) 'mapbox_map_screen_simple_stub.dart';
@@ -1276,8 +1278,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Add OSM POI markers (only if showOSMPOIs is true)
     if (mapState.showOSMPOIs) {
       poisAsync.whenData((pois) {
-        AppLogger.map('Adding OSM POI markers', data: {'count': pois.length});
-        markers.addAll(pois.map((poi) => _buildPOIMarker(poi)));
+        // Filter POIs based on selected types using shared utility
+        final filteredPOIs = POIUtils.filterPOIsByType(pois, mapState.selectedOSMPOITypes);
+
+        AppLogger.map('Adding OSM POI markers', data: {
+          'total': pois.length,
+          'filtered': filteredPOIs.length,
+          'selectedTypes': mapState.selectedOSMPOITypes?.join(', ') ?? 'all',
+        });
+        markers.addAll(filteredPOIs.map((poi) => _buildPOIMarker(poi)));
       });
     } else {
       AppLogger.debug('OSM POIs hidden by toggle', tag: 'MAP');
@@ -1625,24 +1634,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
                     return Column(
                       children: [
-                        // OSM POI toggle with count (no limit)
-                        MapToggleButton(
-                          isActive: mapState.showOSMPOIs,
-                          icon: Icons.public,
-                          activeColor: Colors.blue,
+                        // OSM POI selector (multi-choice dropdown)
+                        OSMPOISelectorButton(
                           count: poisAsync.value?.length ?? 0,
-                          showFullCount: true, // Show actual count, not 99+
                           enabled: togglesEnabled,
-                          onPressed: () {
-                            AppLogger.map('OSM POI toggle pressed');
-                            final wasOff = !mapState.showOSMPOIs;
-                            ref.read(mapProvider.notifier).toggleOSMPOIs();
-                            // If turning ON, load only this feature if needed
-                            if (wasOff) {
-                              _loadOSMPOIsIfNeeded();
-                            }
-                          },
-                          tooltip: 'Toggle OSM POIs',
                         ),
                         const SizedBox(height: 8),
 

@@ -30,6 +30,7 @@ import '../utils/app_logger.dart';
 import '../utils/geo_utils.dart';
 import '../utils/navigation_utils.dart';
 import '../utils/poi_dialog_handler.dart';
+import '../utils/poi_utils.dart';
 import '../utils/route_calculation_helper.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
@@ -2804,26 +2805,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     if (!mapState.showOSMPOIs) return;
 
     final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
-    final selectedTypes = mapState.selectedOSMPOITypes;
 
-    // Filter POIs based on selected types
-    final filteredPOIs = osmPOIs.where((poi) {
-      // If no types selected (empty set), show none
-      if (selectedTypes != null && selectedTypes.isEmpty) return false;
-
-      // If specific types selected, only show those
-      if (selectedTypes != null && !selectedTypes.contains(poi.type)) return false;
-
-      // If selectedTypes is null, show all (backward compatibility)
-      return true;
-    }).toList();
+    // Filter POIs based on selected types using shared utility
+    final filteredPOIs = POIUtils.filterPOIsByType(osmPOIs, mapState.selectedOSMPOITypes);
 
     List<PointAnnotationOptions> pointOptions = [];
 
     AppLogger.debug('Adding OSM POIs as icons', tag: 'MAP', data: {
       'total': osmPOIs.length,
       'filtered': filteredPOIs.length,
-      'selectedTypes': selectedTypes?.join(', ') ?? 'all',
+      'selectedTypes': mapState.selectedOSMPOITypes?.join(', ') ?? 'all',
     });
 
     for (var poi in filteredPOIs) {
