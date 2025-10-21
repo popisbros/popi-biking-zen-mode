@@ -33,6 +33,7 @@ import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
+import '../widgets/arrival_dialog.dart';
 import '../widgets/map_toggle_button.dart';
 import '../widgets/osm_poi_selector_button.dart';
 import '../providers/debug_provider.dart';
@@ -371,6 +372,77 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ref: ref,
       extendedBounds: bounds,
     );
+  }
+
+  /// Find bicycle parking near destination (500m radius)
+  Future<void> _findParkingNearDestination() async {
+    AppLogger.success('Finding parking near destination', tag: 'PARKING');
+
+    // Get destination from navigation state
+    final navState = ref.read(navigationProvider);
+    if (!navState.isNavigating || navState.activeRoute == null) {
+      AppLogger.warning('No active navigation to find parking', tag: 'PARKING');
+      return;
+    }
+
+    final destination = navState.activeRoute!.points.last;
+
+    // End navigation first
+    ref.read(navigationProvider.notifier).stopNavigation();
+    ref.read(searchProvider.notifier).clearRoute();
+    AppLogger.info('Navigation ended to search for parking', tag: 'PARKING');
+
+    // Calculate 500m bounds around destination
+    final radiusKm = 0.5; // 500 meters
+    const earthRadiusKm = 6371.0;
+
+    final latDelta = (radiusKm / earthRadiusKm) * (180 / 3.14159265359);
+    final lonDelta = (radiusKm / earthRadiusKm) * (180 / 3.14159265359) /
+                     math.cos(destination.latitude * 3.14159265359 / 180).abs();
+
+    final north = destination.latitude + latDelta;
+    final south = destination.latitude - latDelta;
+    final east = destination.longitude + lonDelta;
+    final west = destination.longitude - lonDelta;
+
+    AppLogger.debug('Parking search bounds', tag: 'PARKING', data: {
+      'center': '${destination.latitude},${destination.longitude}',
+      'radius': '500m',
+      'north': north,
+      'south': south,
+      'east': east,
+      'west': west,
+    });
+
+    // Update map bounds to show 500m area
+    ref.read(mapProvider.notifier).updateBounds(
+      LatLng(south, west),
+      LatLng(north, east),
+    );
+
+    // Enable OSM POIs with bicycle parking type selected
+    ref.read(mapProvider.notifier).setSelectedOSMPOITypes({'bike_parking'});
+
+    // Fit bounds to show the parking search area
+    final bounds = LatLngBounds(
+      LatLng(south, west),
+      LatLng(north, east),
+    );
+
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.all(50),
+      ),
+    );
+
+    AppLogger.success('Zoomed to parking search area', tag: 'PARKING');
+
+    // Load POIs to ensure parking markers appear
+    _loadAllMapDataWithBounds(forceReload: true);
+
+    // Show toast
+    ToastService.info('Showing bicycle parking within 500m');
   }
 
   /// Handle map events
@@ -1210,6 +1282,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (osmJustEnabled) {
         AppLogger.map('OSM POIs enabled, triggering initial load');
         _loadAllMapDataWithBounds(forceReload: true);
+      }
+    });
+
+    // Listen for arrival at destination
+    ref.listen(navigationProvider, (previous, next) {
+      // Show arrival dialog when user arrives
+      if (next.hasArrived && !(previous?.hasArrived ?? false)) {
+        AppLogger.success('Showing arrival dialog', tag: 'NAVIGATION');
+        final distance = next.totalDistanceRemaining;
+
+        // Show arrival dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => ArrivalDialog(
+            destinationName: 'Your Destination',
+            finalDistance: distance,
+            onFindParking: () => _findParkingNearDestination(),
+          ),
+        );
       }
     });
 
