@@ -3117,8 +3117,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     _lastGPSPosition = newGPSPosition;
 
-    // Update marker
-    _addMarkers();
+    // Don't call _addMarkers() here - it causes blinking!
+    // User location is shown by default Mapbox location puck (auto-updated)
+    // POIs/warnings/route don't need to be redrawn on every GPS update
+    // They are already on the map and update via listeners when data changes
   }
 
   /// Add breadcrumb for navigation mode rotation
