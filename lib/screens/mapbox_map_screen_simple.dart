@@ -2451,16 +2451,39 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     List<latlong.LatLng>? routeToRender;
     bool isNavigating = false;
     Map<String, dynamic>? pathDetails;
-    int? currentSegmentIndex;
+    int? currentPointIndex; // Index of current position in route coordinates
 
     if (turnByTurnNavState.isNavigating && turnByTurnNavState.activeRoute != null) {
       routeToRender = turnByTurnNavState.activeRoute!.points;
       pathDetails = turnByTurnNavState.activeRoute!.pathDetails;
-      currentSegmentIndex = turnByTurnNavState.currentSegmentIndex;
       isNavigating = true;
+
+      // Find current point index by finding closest point on route to GPS position
+      final currentPos = turnByTurnNavState.currentPosition;
+      if (currentPos != null && routeToRender.isNotEmpty) {
+        double minDistance = double.infinity;
+        int closestIndex = 0;
+
+        for (int i = 0; i < routeToRender.length; i++) {
+          final distance = GeoUtils.calculateDistance(
+            currentPos.latitude,
+            currentPos.longitude,
+            routeToRender[i].latitude,
+            routeToRender[i].longitude,
+          );
+
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+          }
+        }
+
+        currentPointIndex = closestIndex;
+      }
+
       AppLogger.debug('Rendering navigation route (surface-colored)', tag: 'MAP', data: {
         'points': routeToRender.length,
-        'currentSegment': currentSegmentIndex,
+        'currentPointIndex': currentPointIndex,
         'hasSurfaceData': pathDetails?.containsKey('surface') ?? false,
       });
     } else if (routePoints != null && routePoints.isNotEmpty) {
@@ -2481,7 +2504,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final segments = RouteSurfaceHelper.createSurfaceSegments(routeToRender, pathDetails);
 
         AppLogger.debug('Rendering ${segments.length} surface segments', tag: 'MAP', data: {
-          'currentSegment': currentSegmentIndex ?? 0,
+          'currentPointIndex': currentPointIndex ?? 0,
         });
 
         for (int i = 0; i < segments.length; i++) {
@@ -2507,9 +2530,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           await _mapboxMap?.style.addSource(geoJsonSource);
 
           // Determine if this segment is behind the user (traveled) or ahead (remaining)
-          // Segments are in order, so compare segment's last point index with current position
+          // Compare segment's end coordinate index with current position's coordinate index
           final segmentEndIndex = segment.endIndex;
-          final isTraveled = currentSegmentIndex != null && segmentEndIndex <= currentSegmentIndex;
+          final isTraveled = currentPointIndex != null && segmentEndIndex < currentPointIndex;
 
           // Use lighter color for traveled segments, normal color for remaining
           final segmentColor = isTraveled
