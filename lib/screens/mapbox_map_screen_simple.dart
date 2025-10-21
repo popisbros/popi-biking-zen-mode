@@ -876,8 +876,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Update map bounds to show 500m area
     ref.read(mapProvider.notifier).updateBounds(
-      southWest: latlong.LatLng(south, west),
-      northEast: latlong.LatLng(north, east),
+      latlong.LatLng(south, west),
+      latlong.LatLng(north, east),
     );
 
     // Enable OSM POIs with bicycle parking type selected
@@ -1036,7 +1036,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final osmJustEnabled = (previous?.showOSMPOIs ?? false) == false && next.showOSMPOIs;
         if (osmJustEnabled) {
           AppLogger.map('OSM POIs enabled, loading data');
-          _reloadPOIData();
+          _loadAllPOIData();
         }
       }
     });
