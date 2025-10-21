@@ -3178,7 +3178,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             newWidth,
           );
         } catch (e) {
-          AppLogger.warning('Failed to update segment $segmentIndex', tag: 'MAP', error: e);
+          AppLogger.warning('Failed to update segment $segmentIndex: $e', tag: 'MAP');
         }
       }
 
