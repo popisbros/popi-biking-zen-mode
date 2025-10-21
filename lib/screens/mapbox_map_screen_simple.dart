@@ -2309,31 +2309,60 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Clear all route layers and sources
     // CRITICAL: Must remove layers BEFORE sources (Mapbox requirement)
-    final layersToRemove = ['route-layer', 'preview-fastest-layer', 'preview-safest-layer', 'preview-shortest-layer'];
-    final sourcesToRemove = ['route-source', 'preview-fastest-source', 'preview-safest-source', 'preview-shortest-source'];
+    final layersToRemove = [
+      'route-layer', // Single-color route
+      'preview-fastest-layer',
+      'preview-safest-layer',
+      'preview-shortest-layer',
+    ];
+    final sourcesToRemove = [
+      'route-source', // Single-color route
+      'preview-fastest-source',
+      'preview-safest-source',
+      'preview-shortest-source',
+    ];
+
+    // Also remove surface-colored route layers (route-layer-0, route-layer-1, etc.)
+    // During navigation, routes are split into segments by surface type
+    for (int i = 0; i < 50; i++) {
+      layersToRemove.add('route-layer-$i');
+      sourcesToRemove.add('route-source-$i');
+    }
 
     // Step 1: Remove all layers
+    int layersRemoved = 0;
     for (final layer in layersToRemove) {
       try {
         await _mapboxMap!.style.removeStyleLayer(layer);
+        layersRemoved++;
         AppLogger.debug('Removed layer: $layer', tag: 'MAP');
       } catch (e) {
-        // Layer doesn't exist, that's fine
+        // Layer doesn't exist, that's fine (only log if it's a base layer)
+        if (layer == 'route-layer' || layer.startsWith('preview-')) {
+          AppLogger.debug('Layer $layer does not exist (expected)', tag: 'MAP');
+        }
       }
     }
+    AppLogger.debug('Total layers removed: $layersRemoved', tag: 'MAP');
 
     // Wait for layer removals to complete
     await Future.delayed(const Duration(milliseconds: 100));
 
     // Step 2: Remove all sources (only after layers are removed)
+    int sourcesRemoved = 0;
     for (final source in sourcesToRemove) {
       try {
         await _mapboxMap!.style.removeStyleSource(source);
+        sourcesRemoved++;
         AppLogger.debug('Removed source: $source', tag: 'MAP');
       } catch (e) {
-        // Source doesn't exist, that's fine
+        // Source doesn't exist, that's fine (only log if it's a base source)
+        if (source == 'route-source' || source.startsWith('preview-')) {
+          AppLogger.debug('Source $source does not exist (expected)', tag: 'MAP');
+        }
       }
     }
+    AppLogger.debug('Total sources removed: $sourcesRemoved', tag: 'MAP');
 
     // Wait for source removals to complete before adding new ones
     await Future.delayed(const Duration(milliseconds: 100));
