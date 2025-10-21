@@ -852,6 +852,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     final destination = navState.activeRoute!.points.last;
 
+    // End navigation first
+    _stopNavigation();
+    AppLogger.info('Navigation ended to search for parking', tag: 'PARKING');
+
     // Calculate 500m bounds around destination
     final radiusKm = 0.5; // 500 meters
     const earthRadiusKm = 6371.0;
