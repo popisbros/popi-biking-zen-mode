@@ -77,24 +77,8 @@ class LocationNotifier extends Notifier<AsyncValue<LocationData?>> {
         await _locationService.startLocationTracking();
 
         // Start listening to location updates
-        AppLogger.location('Setting up location stream listener');
         _locationSubscription = _locationService.locationStream.listen(
           (location) {
-            AppLogger.debug('Location update received', tag: 'LOCATION', data: {
-              'lat': location.latitude.toStringAsFixed(6),
-              'lng': location.longitude.toStringAsFixed(6),
-              'acc': '${location.accuracy?.toStringAsFixed(1) ?? 'unknown'}m'
-            });
-            // Log GPS location to AppLogger (visible in debug overlay)
-            final headingStr = location.heading != null ? '${location.heading!.toStringAsFixed(0)}°' : 'N/A';
-            final speedStr = location.speed != null ? '${(location.speed! * 3.6).toStringAsFixed(1)}km/h' : '0km/h';
-            AppLogger.location('GPS Update', data: {
-              'lat': location.latitude.toStringAsFixed(6),
-              'lon': location.longitude.toStringAsFixed(6),
-              'accuracy': '±${location.accuracy?.toStringAsFixed(1) ?? '?'}m',
-              'speed': speedStr,
-              'heading': headingStr,
-            });
             state = AsyncValue.data(location);
           },
           onError: (error, stackTrace) {
