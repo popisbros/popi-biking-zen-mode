@@ -44,6 +44,7 @@ import '../widgets/dialogs/warning_detail_dialog.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
 import '../widgets/dialogs/community_poi_detail_dialog.dart';
 import '../widgets/map_toggle_button.dart';
+import '../widgets/osm_poi_selector_button.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'map_screen.dart';
@@ -878,8 +879,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       northEast: latlong.LatLng(north, east),
     );
 
-    // Enable OSM POIs (bicycle parking will be included)
-    ref.read(mapProvider.notifier).setPOIVisibility(showOSM: true);
+    // Enable OSM POIs with bicycle parking type selected
+    ref.read(mapProvider.notifier).setSelectedOSMPOITypes({'bike_parking'});
 
     // Zoom to show the parking search area
     if (_mapboxMap != null) {
@@ -1178,23 +1179,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
                       return Column(
                         children: [
-                          // OSM POI toggle
-                          MapToggleButton(
-                            isActive: mapState.showOSMPOIs,
-                            icon: Icons.public,
-                            activeColor: Colors.blue,
+                          // OSM POI selector (multi-choice dropdown)
+                          OSMPOISelectorButton(
                             count: ref.watch(osmPOIsNotifierProvider).value?.length ?? 0,
-                            showFullCount: true,
                             enabled: togglesEnabled,
-                            onPressed: () {
-                              AppLogger.map('OSM POI toggle pressed');
-                              final wasOff = !mapState.showOSMPOIs;
-                              ref.read(mapProvider.notifier).toggleOSMPOIs();
-                              if (wasOff) {
-                                _loadOSMPOIsIfNeeded();
-                              }
-                            },
-                            tooltip: 'Toggle OSM POIs',
                           ),
                           const SizedBox(height: 8),
                           // Community POI toggle
@@ -2816,10 +2804,29 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     if (!mapState.showOSMPOIs) return;
 
     final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
+    final selectedTypes = mapState.selectedOSMPOITypes;
+
+    // Filter POIs based on selected types
+    final filteredPOIs = osmPOIs.where((poi) {
+      // If no types selected (empty set), show none
+      if (selectedTypes != null && selectedTypes.isEmpty) return false;
+
+      // If specific types selected, only show those
+      if (selectedTypes != null && !selectedTypes.contains(poi.type)) return false;
+
+      // If selectedTypes is null, show all (backward compatibility)
+      return true;
+    }).toList();
+
     List<PointAnnotationOptions> pointOptions = [];
 
-    AppLogger.debug('Adding OSM POIs as icons', tag: 'MAP', data: {'count': osmPOIs.length});
-    for (var poi in osmPOIs) {
+    AppLogger.debug('Adding OSM POIs as icons', tag: 'MAP', data: {
+      'total': osmPOIs.length,
+      'filtered': filteredPOIs.length,
+      'selectedTypes': selectedTypes?.join(', ') ?? 'all',
+    });
+
+    for (var poi in filteredPOIs) {
       final id = 'osm_${poi.latitude}_${poi.longitude}';
       _osmPoiById[id] = poi;
 

@@ -39,6 +39,17 @@ class MapNotifier extends Notifier<MapState> {
     state = state.copyWith(showOSMPOIs: !state.showOSMPOIs);
   }
 
+  /// Set selected OSM POI types
+  /// - Empty set = show none
+  /// - null = show all types
+  /// - Specific types = show only those types
+  void setSelectedOSMPOITypes(Set<String>? types) {
+    state = state.copyWith(
+      selectedOSMPOITypes: types,
+      showOSMPOIs: types != null && types.isNotEmpty, // Auto-enable if types selected
+    );
+  }
+
   /// Toggle warning visibility
   void toggleWarnings() {
     state = state.copyWith(showWarnings: !state.showWarnings);
@@ -90,6 +101,9 @@ class MapState {
   final bool showOSMPOIs;
   final bool showWarnings;
 
+  // OSM POI type filter (null = all types, empty = none, specific list = only those types)
+  final Set<String>? selectedOSMPOITypes;
+
   // Navigation settings
   final bool autoZoomEnabled;
 
@@ -110,6 +124,7 @@ class MapState {
     required this.showPOIs,
     required this.showOSMPOIs,
     required this.showWarnings,
+    this.selectedOSMPOITypes,
     required this.autoZoomEnabled,
     required this.center,
     required this.zoom,
@@ -134,6 +149,7 @@ class MapState {
       showPOIs: false,
       showOSMPOIs: false,
       showWarnings: true,
+      selectedOSMPOITypes: {}, // Empty = none selected by default
       autoZoomEnabled: true, // Auto-zoom enabled by default
       center: mapService.getDefaultCenter(),
       zoom: defaultZoom,
@@ -149,6 +165,7 @@ class MapState {
     bool? showPOIs,
     bool? showOSMPOIs,
     bool? showWarnings,
+    Set<String>? selectedOSMPOITypes,
     bool? autoZoomEnabled,
     LatLng? center,
     double? zoom,
@@ -164,6 +181,7 @@ class MapState {
       showPOIs: showPOIs ?? this.showPOIs,
       showOSMPOIs: showOSMPOIs ?? this.showOSMPOIs,
       showWarnings: showWarnings ?? this.showWarnings,
+      selectedOSMPOITypes: selectedOSMPOITypes ?? this.selectedOSMPOITypes,
       autoZoomEnabled: autoZoomEnabled ?? this.autoZoomEnabled,
       center: center ?? this.center,
       zoom: zoom ?? this.zoom,
