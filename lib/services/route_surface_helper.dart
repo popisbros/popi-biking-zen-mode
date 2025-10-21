@@ -6,11 +6,15 @@ class RouteSegment {
   final List<LatLng> points;
   final Color color;
   final String surfaceType;
+  final int startIndex; // Index of first point in original route
+  final int endIndex;   // Index of last point in original route
 
   RouteSegment({
     required this.points,
     required this.color,
     required this.surfaceType,
+    required this.startIndex,
+    required this.endIndex,
   });
 }
 
@@ -80,6 +84,8 @@ class RouteSurfaceHelper {
           points: routePoints,
           color: unknownSurface,
           surfaceType: 'unknown',
+          startIndex: 0,
+          endIndex: routePoints.length - 1,
         )
       ];
     }
@@ -92,6 +98,8 @@ class RouteSurfaceHelper {
           points: routePoints,
           color: unknownSurface,
           surfaceType: 'unknown',
+          startIndex: 0,
+          endIndex: routePoints.length - 1,
         )
       ];
     }
@@ -115,6 +123,8 @@ class RouteSurfaceHelper {
           points: segmentPoints,
           color: getSurfaceColor(surfaceType),
           surfaceType: surfaceType.toString(),
+          startIndex: start,
+          endIndex: end,
         ));
       }
     }
@@ -126,6 +136,8 @@ class RouteSurfaceHelper {
               points: routePoints,
               color: unknownSurface,
               surfaceType: 'unknown',
+              startIndex: 0,
+              endIndex: routePoints.length - 1,
             )
           ];
   }

@@ -1952,6 +1952,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     super.dispose();
   }
 
+  /// Convert a color to a lighter version for traveled route segments
+  /// Takes a Color object and returns a lighter int color value (ARGB)
+  int _getLighterColor(Color color) {
+    // Increase brightness by blending with white
+    // Extract ARGB components
+    final a = color.alpha;
+    final r = color.red;
+    final g = color.green;
+    final b = color.blue;
+
+    // Blend with white (70% original, 30% white) and reduce opacity to 60%
+    final lighterR = (r * 0.7 + 255 * 0.3).round();
+    final lighterG = (g * 0.7 + 255 * 0.3).round();
+    final lighterB = (b * 0.7 + 255 * 0.3).round();
+    final lighterA = (a * 0.6).round(); // Reduce opacity
+
+    // Combine into ARGB int
+    return (lighterA << 24) | (lighterR << 16) | (lighterG << 8) | lighterB;
+  }
+
   /// Create an image from emoji text for use as marker icon
   /// Uses proper background and border colors matching the 2D map configuration
   Future<Uint8List> _createEmojiIcon(
@@ -2460,13 +2480,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     List<latlong.LatLng>? routeToRender;
     bool isNavigating = false;
     Map<String, dynamic>? pathDetails;
+    int? currentSegmentIndex;
 
     if (turnByTurnNavState.isNavigating && turnByTurnNavState.activeRoute != null) {
       routeToRender = turnByTurnNavState.activeRoute!.points;
       pathDetails = turnByTurnNavState.activeRoute!.pathDetails;
+      currentSegmentIndex = turnByTurnNavState.currentSegmentIndex;
       isNavigating = true;
       AppLogger.debug('Rendering navigation route (surface-colored)', tag: 'MAP', data: {
         'points': routeToRender.length,
+        'currentSegment': currentSegmentIndex,
         'hasSurfaceData': pathDetails?.containsKey('surface') ?? false,
       });
     } else if (routePoints != null && routePoints.isNotEmpty) {
@@ -2486,7 +2509,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       if (isNavigating && pathDetails != null && pathDetails.containsKey('surface')) {
         final segments = RouteSurfaceHelper.createSurfaceSegments(routeToRender, pathDetails);
 
-        AppLogger.debug('Rendering ${segments.length} surface segments', tag: 'MAP');
+        AppLogger.debug('Rendering ${segments.length} surface segments', tag: 'MAP', data: {
+          'currentSegment': currentSegmentIndex ?? 0,
+        });
 
         for (int i = 0; i < segments.length; i++) {
           final segment = segments[i];
@@ -2510,12 +2535,22 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Add source to map
           await _mapboxMap?.style.addSource(geoJsonSource);
 
-          // Create line layer with surface color
+          // Determine if this segment is behind the user (traveled) or ahead (remaining)
+          // Segments are in order, so compare segment's last point index with current position
+          final segmentEndIndex = segment.endIndex;
+          final isTraveled = currentSegmentIndex != null && segmentEndIndex <= currentSegmentIndex;
+
+          // Use lighter color for traveled segments, normal color for remaining
+          final segmentColor = isTraveled
+              ? _getLighterColor(segment.color) // Lighter version of surface color
+              : segment.color.value; // Original surface color
+
+          // Create line layer with surface color (lighter for traveled)
           final lineLayer = LineLayer(
             id: 'route-layer-$i',
             sourceId: 'route-source-$i',
-            lineColor: segment.color.value,
-            lineWidth: 6.0,
+            lineColor: segmentColor,
+            lineWidth: isTraveled ? 4.0 : 6.0, // Slightly thinner for traveled
             lineCap: LineCap.ROUND,
             lineJoin: LineJoin.ROUND,
           );
