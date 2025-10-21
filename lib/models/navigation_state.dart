@@ -138,7 +138,7 @@ class NavigationState {
   }
 
   /// Get formatted speed string with averages
-  /// Format: "Live km/h - (Avg: AvgWithStops-AvgWithoutStops km/h)"
+  /// Format: "Live km/h - (Avg: AvgWithoutStops-AvgWithStops km/h)"
   String get speedText {
     final live = speedKmh.toStringAsFixed(1);
     final avgWithStops = (averageSpeedWithStops * 3.6).toStringAsFixed(1);
@@ -149,7 +149,7 @@ class NavigationState {
       return '$live km/h';
     }
 
-    return '$live km/h - (Avg: $avgWithStops-$avgWithoutStops km/h)';
+    return '$live km/h - (Avg: $avgWithoutStops-$avgWithStops km/h)';
   }
 
   /// Get average speed including stops in km/h
@@ -196,7 +196,7 @@ class NavigationState {
   }
 
   /// Get formatted ETA range as text
-  /// Format: "10:30-10:45" (pessimistic to optimistic)
+  /// Format: "10:30-10:45" (optimistic to pessimistic)
   String get etaRangeText {
     if (!isNavigating || lastUpdateTime == null || totalTimeElapsed < 30) {
       return etaText; // Fall back to single ETA if not enough data
@@ -214,7 +214,7 @@ class NavigationState {
       return pessimisticStr;
     }
 
-    return '$pessimisticStr-$optimisticStr';
+    return '$optimisticStr-$pessimisticStr';
   }
 
   /// Get formatted remaining time range
