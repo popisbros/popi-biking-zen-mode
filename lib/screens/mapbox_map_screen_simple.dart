@@ -1023,10 +1023,27 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Listen for map state changes (toggle buttons) and refresh markers INSTANTLY
     ref.listen<MapState>(mapProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
+        // Check if visibility toggles changed
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
             previous?.showPOIs != next.showPOIs ||
             previous?.showWarnings != next.showWarnings) {
           _addMarkers(); // This is already instant - no delay
+        }
+
+        // Check if OSM POI types changed
+        final previousTypes = previous?.selectedOSMPOITypes;
+        final nextTypes = next.selectedOSMPOITypes;
+        final osmJustEnabled = (previous?.showOSMPOIs ?? false) == false && next.showOSMPOIs;
+        final typesChanged = next.showOSMPOIs && previousTypes != nextTypes;
+
+        if (osmJustEnabled || typesChanged) {
+          AppLogger.map('OSM POI types changed, reloading POIs', data: {
+            'justEnabled': osmJustEnabled,
+            'typesChanged': typesChanged,
+            'previousTypes': previousTypes?.join(',') ?? 'null',
+            'nextTypes': nextTypes?.join(',') ?? 'null',
+          });
+          _reloadPOIData();
         }
       }
     });

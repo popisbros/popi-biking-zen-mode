@@ -1197,6 +1197,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       });
     }
 
+    // Listen for OSM POI state changes to trigger reload when enabled or types change
+    ref.listen<MapState>(mapProvider, (previous, next) {
+      if (!_isMapReady) return;
+
+      // Check if OSM POI state changed
+      final previousShowOSM = previous?.showOSMPOIs ?? false;
+      final nextShowOSM = next.showOSMPOIs;
+      final previousTypes = previous?.selectedOSMPOITypes;
+      final nextTypes = next.selectedOSMPOITypes;
+
+      // Trigger reload if:
+      // 1. POIs were just enabled (false -> true)
+      // 2. Selected types changed while POIs are enabled
+      final osmJustEnabled = !previousShowOSM && nextShowOSM;
+      final typesChanged = nextShowOSM && previousTypes != nextTypes;
+
+      if (osmJustEnabled || typesChanged) {
+        AppLogger.map('OSM POI state changed, triggering reload', data: {
+          'justEnabled': osmJustEnabled,
+          'typesChanged': typesChanged,
+          'previousTypes': previousTypes?.join(',') ?? 'null',
+          'nextTypes': nextTypes?.join(',') ?? 'null',
+        });
+        _loadAllMapDataWithBounds(forceReload: true);
+      }
+    });
+
     // Build marker list
     List<Marker> markers = [];
 
