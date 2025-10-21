@@ -328,15 +328,26 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Find closest segment on route
     final closestSegment = NavigationEngine.findClosestSegment(currentPos, route.points);
 
-    // Check if off route and get distance
-    final isOffRoute = NavigationEngine.isOffRoute(currentPos, route.points);
+    // Calculate speed early (needed for off-route threshold)
+    final speed = locationData.speed ?? 0.0;
+    final speedKmh = speed * 3.6; // Convert m/s to km/h
+
+    // Check if off route and get distance (uses speed-based threshold)
+    final isOffRoute = NavigationEngine.isOffRoute(currentPos, route.points, speedKmh: speedKmh);
     final offRouteDistance = NavigationEngine.getDistanceToRoute(currentPos, route.points);
+
+    // Calculate dynamic threshold for logging
+    final offRouteThreshold = speedKmh < 15.0 ? 20.0
+        : speedKmh < 30.0 ? 30.0
+        : speedKmh < 50.0 ? 40.0
+        : 50.0;
 
     // Debug: Log off-route status every update
     AppLogger.debug('Off-route check', tag: 'NAVIGATION', data: {
       'distanceToRoute': '${offRouteDistance.toStringAsFixed(1)}m',
       'isOffRoute': isOffRoute,
-      'threshold': '10m',
+      'speed': '${speedKmh.toStringAsFixed(1)}km/h',
+      'threshold': '${offRouteThreshold.toStringAsFixed(0)}m',
     });
 
     // Calculate remaining distance
@@ -373,8 +384,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
           )
         : 0;
 
-    // Estimate time remaining
-    final speed = locationData.speed ?? 0.0;
+    // Estimate time remaining (speed already calculated above)
     final timeRemaining = NavigationEngine.estimateTimeRemaining(
       remainingDistance,
       speed,
@@ -382,7 +392,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Enhanced arrival detection
     final distanceToDestination = remainingDistance;
-    final speedKmh = speed * 3.6; // Convert m/s to km/h
+    // speedKmh already calculated above
     final gpsAccuracy = locationData.accuracy ?? 999;
 
     // Check arrival conditions (simplified: distance + GPS accuracy only)

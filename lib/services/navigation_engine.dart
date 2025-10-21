@@ -8,11 +8,28 @@ class NavigationEngine {
   static const Distance _distance = Distance();
 
   // Thresholds
-  static const double _offRouteThresholdMeters = 10.0; // 10m off route = alert
+  static const double _baseOffRouteThresholdMeters = 20.0; // Base: 20m off route = alert
   static const double _sharpTurnAngle = 120.0; // degrees
   static const double _mediumTurnAngle = 45.0; // degrees
   static const double _slightTurnAngle = 20.0; // degrees
   static const double _minSegmentLengthMeters = 10.0; // ignore very short segments
+
+  /// Calculate dynamic off-route threshold based on current speed
+  /// - Base: 20m
+  /// - >15 km/h: 30m
+  /// - >30 km/h: 40m
+  /// - >50 km/h: 50m
+  static double _getOffRouteThreshold(double? speedKmh) {
+    if (speedKmh == null || speedKmh < 15.0) {
+      return _baseOffRouteThresholdMeters; // 20m
+    } else if (speedKmh < 30.0) {
+      return 30.0; // 15-30 km/h
+    } else if (speedKmh < 50.0) {
+      return 40.0; // 30-50 km/h
+    } else {
+      return 50.0; // 50+ km/h
+    }
+  }
 
   /// Find the closest point index on route to current position
   /// Returns the index of the route point that is closest
@@ -112,7 +129,8 @@ class NavigationEngine {
   }
 
   /// Check if current position is off the route
-  static bool isOffRoute(LatLng current, List<LatLng> route) {
+  /// Uses dynamic threshold based on current speed
+  static bool isOffRoute(LatLng current, List<LatLng> route, {double? speedKmh}) {
     if (route.isEmpty) return false;
 
     final closestSegment = findClosestSegment(current, route);
@@ -122,7 +140,8 @@ class NavigationEngine {
       route[math.min(closestSegment + 1, route.length - 1)],
     );
 
-    return distance > _offRouteThresholdMeters;
+    final threshold = _getOffRouteThreshold(speedKmh);
+    return distance > threshold;
   }
 
   /// Get distance from current position to the route in meters
