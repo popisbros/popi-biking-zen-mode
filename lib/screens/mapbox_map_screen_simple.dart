@@ -428,20 +428,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       final normalizedY = screenCoordinate.y / size.height;
       final inMiddleThird = normalizedY >= 0.33 && normalizedY <= 0.67;
 
-      AppLogger.debug('Dialog alignment calculation', tag: 'MAP', data: {
-        'screenY': screenCoordinate.y,
-        'screenHeight': size.height,
-        'normalizedY': normalizedY,
-        'inMiddleThird': inMiddleThird,
-      });
-
       // If marker is in middle third (0.33 to 0.67), show dialog at bottom
       Alignment alignment;
       if (inMiddleThird) {
-        AppLogger.debug('Marker in middle third - showing dialog at bottom', tag: 'MAP');
         alignment = const Alignment(0.0, 0.6); // Position at bottom third
       } else {
-        AppLogger.debug('Marker not in middle third - showing dialog centered', tag: 'MAP');
         alignment = const Alignment(0.0, -0.33);
       }
 
@@ -917,21 +908,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Listen for POI data changes and refresh markers
     ref.listen<AsyncValue<List<dynamic>>>(osmPOIsNotifierProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
-        AppLogger.debug('OSM POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(communityWarningsBoundsNotifierProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
-        AppLogger.debug('Warnings updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
 
     ref.listen<AsyncValue<List<dynamic>>>(cyclingPOIsBoundsNotifierProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
-        AppLogger.debug('Community POIs updated, refreshing markers', tag: 'MAP');
         _addMarkers();
       }
     });
@@ -942,7 +930,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
             previous?.showPOIs != next.showPOIs ||
             previous?.showWarnings != next.showWarnings) {
-          AppLogger.debug('Map toggles changed, instantly refreshing markers', tag: 'MAP');
           _addMarkers(); // This is already instant - no delay
         }
       }
@@ -953,14 +940,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Listen for location changes to update user marker
     ref.listen(locationNotifierProvider, (previous, next) {
-      AppLogger.debug('Location listener triggered', tag: 'MAP', data: {
-        'isMapReady': _isMapReady,
-        'hasAnnotationManager': _pointAnnotationManager != null,
-      });
       if (_isMapReady && _pointAnnotationManager != null) {
         next.whenData((location) {
           if (location != null) {
-            AppLogger.debug('Location updated, refreshing user marker', tag: 'MAP');
             _handleGPSLocationChange(location);
           } else {
             AppLogger.warning('Location is null', tag: 'MAP');
@@ -1906,7 +1888,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
           // Trigger reload if moved more than ~100m or zoomed
           if (latDiff > 0.001 || lngDiff > 0.001 || zoomDiff > 0.5) {
-            AppLogger.debug('Camera moved, triggering debounced reload', tag: 'MAP');
             _lastCameraCenter = currentCenter;
             _lastCameraZoom = currentZoom;
             _onCameraChanged();
@@ -2355,15 +2336,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       try {
         await _mapboxMap!.style.removeStyleLayer(layer);
         layersRemoved++;
-        AppLogger.debug('Removed layer: $layer', tag: 'MAP');
       } catch (e) {
-        // Layer doesn't exist, that's fine (only log if it's a base layer)
-        if (layer == 'route-layer' || layer.startsWith('preview-')) {
-          AppLogger.debug('Layer $layer does not exist (expected)', tag: 'MAP');
-        }
+        // Layer doesn't exist, that's fine
       }
     }
-    AppLogger.debug('Total layers removed: $layersRemoved', tag: 'MAP');
 
     // Wait for layer removals to complete
     await Future.delayed(const Duration(milliseconds: 100));
@@ -2374,15 +2350,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       try {
         await _mapboxMap!.style.removeStyleSource(source);
         sourcesRemoved++;
-        AppLogger.debug('Removed source: $source', tag: 'MAP');
       } catch (e) {
-        // Source doesn't exist, that's fine (only log if it's a base source)
-        if (source == 'route-source' || source.startsWith('preview-')) {
-          AppLogger.debug('Source $source does not exist (expected)', tag: 'MAP');
-        }
+        // Source doesn't exist, that's fine
       }
     }
-    AppLogger.debug('Total sources removed: $sourcesRemoved', tag: 'MAP');
 
     // Wait for source removals to complete before adding new ones
     await Future.delayed(const Duration(milliseconds: 100));
@@ -2855,14 +2826,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Handle GPS location changes for navigation mode
   void _handleGPSLocationChange(LocationData location) async {
-    AppLogger.debug('GPS location changed', tag: 'GPS', data: {
-      'lat': location.latitude.toStringAsFixed(6),
-      'lng': location.longitude.toStringAsFixed(6),
-      'speed': '${((location.speed ?? 0) * 3.6).toStringAsFixed(1)} km/h',
-    });
-
     if (!_isMapReady || _mapboxMap == null) {
-      AppLogger.warning('Map not ready, skipping GPS update', tag: 'GPS');
       return;
     }
 
