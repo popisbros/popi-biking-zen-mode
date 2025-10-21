@@ -82,7 +82,7 @@ class OSMPOISelectorButton extends ConsumerWidget {
 
   void _showPOISelector(BuildContext context, WidgetRef ref) {
     final mapState = ref.read(mapProvider);
-    final selectedTypes = mapState.selectedOSMPOITypes ?? {};
+    final selectedTypes = mapState.selectedOSMPOITypes; // Keep null to distinguish "all" from "none"
 
     // Get button position for dropdown alignment
     final RenderBox button = context.findRenderObject() as RenderBox;
@@ -104,9 +104,13 @@ class OSMPOISelectorButton extends ConsumerWidget {
           child: Row(
             children: [
               Icon(
-                selectedTypes.isEmpty ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                selectedTypes != null && selectedTypes.isEmpty
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
                 size: 20,
-                color: selectedTypes.isEmpty ? Colors.grey : Colors.grey.shade400,
+                color: selectedTypes != null && selectedTypes.isEmpty
+                    ? Colors.grey
+                    : Colors.grey.shade400,
               ),
               const SizedBox(width: 12),
               const Text(
@@ -125,7 +129,7 @@ class OSMPOISelectorButton extends ConsumerWidget {
           final poiType = entry.key;
           final label = entry.value['label']!;
           final emoji = entry.value['emoji']!;
-          final isSelected = selectedTypes.contains(poiType);
+          final isSelected = selectedTypes != null && selectedTypes.contains(poiType);
 
           return PopupMenuItem<String>(
             value: poiType,
@@ -156,11 +160,11 @@ class OSMPOISelectorButton extends ConsumerWidget {
           child: Row(
             children: [
               Icon(
-                selectedTypes.length == POITypeConfig.osmPOITypes.length - 1
+                selectedTypes == null
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
                 size: 20,
-                color: selectedTypes.length == POITypeConfig.osmPOITypes.length - 1
+                color: selectedTypes == null
                     ? Colors.blue
                     : Colors.grey.shade400,
               ),
@@ -177,17 +181,14 @@ class OSMPOISelectorButton extends ConsumerWidget {
       if (value == null) return; // User dismissed menu
 
       if (value == 'none') {
-        // Clear all selections
+        // Clear all selections (empty set = show none)
         ref.read(mapProvider.notifier).setSelectedOSMPOITypes({});
       } else if (value == 'all') {
-        // Select all types (except 'unknown')
-        final allTypes = POITypeConfig.osmPOITypes.keys
-            .where((key) => key != 'unknown')
-            .toSet();
-        ref.read(mapProvider.notifier).setSelectedOSMPOITypes(allTypes);
+        // Select all types (null = show all)
+        ref.read(mapProvider.notifier).setSelectedOSMPOITypes(null);
       } else {
         // Toggle individual type
-        final newTypes = Set<String>.from(selectedTypes);
+        final newTypes = Set<String>.from(selectedTypes ?? {});
         if (newTypes.contains(value)) {
           newTypes.remove(value);
         } else {

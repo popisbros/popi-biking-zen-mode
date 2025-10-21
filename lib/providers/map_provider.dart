@@ -46,7 +46,7 @@ class MapNotifier extends Notifier<MapState> {
   void setSelectedOSMPOITypes(Set<String>? types) {
     state = state.copyWith(
       selectedOSMPOITypes: types,
-      showOSMPOIs: types != null && types.isNotEmpty, // Auto-enable if types selected
+      showOSMPOIs: types == null || types.isNotEmpty, // Enable if null (all) or has types
     );
   }
 
