@@ -3051,11 +3051,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     final bearing = GeoUtils.calculateBearing(start, end);
 
-    // Smooth bearing with last value (70% new, 30% old) - 3x more responsive
+    // Smooth bearing with last value (90% new, 10% old) - very responsive
     if (_lastNavigationBearing != null) {
       final diff = (bearing - _lastNavigationBearing!).abs();
       if (diff < 180) {
-        return bearing * 0.7 + _lastNavigationBearing! * 0.3;
+        return bearing * 0.9 + _lastNavigationBearing! * 0.1;
       }
     }
 
