@@ -318,10 +318,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
     }
     _lastUpdateTime = now;
 
-    AppLogger.debug('Processing navigation update', tag: 'NAVIGATION', data: {
-      'timestamp': now.toIso8601String(),
-    });
-
     final currentPos = LatLng(locationData.latitude, locationData.longitude);
     final route = state.activeRoute!;
 
@@ -335,20 +331,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Check if off route and get distance (uses speed-based threshold)
     final isOffRoute = NavigationEngine.isOffRoute(currentPos, route.points, speedKmh: speedKmh);
     final offRouteDistance = NavigationEngine.getDistanceToRoute(currentPos, route.points);
-
-    // Calculate dynamic threshold for logging
-    final offRouteThreshold = speedKmh < 15.0 ? 20.0
-        : speedKmh < 30.0 ? 30.0
-        : speedKmh < 50.0 ? 40.0
-        : 50.0;
-
-    // Debug: Log off-route status every update
-    AppLogger.debug('Off-route check', tag: 'NAVIGATION', data: {
-      'distanceToRoute': '${offRouteDistance.toStringAsFixed(1)}m',
-      'isOffRoute': isOffRoute,
-      'speed': '${speedKmh.toStringAsFixed(1)}km/h',
-      'threshold': '${offRouteThreshold.toStringAsFixed(0)}m',
-    });
 
     // Calculate remaining distance
     final remainingDistance = NavigationEngine.calculateRemainingDistance(
