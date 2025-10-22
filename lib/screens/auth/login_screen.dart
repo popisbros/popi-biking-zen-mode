@@ -22,24 +22,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final result = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-      if (mounted) {
-        if (result != null) {
-          // Success - will auto-navigate via auth state change
-          Navigator.of(context).pop();
-        } else {
+
+      if (!mounted) return;
+
+      if (result != null) {
+        // Success - will auto-navigate via auth state change
+        Navigator.of(context).pop();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Google Sign-In was cancelled';
+              _isLoading = false;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
           setState(() {
-            _errorMessage = 'Google Sign-In was cancelled';
+            _errorMessage = 'Google Sign-In failed: ${e.toString()}';
             _isLoading = false;
           });
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Google Sign-In failed: ${e.toString()}';
-          _isLoading = false;
-        });
-      }
+      });
     }
   }
 
@@ -51,24 +60,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final result = await ref.read(authNotifierProvider.notifier).signInWithApple();
-      if (mounted) {
-        if (result != null) {
-          // Success - will auto-navigate via auth state change
-          Navigator.of(context).pop();
-        } else {
+
+      if (!mounted) return;
+
+      if (result != null) {
+        // Success - will auto-navigate via auth state change
+        Navigator.of(context).pop();
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Apple Sign-In was cancelled';
+              _isLoading = false;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
           setState(() {
-            _errorMessage = 'Apple Sign-In was cancelled';
+            _errorMessage = 'Apple Sign-In failed: ${e.toString()}';
             _isLoading = false;
           });
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Apple Sign-In failed: ${e.toString()}';
-          _isLoading = false;
-        });
-      }
+      });
     }
   }
 
@@ -266,37 +284,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final credential = await ref.read(authNotifierProvider.notifier).signInWithEmail(email, password);
 
-      if (mounted) {
-        // Success - close login screen
-        Navigator.of(context).pop();
-      }
+      if (!mounted) return;
+
+      // Success - close login screen
+      Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) {
-        // Parse Firebase error message
-        String errorMessage = 'Sign-in failed';
-        final errorStr = e.toString().toLowerCase();
+      if (!mounted) return;
 
-        if (errorStr.contains('user-not-found') || errorStr.contains('user not found')) {
-          errorMessage = 'No account found with this email. Please register first.';
-        } else if (errorStr.contains('wrong-password') || errorStr.contains('wrong password') || errorStr.contains('invalid-credential')) {
-          errorMessage = 'Incorrect password. Please try again.';
-        } else if (errorStr.contains('invalid-email')) {
-          errorMessage = 'Invalid email address format.';
-        } else if (errorStr.contains('user-disabled')) {
-          errorMessage = 'This account has been disabled.';
-        } else if (errorStr.contains('too-many-requests')) {
-          errorMessage = 'Too many failed attempts. Please try again later.';
-        } else if (errorStr.contains('network')) {
-          errorMessage = 'Network error. Please check your connection.';
-        } else {
-          errorMessage = 'Sign-in failed: ${e.toString()}';
-        }
+      // Parse Firebase error message
+      String errorMessage = 'Sign-in failed';
+      final errorStr = e.toString().toLowerCase();
 
-        setState(() {
-          _errorMessage = errorMessage;
-          _isLoading = false;
-        });
+      if (errorStr.contains('user-not-found') || errorStr.contains('user not found')) {
+        errorMessage = 'No account found with this email. Please register first.';
+      } else if (errorStr.contains('wrong-password') || errorStr.contains('wrong password') || errorStr.contains('invalid-credential')) {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (errorStr.contains('invalid-email')) {
+        errorMessage = 'Invalid email address format.';
+      } else if (errorStr.contains('user-disabled')) {
+        errorMessage = 'This account has been disabled.';
+      } else if (errorStr.contains('too-many-requests')) {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+      } else if (errorStr.contains('network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else {
+        errorMessage = 'Sign-in failed: ${e.toString()}';
       }
+
+      // Use post-frame callback to ensure we're not in the middle of a build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = errorMessage;
+            _isLoading = false;
+          });
+        }
+      });
     }
   }
 }
