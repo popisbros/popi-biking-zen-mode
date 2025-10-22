@@ -92,7 +92,8 @@ class MapService {
 
       case MapLayerType.wike2D:
         // Wike 2D - Custom cycling style from MapTiler
-        return 'https://api.maptiler.com/maps/019a0b1d-d3d6-7f8a-aaf6-2787ba80c885/256/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}';
+        // Using tiles endpoint with map ID as style parameter
+        return 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}&style=019a0b1d-d3d6-7f8a-aaf6-2787ba80c885';
 
       case MapLayerType.satellite:
         // MapTiler Satellite
