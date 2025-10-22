@@ -118,6 +118,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   final Map<String, OSMPOI> _osmPoiById = {};
   final Map<String, CyclingPOI> _communityPoiById = {};
   final Map<String, CommunityWarning> _warningById = {};
+  final Map<String, ({double lat, double lng, String name})> _destinationsById = {};
+  final Map<String, ({double lat, double lng, String name})> _favoritesById = {};
 
   @override
   void initState() {
@@ -973,10 +975,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   void _handleMarkerTap(double lat, double lng) {
     AppLogger.map('Handling marker tap', data: {'lat': lat, 'lng': lng});
 
-    // Try all three types of IDs
+    // Try all five types of IDs
     final osmId = 'osm_${lat}_$lng';
     final communityId = 'community_${lat}_$lng';
     final warningId = 'warning_${lat}_$lng';
+    final destinationId = 'destination_${lat}_$lng';
+    final favoriteId = 'favorite_${lat}_$lng';
 
     if (_osmPoiById.containsKey(osmId)) {
       _showPOIDetails(_osmPoiById[osmId]!);
@@ -984,6 +988,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _showCommunityPOIDetails(_communityPoiById[communityId]!);
     } else if (_warningById.containsKey(warningId)) {
       _showWarningDetails(_warningById[warningId]!);
+    } else if (_destinationsById.containsKey(destinationId)) {
+      final dest = _destinationsById[destinationId]!;
+      _showFavoriteDestinationDetailsDialog(dest.lat, dest.lng, dest.name, true);
+    } else if (_favoritesById.containsKey(favoriteId)) {
+      final fav = _favoritesById[favoriteId]!;
+      _showFavoriteDestinationDetailsDialog(fav.lat, fav.lng, fav.name, false);
     } else {
       AppLogger.warning('Tapped annotation not found in POI maps', tag: 'MAP', data: {
         'lat': lat,
@@ -991,6 +1001,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'osmId': osmId,
         'communityId': communityId,
         'warningId': warningId,
+        'destinationId': destinationId,
+        'favoriteId': favoriteId,
       });
     }
   }
@@ -1038,6 +1050,98 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       },
       compact: true,
       transparentBarrier: false,
+    );
+  }
+
+  /// Show dialog for favorites/destinations markers
+  void _showFavoriteDestinationDetailsDialog(double latitude, double longitude, String name, bool isDestination) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Text(isDestination ? '📍' : '⭐', style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Coordinates: ${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            Column(
+              children: [
+                // First row: Route To and Close
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _calculateRouteTo(latitude, longitude, destinationName: name);
+                      },
+                      icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
+                      label: const Text('ROUTE TO'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('CLOSE'),
+                    ),
+                  ],
+                ),
+                // Second row: Remove button (left-aligned)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Find and remove the destination or favorite
+                      final userProfile = ref.read(userProfileProvider).value;
+                      if (userProfile != null) {
+                        if (isDestination) {
+                          final index = userProfile.recentDestinations.indexWhere(
+                            (dest) => dest.latitude == latitude && dest.longitude == longitude,
+                          );
+                          if (index != -1) {
+                            ref.read(authNotifierProvider.notifier).deleteDestination(index);
+                          }
+                        } else {
+                          final index = userProfile.favoriteLocations.indexWhere(
+                            (fav) => fav.latitude == latitude && fav.longitude == longitude,
+                          );
+                          if (index != -1) {
+                            ref.read(authNotifierProvider.notifier).deleteFavorite(index);
+                          }
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                    label: Text(
+                      isDestination ? 'REMOVE FROM DESTINATIONS' : 'REMOVE FROM FAVORITES',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -2382,6 +2486,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _osmPoiById.clear();
     _communityPoiById.clear();
     _warningById.clear();
+    _destinationsById.clear();
+    _favoritesById.clear();
 
     // Add user location marker (custom, matching 2D map style)
     await _addUserLocationMarker();
@@ -3076,6 +3182,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Add destination markers (orange teardrop)
     for (var destination in userProfile.recentDestinations) {
+      final id = 'destination_${destination.latitude}_${destination.longitude}';
+      _destinationsById[id] = (lat: destination.latitude, lng: destination.longitude, name: destination.name);
+
       final iconImage = await _createFavoritesIcon(isDestination: true);
 
       pointOptions.add(
@@ -3090,6 +3199,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Add favorite markers (yellow star)
     for (var favorite in userProfile.favoriteLocations) {
+      final id = 'favorite_${favorite.latitude}_${favorite.longitude}';
+      _favoritesById[id] = (lat: favorite.latitude, lng: favorite.longitude, name: favorite.name);
+
       final iconImage = await _createFavoritesIcon(isDestination: false);
 
       pointOptions.add(

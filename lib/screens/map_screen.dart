@@ -763,6 +763,98 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
+  /// Show dialog for favorites/destinations markers
+  void _showFavoriteDestinationDetailsDialog(double latitude, double longitude, String name, bool isDestination) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Text(isDestination ? '📍' : '⭐', style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Coordinates: ${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            Column(
+              children: [
+                // First row: Route To and Close
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _calculateRouteTo(latitude, longitude, destinationName: name);
+                      },
+                      icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
+                      label: const Text('ROUTE TO'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('CLOSE'),
+                    ),
+                  ],
+                ),
+                // Second row: Remove button (left-aligned)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Find and remove the destination or favorite
+                      final userProfile = ref.read(userProfileProvider).value;
+                      if (userProfile != null) {
+                        if (isDestination) {
+                          final index = userProfile.recentDestinations.indexWhere(
+                            (dest) => dest.latitude == latitude && dest.longitude == longitude,
+                          );
+                          if (index != -1) {
+                            ref.read(authNotifierProvider.notifier).deleteDestination(index);
+                          }
+                        } else {
+                          final index = userProfile.favoriteLocations.indexWhere(
+                            (fav) => fav.latitude == latitude && fav.longitude == longitude,
+                          );
+                          if (index != -1) {
+                            ref.read(authNotifierProvider.notifier).deleteFavorite(index);
+                          }
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+                    label: Text(
+                      isDestination ? 'REMOVE FROM DESTINATIONS' : 'REMOVE FROM FAVORITES',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// Navigate to Community POI management screen
   void _showAddPOIDialog(LatLng point) async {
     AppLogger.map('Opening Add POI screen', data: {
@@ -1203,7 +1295,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: GestureDetector(
         onTap: () {
           AppLogger.map('Destination marker tapped', data: {'name': name});
-          _calculateRouteTo(latitude, longitude, destinationName: name);
+          _showFavoriteDestinationDetailsDialog(latitude, longitude, name, true);
         },
         child: Container(
           width: size,
@@ -1239,7 +1331,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: GestureDetector(
         onTap: () {
           AppLogger.map('Favorite marker tapped', data: {'name': name});
-          _calculateRouteTo(latitude, longitude, destinationName: name);
+          _showFavoriteDestinationDetailsDialog(latitude, longitude, name, false);
         },
         child: Container(
           width: size,
