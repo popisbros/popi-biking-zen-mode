@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/search_result.dart';
 import '../providers/search_provider.dart';
+import '../providers/auth_provider.dart';
 import 'search_result_tile.dart';
+import 'search_history_tabs.dart';
 
 /// Animated search bar widget that slides down from top
 class SearchBarWidget extends ConsumerStatefulWidget {
@@ -179,6 +181,12 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                     if (firstResult.type == SearchResultType.expandSearch) {
                       ref.read(searchProvider.notifier).expandSearch(widget.mapCenter);
                     } else {
+                      // Save search to history (if user is logged in)
+                      final authUser = ref.read(authStateProvider).value;
+                      if (authUser != null && searchState.query.trim().isNotEmpty) {
+                        ref.read(authNotifierProvider.notifier).addRecentSearch(searchState.query.trim());
+                      }
+
                       // Select first result
                       widget.onResultTap(firstResult.latitude, firstResult.longitude);
                       ref.read(searchProvider.notifier).closeSearch();
@@ -254,8 +262,21 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
           );
         }
 
+        // Show history tabs when no results (query is empty or not searched yet)
         if (results.isEmpty) {
-          return const SizedBox.shrink();
+          return SearchHistoryTabs(
+            onLocationTap: (lat, lon, name) {
+              // Navigate to location
+              widget.onResultTap(lat, lon);
+              // Close search
+              ref.read(searchProvider.notifier).closeSearch();
+            },
+            onSearchTap: (query) {
+              // Set query and perform search
+              ref.read(searchProvider.notifier).updateQuery(query, widget.mapCenter);
+              ref.read(searchProvider.notifier).performSearch(widget.mapCenter);
+            },
+          );
         }
 
         return AnimatedSize(
@@ -280,6 +301,12 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                 return SearchResultTile(
                   result: result,
                   onTap: () {
+                    // Save search to history (if user is logged in)
+                    final authUser = ref.read(authStateProvider).value;
+                    if (authUser != null && searchState.query.trim().isNotEmpty) {
+                      ref.read(authNotifierProvider.notifier).addRecentSearch(searchState.query.trim());
+                    }
+
                     // Navigate map to this location
                     widget.onResultTap(result.latitude, result.longitude);
 

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/routing_service.dart';
+import '../../providers/auth_provider.dart';
 
 /// Route selection dialog widget
 ///
 /// Displays available routes (fastest/safest/shortest) for user to choose
 /// Consolidates duplicate dialogs from map_screen and mapbox_map_screen_simple
-class RouteSelectionDialog extends StatelessWidget {
+class RouteSelectionDialog extends ConsumerWidget {
   final List<RouteResult> routes;
   final Function(RouteResult) onRouteSelected;
   final VoidCallback onCancel;
@@ -20,7 +22,11 @@ class RouteSelectionDialog extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get user's preferred route profile
+    final userProfile = ref.watch(userProfileProvider).value;
+    final preferredProfile = userProfile?.defaultRouteProfile ?? 'bike';
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: Padding(
@@ -59,7 +65,7 @@ class RouteSelectionDialog extends StatelessWidget {
                   ),
 
                   // Routes list
-                  ...routes.map((route) => _buildRouteOption(context, route)),
+                  ...routes.map((route) => _buildRouteOption(context, route, preferredProfile)),
 
                   // Cancel button
                   Padding(
@@ -84,12 +90,13 @@ class RouteSelectionDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildRouteOption(BuildContext context, RouteResult route) {
+  Widget _buildRouteOption(BuildContext context, RouteResult route, String preferredProfile) {
     // Determine icon, color, label based on route type
     final IconData icon;
     final Color color;
     final String label;
     final String description;
+    final String profileType;
 
     switch (route.type) {
       case RouteType.fastest:
@@ -97,20 +104,26 @@ class RouteSelectionDialog extends StatelessWidget {
         color = Colors.red;
         label = 'Fastest Route (car)';
         description = 'Optimized for speed';
+        profileType = 'car';
         break;
       case RouteType.safest:
         icon = Icons.shield;
         color = Colors.green;
         label = 'Safest Route (bike)';
         description = 'Prioritizes cycle lanes & quiet roads';
+        profileType = 'bike';
         break;
       case RouteType.shortest:
         icon = Icons.directions_walk;
         color = Colors.blue;
         label = 'Walking Route (foot)';
         description = 'Walking/pedestrian route';
+        profileType = 'foot';
         break;
     }
+
+    // Check if this is the user's preferred route
+    final isPreferred = profileType == preferredProfile;
 
     return InkWell(
       onTap: () {
@@ -122,7 +135,13 @@ class RouteSelectionDialog extends StatelessWidget {
         leading: Icon(icon, color: color, size: 28),
         title: Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            decoration: isPreferred ? TextDecoration.underline : null,
+            decorationColor: color,
+            decorationThickness: 2,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,6 +154,9 @@ class RouteSelectionDialog extends StatelessWidget {
             ),
           ],
         ),
+        trailing: isPreferred
+            ? Icon(Icons.star, color: Colors.amber, size: 20)
+            : null,
       ),
     );
   }

@@ -9,6 +9,7 @@ import '../providers/map_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/location_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
 import 'app_logger.dart';
 
@@ -24,6 +25,7 @@ class RouteCalculationHelper {
     required WidgetRef ref,
     required double destLat,
     required double destLon,
+    String? destinationName,
     LocationData? userLocation,
     VoidCallback? onPreRoutesCalculated,
     required Function(List<LatLng>) fitBoundsCallback,
@@ -101,6 +103,19 @@ class RouteCalculationHelper {
         context: context,
         routes: routes,
         onRouteSelected: (route) {
+          // Save destination to recent destinations (if user is logged in and name is provided)
+          final authUser = ref.read(authStateProvider).value;
+          if (authUser != null) {
+            final name = destinationName ?? '$destLat, $destLon';
+            ref.read(authNotifierProvider.notifier).addRecentDestination(name, destLat, destLon);
+
+            // Save route profile preference
+            final profileName = route.type == RouteType.fastest ? 'car'
+                              : route.type == RouteType.safest ? 'bike'
+                              : 'foot';
+            ref.read(authNotifierProvider.notifier).updateDefaultRouteProfile(profileName);
+          }
+
           ref.read(searchProvider.notifier).clearPreviewRoutes();
           onRouteSelected(route);
         },
