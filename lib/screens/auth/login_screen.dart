@@ -26,8 +26,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (result != null) {
-        // Success - will auto-navigate via auth state change
-        Navigator.of(context).pop();
+        // Success - close login screen after current frame to avoid GlobalKey conflicts
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        });
       } else {
         // User cancelled or sign-in not configured - just reset loading state
         // Don't show error message for cancellation
@@ -239,8 +243,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
 
-      // Success - close login screen
-      Navigator.of(context).pop();
+      // Success - close login screen after current frame to avoid GlobalKey conflicts
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      });
     } catch (e) {
       if (!mounted) return;
 

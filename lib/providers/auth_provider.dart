@@ -160,15 +160,18 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
     final docSnapshot = await userDoc.get();
 
     if (docSnapshot.exists) {
-      // Update existing profile
-      await userDoc.update({
-        'email': user.email,
-        'displayName': user.displayName,
-        'phoneNumber': user.phoneNumber,
-        'photoURL': user.photoURL,
+      // Update existing profile - only update non-null fields to preserve existing data
+      final updates = <String, dynamic>{
         'updatedAt': FieldValue.serverTimestamp(),
-      });
-      AppLogger.debug('Updated existing user profile', tag: 'AUTH');
+      };
+
+      if (user.email != null) updates['email'] = user.email;
+      if (user.displayName != null) updates['displayName'] = user.displayName;
+      if (user.phoneNumber != null) updates['phoneNumber'] = user.phoneNumber;
+      if (user.photoURL != null) updates['photoURL'] = user.photoURL;
+
+      await userDoc.update(updates);
+      AppLogger.debug('Updated existing user profile (only non-null fields)', tag: 'AUTH');
     } else {
       // Create new profile
       final profile = UserProfile.fromAuth(
