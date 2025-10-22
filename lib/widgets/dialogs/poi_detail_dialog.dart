@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/cycling_poi.dart';
 import '../../config/poi_type_config.dart';
+import '../../providers/auth_provider.dart';
 
 /// POI detail dialog widget
 ///
 /// Displays detailed information about an OpenStreetMap POI
 /// Consolidates duplicate dialogs from map_screen and mapbox_map_screen_simple
-class POIDetailDialog extends StatelessWidget {
+class POIDetailDialog extends ConsumerWidget {
   final OSMPOI poi;
   final VoidCallback onRouteTo;
   final bool compact;
@@ -19,9 +21,16 @@ class POIDetailDialog extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final typeEmoji = POITypeConfig.getOSMPOIEmoji(poi.type);
     final typeLabel = POITypeConfig.getOSMPOILabel(poi.type);
+
+    // Check if user is logged in and if this POI is favorited
+    final authUser = ref.watch(authStateProvider).value;
+    final userProfile = ref.watch(userProfileProvider).value;
+    final isFavorite = userProfile?.favoriteLocations.any(
+      (loc) => loc.latitude == poi.latitude && loc.longitude == poi.longitude
+    ) ?? false;
 
     // Styling based on compact mode
     final backgroundOpacity = compact ? 0.9 : 0.6;
@@ -142,6 +151,32 @@ class POIDetailDialog extends StatelessWidget {
         ),
       ),
       actions: [
+        // Add to Favorites button (only show if user is logged in)
+        if (authUser != null)
+          TextButton(
+            onPressed: () {
+              ref.read(authNotifierProvider.notifier).toggleFavorite(
+                poi.name,
+                poi.latitude,
+                poi.longitude,
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isFavorite ? Icons.star : Icons.star_border,
+                  size: 16,
+                  color: isFavorite ? Colors.amber : Colors.grey,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
         TextButton(
           onPressed: () {
             Navigator.pop(context);

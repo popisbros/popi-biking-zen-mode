@@ -230,14 +230,70 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const Divider(),
                       const SizedBox(height: 16),
 
-                      // Stats
-                      _buildStatCard('Recent Searches', profile.recentSearches.length, 20),
-                      const SizedBox(height: 8),
-                      _buildStatCard('Recent Destinations', profile.recentDestinations.length, 20),
-                      const SizedBox(height: 8),
-                      _buildStatCard('Favorite Locations', profile.favoriteLocations.length, 20),
-                      const SizedBox(height: 8),
+                      // Stats and Lists
                       _buildStatCard('Default Route', profile.defaultRouteProfile, null),
+                      const SizedBox(height: 16),
+
+                      _buildExpandableSection(
+                        'Recent Searches',
+                        profile.recentSearches.length,
+                        20,
+                        profile.recentSearches.isEmpty
+                            ? const Text('No recent searches', style: TextStyle(color: Colors.grey))
+                            : Column(
+                                children: profile.recentSearches.map((search) =>
+                                  ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.history, size: 20),
+                                    title: Text(search, style: const TextStyle(fontSize: 14)),
+                                  ),
+                                ).toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      _buildExpandableSection(
+                        'Recent Destinations',
+                        profile.recentDestinations.length,
+                        20,
+                        profile.recentDestinations.isEmpty
+                            ? const Text('No recent destinations', style: TextStyle(color: Colors.grey))
+                            : Column(
+                                children: profile.recentDestinations.map((dest) =>
+                                  ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.location_on, size: 20, color: Colors.orange),
+                                    title: Text(dest.name, style: const TextStyle(fontSize: 14)),
+                                    subtitle: Text(
+                                      '${dest.latitude.toStringAsFixed(4)}, ${dest.longitude.toStringAsFixed(4)}',
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                  ),
+                                ).toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      _buildExpandableSection(
+                        'Favorite Locations',
+                        profile.favoriteLocations.length,
+                        20,
+                        profile.favoriteLocations.isEmpty
+                            ? const Text('No favorites yet', style: TextStyle(color: Colors.grey))
+                            : Column(
+                                children: profile.favoriteLocations.map((fav) =>
+                                  ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.star, size: 20, color: Colors.amber),
+                                    title: Text(fav.name, style: const TextStyle(fontSize: 14)),
+                                    subtitle: Text(
+                                      '${fav.latitude.toStringAsFixed(4)}, ${fav.longitude.toStringAsFixed(4)}',
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                  ),
+                                ).toList(),
+                              ),
+                      ),
                     ],
                   ),
                 ),
@@ -267,6 +323,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Text(
             max != null ? '$value / $max' : value.toString(),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandableSection(String title, int count, int max, Widget content) {
+    return Card(
+      elevation: 2,
+      child: ExpansionTile(
+        title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        subtitle: Text('$count / $max', style: const TextStyle(fontSize: 14)),
+        children: [
+          Container(
+            constraints: const BoxConstraints(maxHeight: 300),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: content,
+              ),
+            ),
           ),
         ],
       ),

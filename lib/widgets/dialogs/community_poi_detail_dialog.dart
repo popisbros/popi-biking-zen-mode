@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/cycling_poi.dart';
 import '../../config/poi_type_config.dart';
 import '../../providers/community_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/app_logger.dart';
 import '../../screens/community/poi_management_screen.dart';
 
@@ -28,6 +29,13 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final typeEmoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
     final typeLabel = POITypeConfig.getCommunityPOILabel(poi.type);
+
+    // Check if user is logged in and if this POI is favorited
+    final authUser = ref.watch(authStateProvider).value;
+    final userProfile = ref.watch(userProfileProvider).value;
+    final isFavorite = userProfile?.favoriteLocations.any(
+      (loc) => loc.latitude == poi.latitude && loc.longitude == poi.longitude
+    ) ?? false;
 
     // Styling based on compact mode
     final backgroundOpacity = compact ? 0.9 : 0.6;
@@ -151,6 +159,32 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // Add to Favorites button (only show if user is logged in)
+            if (authUser != null)
+              TextButton(
+                onPressed: () {
+                  ref.read(authNotifierProvider.notifier).toggleFavorite(
+                    poi.name,
+                    poi.latitude,
+                    poi.longitude,
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isFavorite ? Icons.star : Icons.star_border,
+                      size: 16,
+                      color: isFavorite ? Colors.amber : Colors.grey,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isFavorite ? 'FAVORITED' : 'FAVORITE',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
