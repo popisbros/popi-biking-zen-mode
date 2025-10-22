@@ -1,12 +1,12 @@
 # Popi Biking Zen Mode - Complete Feature Inventory
 
-**Last Updated:** 2025-01-21
-**App Version:** Flutter Cycling Navigation App
+**Last Updated:** 2025-01-22
+**App Version:** Flutter Cycling Navigation App with User Authentication
 
 ---
 
 ## Overview
-This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D map capabilities, turn-by-turn navigation, Points of Interest (POIs), community hazard reporting, and real-time location tracking.
+This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D map capabilities, turn-by-turn navigation, Points of Interest (POIs), community hazard reporting, real-time location tracking, and user profile management with Firebase authentication.
 
 ---
 
@@ -512,15 +512,169 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **OSM POI Toggle** - Blue button with count badge
 - **Community POI Toggle** - Green button with count badge
 - **Warning Toggle** - Orange button with count badge
+- **Favorites & Destinations Toggle** - Yellow button with star icon and count badge
 - **Disabled State** - Grey when zoom ≤ 12
 - **Count Display** - Shows number of visible items
 - **99+ Limit** - OSM POIs show full count, others cap at 99+
+- **Navigation Mode Visibility** - Community POIs and Favorites toggles hidden during navigation
+- **Auth-Based Visibility** - Favorites toggle hidden when user not logged in
 
 ---
 
-## 9. NAVIGATION CARD FEATURES (Detailed)
+## 9. USER AUTHENTICATION & PROFILES
 
-### 9.1 Main Display
+### 9.1 Authentication System
+**Availability:** Both maps
+**Key Files:**
+- `lib/providers/auth_provider.dart`
+- `lib/screens/auth/login_screen.dart`
+- `lib/screens/auth/register_screen.dart`
+- `lib/screens/auth/profile_screen.dart`
+
+**Features:**
+- **Email/Password Authentication**:
+  - User registration with email validation
+  - Secure login with Firebase Auth
+  - Password requirements enforced
+  - Duplicate email detection
+- **Google Sign-In**:
+  - iOS: Native Google Sign-In with iOS OAuth client
+  - Web/PWA: Web OAuth client for browser authentication
+  - Automatic account creation on first sign-in
+  - Photo URL and display name sync
+- **User Profile Management**:
+  - Display name, email, phone number
+  - Profile photo from Google account
+  - Firebase user UID tracking
+  - Real-time profile updates
+- **Authentication Flow**:
+  - Persistent login state across app restarts
+  - Automatic logout functionality
+  - Profile button in top-right corner (both maps)
+  - Login/Register/Profile screen navigation
+  - GlobalKey management to prevent duplicate dialogs
+
+### 9.2 User Preferences & History
+**Availability:** Both maps (authenticated users only)
+**Key Files:**
+- `lib/providers/auth_provider.dart`
+- `lib/models/user_profile.dart`
+- `lib/widgets/search_history_tabs.dart`
+
+**Features:**
+- **Recent Search History** (Last 20):
+  - Auto-saves searches when user performs search
+  - Stored in Firestore user profile
+  - Displayed in search history tab with search icon
+  - Tap to re-run search query
+  - Chronological ordering (newest first)
+
+- **Recent Destinations** (Last 20):
+  - Auto-saves when user selects a route
+  - Names auto-populated from search results or POI names
+  - Coordinate fallback for unnamed locations (lat, lon format)
+  - Displayed in search tab with orange teardrop icon (📍)
+  - Tap to navigate to location
+  - Edit and delete functionality in profile screen
+
+- **Favorite Locations** (Max 20):
+  - Add/remove from any location on map
+  - Available in: POI dialogs, Community POI dialogs, Search results, Long-press menus, Favorites markers
+  - Displayed in search tab with yellow star icon (⭐)
+  - Tap to navigate to location
+  - Edit and delete functionality in profile screen
+  - Limit enforcement with user-facing warning toast
+  - Success/info toasts for add/remove actions
+
+- **Default Route Profile**:
+  - Auto-saves preferred route type (car/bike/foot)
+  - Saved when user selects a route
+  - Visual indicator in route selection dialog (underline + star icon)
+  - Helps predict future route preferences
+
+### 9.3 Profile Screen
+**Availability:** Both maps (authenticated users only)
+**Key Files:**
+- `lib/screens/auth/profile_screen.dart`
+
+**Features:**
+- **User Information Display**:
+  - Profile photo (from Google or default avatar)
+  - Display name
+  - Email address
+  - Registration date
+  - Logout button
+
+- **Expandable History Sections**:
+  - Recent Searches (count badge, scrollable list)
+  - Recent Destinations (count badge, scrollable list with edit/delete)
+  - Favorites (count badge, scrollable list with edit/delete)
+
+- **CRUD Operations**:
+  - Edit destination/favorite names via dialog
+  - Delete destinations/favorites via trash icon
+  - Real-time Firestore updates
+  - Immediate UI refresh after changes
+  - Confirmation dialogs for destructive actions
+
+### 9.4 Favorites & Destinations Map Display
+**Availability:** Both maps (authenticated users only)
+**Key Files:**
+- `lib/providers/favorites_visibility_provider.dart`
+- `lib/screens/map_screen.dart`
+- `lib/screens/mapbox_map_screen_simple.dart`
+
+**Features:**
+- **Map Markers**:
+  - Destination markers: Orange circle with teardrop icon (📍)
+  - Favorite markers: Yellow circle with star icon (⭐)
+  - Same size as community POI markers
+  - Tap to open detail dialog
+  - Displayed on both 2D and 3D maps
+
+- **Visibility Toggle**:
+  - Yellow button with star icon
+  - Positioned between warnings and zoom controls
+  - Shows count of destinations + favorites
+  - Enabled by default on app start
+  - Auto-disabled during navigation mode
+  - Hidden when user not logged in
+  - Real-time updates when favorites/destinations change
+
+- **Detail Dialogs**:
+  - Location name with icon (📍 or ⭐)
+  - Coordinates display
+  - "Route To" button (calculates route)
+  - "Remove from Destinations/Favorites" button (red, left-aligned)
+  - "Close" button
+  - Same design pattern as POI dialogs
+
+### 9.5 Search History Integration
+**Availability:** Both maps (authenticated users only)
+**Key Files:**
+- `lib/widgets/search_bar_widget.dart`
+- `lib/widgets/search_history_tabs.dart`
+
+**Features:**
+- **3-Tab Search Interface**:
+  - Tab 1: Recent Searches (🔍 icon)
+  - Tab 2: Recent Destinations (📍 icon, orange)
+  - Tab 3: Favorites (⭐ icon, yellow)
+  - Shows when search bar open with empty query
+  - Matching search result tile styling (16px font, grey dividers)
+  - Empty states for each tab
+
+- **Interaction**:
+  - Tap search to re-run query
+  - Tap destination/favorite to navigate
+  - Auto-closes search bar on selection
+  - Seamless integration with search flow
+
+---
+
+## 10. NAVIGATION CARD FEATURES (Detailed)
+
+### 10.1 Main Display
 **Availability:** Both maps (during navigation)
 **Key Files:**
 - `lib/widgets/navigation_card.dart`
@@ -544,7 +698,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
   - Average with stops (slower → faster)
   - Average without stops
 
-### 9.2 Warnings Section
+### 10.2 Warnings Section
 **Availability:** Both maps (during navigation)
 **Features:**
 - **Expandable/Collapsible** - Tap header to toggle
@@ -557,7 +711,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **Warning Icons** - Type-specific emojis
 - **Clear Road Message** - Shows when no warnings
 
-### 9.3 GraphHopper Data Section (Collapsible)
+### 10.3 GraphHopper Data Section (Collapsible)
 **Availability:** Both maps (during navigation)
 **Features:**
 - **Live Path Details**:
@@ -571,7 +725,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **Data Chips** - Color-coded badges for each detail
 - **GraphHopper Instruction** - Full text instruction from API
 
-### 9.4 Maneuvers Section (Debug, Collapsible)
+### 10.4 Maneuvers Section (Debug, Collapsible)
 **Availability:** Both maps (during navigation)
 **Features:**
 - **All Maneuvers List** - Shows every turn on route
@@ -582,9 +736,9 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 
 ---
 
-## 10. ANALYTICS & STATISTICS
+## 11. ANALYTICS & STATISTICS
 
-### 10.1 Speed Tracking
+### 11.1 Speed Tracking
 **Availability:** Both maps (during navigation)
 **Key Files:**
 - `lib/providers/navigation_provider.dart`
@@ -599,7 +753,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **Time Elapsed** - Total time since navigation start
 - **Time Moving** - Time spent moving (not stopped)
 
-### 10.2 ETA Calculation
+### 11.2 ETA Calculation
 **Availability:** Both maps (during navigation)
 **Features:**
 - **Base ETA** - Calculated from remaining distance and current speed
@@ -609,9 +763,9 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 
 ---
 
-## 11. PLATFORM-SPECIFIC FEATURES
+## 12. PLATFORM-SPECIFIC FEATURES
 
-### 11.1 Native-Only Features
+### 12.1 Native-Only Features
 **Availability:** iOS & Android only
 
 **Features:**
@@ -621,8 +775,9 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **Wakelock** - Screen stays on during navigation
 - **Haptic Feedback** - Vibration on long-press
 - **Background Location** - Continues tracking in background
+- **Google Sign-In** - Native Google authentication with iOS OAuth
 
-### 11.2 Web-Specific Features
+### 12.2 Web-Specific Features
 **Availability:** Web/PWA only
 
 **Features:**
@@ -631,12 +786,13 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **No Compass** - Compass features disabled
 - **Responsive Layout** - Adapts to browser window
 - **Progressive Web App** - Can be installed on home screen
+- **Google Sign-In** - Web OAuth client for browser authentication
 
 ---
 
-## 12. BACKEND & DATA SOURCES
+## 13. BACKEND & DATA SOURCES
 
-### 12.1 External APIs
+### 13.1 External APIs
 **Key Files:**
 - `lib/config/api_keys.dart`
 
@@ -649,26 +805,40 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **MapTiler** - Satellite & terrain tiles (API key required)
 - **Mapbox** - 3D maps (API key required)
 
-### 12.2 Firebase Integration
+### 13.2 Firebase Integration
 **Key Files:**
 - `lib/services/firebase_service.dart`
+- `lib/providers/auth_provider.dart`
 
 **Features:**
+- **Firebase Authentication**:
+  - Email/Password authentication
+  - Google Sign-In (iOS & Web)
+  - User session management
+  - Profile photo sync
+
 - **Firestore Database**:
   - `cyclingPOIs` collection - Community POIs
   - `communityWarnings` collection - Hazard reports
   - `apiLogs` collection - API call logs
   - `debugActions` collection - User action logs
+  - `users` collection - User profiles with:
+    - `recentSearches` (array, max 20)
+    - `recentDestinations` (array, max 20, SavedLocation objects)
+    - `favoriteLocations` (array, max 20, SavedLocation objects)
+    - `defaultRouteProfile` (string: 'car', 'bike', or 'foot')
+    - User metadata (displayName, email, photoURL, createdAt, updatedAt)
+
 - **Geohashing** - Efficient spatial queries
 - **Bounds Queries** - Latitude/longitude range filtering
 - **Real-time Streams** - Live data updates
-- **CRUD Operations** - Create, Read, Update, Delete for POIs & warnings
+- **CRUD Operations** - Create, Read, Update, Delete for POIs, warnings, and user data
 
 ---
 
-## 13. CONFIGURATION & CONSTANTS
+## 14. CONFIGURATION & CONSTANTS
 
-### 13.1 Marker Configuration
+### 14.1 Marker Configuration
 **Key Files:**
 - `lib/config/marker_config.dart`
 
@@ -679,25 +849,30 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
   - Community POI (9px radius)
   - Warning (10px radius)
   - Search Result (12px radius)
+  - Destination (9px radius)
+  - Favorite (9px radius)
 - **Color Schemes**:
   - User: Blue (#2196F3)
   - OSM POI: Blue (#0000FF)
   - Community POI: Green (#4CAF50)
   - Warning: Orange (#FFE0B2)
   - Search: Grey
+  - Destination: Orange (#FFCC80)
+  - Favorite: Yellow (#FFD54F)
 - **Stroke Width** - 2px for all markers
 
-### 13.2 POI Type Configuration
+### 14.2 POI Type Configuration
 **Key Files:**
 - `lib/config/poi_type_config.dart`
 
 **Features:**
 - **POI Emojis** - Type-specific icons (🚲, 🔧, ⚡, 🚰, 🚻, etc.)
 - **Warning Emojis** - Hazard-specific icons (⚠️, 🚧, 🚦, ❄️, etc.)
+- **Location Emojis** - Destination (📍), Favorite (⭐)
 - **POI Names** - Human-readable labels
 - **Type Mapping** - OSM tags to internal types
 
-### 13.3 App Theme
+### 14.3 App Theme
 **Key Files:**
 - `lib/constants/app_theme.dart`
 - `lib/constants/app_colors.dart`
@@ -738,27 +913,37 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 | **Search** | ✅ | ✅ | ✅ | ✅ |
 | Address Search | ✅ | ✅ | ✅ | ✅ |
 | Coordinate Parsing | ✅ | ✅ | ✅ | ✅ |
+| **User Features** | ✅ | ✅ | ✅ | ✅ |
+| User Authentication | ✅ | ✅ | ✅ | ✅ |
+| Search History | ✅ | ✅ | ✅ | ✅ |
+| Favorites | ✅ | ✅ | ✅ | ✅ |
+| Destination History | ✅ | ✅ | ✅ | ✅ |
+| Route Preferences | ✅ | ✅ | ✅ | ✅ |
 | **Platform Features** | | | | |
 | Compass Rotation | ✅ | ✅ | ❌ | ✅ |
 | Haptic Feedback | ✅ | ✅ | ❌ | ✅ |
 | Wakelock | ✅ | ✅ | ❌ | ✅ |
+| Google Sign-In | ✅ | ✅ | ✅ | ✅ |
 | Debug Overlay | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
 ## SUMMARY STATISTICS
 
-- **Total Screens**: 6 (Splash, 2D Map, 3D Map, POI Management, Hazard Report, Stubs)
-- **Total Providers**: 9 (Navigation, Map, Location, Search, Community, OSM POI, Compass, Debug, Navigation Mode)
-- **Total Services**: 16+ (Routing, OSM, Firebase, Location, Geocoding, Navigation Engine, Map, Toast, Debug, Error, Route Hazard Detector, Road Surface Analyzer, Route Surface Helper, API Logger, Conditional POI Loader, iOS Navigation)
-- **Total Models**: 7+ (LocationData, CyclingPOI, CommunityWarning, SearchResult, ManeuverInstruction, RouteWarning, NavigationState)
+- **Total Screens**: 9 (Splash, 2D Map, 3D Map, POI Management, Hazard Report, Login, Register, Profile, Stubs)
+- **Total Providers**: 12 (Navigation, Map, Location, Search, Community, OSM POI, Compass, Debug, Navigation Mode, Auth, User Profile, Favorites Visibility)
+- **Total Services**: 17+ (Routing, OSM, Firebase, Location, Geocoding, Navigation Engine, Map, Toast, Debug, Error, Route Hazard Detector, Road Surface Analyzer, Route Surface Helper, API Logger, Conditional POI Loader, iOS Navigation, Auth)
+- **Total Models**: 9+ (LocationData, CyclingPOI, CommunityWarning, SearchResult, ManeuverInstruction, RouteWarning, NavigationState, UserProfile, SavedLocation)
 - **Map Layers (2D)**: 7
 - **Map Styles (3D)**: 3
 - **POI Types**: 8
 - **Hazard Types**: 5
 - **Route Types**: 3 (Fastest, Safest, Shortest)
 - **External APIs**: 7
-- **Firebase Collections**: 4
+- **Firebase Collections**: 5 (cyclingPOIs, communityWarnings, apiLogs, debugActions, users)
+- **Authentication Methods**: 2 (Email/Password, Google Sign-In)
+- **User Data Collections**: 3 (Search History, Destinations, Favorites)
+- **Max Items per Collection**: 20
 
 ---
 
@@ -783,6 +968,10 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **ETA Range Display** - Shows realistic time window with buffer
 - **Arrival Dialog** - Congratulations message with parking finder option
 - **Find a Parking** - Auto-zoom to 500m radius and show bicycle parking at destination
+- **Navigation Mode UI Cleanup** - Hide exploration controls during navigation:
+  - Reload POIs, map layer/style selectors, 2D/3D switchers hidden
+  - Community POIs and Favorites toggles hidden
+  - Cleaner interface focused on turn-by-turn guidance
 
 ### User Experience Improvements
 - **Multi-Choice POI Selector** - Replace toggle with dropdown menu:
@@ -791,6 +980,17 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
   - Counter shows filtered POI count
   - Instant filtering without API reload
 - **Shared Code Architecture** - POIUtils for common filtering logic between 2D and 3D maps
+- **Firebase Authentication** - Complete user authentication system:
+  - Email/password and Google Sign-In
+  - User profiles with favorites and preferences
+  - Search history and route preferences
+  - Persistent data across devices
+- **Favorites System** - Save and manage favorite locations:
+  - Up to 20 favorites per user with limit warnings
+  - Map markers showing favorites and destinations
+  - Detail dialogs with routing and favorite management
+  - Proper state display (favorited vs. add to favorites)
+- **Search Result Name Persistence** - Actual location names saved instead of generic "Search Result"
 
 ### Logging Cleanup
 - **Reduced Log Volume** - ~60-70% reduction in high-frequency logs
@@ -801,23 +1001,23 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 
 ## KNOWN LIMITATIONS
 
-1. **Voice Navigation** - UI button present but not implemented
+1. **Voice Navigation** - No voice turn-by-turn guidance implementation
 2. **Route Profiles** - Limited to 3 GraphHopper profiles (car, bike, foot)
 3. **Offline Maps** - No offline tile caching
 4. **Multi-Language** - Currently English only
 5. **Elevation Display** - Not shown in navigation card
 6. **Weather Integration** - No real-time weather data
 7. **Traffic Data** - No live traffic information
-8. **User Authentication** - No user accounts for community features
-9. **POI Photos** - No image upload for community POIs
-10. **Turn Announcement Audio** - No voice guidance
+8. **POI Photos** - No image upload for community POIs
+9. **Favorites Limit** - Maximum 20 favorites per user
+10. **Community POI Editing** - No ability to edit/delete POIs after creation
 
 ---
 
 ## FUTURE ENHANCEMENT OPPORTUNITIES
 
 ### Navigation
-- Voice turn-by-turn guidance
+- Voice turn-by-turn guidance with audio announcements
 - Lane guidance with arrows
 - Speed camera alerts
 - Live traffic integration
@@ -825,20 +1025,21 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - Route waypoints/via points
 
 ### POIs & Community
-- User authentication system
 - Photo upload for POIs/hazards
 - Upvote/downvote system for community reports
 - User reputation/trust scores
 - POI/hazard expiration reminders
 - Comments on community reports
+- Edit/delete own POIs and hazards
+- Increase favorites limit (currently 20)
 
 ### Map Features
 - Offline map downloads
 - Custom route drawing
-- Route history/favorites
 - Multiple destination routing
 - Route sharing (export GPX/KML)
 - Heatmap of popular cycling routes
+- Import GPX routes
 
 ### Analytics
 - Ride statistics dashboard
@@ -847,14 +1048,16 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - Speed graphs
 - Route comparison
 - Monthly/yearly summaries
+- Total distance/time tracked
 
 ### Social Features
 - Friend following
 - Group rides
-- Route recommendations
+- Route recommendations from friends
 - Community leaderboards
 - Achievement badges
 - Ride sharing
+- Social feed of friends' activities
 
 ---
 
