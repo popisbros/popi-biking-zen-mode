@@ -266,30 +266,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final credential = await ref.read(authNotifierProvider.notifier).signInWithEmail(email, password);
 
-      print('DEBUG: Email sign-in credential: $credential');
-      print('DEBUG: mounted: $mounted');
-
       if (mounted) {
-        if (credential != null) {
-          print('DEBUG: Credential is not null, popping navigator');
-          // Success - close login screen
-          Navigator.of(context).pop();
-          print('DEBUG: Navigator.pop() called');
-        } else {
-          print('DEBUG: Credential is null');
-          setState(() {
-            _errorMessage = 'Email/Password sign-in failed. Please check your credentials.';
-            _isLoading = false;
-          });
-        }
-      } else {
-        print('DEBUG: Widget not mounted');
+        // Success - close login screen
+        Navigator.of(context).pop();
       }
     } catch (e) {
-      print('DEBUG: Exception caught: $e');
       if (mounted) {
+        // Parse Firebase error message
+        String errorMessage = 'Sign-in failed';
+        final errorStr = e.toString().toLowerCase();
+
+        if (errorStr.contains('user-not-found') || errorStr.contains('user not found')) {
+          errorMessage = 'No account found with this email. Please register first.';
+        } else if (errorStr.contains('wrong-password') || errorStr.contains('wrong password') || errorStr.contains('invalid-credential')) {
+          errorMessage = 'Incorrect password. Please try again.';
+        } else if (errorStr.contains('invalid-email')) {
+          errorMessage = 'Invalid email address format.';
+        } else if (errorStr.contains('user-disabled')) {
+          errorMessage = 'This account has been disabled.';
+        } else if (errorStr.contains('too-many-requests')) {
+          errorMessage = 'Too many failed attempts. Please try again later.';
+        } else if (errorStr.contains('network')) {
+          errorMessage = 'Network error. Please check your connection.';
+        } else {
+          errorMessage = 'Sign-in failed: ${e.toString()}';
+        }
+
         setState(() {
-          _errorMessage = 'Email Sign-In failed: ${e.toString()}';
+          _errorMessage = errorMessage;
           _isLoading = false;
         });
       }

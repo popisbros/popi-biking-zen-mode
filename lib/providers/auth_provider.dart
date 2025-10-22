@@ -152,7 +152,7 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
     } catch (e, stackTrace) {
       AppLogger.error('Email Registration failed', tag: 'AUTH', error: e, stackTrace: stackTrace);
       state = AsyncValue.error(e, stackTrace);
-      return null;
+      rethrow; // Re-throw so UI can show specific error message
     }
   }
 

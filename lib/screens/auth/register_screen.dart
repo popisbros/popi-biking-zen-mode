@@ -42,7 +42,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           );
 
       // Update profile with phone number if provided
-      if (result != null && _phoneController.text.trim().isNotEmpty) {
+      if (_phoneController.text.trim().isNotEmpty) {
         // Add a small delay to ensure Firestore document is ready
         await Future.delayed(const Duration(milliseconds: 500));
 
@@ -53,20 +53,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       if (mounted) {
         setState(() => _isLoading = false);
-        if (result != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account created successfully!')),
-          );
-          Navigator.of(context).pop(); // Go back to login (will auto-redirect to map)
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account created successfully!')),
+        );
+        Navigator.of(context).pop(); // Go back to login (will auto-redirect to map)
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
+
+        // Parse Firebase error message
+        String errorMessage = 'Registration failed';
+        final errorStr = e.toString().toLowerCase();
+
+        if (errorStr.contains('email-already-in-use') || errorStr.contains('email is already in use')) {
+          errorMessage = 'This email is already registered. Please sign in instead.';
+        } else if (errorStr.contains('invalid-email')) {
+          errorMessage = 'Invalid email address format.';
+        } else if (errorStr.contains('weak-password')) {
+          errorMessage = 'Password is too weak. Please use at least 6 characters.';
+        } else if (errorStr.contains('network')) {
+          errorMessage = 'Network error. Please check your connection.';
+        } else {
+          errorMessage = 'Registration failed: ${e.toString()}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Registration failed: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
