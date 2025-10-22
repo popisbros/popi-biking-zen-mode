@@ -160,12 +160,27 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
   Future<void> signOut() async {
     try {
       AppLogger.info('Signing out', tag: 'AUTH');
-      await GoogleSignIn().signOut();
+
+      // Sign out from Google if user signed in with Google
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        final providerData = currentUser.providerData;
+        final hasGoogleProvider = providerData.any((info) => info.providerId == 'google.com');
+
+        if (hasGoogleProvider) {
+          await GoogleSignIn().signOut();
+          AppLogger.debug('Signed out from Google', tag: 'AUTH');
+        }
+      }
+
+      // Sign out from Firebase Auth
       await _auth.signOut();
+      state = const AsyncValue.data(null);
       AppLogger.success('Sign out successful', tag: 'AUTH');
     } catch (e, stackTrace) {
       AppLogger.error('Sign out failed', tag: 'AUTH', error: e, stackTrace: stackTrace);
       state = AsyncValue.error(e, stackTrace);
+      rethrow; // Re-throw so UI can handle the error
     }
   }
 

@@ -73,8 +73,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              await ref.read(authNotifierProvider.notifier).signOut();
-              if (context.mounted) Navigator.of(context).pop();
+              try {
+                await ref.read(authNotifierProvider.notifier).signOut();
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Signed out successfully')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Sign out failed: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
           ),
         ],
