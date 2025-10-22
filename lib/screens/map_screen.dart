@@ -707,6 +707,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final authUser = ref.read(authStateProvider).value;
 
+    // Check if location is already favorited
+    final userProfile = ref.read(userProfileProvider).value;
+    final isFavorite = userProfile?.favoriteLocations.any(
+      (loc) => loc.latitude == point.latitude && loc.longitude == point.longitude
+    ) ?? false;
+
     showMenu<String>(
       context: context,
       position: RelativeRect.fromRect(
@@ -730,9 +736,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             value: 'add_favorite',
             child: Row(
               children: [
-                const Icon(Icons.star_border, color: Colors.amber),
+                Icon(isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
                 const SizedBox(width: 8),
-                const Text('Add to Favorites', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                Text(
+                  isFavorite ? 'Favorited' : 'Add to Favorites',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
               ],
             ),
           ),
@@ -2415,13 +2424,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             right: 0,
             child: SearchBarWidget(
               mapCenter: mapCenter,
-              onResultTap: (lat, lon) {
+              onResultTap: (lat, lon, label) {
                 AppLogger.map('Search result tapped - navigating to location', data: {
                   'lat': lat,
                   'lon': lon,
+                  'label': label,
                 });
-                // Set selected location to show marker
-                ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
+                // Set selected location to show marker with proper label
+                ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, label);
 
                 // Navigate to location
                 _mapController.move(LatLng(lat, lon), 16.0);

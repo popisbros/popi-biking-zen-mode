@@ -10,7 +10,7 @@ import 'search_history_tabs.dart';
 /// Animated search bar widget that slides down from top
 class SearchBarWidget extends ConsumerStatefulWidget {
   final LatLng mapCenter;
-  final Function(double lat, double lon) onResultTap;
+  final Function(double lat, double lon, String label) onResultTap;
 
   const SearchBarWidget({
     super.key,
@@ -188,7 +188,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                       }
 
                       // Select first result
-                      widget.onResultTap(firstResult.latitude, firstResult.longitude);
+                      widget.onResultTap(firstResult.latitude, firstResult.longitude, firstResult.title);
                       ref.read(searchProvider.notifier).closeSearch();
                     }
                     return;
@@ -267,7 +267,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
           return SearchHistoryTabs(
             onLocationTap: (lat, lon, name) {
               // Navigate to location
-              widget.onResultTap(lat, lon);
+              widget.onResultTap(lat, lon, name);
               // Close search
               ref.read(searchProvider.notifier).closeSearch();
             },
@@ -308,7 +308,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                     }
 
                     // Navigate map to this location
-                    widget.onResultTap(result.latitude, result.longitude);
+                    widget.onResultTap(result.latitude, result.longitude, result.title);
 
                     // Close search bar
                     ref.read(searchProvider.notifier).closeSearch();

@@ -563,6 +563,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final coordinates = Point(coordinates: Position(lng, lat));
     final authUser = ref.read(authStateProvider).value;
 
+    // Check if location is already favorited
+    final userProfile = ref.read(userProfileProvider).value;
+    final isFavorite = userProfile?.favoriteLocations.any(
+      (loc) => loc.latitude == lat && loc.longitude == lng
+    ) ?? false;
+
     // Calculate smart dialog alignment based on marker position
     final alignmentData = await _calculateDialogAlignment(coordinates);
     final alignment = alignmentData['alignment'] as Alignment;
@@ -604,8 +610,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       if (authUser != null)
                         ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                          leading: const Icon(Icons.star_border, color: Colors.amber),
-                          title: const Text('Add to Favorites', style: TextStyle(fontSize: 12)),
+                          leading: Icon(isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
+                          title: Text(isFavorite ? 'Favorited' : 'Add to Favorites', style: const TextStyle(fontSize: 12)),
                           onTap: () {
                             Navigator.pop(context);
                             // Get the search result name if available
@@ -1777,13 +1783,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 (_lastCameraCenter?.coordinates.lat ?? 0.0).toDouble(),
                 (_lastCameraCenter?.coordinates.lng ?? 0.0).toDouble(),
               ),
-              onResultTap: (lat, lon) async {
+              onResultTap: (lat, lon, label) async {
                 AppLogger.map('Search result tapped - navigating to location', data: {
                   'lat': lat,
                   'lon': lon,
+                  'label': label,
                 });
-                // Set selected location to show marker
-                ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, 'Search Result');
+                // Set selected location to show marker with proper label
+                ref.read(searchProvider.notifier).setSelectedLocation(lat, lon, label);
 
                 if (_mapboxMap != null) {
                   await _mapboxMap!.flyTo(
