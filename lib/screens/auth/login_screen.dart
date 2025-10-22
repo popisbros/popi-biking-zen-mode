@@ -3,14 +3,86 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
 
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  String? _errorMessage;
+  bool _isLoading = false;
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      if (mounted) {
+        if (result != null) {
+          // Success - will auto-navigate via auth state change
+          Navigator.of(context).pop();
+        } else {
+          setState(() {
+            _errorMessage = 'Google Sign-In was cancelled';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Google Sign-In failed: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await ref.read(authNotifierProvider.notifier).signInWithApple();
+      if (mounted) {
+        if (result != null) {
+          // Success - will auto-navigate via auth state change
+          Navigator.of(context).pop();
+        } else {
+          setState(() {
+            _errorMessage = 'Apple Sign-In was cancelled';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Apple Sign-In failed: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Close',
+        ),
+        title: const Text('Sign In'),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -38,9 +110,7 @@ class LoginScreen extends ConsumerWidget {
                   label: 'Continue with Google',
                   color: Colors.white,
                   textColor: Colors.black87,
-                  onPressed: () async {
-                    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-                  },
+                  onPressed: _isLoading ? null : _handleGoogleSignIn,
                 ),
                 const SizedBox(height: 16),
 
@@ -50,9 +120,7 @@ class LoginScreen extends ConsumerWidget {
                   label: 'Continue with Apple',
                   color: Colors.black,
                   textColor: Colors.white,
-                  onPressed: () async {
-                    await ref.read(authNotifierProvider.notifier).signInWithApple();
-                  },
+                  onPressed: _isLoading ? null : _handleAppleSignIn,
                 ),
                 const SizedBox(height: 16),
 
@@ -84,22 +152,38 @@ class LoginScreen extends ConsumerWidget {
                   ],
                 ),
 
-                // Loading/Error state
-                authState.when(
-                  data: (_) => const SizedBox.shrink(),
-                  loading: () => const Padding(
+                // Loading indicator
+                if (_isLoading)
+                  const Padding(
                     padding: EdgeInsets.only(top: 24),
                     child: CircularProgressIndicator(),
                   ),
-                  error: (error, _) => Padding(
+
+                // Error message
+                if (_errorMessage != null)
+                  Padding(
                     padding: const EdgeInsets.only(top: 24),
-                    child: Text(
-                      'Error: ${error.toString()}',
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red.shade700),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: TextStyle(color: Colors.red.shade700),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -166,7 +250,7 @@ class _SignInButton extends StatelessWidget {
   final String label;
   final Color color;
   final Color textColor;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const _SignInButton({
     required this.icon,
