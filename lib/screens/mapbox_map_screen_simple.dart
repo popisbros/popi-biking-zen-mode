@@ -37,6 +37,7 @@ import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
+import '../widgets/profile_button.dart';
 import '../services/route_surface_helper.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/arrival_dialog.dart';
@@ -1582,6 +1583,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       // Debug overlay - on top of everything
       const DebugOverlay(),
+
+      // Profile button - top-right corner
+      const Positioned(
+        top: 16,
+        right: 16,
+        child: ProfileButton(),
+      ),
     ]; // End map and controls list
   }
 

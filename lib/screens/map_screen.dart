@@ -36,6 +36,7 @@ import '../widgets/dialogs/route_selection_dialog.dart';
 import '../widgets/arrival_dialog.dart';
 import '../widgets/map_toggle_button.dart';
 import '../widgets/osm_poi_selector_button.dart';
+import '../widgets/profile_button.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../services/route_surface_helper.dart';
@@ -2114,6 +2115,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       // Debug overlay - on top of everything
       const DebugOverlay(),
+
+      // Profile button - top-right corner
+      const Positioned(
+        top: 16,
+        right: 16,
+        child: ProfileButton(),
+      ),
     ]; // End map and controls list
   }
 }
