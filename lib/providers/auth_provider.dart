@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_profile.dart';
 import '../utils/app_logger.dart';
+import '../services/toast_service.dart';
 
 /// Provider for Firebase Auth instance
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -298,9 +299,11 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
 
       if (existingIndex != -1) {
         favorites.removeAt(existingIndex); // Remove if exists
+        ToastService.info('Removed from favorites');
       } else {
         if (favorites.length >= 20) {
           AppLogger.warning('Max 20 favorites reached', tag: 'AUTH');
+          ToastService.warning('Maximum 20 favorites reached. Please remove some favorites before adding new ones.');
           return;
         }
         favorites.add(SavedLocation(
@@ -309,6 +312,7 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
           longitude: lng,
           savedAt: DateTime.now(),
         ));
+        ToastService.success('Added to favorites');
       }
 
       await userDoc.update({
