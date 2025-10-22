@@ -194,7 +194,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
 
-    final result = await showDialog<bool>(
+    final credentials = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sign in with Email'),
@@ -220,14 +220,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               obscureText: true,
               onSubmitted: (_) {
                 // Allow Enter key to submit
-                Navigator.pop(context, true);
+                final email = emailController.text.trim();
+                final password = passwordController.text;
+                if (email.isNotEmpty && password.isNotEmpty) {
+                  Navigator.pop(context, {'email': email, 'password': password});
+                }
               },
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -238,7 +242,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               if (email.isEmpty || password.isEmpty) {
                 return;
               }
-              Navigator.pop(context, true);
+              Navigator.pop(context, {'email': email, 'password': password});
             },
             child: const Text('Sign In'),
           ),
@@ -246,10 +250,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
 
-    if (result != true) return;
+    emailController.dispose();
+    passwordController.dispose();
 
-    final email = emailController.text.trim();
-    final password = passwordController.text;
+    if (credentials == null) return;
+
+    final email = credentials['email']!;
+    final password = credentials['password']!;
 
     setState(() {
       _isLoading = true;
@@ -258,18 +265,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final credential = await ref.read(authNotifierProvider.notifier).signInWithEmail(email, password);
+
+      print('DEBUG: Email sign-in credential: $credential');
+      print('DEBUG: mounted: $mounted');
+
       if (mounted) {
         if (credential != null) {
-          // Success - will auto-navigate via auth state change
+          print('DEBUG: Credential is not null, popping navigator');
+          // Success - close login screen
           Navigator.of(context).pop();
+          print('DEBUG: Navigator.pop() called');
         } else {
+          print('DEBUG: Credential is null');
           setState(() {
             _errorMessage = 'Email/Password sign-in failed. Please check your credentials.';
             _isLoading = false;
           });
         }
+      } else {
+        print('DEBUG: Widget not mounted');
       }
     } catch (e) {
+      print('DEBUG: Exception caught: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Email Sign-In failed: ${e.toString()}';
@@ -277,9 +294,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         });
       }
     }
-
-    emailController.dispose();
-    passwordController.dispose();
   }
 }
 
