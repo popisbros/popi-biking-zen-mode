@@ -811,12 +811,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// Calculate route from current user location to destination
-  Future<void> _calculateRouteTo(double destLat, double destLon) async {
+  Future<void> _calculateRouteTo(double destLat, double destLon, {String? destinationName}) async {
+    // Try to get destination name from search result if not provided
+    final name = destinationName ?? ref.read(searchProvider).selectedLocation?.label;
+
     await RouteCalculationHelper.calculateAndShowRoutes(
       context: context,
       ref: ref,
       destLat: destLat,
       destLon: destLon,
+      destinationName: name,
       fitBoundsCallback: _fitRouteBounds,
       onRouteSelected: _displaySelectedRoute,
       transparentBarrier: true,
@@ -1231,7 +1235,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     POIDialogHandler.showPOIDetails(
       context: context,
       poi: poi,
-      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
+      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
       transparentBarrier: true,
       compact: false,
     );
@@ -1257,7 +1261,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context: context,
       ref: ref,
       poi: poi,
-      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
+      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
       onDataChanged: () {
         if (mounted && _isMapReady) {
           _loadAllMapDataWithBounds(forceReload: true);

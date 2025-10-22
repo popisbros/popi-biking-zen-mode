@@ -680,12 +680,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Calculate route from current user location to destination
-  Future<void> _calculateRouteTo(double destLat, double destLon) async {
+  Future<void> _calculateRouteTo(double destLat, double destLon, {String? destinationName}) async {
+    // Try to get destination name from search result if not provided
+    final name = destinationName ?? ref.read(searchProvider).selectedLocation?.label;
+
     await RouteCalculationHelper.calculateAndShowRoutes(
       context: context,
       ref: ref,
       destLat: destLat,
       destLon: destLon,
+      destinationName: name,
       onPreRoutesCalculated: () async {
         // Store current pitch and set to 10° BEFORE zooming to routes
         // Also reset bearing to 0 (North up) for route preview
@@ -995,7 +999,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     POIDialogHandler.showPOIDetails(
       context: context,
       poi: poi,
-      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
+      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
       compact: true,
       transparentBarrier: false,
     );
@@ -1024,7 +1028,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       ref: ref,
       poi: poi,
-      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude),
+      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
       onDataChanged: () {
         if (mounted && _isMapReady) {
           _loadAllPOIData();
