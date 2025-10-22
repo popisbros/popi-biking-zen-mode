@@ -18,6 +18,7 @@ class NavigationCard extends ConsumerStatefulWidget {
 class _NavigationCardState extends ConsumerState<NavigationCard> {
   bool _isGraphHopperDataExpanded = false;
   bool _isManeuversExpanded = false;
+  bool _showDebugSections = false; // Controls visibility of all debug sections
 
   /// Get current GraphHopper instruction based on segment index
   RouteInstruction? _getCurrentInstruction(int segmentIndex, List<RouteInstruction>? instructions) {
@@ -111,23 +112,47 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
               if (navState.nextManeuver != null) ...[
                 Row(
                   children: [
-                    // Maneuver icon
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade600,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          navState.nextManeuver!.icon,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            color: Colors.white,
+                    // Maneuver icon with debug button overlay
+                    Stack(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade600,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              navState.nextManeuver!.icon,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        // Small debug button (10x10px) in top-right corner
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _showDebugSections = !_showDebugSections;
+                              });
+                            },
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: _showDebugSections ? Colors.orange : Colors.grey.shade400,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(width: 12),
                     // Instruction text
@@ -152,8 +177,8 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          // GraphHopper instruction (for comparison)
-                          if (currentInstruction != null) ...[
+                          // GraphHopper instruction (for comparison) - only shown when debug enabled
+                          if (_showDebugSections && currentInstruction != null) ...[
                             const SizedBox(height: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -229,41 +254,43 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                       color: Colors.grey.shade800,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Off-route distance (DEBUG) with countdown timer until next check
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    size: 16,
-                    color: navState.isOffRoute ? Colors.red.shade600 : Colors.green.shade600,
-                  ),
-                  const SizedBox(width: 4),
-                  Builder(
-                    builder: (context) {
-                      final color = navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800;
+                  // Off-route distance (DEBUG) with countdown timer until next check - only shown when debug enabled
+                  if (_showDebugSections) ...[
+                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: navState.isOffRoute ? Colors.red.shade600 : Colors.green.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Builder(
+                      builder: (context) {
+                        final color = navState.isOffRoute ? Colors.red.shade800 : Colors.green.shade800;
 
-                      // Distance text
-                      final distanceText = navState.isOffRoute
-                        ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m'
-                        : '0m';
+                        // Distance text
+                        final distanceText = navState.isOffRoute
+                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m'
+                          : '0m';
 
-                      // Time as MM:SS (not full timestamp)
-                      String timeText = '--:--';
-                      if (navState.lastUpdateTime != null) {
-                        final time = navState.lastUpdateTime!;
-                        timeText = '${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
-                      }
+                        // Time as MM:SS (not full timestamp)
+                        String timeText = '--:--';
+                        if (navState.lastUpdateTime != null) {
+                          final time = navState.lastUpdateTime!;
+                          timeText = '${time.minute.toString().padLeft(2, '0')}:${time.second.toString().padLeft(2, '0')}';
+                        }
 
-                      // Format: "0m @12:34" or "25m @12:34"
-                      return Text(
-                        '$distanceText @$timeText',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: color,
-                        ),
-                      );
-                    },
-                  ),
+                        // Format: "0m @12:34" or "25m @12:34"
+                        return Text(
+                          '$distanceText @$timeText',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: color,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   const Spacer(),
                   // ETA
                   Container(
@@ -332,8 +359,8 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
               // Warnings Section (community + road surface)
               ..._buildWarningsSection(navState),
 
-              // GraphHopper Path Details Section (Collapsible)
-              if (streetName != null || lanes != null || roadClass != null || maxSpeed != null || surface != null) ...[
+              // GraphHopper Path Details Section (Collapsible) - only shown when debug enabled
+              if (_showDebugSections && (streetName != null || lanes != null || roadClass != null || maxSpeed != null || surface != null)) ...[
                 const SizedBox(height: 12),
                 Divider(color: Colors.grey.shade300, height: 1),
                 const SizedBox(height: 8),
@@ -454,39 +481,41 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                 ],
               ],
 
-              // Maneuvers Section (Collapsible, DEBUG)
-              const SizedBox(height: 8),
-              Divider(color: Colors.grey.shade300, height: 1),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _isManeuversExpanded = !_isManeuversExpanded;
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Text(
-                        'MANEUVERS (DEBUG)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple.shade700,
-                          letterSpacing: 0.5,
+              // Maneuvers Section (Collapsible, DEBUG) - only shown when debug enabled
+              if (_showDebugSections) ...[
+                const SizedBox(height: 8),
+                Divider(color: Colors.grey.shade300, height: 1),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isManeuversExpanded = !_isManeuversExpanded;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          'MANEUVERS (DEBUG)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.purple.shade700,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        _isManeuversExpanded ? Icons.expand_less : Icons.expand_more,
-                        size: 18,
-                        color: Colors.purple.shade700,
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Icon(
+                          _isManeuversExpanded ? Icons.expand_less : Icons.expand_more,
+                          size: 18,
+                          color: Colors.purple.shade700,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (_isManeuversExpanded) ..._buildManeuversSection(navState),
+                if (_isManeuversExpanded) ..._buildManeuversSection(navState),
+              ],
         ], // End main Column children
       ), // End Column
     ); // End Container
