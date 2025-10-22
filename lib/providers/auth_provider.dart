@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../models/user_profile.dart';
 import '../utils/app_logger.dart';
 
@@ -85,35 +84,6 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
     }
   }
 
-  /// Sign in with Apple
-  Future<UserCredential?> signInWithApple() async {
-    try {
-      AppLogger.info('Starting Apple Sign-In', tag: 'AUTH');
-
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
-
-      final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
-      );
-
-      final userCredential = await _auth.signInWithCredential(oauthCredential);
-      await _createOrUpdateUserProfile(userCredential.user!, 'apple');
-
-      AppLogger.success('Apple Sign-In successful', tag: 'AUTH');
-      return userCredential;
-    } catch (e, stackTrace) {
-      AppLogger.error('Apple Sign-In failed', tag: 'AUTH', error: e, stackTrace: stackTrace);
-      state = AsyncValue.error(e, stackTrace);
-      return null;
-    }
-  }
-
   /// Sign in with Email/Password
   Future<UserCredential?> signInWithEmail(String email, String password) async {
     try {
@@ -130,7 +100,7 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
     } catch (e, stackTrace) {
       AppLogger.error('Email Sign-In failed', tag: 'AUTH', error: e, stackTrace: stackTrace);
       state = AsyncValue.error(e, stackTrace);
-      return null;
+      rethrow; // Re-throw so UI can show specific error message
     }
   }
 

@@ -54,45 +54,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _handleAppleSignIn() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await ref.read(authNotifierProvider.notifier).signInWithApple();
-
-      if (!mounted) return;
-
-      if (result != null) {
-        // Success - will auto-navigate via auth state change
-        Navigator.of(context).pop();
-      } else {
-        // User cancelled or sign-in not configured - just reset loading state
-        // Don't show error message for cancellation
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _errorMessage = 'Apple Sign-In failed: ${e.toString()}';
-            _isLoading = false;
-          });
-        }
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,16 +93,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   color: Colors.white,
                   textColor: Colors.black87,
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
-                ),
-                const SizedBox(height: 16),
-
-                // Sign in with Apple
-                _SignInButton(
-                  icon: Icons.apple,
-                  label: 'Continue with Apple',
-                  color: Colors.black,
-                  textColor: Colors.white,
-                  onPressed: _isLoading ? null : _handleAppleSignIn,
                 ),
                 const SizedBox(height: 16),
 
