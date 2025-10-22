@@ -1364,24 +1364,35 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             enabled: togglesEnabled,
                           ),
                           const SizedBox(height: 8),
-                          // Community POI toggle
-                          MapToggleButton(
-                            isActive: mapState.showPOIs,
-                            icon: Icons.location_on,
-                            activeColor: Colors.green,
-                            count: ref.watch(cyclingPOIsBoundsNotifierProvider).value?.length ?? 0,
-                            enabled: togglesEnabled,
-                            onPressed: () {
-                              AppLogger.map('Community POI toggle pressed');
-                              final wasOff = !mapState.showPOIs;
-                              ref.read(mapProvider.notifier).togglePOIs();
-                              if (wasOff) {
-                                _loadCommunityPOIsIfNeeded();
-                              }
+                          // Community POI toggle (hidden in navigation mode)
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final navState = ref.watch(navigationProvider);
+                              if (navState.isNavigating) return const SizedBox.shrink();
+
+                              return Column(
+                                children: [
+                                  MapToggleButton(
+                                    isActive: mapState.showPOIs,
+                                    icon: Icons.location_on,
+                                    activeColor: Colors.green,
+                                    count: ref.watch(cyclingPOIsBoundsNotifierProvider).value?.length ?? 0,
+                                    enabled: togglesEnabled,
+                                    onPressed: () {
+                                      AppLogger.map('Community POI toggle pressed');
+                                      final wasOff = !mapState.showPOIs;
+                                      ref.read(mapProvider.notifier).togglePOIs();
+                                      if (wasOff) {
+                                        _loadCommunityPOIsIfNeeded();
+                                      }
+                                    },
+                                    tooltip: 'Toggle Community POIs',
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+                              );
                             },
-                            tooltip: 'Toggle Community POIs',
                           ),
-                          const SizedBox(height: 8),
                           // Warning toggle
                           MapToggleButton(
                             isActive: mapState.showWarnings,
@@ -1403,32 +1414,43 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
-                  const SizedBox(height: 8),
-
-                  // Favorites and destinations toggle
+                  // Favorites and destinations toggle (hidden in navigation mode or when user not logged in)
                   Consumer(
                     builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      final authUser = ref.watch(authStateProvider).value;
+
+                      // Hide if in navigation mode or user not logged in
+                      if (navState.isNavigating || authUser == null) {
+                        return const SizedBox.shrink();
+                      }
+
                       final favoritesVisible = ref.watch(favoritesVisibilityProvider);
                       final userProfile = ref.watch(userProfileProvider).value;
                       final destinationsCount = userProfile?.recentDestinations.length ?? 0;
                       final favoritesCount = userProfile?.favoriteLocations.length ?? 0;
                       final totalCount = destinationsCount + favoritesCount;
 
-                      return MapToggleButton(
-                        isActive: favoritesVisible,
-                        icon: Icons.star,
-                        activeColor: Colors.yellow.shade700,
-                        count: totalCount,
-                        enabled: true, // Always enabled (not zoom-dependent)
-                        onPressed: () {
-                          AppLogger.map('Favorites/destinations toggle pressed');
-                          ref.read(favoritesVisibilityProvider.notifier).toggle();
-                        },
-                        tooltip: 'Toggle Favorites & Destinations',
+                      return Column(
+                        children: [
+                          const SizedBox(height: 8),
+                          MapToggleButton(
+                            isActive: favoritesVisible,
+                            icon: Icons.star,
+                            activeColor: Colors.yellow.shade700,
+                            count: totalCount,
+                            enabled: true, // Always enabled (not zoom-dependent)
+                            onPressed: () {
+                              AppLogger.map('Favorites/destinations toggle pressed');
+                              ref.read(favoritesVisibilityProvider.notifier).toggle();
+                            },
+                            tooltip: 'Toggle Favorites & Destinations',
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                       );
                     },
                   ),
-                  const SizedBox(height: 8),
                   // Zoom in
                   FloatingActionButton(
                     mini: true,
@@ -1564,22 +1586,33 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     tooltip: 'Center on Location',
                     child: const Icon(Icons.my_location),
                   ),
-                  const SizedBox(height: 8),
-                  // Reload POIs button
-                  FloatingActionButton(
-                    mini: true, // Match zoom button size
-                    heroTag: 'reload_pois_button',
-                    onPressed: () async {
-                      AppLogger.map('Manual POI reload requested');
-                      await _loadAllPOIData();
-                      _addMarkers();
-                      _lastPOILoadTime = DateTime.now();
+                  // Reload POIs button (hidden in navigation mode)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      if (navState.isNavigating) return const SizedBox.shrink();
+
+                      return Column(
+                        children: [
+                          const SizedBox(height: 8),
+                          FloatingActionButton(
+                            mini: true, // Match zoom button size
+                            heroTag: 'reload_pois_button',
+                            onPressed: () async {
+                              AppLogger.map('Manual POI reload requested');
+                              await _loadAllPOIData();
+                              _addMarkers();
+                              _lastPOILoadTime = DateTime.now();
+                            },
+                            backgroundColor: Colors.orange,
+                            tooltip: 'Reload POIs',
+                            child: const Icon(Icons.refresh),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      );
                     },
-                    backgroundColor: Colors.orange,
-                    tooltip: 'Reload POIs',
-                    child: const Icon(Icons.refresh),
                   ),
-                  const SizedBox(height: 8),
                   // Debug toggle button
                   Builder(
                     builder: (context) {
@@ -1667,44 +1700,51 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
             ),
 
-            // Bottom-right controls: tiles selector, pitch selector, 2D/3D switch
-            Positioned(
-              bottom: kIsWeb ? 10 : 30,
-              right: 10,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // Style picker button (tiles selector)
-                  FloatingActionButton(
-                    mini: true, // Match zoom button size
-                    heroTag: 'style_picker_button',
-                    onPressed: _showStylePicker,
-                    backgroundColor: Colors.blue,
-                    tooltip: 'Change Map Style',
-                    child: const Icon(Icons.layers),
+            // Bottom-right controls: tiles selector, pitch selector, 2D/3D switch (hidden in navigation mode)
+            Consumer(
+              builder: (context, ref, child) {
+                final navState = ref.watch(navigationProvider);
+                if (navState.isNavigating) return const SizedBox.shrink();
+
+                return Positioned(
+                  bottom: kIsWeb ? 10 : 30,
+                  right: 10,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Style picker button (tiles selector)
+                      FloatingActionButton(
+                        mini: true, // Match zoom button size
+                        heroTag: 'style_picker_button',
+                        onPressed: _showStylePicker,
+                        backgroundColor: Colors.blue,
+                        tooltip: 'Change Map Style',
+                        child: const Icon(Icons.layers),
+                      ),
+                      const SizedBox(height: 8),
+                      // Pitch selector button
+                      FloatingActionButton(
+                        mini: true, // Match zoom button size
+                        heroTag: 'pitch_selector_button',
+                        onPressed: _showPitchPicker,
+                        backgroundColor: Colors.deepPurple,
+                        tooltip: 'Change Pitch: ${_currentPitch.toInt()}°',
+                        child: Text('${_currentPitch.toInt()}°', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 8),
+                      // Switch to 2D button
+                      FloatingActionButton(
+                        mini: true, // Match zoom button size
+                        heroTag: 'switch_to_2d_button',
+                        onPressed: _switchTo2DMap,
+                        backgroundColor: Colors.green,
+                        tooltip: 'Switch to 2D Map',
+                        child: const Icon(Icons.map),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  // Pitch selector button
-                  FloatingActionButton(
-                    mini: true, // Match zoom button size
-                    heroTag: 'pitch_selector_button',
-                    onPressed: _showPitchPicker,
-                    backgroundColor: Colors.deepPurple,
-                    tooltip: 'Change Pitch: ${_currentPitch.toInt()}°',
-                    child: Text('${_currentPitch.toInt()}°', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(height: 8),
-                  // Switch to 2D button
-                  FloatingActionButton(
-                    mini: true, // Match zoom button size
-                    heroTag: 'switch_to_2d_button',
-                    onPressed: _switchTo2DMap,
-                    backgroundColor: Colors.green,
-                    tooltip: 'Switch to 2D Map',
-                    child: const Icon(Icons.map),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
 

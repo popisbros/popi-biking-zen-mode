@@ -4,22 +4,15 @@ import '../providers/navigation_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/search_provider.dart';
 
-/// Navigation control FABs (End Navigation + Voice Mute)
-/// These appear alongside existing FABs when navigation is active
-class NavigationControls extends ConsumerStatefulWidget {
+/// Navigation control FAB (End Navigation)
+/// This appears alongside existing FABs when navigation is active
+class NavigationControls extends ConsumerWidget {
   final VoidCallback? onNavigationEnded;
 
   const NavigationControls({super.key, this.onNavigationEnded});
 
   @override
-  ConsumerState<NavigationControls> createState() => _NavigationControlsState();
-}
-
-class _NavigationControlsState extends ConsumerState<NavigationControls> {
-  bool _isVoiceMuted = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final navState = ref.watch(navigationProvider);
 
     // Only show if navigation is active
@@ -27,51 +20,21 @@ class _NavigationControlsState extends ConsumerState<NavigationControls> {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Voice mute/unmute button
-        FloatingActionButton(
-          mini: true,
-          heroTag: 'nav_voice_toggle',
-          onPressed: () {
-            setState(() {
-              _isVoiceMuted = !_isVoiceMuted;
-            });
-            // TODO: In Phase 4, connect to VoiceService
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  _isVoiceMuted ? 'Voice guidance muted' : 'Voice guidance enabled',
-                ),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-          backgroundColor: _isVoiceMuted ? Colors.grey : Colors.green,
-          foregroundColor: Colors.white,
-          tooltip: _isVoiceMuted ? 'Unmute voice' : 'Mute voice',
-          child: Icon(_isVoiceMuted ? Icons.volume_off : Icons.volume_up),
-        ),
-        const SizedBox(height: 8),
-        // End navigation button
-        FloatingActionButton(
-          mini: true,
-          heroTag: 'nav_end',
-          onPressed: () {
-            _showEndNavigationDialog(context);
-          },
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-          tooltip: 'End navigation',
-          child: const Icon(Icons.close),
-        ),
-      ],
+    return FloatingActionButton(
+      mini: true,
+      heroTag: 'nav_end',
+      onPressed: () {
+        _showEndNavigationDialog(context, ref, onNavigationEnded);
+      },
+      backgroundColor: Colors.red,
+      foregroundColor: Colors.white,
+      tooltip: 'End navigation',
+      child: const Icon(Icons.close),
     );
   }
 
   /// Show confirmation dialog before ending navigation
-  void _showEndNavigationDialog(BuildContext context) {
+  static void _showEndNavigationDialog(BuildContext context, WidgetRef ref, VoidCallback? onNavigationEnded) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -99,7 +62,7 @@ class _NavigationControlsState extends ConsumerState<NavigationControls> {
                 ref.read(navigationModeProvider.notifier).stopRouteNavigation();
 
                 // Call callback to clear route from map
-                widget.onNavigationEnded?.call();
+                onNavigationEnded?.call();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
