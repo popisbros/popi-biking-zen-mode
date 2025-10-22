@@ -112,47 +112,23 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
               if (navState.nextManeuver != null) ...[
                 Row(
                   children: [
-                    // Maneuver icon with debug button overlay
-                    Stack(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade600,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Text(
-                              navState.nextManeuver!.icon,
-                              style: const TextStyle(
-                                fontSize: 28,
-                                color: Colors.white,
-                              ),
-                            ),
+                    // Maneuver icon
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade600,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text(
+                          navState.nextManeuver!.icon,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            color: Colors.white,
                           ),
                         ),
-                        // Small debug button (10x10px) in top-right corner
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _showDebugSections = !_showDebugSections;
-                              });
-                            },
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: _showDebugSections ? Colors.orange : Colors.grey.shade400,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(width: 12),
                     // Instruction text
@@ -336,7 +312,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   ),
                 ),
               ),
-              // Current speed (always visible)
+              // Current speed (always visible) with debug button
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -351,6 +327,33 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Debug toggle button (20x20px)
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showDebugSections = !_showDebugSections;
+                      });
+                    },
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: _showDebugSections ? Colors.orange : Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'D',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: _showDebugSections ? Colors.white : Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
