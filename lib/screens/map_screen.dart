@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../constants/app_colors.dart';
 import '../providers/location_provider.dart';
@@ -1235,7 +1236,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ref.listen<AsyncValue<LocationData?>>(locationNotifierProvider, (previous, next) {
       next.whenData((location) {
         if (location != null) {
-          AppLogger.location('Location changed via listener');
+          // Only log if user has moved significantly (reduce log spam)
+          bool shouldLog = false;
+          if (_lastGPSPosition == null) {
+            shouldLog = true; // First location update
+          } else {
+            final distance = Geolocator.distanceBetween(
+              _lastGPSPosition!.latitude,
+              _lastGPSPosition!.longitude,
+              location.latitude,
+              location.longitude,
+            );
+            shouldLog = distance > 10; // Only log if moved more than 10 meters
+          }
+
+          if (shouldLog) {
+            AppLogger.location('Location changed via listener', data: {
+              'lat': location.latitude.toStringAsFixed(6),
+              'lng': location.longitude.toStringAsFixed(6),
+            });
+          }
+
           _handleGPSLocationChange(location);
         }
       });
