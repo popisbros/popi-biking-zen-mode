@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 
@@ -46,19 +44,17 @@ class LoginScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Sign in with Apple (iOS/macOS only)
-                if (!kIsWeb && (Platform.isIOS || Platform.isMacOS))
-                  _SignInButton(
-                    icon: Icons.apple,
-                    label: 'Continue with Apple',
-                    color: Colors.black,
-                    textColor: Colors.white,
-                    onPressed: () async {
-                      await ref.read(authNotifierProvider.notifier).signInWithApple();
-                    },
-                  ),
-                if (!kIsWeb && (Platform.isIOS || Platform.isMacOS))
-                  const SizedBox(height: 16),
+                // Sign in with Apple
+                _SignInButton(
+                  icon: Icons.apple,
+                  label: 'Continue with Apple',
+                  color: Colors.black,
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    await ref.read(authNotifierProvider.notifier).signInWithApple();
+                  },
+                ),
+                const SizedBox(height: 16),
 
                 // Sign in with Email
                 _SignInButton(

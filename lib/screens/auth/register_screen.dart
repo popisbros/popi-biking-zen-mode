@@ -12,6 +12,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -21,6 +22,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -37,6 +39,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _passwordController.text,
           _nameController.text.trim(),
         );
+
+    // Update profile with phone number if provided
+    if (result != null && _phoneController.text.trim().isNotEmpty) {
+      await ref.read(authNotifierProvider.notifier).updateProfile(
+            phoneNumber: _phoneController.text.trim(),
+          );
+    }
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -83,6 +92,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: 16),
+
+                // Mobile Number (optional)
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mobile Number (optional)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                  keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
 

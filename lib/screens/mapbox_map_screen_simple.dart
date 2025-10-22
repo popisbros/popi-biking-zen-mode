@@ -1584,11 +1584,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Debug overlay - on top of everything
       const DebugOverlay(),
 
-      // Profile button - top-right corner
-      const Positioned(
-        top: 16,
-        right: 16,
-        child: ProfileButton(),
+      // Profile button - top-right corner, aligned with other top-right controls
+      Positioned(
+        top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
+        right: 70, // Position to the left of the top-right controls column
+        child: const ProfileButton(),
       ),
     ]; // End map and controls list
   }
