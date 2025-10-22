@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
@@ -32,7 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } else {
         // User cancelled or sign-in not configured - just reset loading state
         // Don't show error message for cancellation
-        SchedulerBinding.instance.addPostFrameCallback((_) {
+        Future.microtask(() {
           if (mounted) {
             setState(() {
               _isLoading = false;
@@ -43,7 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      SchedulerBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
         if (mounted) {
           setState(() {
             _errorMessage = 'Google Sign-In failed: ${e.toString()}';
@@ -266,7 +265,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
 
       // Schedule setState for next frame to ensure safe state update on all platforms
-      SchedulerBinding.instance.addPostFrameCallback((_) {
+      // Using Future.microtask for better iOS compatibility
+      Future.microtask(() {
         if (mounted) {
           setState(() {
             _errorMessage = errorMessage;
