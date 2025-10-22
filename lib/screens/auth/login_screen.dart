@@ -30,10 +30,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Success - will auto-navigate via auth state change
         Navigator.of(context).pop();
       } else {
+        // User cancelled or sign-in not configured - just reset loading state
+        // Don't show error message for cancellation
         SchedulerBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
-              _errorMessage = 'Google Sign-In was cancelled';
               _isLoading = false;
             });
           }
@@ -68,10 +69,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Success - will auto-navigate via auth state change
         Navigator.of(context).pop();
       } else {
+        // User cancelled or sign-in not configured - just reset loading state
+        // Don't show error message for cancellation
         SchedulerBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             setState(() {
-              _errorMessage = 'Apple Sign-In was cancelled';
               _isLoading = false;
             });
           }
