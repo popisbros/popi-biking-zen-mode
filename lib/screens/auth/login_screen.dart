@@ -29,26 +29,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Success - will auto-navigate via auth state change
         Navigator.of(context).pop();
       } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
           if (mounted) {
             setState(() {
               _errorMessage = 'Google Sign-In was cancelled';
               _isLoading = false;
             });
           }
-        });
+        } catch (stateError) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _errorMessage = 'Google Sign-In was cancelled';
+                _isLoading = false;
+              });
+            }
+          });
+        }
       }
     } catch (e) {
       if (!mounted) return;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
         if (mounted) {
           setState(() {
             _errorMessage = 'Google Sign-In failed: ${e.toString()}';
             _isLoading = false;
           });
         }
-      });
+      } catch (stateError) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Google Sign-In failed: ${e.toString()}';
+              _isLoading = false;
+            });
+          }
+        });
+      }
     }
   }
 
@@ -67,26 +85,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Success - will auto-navigate via auth state change
         Navigator.of(context).pop();
       } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
           if (mounted) {
             setState(() {
               _errorMessage = 'Apple Sign-In was cancelled';
               _isLoading = false;
             });
           }
-        });
+        } catch (stateError) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _errorMessage = 'Apple Sign-In was cancelled';
+                _isLoading = false;
+              });
+            }
+          });
+        }
       }
     } catch (e) {
       if (!mounted) return;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
         if (mounted) {
           setState(() {
             _errorMessage = 'Apple Sign-In failed: ${e.toString()}';
             _isLoading = false;
           });
         }
-      });
+      } catch (stateError) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Apple Sign-In failed: ${e.toString()}';
+              _isLoading = false;
+            });
+          }
+        });
+      }
     }
   }
 
@@ -311,15 +347,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         errorMessage = 'Sign-in failed: ${e.toString()}';
       }
 
-      // Use post-frame callback to ensure we're not in the middle of a build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Try to set state immediately, or schedule for next frame if needed
+      try {
         if (mounted) {
           setState(() {
             _errorMessage = errorMessage;
             _isLoading = false;
           });
         }
-      });
+      } catch (stateError) {
+        // If setState fails (during build), schedule for next frame
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = errorMessage;
+              _isLoading = false;
+            });
+          }
+        });
+      }
     }
   }
 }
