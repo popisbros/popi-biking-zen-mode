@@ -19,6 +19,7 @@ import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/favorites_visibility_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../services/ios_navigation_service.dart';
@@ -1064,6 +1065,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     });
 
+    // Listen for favorites visibility changes and refresh markers
+    ref.listen<bool>(favoritesVisibilityProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        _addMarkers();
+      }
+    });
+
+    // Listen for user profile changes (destinations/favorites added/removed) and refresh markers
+    ref.listen<AsyncValue<dynamic>>(userProfileProvider, (previous, next) {
+      if (_isMapReady && _pointAnnotationManager != null) {
+        _addMarkers();
+      }
+    });
+
     // Listen for map state changes (toggle buttons) and refresh markers INSTANTLY
     ref.listen<MapState>(mapProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
@@ -1281,6 +1296,31 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             tooltip: 'Toggle Warnings',
                           ),
                         ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Favorites and destinations toggle
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final favoritesVisible = ref.watch(favoritesVisibilityProvider);
+                      final userProfile = ref.watch(userProfileProvider).value;
+                      final destinationsCount = userProfile?.recentDestinations.length ?? 0;
+                      final favoritesCount = userProfile?.favoriteLocations.length ?? 0;
+                      final totalCount = destinationsCount + favoritesCount;
+
+                      return MapToggleButton(
+                        isActive: favoritesVisible,
+                        icon: Icons.star,
+                        activeColor: Colors.yellow.shade700,
+                        count: totalCount,
+                        enabled: true, // Always enabled (not zoom-dependent)
+                        onPressed: () {
+                          AppLogger.map('Favorites/destinations toggle pressed');
+                          ref.read(favoritesVisibilityProvider.notifier).toggle();
+                        },
+                        tooltip: 'Toggle Favorites & Destinations',
                       );
                     },
                   ),
@@ -2354,6 +2394,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Add route hazards during turn-by-turn navigation
     await _addRouteHazards();
 
+    // Add favorites and destinations markers if toggle is enabled
+    await _addFavoritesAndDestinations();
+
     // Add search result marker if available
     await _addSearchResultMarker();
 
@@ -3012,6 +3055,106 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       await _pointAnnotationManager!.createMulti(pointOptions);
       AppLogger.success('Added route hazard markers', tag: 'MAP', data: {'count': pointOptions.length});
     }
+  }
+
+  /// Add favorites and destinations markers to map
+  Future<void> _addFavoritesAndDestinations() async {
+    if (_pointAnnotationManager == null) return;
+
+    final favoritesVisible = ref.read(favoritesVisibilityProvider);
+    if (!favoritesVisible) return;
+
+    final userProfile = ref.read(userProfileProvider).value;
+    if (userProfile == null) return;
+
+    List<PointAnnotationOptions> pointOptions = [];
+
+    AppLogger.debug('Adding favorites and destinations as markers', tag: 'MAP', data: {
+      'destinations': userProfile.recentDestinations.length,
+      'favorites': userProfile.favoriteLocations.length,
+    });
+
+    // Add destination markers (orange teardrop)
+    for (var destination in userProfile.recentDestinations) {
+      final iconImage = await _createFavoritesIcon(isDestination: true);
+
+      pointOptions.add(
+        PointAnnotationOptions(
+          geometry: Point(coordinates: Position(destination.longitude, destination.latitude)),
+          image: iconImage,
+          iconSize: 1.5,
+          iconAnchor: IconAnchor.CENTER,
+        ),
+      );
+    }
+
+    // Add favorite markers (yellow star)
+    for (var favorite in userProfile.favoriteLocations) {
+      final iconImage = await _createFavoritesIcon(isDestination: false);
+
+      pointOptions.add(
+        PointAnnotationOptions(
+          geometry: Point(coordinates: Position(favorite.longitude, favorite.latitude)),
+          image: iconImage,
+          iconSize: 1.5,
+          iconAnchor: IconAnchor.CENTER,
+        ),
+      );
+    }
+
+    if (pointOptions.isNotEmpty) {
+      await _pointAnnotationManager!.createMulti(pointOptions);
+      AppLogger.success('Added favorites/destinations markers', tag: 'MAP', data: {'count': pointOptions.length});
+    }
+  }
+
+  /// Create favorites/destinations icon (teardrop for destinations, star for favorites)
+  Future<Uint8List> _createFavoritesIcon({required bool isDestination, double size = 48}) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Colors based on type
+    final fillColor = isDestination
+        ? const Color(0xE6FFCC80) // Orange with ~90% opacity
+        : const Color(0xE6FFD54F); // Amber with ~90% opacity
+    final borderColor = isDestination
+        ? Colors.orange.shade700
+        : Colors.amber.shade700;
+
+    // Draw filled circle background
+    final circlePaint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
+
+    // Draw border
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
+
+    // Draw emoji icon (teardrop for destinations, star for favorites)
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: isDestination ? '📍' : '⭐',
+        style: TextStyle(fontSize: size * 0.5, fontFamily: 'sans-serif'),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size - textPainter.width) / 2,
+        (size - textPainter.height) / 2,
+      ),
+    );
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
   }
 
   // ============================================================================

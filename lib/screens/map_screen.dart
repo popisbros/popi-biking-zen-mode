@@ -16,6 +16,7 @@ import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/favorites_visibility_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../services/toast_service.dart';
@@ -1190,6 +1191,78 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  /// Build destination marker (teardrop icon)
+  Marker _buildDestinationMarker(double latitude, double longitude, String name) {
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2;
+
+    return Marker(
+      point: LatLng(latitude, longitude),
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      child: GestureDetector(
+        onTap: () {
+          AppLogger.map('Destination marker tapped', data: {'name': name});
+          _calculateRouteTo(latitude, longitude, destinationName: name);
+        },
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.orange.shade100.withOpacity(0.9),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.orange.shade700,
+              width: MarkerConfig.circleStrokeWidth,
+            ),
+          ),
+          child: Text(
+            '📍', // Teardrop/location icon
+            style: TextStyle(fontSize: size * 0.5),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build favorite marker (star icon)
+  Marker _buildFavoriteMarker(double latitude, double longitude, String name) {
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2;
+
+    return Marker(
+      point: LatLng(latitude, longitude),
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      child: GestureDetector(
+        onTap: () {
+          AppLogger.map('Favorite marker tapped', data: {'name': name});
+          _calculateRouteTo(latitude, longitude, destinationName: name);
+        },
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.amber.shade100.withOpacity(0.9),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.amber.shade700,
+              width: MarkerConfig.circleStrokeWidth,
+            ),
+          ),
+          child: Text(
+            '⭐', // Star icon
+            style: TextStyle(fontSize: size * 0.5),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Build road sign warning marker (orange circle matching community hazards style)
   Widget _buildRoadSignMarker(String surfaceType) {
     // Match community hazard marker size exactly
@@ -1547,6 +1620,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     }
 
+    // Add favorites and destinations markers (only if toggle is enabled and user is logged in)
+    final favoritesVisible = ref.watch(favoritesVisibilityProvider);
+    final userProfile = ref.watch(userProfileProvider).value;
+    if (favoritesVisible && userProfile != null) {
+      // Add destination markers
+      for (final destination in userProfile.recentDestinations) {
+        markers.add(_buildDestinationMarker(
+          destination.latitude,
+          destination.longitude,
+          destination.name,
+        ));
+      }
+      AppLogger.debug('Added ${userProfile.recentDestinations.length} destination markers', tag: 'MAP');
+
+      // Add favorite markers
+      for (final favorite in userProfile.favoriteLocations) {
+        markers.add(_buildFavoriteMarker(
+          favorite.latitude,
+          favorite.longitude,
+          favorite.name,
+        ));
+      }
+      AppLogger.debug('Added ${userProfile.favoriteLocations.length} favorite markers', tag: 'MAP');
+    }
+
     AppLogger.map('Total markers on map', data: {'count': markers.length});
 
     // Get map center for search
@@ -1867,6 +1965,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           tooltip: 'Toggle Warnings',
                         ),
                       ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                // Favorites and destinations toggle
+                Consumer(
+                  builder: (context, ref, child) {
+                    final favoritesVisible = ref.watch(favoritesVisibilityProvider);
+                    final userProfile = ref.watch(userProfileProvider).value;
+                    final destinationsCount = userProfile?.recentDestinations.length ?? 0;
+                    final favoritesCount = userProfile?.favoriteLocations.length ?? 0;
+                    final totalCount = destinationsCount + favoritesCount;
+
+                    return MapToggleButton(
+                      isActive: favoritesVisible,
+                      icon: Icons.star,
+                      activeColor: Colors.yellow.shade700,
+                      count: totalCount,
+                      enabled: true, // Always enabled (not zoom-dependent)
+                      onPressed: () {
+                        AppLogger.map('Favorites/destinations toggle pressed');
+                        ref.read(favoritesVisibilityProvider.notifier).toggle();
+                      },
+                      tooltip: 'Toggle Favorites & Destinations',
                     );
                   },
                 ),

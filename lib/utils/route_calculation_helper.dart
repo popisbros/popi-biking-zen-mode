@@ -10,6 +10,7 @@ import '../providers/navigation_mode_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/location_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/favorites_visibility_provider.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
 import 'app_logger.dart';
 
@@ -145,6 +146,9 @@ class RouteCalculationHelper {
       showCommunity: false,
       showHazards: true,
     );
+
+    // Disable favorites/destinations visibility during navigation
+    ref.read(favoritesVisibilityProvider.notifier).disable();
 
     // Activate navigation mode automatically
     ref.read(navigationModeProvider.notifier).startRouteNavigation();
