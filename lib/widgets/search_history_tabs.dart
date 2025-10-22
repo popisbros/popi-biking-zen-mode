@@ -100,33 +100,61 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
   Widget _buildRecentSearches(List<String> searches) {
     if (searches.isEmpty) {
       return Center(
-        child: Text(
-          'No recent searches',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'No recent searches',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
           ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.zero,
       itemCount: searches.length,
       itemBuilder: (context, index) {
         final query = searches[index];
-        return ListTile(
-          dense: true,
-          leading: const Icon(Icons.history, size: 20, color: Colors.grey),
-          title: Text(
-            query,
-            style: const TextStyle(fontSize: 14),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        return InkWell(
           onTap: () {
             widget.onSearchTap(query);
           },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.history,
+                  color: Colors.grey[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    query,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -135,37 +163,76 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
   Widget _buildRecentDestinations(List<SavedLocation> destinations) {
     if (destinations.isEmpty) {
       return Center(
-        child: Text(
-          'No recent destinations',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'No recent destinations',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
           ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.zero,
       itemCount: destinations.length,
       itemBuilder: (context, index) {
         final location = destinations[index];
-        return ListTile(
-          dense: true,
-          leading: const Icon(Icons.location_on, size: 20, color: Colors.orange),
-          title: Text(
-            location.name,
-            style: const TextStyle(fontSize: 14),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Text(
-            '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-          ),
+        return InkWell(
           onTap: () {
             widget.onLocationTap(location.latitude, location.longitude, location.name);
           },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        location.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -174,37 +241,76 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
   Widget _buildFavorites(List<SavedLocation> favorites) {
     if (favorites.isEmpty) {
       return Center(
-        child: Text(
-          'No favorites yet',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'No favorites yet',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
           ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.zero,
       itemCount: favorites.length,
       itemBuilder: (context, index) {
         final location = favorites[index];
-        return ListTile(
-          dense: true,
-          leading: const Icon(Icons.star, size: 20, color: Colors.amber),
-          title: Text(
-            location.name,
-            style: const TextStyle(fontSize: 14),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Text(
-            '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-          ),
+        return InkWell(
           onTap: () {
             widget.onLocationTap(location.latitude, location.longitude, location.name);
           },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        location.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
