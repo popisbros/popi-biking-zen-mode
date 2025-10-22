@@ -130,9 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   label: 'Continue with Email',
                   color: Colors.blue,
                   textColor: Colors.white,
-                  onPressed: () {
-                    _showEmailLoginDialog(context, ref);
-                  },
+                  onPressed: _isLoading ? null : _handleEmailSignIn,
                 ),
                 const SizedBox(height: 24),
 
@@ -192,11 +190,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  void _showEmailLoginDialog(BuildContext context, WidgetRef ref) {
+  Future<void> _handleEmailSignIn() async {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
 
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sign in with Email'),
@@ -210,6 +208,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.emailAddress,
+              autofocus: true,
             ),
             const SizedBox(height: 16),
             TextField(
@@ -219,29 +218,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 border: OutlineInputBorder(),
               ),
               obscureText: true,
+              onSubmitted: (_) {
+                // Allow Enter key to submit
+                Navigator.pop(context, true);
+              },
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               final email = emailController.text.trim();
               final password = passwordController.text;
 
-              if (email.isEmpty || password.isEmpty) return;
-
-              Navigator.pop(context);
-              await ref.read(authNotifierProvider.notifier).signInWithEmail(email, password);
+              if (email.isEmpty || password.isEmpty) {
+                return;
+              }
+              Navigator.pop(context, true);
             },
             child: const Text('Sign In'),
           ),
         ],
       ),
     );
+
+    if (result != true) return;
+
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final credential = await ref.read(authNotifierProvider.notifier).signInWithEmail(email, password);
+      if (mounted) {
+        if (credential != null) {
+          // Success - will auto-navigate via auth state change
+          Navigator.of(context).pop();
+        } else {
+          setState(() {
+            _errorMessage = 'Email/Password sign-in failed. Please check your credentials.';
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Email Sign-In failed: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+
+    emailController.dispose();
+    passwordController.dispose();
   }
 }
 
