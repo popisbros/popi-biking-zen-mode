@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
+import '../../models/user_profile.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -259,8 +260,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         profile.recentDestinations.isEmpty
                             ? const Text('No recent destinations', style: TextStyle(color: Colors.grey))
                             : Column(
-                                children: profile.recentDestinations.map((dest) =>
-                                  ListTile(
+                                children: profile.recentDestinations.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final dest = entry.value;
+                                  return ListTile(
                                     dense: true,
                                     leading: const Icon(Icons.location_on, size: 20, color: Colors.orange),
                                     title: Text(dest.name, style: const TextStyle(fontSize: 14)),
@@ -268,8 +271,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       '${dest.latitude.toStringAsFixed(4)}, ${dest.longitude.toStringAsFixed(4)}',
                                       style: const TextStyle(fontSize: 11),
                                     ),
-                                  ),
-                                ).toList(),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, size: 18),
+                                          onPressed: () => _editDestination(index, dest),
+                                          tooltip: 'Edit name',
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                                          onPressed: () => _deleteDestination(index),
+                                          tooltip: 'Delete',
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
                               ),
                       ),
                       const SizedBox(height: 8),
@@ -281,8 +299,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         profile.favoriteLocations.isEmpty
                             ? const Text('No favorites yet', style: TextStyle(color: Colors.grey))
                             : Column(
-                                children: profile.favoriteLocations.map((fav) =>
-                                  ListTile(
+                                children: profile.favoriteLocations.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final fav = entry.value;
+                                  return ListTile(
                                     dense: true,
                                     leading: const Icon(Icons.star, size: 20, color: Colors.amber),
                                     title: Text(fav.name, style: const TextStyle(fontSize: 14)),
@@ -290,8 +310,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       '${fav.latitude.toStringAsFixed(4)}, ${fav.longitude.toStringAsFixed(4)}',
                                       style: const TextStyle(fontSize: 11),
                                     ),
-                                  ),
-                                ).toList(),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit, size: 18),
+                                          onPressed: () => _editFavorite(index, fav),
+                                          tooltip: 'Edit name',
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                                          onPressed: () => _deleteFavorite(index),
+                                          tooltip: 'Delete',
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
                               ),
                       ),
                     ],
@@ -360,6 +395,134 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         return Icons.email;
       default:
         return Icons.person;
+    }
+  }
+
+  // Edit destination name
+  Future<void> _editDestination(int index, SavedLocation destination) async {
+    final controller = TextEditingController(text: destination.name);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Destination Name'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Name',
+            hintText: 'Enter destination name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.trim().isNotEmpty) {
+      // Update destination name via AuthProvider
+      await ref.read(authNotifierProvider.notifier).updateDestinationName(
+        index,
+        result.trim(),
+      );
+    }
+    controller.dispose();
+  }
+
+  // Delete destination
+  Future<void> _deleteDestination(int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Destination'),
+        content: const Text('Are you sure you want to remove this destination?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(authNotifierProvider.notifier).deleteDestination(index);
+    }
+  }
+
+  // Edit favorite name
+  Future<void> _editFavorite(int index, SavedLocation favorite) async {
+    final controller = TextEditingController(text: favorite.name);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Favorite Name'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Name',
+            hintText: 'Enter favorite name',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.trim().isNotEmpty) {
+      // Update favorite name via AuthProvider
+      await ref.read(authNotifierProvider.notifier).updateFavoriteName(
+        index,
+        result.trim(),
+      );
+    }
+    controller.dispose();
+  }
+
+  // Delete favorite
+  Future<void> _deleteFavorite(int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Favorite'),
+        content: const Text('Are you sure you want to remove this favorite?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(authNotifierProvider.notifier).deleteFavorite(index);
     }
   }
 }

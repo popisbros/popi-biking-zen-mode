@@ -332,6 +332,128 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
       AppLogger.error('Failed to update route profile', tag: 'AUTH', error: e);
     }
   }
+
+  /// Update destination name at specific index
+  Future<void> updateDestinationName(int index, String newName) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      final destinations = (data['recentDestinations'] as List?)
+              ?.map((e) => SavedLocation.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      if (index >= 0 && index < destinations.length) {
+        destinations[index] = SavedLocation(
+          name: newName,
+          latitude: destinations[index].latitude,
+          longitude: destinations[index].longitude,
+          savedAt: destinations[index].savedAt,
+        );
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'recentDestinations': destinations.map((e) => e.toMap()).toList(),
+        });
+        AppLogger.debug('Destination name updated', tag: 'AUTH');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to update destination name', tag: 'AUTH', error: e);
+    }
+  }
+
+  /// Delete destination at specific index
+  Future<void> deleteDestination(int index) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      final destinations = (data['recentDestinations'] as List?)
+              ?.map((e) => SavedLocation.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      if (index >= 0 && index < destinations.length) {
+        destinations.removeAt(index);
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'recentDestinations': destinations.map((e) => e.toMap()).toList(),
+        });
+        AppLogger.debug('Destination deleted', tag: 'AUTH');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to delete destination', tag: 'AUTH', error: e);
+    }
+  }
+
+  /// Update favorite name at specific index
+  Future<void> updateFavoriteName(int index, String newName) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      final favorites = (data['favoriteLocations'] as List?)
+              ?.map((e) => SavedLocation.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      if (index >= 0 && index < favorites.length) {
+        favorites[index] = SavedLocation(
+          name: newName,
+          latitude: favorites[index].latitude,
+          longitude: favorites[index].longitude,
+          savedAt: favorites[index].savedAt,
+        );
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'favoriteLocations': favorites.map((e) => e.toMap()).toList(),
+        });
+        AppLogger.debug('Favorite name updated', tag: 'AUTH');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to update favorite name', tag: 'AUTH', error: e);
+    }
+  }
+
+  /// Delete favorite at specific index
+  Future<void> deleteFavorite(int index) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      final favorites = (data['favoriteLocations'] as List?)
+              ?.map((e) => SavedLocation.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      if (index >= 0 && index < favorites.length) {
+        favorites.removeAt(index);
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'favoriteLocations': favorites.map((e) => e.toMap()).toList(),
+        });
+        AppLogger.debug('Favorite deleted', tag: 'AUTH');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to delete favorite', tag: 'AUTH', error: e);
+    }
+  }
 }
 
 /// Auth provider
