@@ -34,23 +34,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    final result = await ref.read(authNotifierProvider.notifier).registerWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
-          _nameController.text.trim(),
-        );
-
-    // Update profile with phone number if provided
-    if (result != null && _phoneController.text.trim().isNotEmpty) {
-      await ref.read(authNotifierProvider.notifier).updateProfile(
-            phoneNumber: _phoneController.text.trim(),
+    try {
+      final result = await ref.read(authNotifierProvider.notifier).registerWithEmail(
+            _emailController.text.trim(),
+            _passwordController.text,
+            _nameController.text.trim(),
           );
-    }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (result != null) {
-        Navigator.of(context).pop(); // Go back to login (will auto-redirect to map)
+      // Update profile with phone number if provided
+      if (result != null && _phoneController.text.trim().isNotEmpty) {
+        // Add a small delay to ensure Firestore document is ready
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        await ref.read(authNotifierProvider.notifier).updateProfile(
+              phoneNumber: _phoneController.text.trim(),
+            );
+      }
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (result != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account created successfully!')),
+          );
+          Navigator.of(context).pop(); // Go back to login (will auto-redirect to map)
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

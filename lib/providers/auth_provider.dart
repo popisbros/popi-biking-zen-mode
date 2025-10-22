@@ -221,21 +221,38 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
     String? country,
   }) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      AppLogger.warning('Cannot update profile - no user logged in', tag: 'AUTH');
+      return;
+    }
 
     try {
       final updates = <String, dynamic>{
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (displayName != null) updates['displayName'] = displayName;
-      if (phoneNumber != null) updates['phoneNumber'] = phoneNumber;
-      if (country != null) updates['country'] = country;
+      if (displayName != null) {
+        updates['displayName'] = displayName;
+        AppLogger.debug('Updating displayName: $displayName', tag: 'AUTH');
+      }
+      if (phoneNumber != null) {
+        updates['phoneNumber'] = phoneNumber;
+        AppLogger.debug('Updating phoneNumber: $phoneNumber', tag: 'AUTH');
+      }
+      if (country != null) {
+        updates['country'] = country;
+        AppLogger.debug('Updating country: $country', tag: 'AUTH');
+      }
 
-      await _firestore.collection('users').doc(user.uid).update(updates);
-      AppLogger.success('Profile updated', tag: 'AUTH');
+      // Use set with merge: true to create document if it doesn't exist
+      await _firestore.collection('users').doc(user.uid).set(
+        updates,
+        SetOptions(merge: true),
+      );
+      AppLogger.success('Profile updated successfully', tag: 'AUTH', data: updates);
     } catch (e, stackTrace) {
       AppLogger.error('Profile update failed', tag: 'AUTH', error: e, stackTrace: stackTrace);
+      rethrow; // Re-throw so caller can handle the error
     }
   }
 
