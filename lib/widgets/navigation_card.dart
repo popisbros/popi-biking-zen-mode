@@ -734,94 +734,89 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       ];
     }
 
-    // Has warnings - show header + list
+    // Has warnings - show list with counter on first warning
     final List<Widget> warningWidgets = [
       const SizedBox(height: 12),
       Divider(color: Colors.grey.shade300, height: 1),
       const SizedBox(height: 8),
     ];
 
-    // Header: "⚠️ Warnings (N) ▼/▶" - tap to toggle
-    warningWidgets.add(
-      GestureDetector(
-        onTap: () {
-          ref.read(navigationProvider.notifier).toggleWarningsExpanded();
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            children: [
-              Text(
-                'Warnings (${warnings.length})',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const Spacer(),
-              Icon(
-                navState.warningsExpanded ? Icons.expand_less : Icons.expand_more,
-                size: 20,
-                color: Colors.grey.shade700,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
     // Show warnings based on expanded state
     final warningsToShow = navState.warningsExpanded
         ? warnings
-        : (warnings.isNotEmpty ? [warnings.first] : <RouteWarning>[]);
+        : [warnings.first];
 
     for (int i = 0; i < warningsToShow.length; i++) {
       final warning = warningsToShow[i];
+      final isFirst = i == 0;
 
-      warningWidgets.add(const SizedBox(height: 6));
+      if (i > 0) {
+        warningWidgets.add(const SizedBox(height: 6));
+      }
 
       warningWidgets.add(
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: warning.backgroundColor,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: warning.borderColor),
-          ),
-          child: Row(
-            children: [
-              Text(
-                warning.icon,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  warning.title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+        GestureDetector(
+          // Only make first warning tappable if there are multiple warnings
+          onTap: warnings.length > 1 && isFirst
+              ? () {
+                  ref.read(navigationProvider.notifier).toggleWarningsExpanded();
+                }
+              : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: warning.backgroundColor,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: warning.borderColor),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  warning.icon,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    warning.title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                warning.distanceText,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: warning.textColor,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(width: 8),
+                Text(
+                  warning.distanceText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: warning.textColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+                // Show counter and expand arrow on first warning if there are multiple warnings
+                if (isFirst && warnings.length > 1) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '(${warnings.length})',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    navState.warningsExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: Colors.grey.shade700,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       );
