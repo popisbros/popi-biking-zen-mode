@@ -151,49 +151,65 @@ class POIDetailDialog extends ConsumerWidget {
         ),
       ),
       actions: [
-        // Add to Favorites button (only show if user is logged in)
-        if (authUser != null)
-          TextButton(
-            onPressed: () {
-              ref.read(authNotifierProvider.notifier).toggleFavorite(
-                poi.name,
-                poi.latitude,
-                poi.longitude,
-              );
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+        // Two rows of buttons
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // First row: Route To and Close
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(
-                  isFavorite ? Icons.star : Icons.star_border,
-                  size: 16,
-                  color: isFavorite ? Colors.amber : Colors.grey,
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onRouteTo();
+                  },
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
+                      SizedBox(width: 4),
+                      Text('ROUTE TO', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES',
-                  style: const TextStyle(fontSize: 12),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
                 ),
               ],
             ),
-          ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            onRouteTo();
-          },
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
-              SizedBox(width: 4),
-              Text('ROUTE TO', style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
+            // Second row: Add to Favorites (only show if user is logged in)
+            if (authUser != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    ref.read(authNotifierProvider.notifier).toggleFavorite(
+                      poi.name,
+                      poi.latitude,
+                      poi.longitude,
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isFavorite ? Icons.star : Icons.star_border,
+                        size: 16,
+                        color: isFavorite ? Colors.amber : Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );

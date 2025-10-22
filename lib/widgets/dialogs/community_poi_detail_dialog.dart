@@ -156,86 +156,97 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
         ),
       ),
       actions: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+        // Two rows of buttons
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Add to Favorites button (only show if user is logged in)
+            // First row: Route To, Edit, Delete, Close
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onRouteTo();
+                  },
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
+                      SizedBox(width: 4),
+                      Text('ROUTE TO', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Navigate to edit screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => POIManagementScreenWithLocation(
+                          initialLatitude: poi.latitude,
+                          initialLongitude: poi.longitude,
+                          editingPOIId: poi.id,
+                        ),
+                      ),
+                    ).then((_) {
+                      // Reload map data after edit
+                      onDataChanged();
+                    });
+                  },
+                  child: const Text('EDIT', style: TextStyle(fontSize: 12)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    if (poi.id != null) {
+                      AppLogger.map('Deleting POI', data: {'id': poi.id});
+                      await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
+                      // Reload map data
+                      onDataChanged();
+                    }
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('DELETE', style: TextStyle(fontSize: 12)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+            // Second row: Add to Favorites (only show if user is logged in)
             if (authUser != null)
-              TextButton(
-                onPressed: () {
-                  ref.read(authNotifierProvider.notifier).toggleFavorite(
-                    poi.name,
-                    poi.latitude,
-                    poi.longitude,
-                  );
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isFavorite ? Icons.star : Icons.star_border,
-                      size: 16,
-                      color: isFavorite ? Colors.amber : Colors.grey,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isFavorite ? 'FAVORITED' : 'FAVORITE',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    ref.read(authNotifierProvider.notifier).toggleFavorite(
+                      poi.name,
+                      poi.latitude,
+                      poi.longitude,
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isFavorite ? Icons.star : Icons.star_border,
+                        size: 16,
+                        color: isFavorite ? Colors.amber : Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                onRouteTo();
-              },
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
-                  SizedBox(width: 4),
-                  Text('ROUTE TO', style: TextStyle(fontSize: 12)),
-                ],
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // Navigate to edit screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => POIManagementScreenWithLocation(
-                      initialLatitude: poi.latitude,
-                      initialLongitude: poi.longitude,
-                      editingPOIId: poi.id,
-                    ),
-                  ),
-                ).then((_) {
-                  // Reload map data after edit
-                  onDataChanged();
-                });
-              },
-              child: const Text('EDIT', style: TextStyle(fontSize: 12)),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                if (poi.id != null) {
-                  AppLogger.map('Deleting POI', data: {'id': poi.id});
-                  await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
-                  // Reload map data
-                  onDataChanged();
-                }
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('DELETE', style: TextStyle(fontSize: 12)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
-            ),
           ],
         ),
       ],

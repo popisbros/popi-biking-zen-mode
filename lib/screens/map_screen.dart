@@ -15,6 +15,7 @@ import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../services/toast_service.dart';
@@ -620,6 +621,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Show context menu for adding Community POI or reporting hazard
   void _showContextMenu(TapPosition tapPosition, LatLng point) {
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final authUser = ref.read(authStateProvider).value;
 
     showMenu<String>(
       context: context,
@@ -659,6 +661,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ],
           ),
         ),
+        if (authUser != null)
+          PopupMenuItem<String>(
+            value: 'add_favorite',
+            child: Row(
+              children: [
+                const Icon(Icons.star_border, color: Colors.amber),
+                const SizedBox(width: 8),
+                const Text('Add to Favorites', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
       ],
       elevation: 8,
       shape: RoundedRectangleBorder(
@@ -676,6 +689,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           case 'calculate_route':
             _calculateRouteTo(point.latitude, point.longitude);
             break;
+          case 'add_favorite':
+            ref.read(authNotifierProvider.notifier).toggleFavorite(
+              'Location ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}',
+              point.latitude,
+              point.longitude,
+            );
+            break;
         }
       }
     });
@@ -684,6 +704,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Show routing-only dialog (for search results)
   void _showRoutingDialog(TapPosition tapPosition, LatLng point) {
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final authUser = ref.read(authStateProvider).value;
 
     showMenu<String>(
       context: context,
@@ -703,14 +724,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ],
           ),
         ),
+        if (authUser != null)
+          PopupMenuItem<String>(
+            value: 'add_favorite',
+            child: Row(
+              children: [
+                const Icon(Icons.star_border, color: Colors.amber),
+                const SizedBox(width: 8),
+                const Text('Add to Favorites', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
       ],
       elevation: 8,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
       ),
     ).then((String? selectedValue) {
-      if (selectedValue == 'calculate_route') {
-        _calculateRouteTo(point.latitude, point.longitude);
+      if (selectedValue != null) {
+        switch (selectedValue) {
+          case 'calculate_route':
+            _calculateRouteTo(point.latitude, point.longitude);
+            break;
+          case 'add_favorite':
+            // Get the search result name if available
+            final searchState = ref.read(searchProvider);
+            final locationName = searchState.selectedLocation?.label ??
+                'Location ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}';
+            ref.read(authNotifierProvider.notifier).toggleFavorite(
+              locationName,
+              point.latitude,
+              point.longitude,
+            );
+            break;
+        }
       }
     });
   }

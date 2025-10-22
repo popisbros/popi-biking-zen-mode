@@ -18,6 +18,7 @@ import '../providers/map_provider.dart';
 import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../services/ios_navigation_service.dart';
@@ -471,6 +472,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Future<void> _showContextMenu(Point coordinates) async {
     final lat = coordinates.coordinates.lat.toDouble();
     final lng = coordinates.coordinates.lng.toDouble();
+    final authUser = ref.read(authStateProvider).value;
 
     // Calculate smart dialog alignment based on marker position
     final alignmentData = await _calculateDialogAlignment(coordinates);
@@ -528,6 +530,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           _calculateRouteTo(lat, lng);
                         },
                       ),
+                      if (authUser != null)
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                          leading: const Icon(Icons.star_border, color: Colors.amber),
+                          title: const Text('Add to Favorites', style: TextStyle(fontSize: 12)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            ref.read(authNotifierProvider.notifier).toggleFavorite(
+                              'Location ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+                              lat,
+                              lng,
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),
@@ -542,6 +558,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   /// Show routing-only dialog (for search results)
   Future<void> _showRoutingDialog(double lat, double lng) async {
     final coordinates = Point(coordinates: Position(lng, lat));
+    final authUser = ref.read(authStateProvider).value;
 
     // Calculate smart dialog alignment based on marker position
     final alignmentData = await _calculateDialogAlignment(coordinates);
@@ -581,6 +598,24 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           _calculateRouteTo(lat, lng);
                         },
                       ),
+                      if (authUser != null)
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                          leading: const Icon(Icons.star_border, color: Colors.amber),
+                          title: const Text('Add to Favorites', style: TextStyle(fontSize: 12)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            // Get the search result name if available
+                            final searchState = ref.read(searchProvider);
+                            final locationName = searchState.selectedLocation?.label ??
+                                'Location ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
+                            ref.read(authNotifierProvider.notifier).toggleFavorite(
+                              locationName,
+                              lat,
+                              lng,
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),
