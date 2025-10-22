@@ -221,7 +221,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
             // Second row: Add to Favorites (only show if user is logged in)
             if (authUser != null)
               Align(
-                alignment: Alignment.centerRight,
+                alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () {
                     ref.read(authNotifierProvider.notifier).toggleFavorite(
