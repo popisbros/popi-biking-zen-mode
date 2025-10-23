@@ -30,6 +30,7 @@ import '../utils/navigation_utils.dart';
 import '../utils/poi_dialog_handler.dart';
 import '../utils/route_calculation_helper.dart';
 import '../utils/map_navigation_tracker.dart';
+import '../utils/map_bounds_utils.dart';
 import '../models/map_models.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
@@ -204,67 +205,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Calculate extended bounds (3x3 of visible area) for smooth panning
   BoundingBox _calculateExtendedBounds(LatLngBounds visibleBounds) {
-    final latDiff = visibleBounds.north - visibleBounds.south;
-    final lngDiff = visibleBounds.east - visibleBounds.west;
-
-    final latExtension = latDiff;
-    final lngExtension = lngDiff;
-
-    final bbox = BoundingBox(
-      south: visibleBounds.south - latExtension,
-      west: visibleBounds.west - lngExtension,
-      north: visibleBounds.north + latExtension,
-      east: visibleBounds.east + lngExtension,
-    );
-
-    AppLogger.map('Extended bounds calculated', data: {
-      'visible_S': visibleBounds.south.toStringAsFixed(4),
-      'visible_N': visibleBounds.north.toStringAsFixed(4),
-      'visible_W': visibleBounds.west.toStringAsFixed(4),
-      'visible_E': visibleBounds.east.toStringAsFixed(4),
-      'extended_S': bbox.south.toStringAsFixed(4),
-      'extended_N': bbox.north.toStringAsFixed(4),
-      'extended_W': bbox.west.toStringAsFixed(4),
-      'extended_E': bbox.east.toStringAsFixed(4),
-    });
-
-    return bbox;
+    return MapBoundsUtils.calculateExtendedBounds(visibleBounds);
   }
 
   /// Calculate reload trigger bounds (10% buffer zone)
   BoundingBox _calculateReloadTriggerBounds(BoundingBox loadedBounds) {
-    final latDiff = loadedBounds.north - loadedBounds.south;
-    final lngDiff = loadedBounds.east - loadedBounds.west;
-
-    final latBuffer = latDiff * 0.1;
-    final lngBuffer = lngDiff * 0.1;
-
-    return BoundingBox(
-      south: loadedBounds.south + latBuffer,
-      west: loadedBounds.west + lngBuffer,
-      north: loadedBounds.north - latBuffer,
-      east: loadedBounds.east - lngBuffer,
-    );
+    return MapBoundsUtils.calculateReloadTriggerBounds(loadedBounds);
   }
 
   /// Check if we should reload data (smart reload logic)
   bool _shouldReloadData(LatLngBounds visibleBounds) {
-    if (_reloadTriggerBounds == null) {
-      AppLogger.map('First load - should reload = TRUE');
-      return true;
-    }
-
-    final shouldReload = visibleBounds.south < _reloadTriggerBounds!.south ||
-        visibleBounds.north > _reloadTriggerBounds!.north ||
-        visibleBounds.west < _reloadTriggerBounds!.west ||
-        visibleBounds.east > _reloadTriggerBounds!.east;
-
-    AppLogger.map('Should reload check', data: {'shouldReload': shouldReload});
-    if (!shouldReload) {
-      AppLogger.debug('Still within buffer zone, skipping reload', tag: 'MAP');
-    }
-
-    return shouldReload;
+    return MapBoundsUtils.shouldReloadData(visibleBounds, _reloadTriggerBounds);
   }
 
   /// Load all map data (OSM POIs, Warnings) using extended bounds
