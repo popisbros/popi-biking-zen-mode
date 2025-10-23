@@ -878,7 +878,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       destinationName: name,
       fitBoundsCallback: _fitRouteBounds,
       onRouteSelected: _displaySelectedRoute,
-      transparentBarrier: true,
     );
   }
 
@@ -1314,7 +1313,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context: context,
       poi: poi,
       onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
-      transparentBarrier: true,
       compact: false,
     );
   }
@@ -1329,7 +1327,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           _loadAllMapDataWithBounds(forceReload: true);
         }
       },
-      transparentBarrier: true,
       compact: false,
     );
   }
@@ -1346,7 +1343,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         }
       },
       compact: false,
-      transparentBarrier: true,
     );
   }
 

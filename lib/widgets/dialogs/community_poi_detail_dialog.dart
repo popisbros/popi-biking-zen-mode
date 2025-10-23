@@ -68,7 +68,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
                 ),
                 Text(
                   typeEmoji,
-                  style: const TextStyle(fontSize: compact ? 14 : 16),
+                  style: const TextStyle(fontSize: CommonDialog.titleFontSize),
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -82,10 +82,9 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
             ),
 
             // Coordinates
-            SizedBox(height: compact ? 4 : 4),
-            Text(
+            const SizedBox(height: 4),
+            CommonDialog.buildCaptionText(
               'Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}',
-              style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
             ),
 
             // Optional fields
@@ -100,7 +99,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               ),
               Text(
                 poi.description!,
-                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
+                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
               ),
             ],
 
@@ -115,7 +114,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               ),
               Text(
                 poi.address!,
-                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
+                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
               ),
             ],
 
@@ -130,7 +129,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               ),
               Text(
                 poi.phone!,
-                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
+                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
               ),
             ],
 
@@ -145,7 +144,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               ),
               Text(
                 poi.website!,
-                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
+                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
               ),
             ],
           ],

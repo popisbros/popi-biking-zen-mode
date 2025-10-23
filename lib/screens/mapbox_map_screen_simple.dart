@@ -758,7 +758,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           _pitchBeforeRouteCalculation = null;
         }
       },
-      transparentBarrier: false,
     );
   }
 
@@ -1050,7 +1049,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       poi: poi,
       onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
       compact: true,
-      transparentBarrier: false,
     );
   }
 
@@ -1066,7 +1064,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           _addMarkers();
         }
       },
-      transparentBarrier: false,
       compact: true,
     );
   }
@@ -1085,7 +1082,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         }
       },
       compact: true,
-      transparentBarrier: false,
     );
   }
 

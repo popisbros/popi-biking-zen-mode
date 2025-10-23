@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/routing_service.dart';
 import '../../providers/auth_provider.dart';
+import '../common_dialog.dart';
 
 /// Route selection dialog widget
 ///
@@ -11,14 +12,12 @@ class RouteSelectionDialog extends ConsumerWidget {
   final List<RouteResult> routes;
   final Function(RouteResult) onRouteSelected;
   final VoidCallback onCancel;
-  final bool transparentBarrier;
 
   const RouteSelectionDialog({
     super.key,
     required this.routes,
     required this.onRouteSelected,
     required this.onCancel,
-    this.transparentBarrier = false,
   });
 
   @override
@@ -185,17 +184,15 @@ class RouteSelectionDialog extends ConsumerWidget {
     required List<RouteResult> routes,
     required Function(RouteResult) onRouteSelected,
     required VoidCallback onCancel,
-    bool transparentBarrier = false,
   }) {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: transparentBarrier ? Colors.transparent : null,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => RouteSelectionDialog(
         routes: routes,
         onRouteSelected: onRouteSelected,
         onCancel: onCancel,
-        transparentBarrier: transparentBarrier,
       ),
     );
   }

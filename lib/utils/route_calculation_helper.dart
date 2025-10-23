@@ -32,7 +32,6 @@ class RouteCalculationHelper {
     required Function(List<LatLng>) fitBoundsCallback,
     required Function(RouteResult) onRouteSelected,
     VoidCallback? onCancel,
-    bool transparentBarrier = true,
   }) async {
     // Get user location if not provided
     final location = userLocation ?? _getUserLocation(ref);
@@ -124,7 +123,6 @@ class RouteCalculationHelper {
           ref.read(searchProvider.notifier).clearPreviewRoutes();
           onCancel?.call();
         },
-        transparentBarrier: transparentBarrier,
       );
     }
 

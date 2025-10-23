@@ -19,14 +19,12 @@ class POIDialogHandler {
     required OSMPOI poi,
     required VoidCallback onRouteTo,
     bool compact = false,
-    bool transparentBarrier = true,
   }) {
     POIDetailDialog.show(
       context: context,
       poi: poi,
       onRouteTo: onRouteTo,
       compact: compact,
-      transparentBarrier: transparentBarrier,
     );
   }
 
@@ -37,12 +35,10 @@ class POIDialogHandler {
     required CommunityWarning warning,
     required VoidCallback onDataChanged,
     bool compact = false,
-    bool transparentBarrier = true,
   }) {
     WarningDetailDialog.show(
       context: context,
       warning: warning,
-      transparentBarrier: transparentBarrier,
       compact: compact,
       onEdit: () {
         Navigator.push(
@@ -75,7 +71,6 @@ class POIDialogHandler {
     required VoidCallback onRouteTo,
     required VoidCallback onDataChanged,
     bool compact = false,
-    bool transparentBarrier = true,
   }) {
     CommunityPOIDetailDialog.show(
       context: context,
@@ -84,7 +79,6 @@ class POIDialogHandler {
       onRouteTo: onRouteTo,
       onDataChanged: onDataChanged,
       compact: compact,
-      transparentBarrier: transparentBarrier,
     );
   }
 }

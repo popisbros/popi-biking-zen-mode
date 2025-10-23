@@ -45,7 +45,7 @@ class WarningDetailDialog extends StatelessWidget {
       actionsPadding: CommonDialog.actionsPadding,
       title: Text(
         warning.title,
-        style: titleFontSize != null ? TextStyle(fontSize: titleFontSize) : null,
+        style: const TextStyle(fontSize: CommonDialog.titleFontSize, fontWeight: FontWeight.bold),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -55,38 +55,38 @@ class WarningDetailDialog extends StatelessWidget {
             // Type with icon
             Row(
               children: [
-                Text(
+                const Text(
                   'Type: ',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: bodyFontSize,
+                    fontSize: CommonDialog.bodyFontSize,
                   ),
                 ),
                 Text(
                   typeEmoji,
-                  style: TextStyle(fontSize: compact ? 14 : 16),
+                  style: const TextStyle(fontSize: CommonDialog.titleFontSize),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   typeLabel,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: bodyFontSize,
+                    fontSize: CommonDialog.bodyFontSize,
                   ),
                 ),
               ],
             ),
 
-            SizedBox(height: topSpacing),
+            const SizedBox(height: 8),
 
             // Severity with colored badge
             Row(
               children: [
-                Text(
+                const Text(
                   'Severity: ',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: bodyFontSize,
+                    fontSize: CommonDialog.bodyFontSize,
                   ),
                 ),
                 Container(
@@ -110,60 +110,49 @@ class WarningDetailDialog extends StatelessWidget {
               ],
             ),
 
-            SizedBox(height: compact ? 4 : 4),
+            const SizedBox(height: 4),
 
             // Coordinates
-            Text(
+            CommonDialog.buildCaptionText(
               'Coordinates: ${warning.latitude.toStringAsFixed(6)}, ${warning.longitude.toStringAsFixed(6)}',
-              style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
             ),
 
             // Description
             if (warning.description.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
-              Text(
+              const SizedBox(height: 12),
+              const Text(
                 'Description:',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
               Text(
                 warning.description,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
+                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
               ),
             ],
           ],
         ),
       ),
       actions: [
-        TextButton(
+        CommonDialog.buildActionButton(
+          label: 'EDIT',
           onPressed: () {
             Navigator.pop(context);
             onEdit();
           },
-          child: Text(
-            'EDIT',
-            style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
-          ),
         ),
-        TextButton(
+        CommonDialog.buildDestructiveButton(
+          label: 'DELETE',
           onPressed: () {
             Navigator.pop(context);
             onDelete();
           },
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: Text(
-            'DELETE',
-            style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
-          ),
         ),
-        TextButton(
+        CommonDialog.buildActionButton(
+          label: 'CLOSE',
           onPressed: () => Navigator.pop(context),
-          child: Text(
-            'CLOSE',
-            style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
-          ),
         ),
       ],
     );
