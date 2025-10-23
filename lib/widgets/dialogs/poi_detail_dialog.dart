@@ -137,50 +137,45 @@ class POIDetailDialog extends ConsumerWidget {
       actions: [
         Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // First row: Route To and Close
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CommonDialog.buildActionButton(
-                  label: 'ROUTE TO',
-                  icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    onRouteTo();
-                  },
-                ),
-                CommonDialog.buildActionButton(
-                  label: 'CLOSE',
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+            // Route To button
+            CommonDialog.buildBorderedTextButton(
+              label: 'ROUTE TO',
+              icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
+              onPressed: () {
+                Navigator.pop(context);
+                onRouteTo();
+              },
             ),
-            // Second row: Add to Favorites (only show if user is logged in)
+            const SizedBox(height: 8),
+            // Add to Favorites button (only show if user is logged in)
             if (authUser != null)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () {
-                    ref.read(authNotifierProvider.notifier).toggleFavorite(
-                      poi.name,
-                      poi.latitude,
-                      poi.longitude,
-                    );
-                    // Auto-enable favorites visibility so user can see their new favorite
-                    if (!isFavorite) {
-                      ref.read(favoritesVisibilityProvider.notifier).state = true;
-                    }
-                  },
-                  icon: Icon(
-                    isFavorite ? Icons.star : Icons.star_border,
-                    size: 18,
-                    color: isFavorite ? Colors.amber : Colors.grey,
-                  ),
-                  label: Text(isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES'),
+              CommonDialog.buildBorderedTextButton(
+                label: isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES',
+                icon: Icon(
+                  isFavorite ? Icons.star : Icons.star_border,
+                  size: 18,
+                  color: isFavorite ? Colors.amber : Colors.grey,
                 ),
+                onPressed: () {
+                  ref.read(authNotifierProvider.notifier).toggleFavorite(
+                    poi.name,
+                    poi.latitude,
+                    poi.longitude,
+                  );
+                  // Auto-enable favorites visibility so user can see their new favorite
+                  if (!isFavorite) {
+                    ref.read(favoritesVisibilityProvider.notifier).state = true;
+                  }
+                },
               ),
+            const SizedBox(height: 8),
+            // Close button
+            CommonDialog.buildBorderedTextButton(
+              label: 'CLOSE',
+              onPressed: () => Navigator.pop(context),
+            ),
           ],
         ),
       ],

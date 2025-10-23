@@ -136,23 +136,37 @@ class WarningDetailDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        CommonDialog.buildActionButton(
-          label: 'EDIT',
-          onPressed: () {
-            Navigator.pop(context);
-            onEdit();
-          },
-        ),
-        CommonDialog.buildDestructiveButton(
-          label: 'DELETE',
-          onPressed: () {
-            Navigator.pop(context);
-            onDelete();
-          },
-        ),
-        CommonDialog.buildActionButton(
-          label: 'CLOSE',
-          onPressed: () => Navigator.pop(context),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Edit button
+            CommonDialog.buildBorderedTextButton(
+              label: 'EDIT',
+              textColor: Colors.blue,
+              onPressed: () {
+                Navigator.pop(context);
+                onEdit();
+              },
+            ),
+            const SizedBox(height: 8),
+            // Delete button
+            CommonDialog.buildBorderedTextButton(
+              label: 'DELETE',
+              textColor: Colors.red,
+              borderColor: Colors.red.withValues(alpha: 0.5),
+              onPressed: () {
+                Navigator.pop(context);
+                onDelete();
+              },
+            ),
+            const SizedBox(height: 8),
+            // Close button
+            CommonDialog.buildBorderedTextButton(
+              label: 'CLOSE',
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
         ),
       ],
     );
