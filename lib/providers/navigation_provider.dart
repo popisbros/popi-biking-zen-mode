@@ -178,7 +178,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       totalDistanceRemaining: route.distanceMeters,
       estimatedTimeRemaining: route.durationMillis ~/ 1000,
       isOffRoute: false,
-      showingOffRouteDialog: false,
       lastUpdateTime: DateTime.now(),
       routeWarnings: mergedWarnings,
       warningsExpanded: true,
@@ -229,14 +228,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
     AppLogger.success('Navigation stopped', tag: 'NAVIGATION');
   }
 
-  /// Dismiss off-route dialog without rerouting
-  void dismissOffRouteDialog() {
-    AppLogger.debug('Dismissing off-route dialog', tag: 'NAVIGATION');
-    state = state.copyWith(
-      showingOffRouteDialog: false,
-    );
-  }
-
   /// Toggle warnings section expanded/collapsed
   void toggleWarningsExpanded() {
     final newExpanded = !state.warningsExpanded;
@@ -259,11 +250,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       ToastService.warning('Cannot recalculate route - no current position');
       return;
     }
-
-    // Dismiss dialog first
-    state = state.copyWith(
-      showingOffRouteDialog: false,
-    );
 
     // Trigger rerouting
     await _handleAutomaticRerouting(state.currentPosition!);

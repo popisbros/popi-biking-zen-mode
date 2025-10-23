@@ -44,9 +44,6 @@ class NavigationState {
   /// Distance from route in meters (when off-route)
   final double offRouteDistanceMeters;
 
-  /// Whether off-route dialog is currently shown
-  final bool showingOffRouteDialog;
-
   /// Timestamp of last location update
   final DateTime? lastUpdateTime;
 
@@ -94,7 +91,6 @@ class NavigationState {
     this.estimatedTimeRemaining = 0,
     this.isOffRoute = false,
     this.offRouteDistanceMeters = 0,
-    this.showingOffRouteDialog = false,
     this.lastUpdateTime,
     this.isApproachingDestination = false,
     this.hasArrived = false,
@@ -266,7 +262,6 @@ class NavigationState {
     int? estimatedTimeRemaining,
     bool? isOffRoute,
     double? offRouteDistanceMeters,
-    bool? showingOffRouteDialog,
     DateTime? lastUpdateTime,
     bool? isApproachingDestination,
     bool? hasArrived,
@@ -293,7 +288,6 @@ class NavigationState {
       estimatedTimeRemaining: estimatedTimeRemaining ?? this.estimatedTimeRemaining,
       isOffRoute: isOffRoute ?? this.isOffRoute,
       offRouteDistanceMeters: offRouteDistanceMeters ?? this.offRouteDistanceMeters,
-      showingOffRouteDialog: showingOffRouteDialog ?? this.showingOffRouteDialog,
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
       isApproachingDestination: isApproachingDestination ?? this.isApproachingDestination,
       hasArrived: hasArrived ?? this.hasArrived,
