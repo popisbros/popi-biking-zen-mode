@@ -4,6 +4,7 @@ import '../../models/cycling_poi.dart';
 import '../../config/poi_type_config.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/favorites_visibility_provider.dart';
 import '../../utils/app_logger.dart';
 import '../../screens/community/poi_management_screen.dart';
 import '../common_dialog.dart';
@@ -224,6 +225,10 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
                       poi.latitude,
                       poi.longitude,
                     );
+                    // Auto-enable favorites visibility so user can see their new favorite
+                    if (!isFavorite) {
+                      ref.read(favoritesVisibilityProvider.notifier).state = true;
+                    }
                   },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

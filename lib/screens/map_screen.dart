@@ -659,6 +659,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               point.latitude,
               point.longitude,
             );
+            // Auto-enable favorites visibility so user can see their new favorite
+            ref.read(favoritesVisibilityProvider.notifier).state = true;
             break;
         }
       }
@@ -738,6 +740,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               point.latitude,
               point.longitude,
             );
+            // Auto-enable favorites visibility so user can see their new favorite
+            ref.read(favoritesVisibilityProvider.notifier).state = true;
             break;
         }
       }

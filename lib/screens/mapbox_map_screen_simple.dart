@@ -654,6 +654,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                               lat,
                               lng,
                             );
+                            // Auto-enable favorites visibility so user can see their new favorite
+                            if (!isFavorite) {
+                              ref.read(favoritesVisibilityProvider.notifier).state = true;
+                            }
                           },
                         ),
                     ],

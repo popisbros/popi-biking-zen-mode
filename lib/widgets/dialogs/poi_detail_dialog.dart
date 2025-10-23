@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/cycling_poi.dart';
 import '../../config/poi_type_config.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/favorites_visibility_provider.dart';
 import '../common_dialog.dart';
 
 /// POI detail dialog widget
@@ -167,6 +168,10 @@ class POIDetailDialog extends ConsumerWidget {
                       poi.latitude,
                       poi.longitude,
                     );
+                    // Auto-enable favorites visibility so user can see their new favorite
+                    if (!isFavorite) {
+                      ref.read(favoritesVisibilityProvider.notifier).state = true;
+                    }
                   },
                   icon: Icon(
                     isFavorite ? Icons.star : Icons.star_border,
