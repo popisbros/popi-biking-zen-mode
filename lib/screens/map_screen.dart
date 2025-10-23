@@ -1004,7 +1004,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       case MapLayerType.openCycleMap:
       case MapLayerType.thunderforestCycle:
       case MapLayerType.cyclOSM:
-      // case MapLayerType.wike2D:
+      case MapLayerType.wike2D:
         return Icons.directions_bike;
       case MapLayerType.thunderforestOutdoors:
         return Icons.terrain;
@@ -1740,7 +1740,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   TileLayer(
                     urlTemplate: mapState.tileUrl,
                     userAgentPackageName: 'com.popibiking.popiBikingFresh',
-                    subdomains: const ['a', 'b', 'c'],
+                    // Only use subdomains for tile providers that support it (not Mapbox)
+                    subdomains: mapState.tileUrl.contains('mapbox.com') ? const [] : const ['a', 'b', 'c'],
+                    // Set tile size to 512 for high-res Mapbox tiles
+                    tileSize: mapState.tileUrl.contains('tiles/512') ? 512 : 256,
                   ),
                   // Preview routes layer (shown during route selection)
                   if (searchState.previewFastestRoute != null && (searchState.previewSafestRoute != null || searchState.previewShortestRoute != null))

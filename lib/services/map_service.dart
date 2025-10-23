@@ -18,8 +18,8 @@ enum MapLayerType {
   /// CyclOSM - Community cycling map focused on bike infrastructure
   cyclOSM,
 
-  /// Wike 2D - Custom cycling style from MapTiler (DISABLED - requires paid MapTiler plan)
-  // wike2D,
+  /// Wike 2D - Custom cycling style rendered as raster tiles from Mapbox
+  wike2D,
 
   /// Satellite - Aerial imagery
   satellite,
@@ -90,10 +90,11 @@ class MapService {
         // CyclOSM - Community-driven cycling map
         return 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
 
-      // case MapLayerType.wike2D:
-      //   // Wike 2D - Custom cycling style from MapTiler (DISABLED - requires paid plan)
-      //   // Using tiles endpoint with map ID as style parameter
-      //   return 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.png?key=${ApiKeys.mapTilerApiKey}&style=019a0b1d-d3d6-7f8a-aaf6-2787ba80c885';
+      case MapLayerType.wike2D:
+        // Wike 2D - Raster tiles from the same Wike 3D Mapbox style
+        // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{tilesize}/{z}/{x}/{y}
+        // Using @2x for high-resolution (retina) tiles, or use 256 for standard
+        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmgclfgn400f001pd72ofcdg9/tiles/512/{z}/{x}/{y}@2x?access_token=${ApiKeys.mapboxAccessToken}';
 
       case MapLayerType.satellite:
         // MapTiler Satellite
@@ -134,8 +135,8 @@ class MapService {
       case MapLayerType.cyclOSM:
         return '© CyclOSM, © OpenStreetMap contributors';
 
-      // case MapLayerType.wike2D:
-      //   return '© MapTiler, © OpenStreetMap contributors';
+      case MapLayerType.wike2D:
+        return '© Mapbox, © OpenStreetMap contributors';
 
       case MapLayerType.satellite:
         return '© MapTiler, © OpenStreetMap contributors';
@@ -163,8 +164,8 @@ class MapService {
         return 'Outdoors (Thunderforest)';
       case MapLayerType.cyclOSM:
         return 'CyclOSM (Community)';
-      // case MapLayerType.wike2D:
-      //   return 'Wike 2D (MapTiler)';
+      case MapLayerType.wike2D:
+        return 'Wike 2D (Mapbox)';
       case MapLayerType.satellite:
         return 'Satellite (MapTiler)';
       case MapLayerType.terrain:
