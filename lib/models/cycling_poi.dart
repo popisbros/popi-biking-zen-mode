@@ -1,3 +1,45 @@
+/// User interaction record for audit trail
+class UserInteraction {
+  final String userId;
+  final String userEmail;
+  final String action; // 'created', 'updated', 'deleted'
+  final DateTime timestamp;
+
+  const UserInteraction({
+    required this.userId,
+    required this.userEmail,
+    required this.action,
+    required this.timestamp,
+  });
+
+  factory UserInteraction.fromMap(Map<String, dynamic> map) {
+    DateTime parseTimestamp(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      if (value.runtimeType.toString() == 'Timestamp') {
+        return (value as dynamic).toDate();
+      }
+      return DateTime.now();
+    }
+
+    return UserInteraction(
+      userId: map['userId'] ?? '',
+      userEmail: map['userEmail'] ?? '',
+      action: map['action'] ?? '',
+      timestamp: parseTimestamp(map['timestamp']),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'userEmail': userEmail,
+      'action': action,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+    };
+  }
+}
+
 /// Cycling Point of Interest model
 class CyclingPOI {
   final String? id; // Optional - will be set by Firestore when created
@@ -12,6 +54,9 @@ class CyclingPOI {
   final Map<String, dynamic>? metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<UserInteraction> userInteractions; // Last 5 interactions
+  final bool isDeleted; // Soft deletion flag
+  final DateTime? deletedAt;
 
   const CyclingPOI({
     this.id,
@@ -26,6 +71,9 @@ class CyclingPOI {
     this.metadata,
     required this.createdAt,
     required this.updatedAt,
+    this.userInteractions = const [],
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   factory CyclingPOI.fromMap(Map<String, dynamic> map) {
@@ -40,6 +88,11 @@ class CyclingPOI {
       return DateTime.now();
     }
 
+    // Parse user interactions list
+    final interactionsList = (map['userInteractions'] as List?)
+        ?.map((e) => UserInteraction.fromMap(e as Map<String, dynamic>))
+        .toList() ?? [];
+
     return CyclingPOI(
       id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
       name: map['name'] ?? '',
@@ -53,6 +106,9 @@ class CyclingPOI {
       metadata: map['metadata'],
       createdAt: parseTimestamp(map['createdAt']),
       updatedAt: parseTimestamp(map['updatedAt']),
+      userInteractions: interactionsList,
+      isDeleted: map['isDeleted'] ?? false,
+      deletedAt: map['deletedAt'] != null ? parseTimestamp(map['deletedAt']) : null,
     );
   }
 
@@ -69,13 +125,20 @@ class CyclingPOI {
       'metadata': metadata,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
+      'userInteractions': userInteractions.map((e) => e.toMap()).toList(),
+      'isDeleted': isDeleted,
     };
-    
+
     // Only include ID if it's not null (for existing POIs)
     if (id != null && id!.isNotEmpty) {
       map['id'] = id;
     }
-    
+
+    // Only include deletedAt if item is deleted
+    if (deletedAt != null) {
+      map['deletedAt'] = deletedAt!.millisecondsSinceEpoch;
+    }
+
     return map;
   }
 
@@ -92,6 +155,9 @@ class CyclingPOI {
     Map<String, dynamic>? metadata,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<UserInteraction>? userInteractions,
+    bool? isDeleted,
+    DateTime? deletedAt,
   }) {
     return CyclingPOI(
       id: id ?? this.id,
@@ -106,6 +172,9 @@ class CyclingPOI {
       metadata: metadata ?? this.metadata,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      userInteractions: userInteractions ?? this.userInteractions,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 

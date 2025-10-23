@@ -1,3 +1,45 @@
+/// User interaction record for audit trail (imported from cycling_poi.dart)
+class UserInteraction {
+  final String userId;
+  final String userEmail;
+  final String action; // 'created', 'updated', 'deleted'
+  final DateTime timestamp;
+
+  const UserInteraction({
+    required this.userId,
+    required this.userEmail,
+    required this.action,
+    required this.timestamp,
+  });
+
+  factory UserInteraction.fromMap(Map<String, dynamic> map) {
+    DateTime parseTimestamp(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+      if (value.runtimeType.toString() == 'Timestamp') {
+        return (value as dynamic).toDate();
+      }
+      return DateTime.now();
+    }
+
+    return UserInteraction(
+      userId: map['userId'] ?? '',
+      userEmail: map['userEmail'] ?? '',
+      action: map['action'] ?? '',
+      timestamp: parseTimestamp(map['timestamp']),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'userEmail': userEmail,
+      'action': action,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+    };
+  }
+}
+
 /// Community warning/hazard model
 class CommunityWarning {
   final String? id; // Optional - will be set by Firestore when created
@@ -13,6 +55,9 @@ class CommunityWarning {
   final bool isActive;
   final List<String>? tags;
   final Map<String, dynamic>? metadata;
+  final List<UserInteraction> userInteractions; // Last 5 interactions
+  final bool isDeleted; // Soft deletion flag
+  final DateTime? deletedAt;
 
   const CommunityWarning({
     this.id,
@@ -28,6 +73,9 @@ class CommunityWarning {
     this.isActive = true,
     this.tags,
     this.metadata,
+    this.userInteractions = const [],
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   factory CommunityWarning.fromMap(Map<String, dynamic> map) {
@@ -41,6 +89,11 @@ class CommunityWarning {
       }
       return DateTime.now();
     }
+
+    // Parse user interactions list
+    final interactionsList = (map['userInteractions'] as List?)
+        ?.map((e) => UserInteraction.fromMap(e as Map<String, dynamic>))
+        .toList() ?? [];
 
     return CommunityWarning(
       id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
@@ -56,6 +109,9 @@ class CommunityWarning {
       isActive: map['isActive'] ?? true,
       tags: map['tags']?.cast<String>(),
       metadata: map['metadata'],
+      userInteractions: interactionsList,
+      isDeleted: map['isDeleted'] ?? false,
+      deletedAt: map['deletedAt'] != null ? parseTimestamp(map['deletedAt']) : null,
     );
   }
 
@@ -73,13 +129,20 @@ class CommunityWarning {
       'isActive': isActive,
       'tags': tags,
       'metadata': metadata,
+      'userInteractions': userInteractions.map((e) => e.toMap()).toList(),
+      'isDeleted': isDeleted,
     };
-    
+
     // Only include ID if it's not null (for existing warnings)
     if (id != null && id!.isNotEmpty) {
       map['id'] = id;
     }
-    
+
+    // Only include deletedAt if item is deleted
+    if (deletedAt != null) {
+      map['deletedAt'] = deletedAt!.millisecondsSinceEpoch;
+    }
+
     return map;
   }
 
@@ -97,6 +160,9 @@ class CommunityWarning {
     bool? isActive,
     List<String>? tags,
     Map<String, dynamic>? metadata,
+    List<UserInteraction>? userInteractions,
+    bool? isDeleted,
+    DateTime? deletedAt,
   }) {
     return CommunityWarning(
       id: id ?? this.id,
@@ -112,6 +178,9 @@ class CommunityWarning {
       isActive: isActive ?? this.isActive,
       tags: tags ?? this.tags,
       metadata: metadata ?? this.metadata,
+      userInteractions: userInteractions ?? this.userInteractions,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
