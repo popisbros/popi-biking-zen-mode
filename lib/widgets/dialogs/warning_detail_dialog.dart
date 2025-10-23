@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/community_warning.dart';
 import '../../config/poi_type_config.dart';
 import '../../constants/app_colors.dart';
+import '../common_dialog.dart';
 
 /// Warning detail dialog widget
 ///
@@ -36,21 +37,12 @@ class WarningDetailDialog extends StatelessWidget {
     };
     final severityColor = severityColors[warning.severity] ?? Colors.yellow[700];
 
-    // Styling based on compact mode
-    final backgroundOpacity = 0.6; // Always use 60% opacity for consistency
-    final titleFontSize = compact ? 14.0 : null;
-    final bodyFontSize = compact ? 12.0 : null;
-    final titlePadding = compact ? const EdgeInsets.fromLTRB(24, 16, 24, 8) : null;
-    final contentPadding = compact ? const EdgeInsets.fromLTRB(24, 0, 24, 8) : null;
-    final actionsPadding = compact ? const EdgeInsets.fromLTRB(24, 0, 16, 8) : null;
-    final sectionSpacing = compact ? 6.0 : 12.0;
-    final topSpacing = compact ? 4.0 : 8.0;
-
+    // Use CommonDialog styling for consistency
     return AlertDialog(
-      backgroundColor: Colors.white.withValues(alpha: backgroundOpacity),
-      titlePadding: titlePadding,
-      contentPadding: contentPadding,
-      actionsPadding: actionsPadding,
+      backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+      titlePadding: CommonDialog.titlePadding,
+      contentPadding: CommonDialog.contentPadding,
+      actionsPadding: CommonDialog.actionsPadding,
       title: Text(
         warning.title,
         style: titleFontSize != null ? TextStyle(fontSize: titleFontSize) : null,

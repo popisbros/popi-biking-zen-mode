@@ -6,6 +6,7 @@ import '../../providers/community_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_logger.dart';
 import '../../screens/community/poi_management_screen.dart';
+import '../common_dialog.dart';
 
 /// Community POI detail dialog widget
 ///
@@ -37,23 +38,18 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
       (loc) => loc.latitude == poi.latitude && loc.longitude == poi.longitude
     ) ?? false;
 
-    // Styling based on compact mode
-    final backgroundOpacity = 0.6; // Always use 60% opacity for consistency
-    final titleFontSize = compact ? 14.0 : null;
-    final bodyFontSize = compact ? 12.0 : null;
-    final titlePadding = compact ? const EdgeInsets.fromLTRB(24, 16, 24, 8) : null;
-    final contentPadding = compact ? const EdgeInsets.fromLTRB(24, 0, 24, 8) : null;
-    final actionsPadding = compact ? const EdgeInsets.fromLTRB(24, 0, 16, 8) : null;
-    final sectionSpacing = compact ? 6.0 : 12.0;
-
+    // Use CommonDialog styling for consistency
     return AlertDialog(
-      backgroundColor: Colors.white.withValues(alpha: backgroundOpacity),
-      titlePadding: titlePadding,
-      contentPadding: contentPadding,
-      actionsPadding: actionsPadding,
+      backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+      titlePadding: CommonDialog.titlePadding,
+      contentPadding: CommonDialog.contentPadding,
+      actionsPadding: CommonDialog.actionsPadding,
       title: Text(
         poi.name,
-        style: titleFontSize != null ? TextStyle(fontSize: titleFontSize) : null,
+        style: const TextStyle(
+          fontSize: CommonDialog.titleFontSize,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -65,21 +61,21 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               children: [
                 Text(
                   'Type: ',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: bodyFontSize,
+                    fontSize: CommonDialog.bodyFontSize,
                   ),
                 ),
                 Text(
                   typeEmoji,
-                  style: TextStyle(fontSize: compact ? 14 : 16),
+                  style: const TextStyle(fontSize: compact ? 14 : 16),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   typeLabel,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: bodyFontSize,
+                    fontSize: CommonDialog.bodyFontSize,
                   ),
                 ),
               ],
@@ -89,67 +85,67 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
             SizedBox(height: compact ? 4 : 4),
             Text(
               'Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}',
-              style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
+              style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
             ),
 
             // Optional fields
             if (poi.description != null && poi.description!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
+              const SizedBox(height: 12),
               Text(
                 'Description:',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
               Text(
                 poi.description!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
+                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
               ),
             ],
 
             if (poi.address != null && poi.address!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
+              const SizedBox(height: 12),
               Text(
                 'Address:',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
               Text(
                 poi.address!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
+                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
               ),
             ],
 
             if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
+              const SizedBox(height: 12),
               Text(
                 'Phone:',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
               Text(
                 poi.phone!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
+                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
               ),
             ],
 
             if (poi.website != null && poi.website!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
+              const SizedBox(height: 12),
               Text(
                 'Website:',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
               Text(
                 poi.website!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
+                style: bodyFontSize != null ? TextStyle(fontSize: CommonDialog.bodyFontSize) : null,
               ),
             ],
           ],
@@ -173,9 +169,9 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
+                      Text('🚴‍♂️', style: const TextStyle(fontSize: 14)),
                       SizedBox(width: 4),
-                      Text('ROUTE TO', style: TextStyle(fontSize: 12)),
+                      Text('ROUTE TO', style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),
@@ -197,7 +193,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
                       onDataChanged();
                     });
                   },
-                  child: const Text('EDIT', style: TextStyle(fontSize: 12)),
+                  child: const Text('EDIT', style: const TextStyle(fontSize: 12)),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -210,11 +206,11 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
                     }
                   },
                   style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('DELETE', style: TextStyle(fontSize: 12)),
+                  child: const Text('DELETE', style: const TextStyle(fontSize: 12)),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
+                  child: const Text('CLOSE', style: const TextStyle(fontSize: 12)),
                 ),
               ],
             ),
@@ -279,11 +275,10 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
     required VoidCallback onRouteTo,
     required VoidCallback onDataChanged,
     bool compact = false,
-    bool transparentBarrier = false,
   }) {
     return showDialog(
       context: context,
-      barrierColor: transparentBarrier ? Colors.transparent : null,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => CommunityPOIDetailDialog(
         poi: poi,
         onRouteTo: onRouteTo,
