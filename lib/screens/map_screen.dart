@@ -552,8 +552,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Provide haptic feedback for mobile users
     HapticFeedback.mediumImpact();
 
-    // Add search result marker at long-click position
-    ref.read(searchProvider.notifier).setSelectedLocation(point.latitude, point.longitude, 'Long-click location');
+    // Add search result marker at long-click position with timestamp name
+    final now = DateTime.now();
+    final timestampName = 'Location ${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    ref.read(searchProvider.notifier).setSelectedLocation(point.latitude, point.longitude, timestampName);
 
     _showContextMenu(tapPosition, point);
   }
