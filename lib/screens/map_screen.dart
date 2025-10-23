@@ -563,108 +563,69 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final authUser = ref.read(authStateProvider).value;
 
-    showMenu<String>(
+    CommonDialog.show(
       context: context,
-      position: RelativeRect.fromRect(
-        tapPosition.global & Size.zero,
-        Offset.zero & overlay.size,
+      title: CommonDialog.buildTitle(
+        emoji: '📍',
+        text: 'Location: ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}',
       ),
-      color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-      items: [
-        PopupMenuItem<String>(
-          value: 'add_poi',
-          child: Row(
-            children: [
-              Icon(Icons.add_location, color: Colors.green[700]),
-              const SizedBox(width: 8),
-              const Text(
-                'Add Community here',
-                style: TextStyle(
-                  fontSize: CommonDialog.bodyFontSize,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'report_hazard',
-          child: Row(
-            children: [
-              Icon(Icons.warning, color: Colors.orange[700]),
-              const SizedBox(width: 8),
-              const Text(
-                'Report Hazard here',
-                style: TextStyle(
-                  fontSize: CommonDialog.bodyFontSize,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'calculate_route',
-          child: Row(
-            children: [
-              const Text('🚴‍♂️', style: TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
-              const Text(
-                'Calculate a route to',
-                style: TextStyle(
-                  fontSize: CommonDialog.bodyFontSize,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (authUser != null)
-          PopupMenuItem<String>(
-            value: 'add_favorite',
-            child: Row(
-              children: [
-                const Icon(Icons.star_border, color: Colors.amber),
-                const SizedBox(width: 8),
-                const Text(
-                  'Add to Favorites',
-                  style: TextStyle(
-                    fontSize: CommonDialog.bodyFontSize,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CommonDialog.buildListTileButton(
+            leading: Icon(Icons.add_location, color: Colors.green[700]),
+            title: const Text(
+              'Add Community here',
+              style: TextStyle(fontSize: CommonDialog.bodyFontSize),
             ),
+            onTap: () {
+              Navigator.pop(context);
+              _showAddPOIDialog(point);
+            },
           ),
-      ],
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+          CommonDialog.buildListTileButton(
+            leading: Icon(Icons.warning, color: Colors.orange[700]),
+            title: const Text(
+              'Report Hazard here',
+              style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              _showReportHazardDialog(point);
+            },
+          ),
+          CommonDialog.buildListTileButton(
+            leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
+            title: const Text(
+              'Calculate a route to',
+              style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              _calculateRouteTo(point.latitude, point.longitude);
+            },
+          ),
+          if (authUser != null)
+            CommonDialog.buildListTileButton(
+              leading: const Icon(Icons.star_border, color: Colors.amber),
+              title: const Text(
+                'Add to Favorites',
+                style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(authNotifierProvider.notifier).toggleFavorite(
+                  'Location ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}',
+                  point.latitude,
+                  point.longitude,
+                );
+                // Auto-enable favorites visibility so user can see their new favorite
+                ref.read(favoritesVisibilityProvider.notifier).state = true;
+              },
+            ),
+        ],
       ),
-    ).then((String? selectedValue) {
-      if (selectedValue != null) {
-        switch (selectedValue) {
-          case 'add_poi':
-            _showAddPOIDialog(point);
-            break;
-          case 'report_hazard':
-            _showReportHazardDialog(point);
-            break;
-          case 'calculate_route':
-            _calculateRouteTo(point.latitude, point.longitude);
-            break;
-          case 'add_favorite':
-            ref.read(authNotifierProvider.notifier).toggleFavorite(
-              'Location ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}',
-              point.latitude,
-              point.longitude,
-            );
-            // Auto-enable favorites visibility so user can see their new favorite
-            ref.read(favoritesVisibilityProvider.notifier).state = true;
-            break;
-        }
-      }
-    });
+    );
   }
 
   /// Show routing-only dialog (for search results)
@@ -678,74 +639,54 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       (loc) => loc.latitude == point.latitude && loc.longitude == point.longitude
     ) ?? false;
 
-    showMenu<String>(
+    // Get search result name
+    final searchState = ref.read(searchProvider);
+    final locationName = searchState.selectedLocation?.label ??
+        'Location: ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}';
+
+    CommonDialog.show(
       context: context,
-      position: RelativeRect.fromRect(
-        tapPosition.global & Size.zero,
-        Offset.zero & overlay.size,
+      title: CommonDialog.buildTitle(
+        emoji: '🔍',
+        text: locationName,
       ),
-      color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-      items: [
-        PopupMenuItem<String>(
-          value: 'calculate_route',
-          child: Row(
-            children: [
-              const Text('🚴‍♂️', style: TextStyle(fontSize: 20)),
-              const SizedBox(width: 8),
-              const Text(
-                'Calculate a route to',
-                style: TextStyle(
-                  fontSize: CommonDialog.bodyFontSize,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (authUser != null)
-          PopupMenuItem<String>(
-            value: 'add_favorite',
-            child: Row(
-              children: [
-                Icon(isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
-                const SizedBox(width: 8),
-                Text(
-                  isFavorite ? 'Favorited' : 'Add to Favorites',
-                  style: const TextStyle(
-                    fontSize: CommonDialog.bodyFontSize,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CommonDialog.buildListTileButton(
+            leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
+            title: const Text(
+              'Calculate a route to',
+              style: TextStyle(fontSize: CommonDialog.bodyFontSize),
             ),
+            onTap: () {
+              Navigator.pop(context);
+              _calculateRouteTo(point.latitude, point.longitude);
+            },
           ),
-      ],
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+          if (authUser != null)
+            CommonDialog.buildListTileButton(
+              leading: Icon(isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
+              title: Text(
+                isFavorite ? 'Favorited' : 'Add to Favorites',
+                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(authNotifierProvider.notifier).toggleFavorite(
+                  locationName,
+                  point.latitude,
+                  point.longitude,
+                );
+                // Auto-enable favorites visibility so user can see their new favorite
+                if (!isFavorite) {
+                  ref.read(favoritesVisibilityProvider.notifier).state = true;
+                }
+              },
+            ),
+        ],
       ),
-    ).then((String? selectedValue) {
-      if (selectedValue != null) {
-        switch (selectedValue) {
-          case 'calculate_route':
-            _calculateRouteTo(point.latitude, point.longitude);
-            break;
-          case 'add_favorite':
-            // Get the search result name if available
-            final searchState = ref.read(searchProvider);
-            final locationName = searchState.selectedLocation?.label ??
-                'Location ${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}';
-            ref.read(authNotifierProvider.notifier).toggleFavorite(
-              locationName,
-              point.latitude,
-              point.longitude,
-            );
-            // Auto-enable favorites visibility so user can see their new favorite
-            ref.read(favoritesVisibilityProvider.notifier).state = true;
-            break;
-        }
-      }
-    });
+    );
   }
 
   /// Show dialog for favorites/destinations markers
