@@ -72,10 +72,19 @@ class MapboxAnnotationHelper {
   }) async {
     if (!mapState.showPOIs) return;
 
-    final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
+    final allCommunityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
+
+    // Filter out deleted POIs
+    final communityPOIs = allCommunityPOIs.where((poi) => !poi.isDeleted).toList();
+
     List<PointAnnotationOptions> pointOptions = [];
 
-    AppLogger.debug('Adding Community POIs as icons', tag: 'MAP', data: {'count': communityPOIs.length});
+    AppLogger.debug('Adding Community POIs as icons', tag: 'MAP', data: {
+      'total': allCommunityPOIs.length,
+      'visible': communityPOIs.length,
+      'deleted': allCommunityPOIs.length - communityPOIs.length,
+    });
+
     for (var poi in communityPOIs) {
       final id = 'community_${poi.latitude}_${poi.longitude}';
       communityPoiById[id] = poi;
@@ -112,10 +121,19 @@ class MapboxAnnotationHelper {
   }) async {
     if (!mapState.showWarnings) return;
 
-    final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
+    final allWarnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
+
+    // Filter out deleted warnings
+    final warnings = allWarnings.where((warning) => !warning.isDeleted).toList();
+
     List<PointAnnotationOptions> pointOptions = [];
 
-    AppLogger.debug('Adding Warnings as icons', tag: 'MAP', data: {'count': warnings.length});
+    AppLogger.debug('Adding Warnings as icons', tag: 'MAP', data: {
+      'total': allWarnings.length,
+      'visible': warnings.length,
+      'deleted': allWarnings.length - warnings.length,
+    });
+
     for (var warning in warnings) {
       final id = 'warning_${warning.latitude}_${warning.longitude}';
       warningById[id] = warning;

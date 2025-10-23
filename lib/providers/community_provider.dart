@@ -5,6 +5,11 @@ import '../services/firebase_service.dart';
 import '../services/debug_service.dart';
 import '../utils/app_logger.dart';
 import 'osm_poi_provider.dart'; // Import BoundingBox
+import 'auth_provider.dart'; // For getting current user info
+
+// Handle UserInteraction class name collision
+import '../models/community_warning.dart' as warning_model show UserInteraction;
+import '../models/cycling_poi.dart' as poi_model show UserInteraction;
 
 /// Provider for Firebase service
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -206,12 +211,31 @@ class CommunityWarningsNotifier extends Notifier<AsyncValue<List<CommunityWarnin
   Future<void> updateWarning(String documentId, CommunityWarning warning) async {
     try {
       state = const AsyncValue.loading();
-      await _firebaseService.updateWarning(documentId, warning.toMap());
-      
+
+      // Get current user info
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('User must be logged in to update warning');
+      }
+
+      // Track update interaction
+      final updatedInteractions = _addUserInteraction(
+        warning.userInteractions,
+        user.uid,
+        user.email ?? 'unknown@email.com',
+        'updated',
+      );
+
+      final warningWithTracking = warning.copyWith(
+        userInteractions: updatedInteractions,
+      );
+
+      await _firebaseService.updateWarning(documentId, warningWithTracking.toMap());
+
       // Reload warnings
       final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
-      
+
       // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
@@ -220,16 +244,46 @@ class CommunityWarningsNotifier extends Notifier<AsyncValue<List<CommunityWarnin
     }
   }
 
-  /// Delete a warning
+  /// Soft delete a warning (mark as deleted instead of physical deletion)
   Future<void> deleteWarning(String warningId) async {
     try {
       state = const AsyncValue.loading();
-      await _firebaseService.deleteWarning(warningId);
-      
+
+      // Get current user info
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('User must be logged in to delete warning');
+      }
+
+      // First, get the current warning to preserve its data
+      final currentWarnings = await getWarningsFromFirestore();
+      final currentWarning = currentWarnings.firstWhere(
+        (warning) => warning.id == warningId,
+        orElse: () => throw Exception('Warning not found'),
+      );
+
+      // Track deletion interaction
+      final updatedInteractions = _addUserInteraction(
+        currentWarning.userInteractions,
+        user.uid,
+        user.email ?? 'unknown@email.com',
+        'deleted',
+      );
+
+      // Mark as deleted
+      final deletedWarning = currentWarning.copyWith(
+        userInteractions: updatedInteractions,
+        isDeleted: true,
+        deletedAt: DateTime.now(),
+      );
+
+      // Update in Firebase (soft delete, not physical delete)
+      await _firebaseService.updateWarning(warningId, deletedWarning.toMap());
+
       // Reload warnings
       final warnings = await getWarningsFromFirestore();
       state = AsyncValue.data(warnings);
-      
+
       // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
@@ -242,7 +296,7 @@ class CommunityWarningsNotifier extends Notifier<AsyncValue<List<CommunityWarnin
   Future<void> refreshWarnings() async {
     await _loadWarnings();
   }
-  
+
   /// Trigger background refresh of all map data (POIs, Hazards, OSM POIs)
   Future<void> _triggerOSMBackgroundRefresh() async {
     try {
@@ -258,6 +312,25 @@ class CommunityWarningsNotifier extends Notifier<AsyncValue<List<CommunityWarnin
       AppLogger.error('Failed to trigger global map data refresh', error: e);
       // Don't throw - this is a background operation
     }
+  }
+
+  /// Helper to add user interaction and maintain last 5 interactions
+  List<warning_model.UserInteraction> _addUserInteraction(
+    List<warning_model.UserInteraction> existing,
+    String userId,
+    String userEmail,
+    String action,
+  ) {
+    final newInteraction = warning_model.UserInteraction(
+      userId: userId,
+      userEmail: userEmail,
+      action: action,
+      timestamp: DateTime.now(),
+    );
+
+    // Add new interaction at the beginning and keep only last 5
+    final updated = [newInteraction, ...existing];
+    return updated.take(5).toList();
   }
 }
 
@@ -298,39 +371,60 @@ class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
   /// Add a new POI
   Future<void> addPOI(CyclingPOI poi) async {
     final debugService = DebugService();
-    
+
     try {
       state = const AsyncValue.loading();
-      
+
+      // Get current user info
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('User must be logged in to create POI');
+      }
+
+      // Add user interaction for creation
+      final updatedInteractions = _addUserInteraction(
+        poi.userInteractions,
+        user.uid,
+        user.email ?? 'unknown@email.com',
+        'created',
+      );
+
+      final poiWithTracking = poi.copyWith(
+        userInteractions: updatedInteractions,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
       debugService.logAction(
         action: 'POI: Starting Firebase addPOI call',
         screen: 'CyclingPOIsNotifier',
         parameters: {
           'poiName': poi.name,
           'poiType': poi.type,
-          'poiData': poi.toMap(),
+          'userId': user.uid,
+          'userEmail': user.email,
         },
       );
-      
+
       // Actually call Firebase to add the POI
-      await _firebaseService.addPOI(poi.toMap());
-      
+      await _firebaseService.addPOI(poiWithTracking.toMap());
+
       debugService.logAction(
         action: 'POI: Successfully added to Firebase',
         screen: 'CyclingPOIsNotifier',
         result: 'POI created in Firestore',
       );
-      
+
       // Reload POIs after successful creation
       final pois = await getPOIsFromFirestore();
       state = AsyncValue.data(pois);
-      
+
       debugService.logAction(
         action: 'POI: Reloaded POIs after creation',
         screen: 'CyclingPOIsNotifier',
         parameters: {'poiCount': pois.length},
       );
-      
+
       // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
@@ -339,7 +433,7 @@ class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
         screen: 'CyclingPOIsNotifier',
         error: error.toString(),
       );
-      
+
       state = AsyncValue.error(error, stackTrace);
       rethrow; // Re-throw so the UI can handle the error
     }
@@ -348,10 +442,29 @@ class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
   /// Update an existing POI
   Future<void> updatePOI(String documentId, CyclingPOI poi) async {
     final debugService = DebugService();
-    
+
     try {
       state = const AsyncValue.loading();
-      
+
+      // Get current user info
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('User must be logged in to update POI');
+      }
+
+      // Add user interaction for update
+      final updatedInteractions = _addUserInteraction(
+        poi.userInteractions,
+        user.uid,
+        user.email ?? 'unknown@email.com',
+        'updated',
+      );
+
+      final poiWithTracking = poi.copyWith(
+        userInteractions: updatedInteractions,
+        updatedAt: DateTime.now(),
+      );
+
       debugService.logAction(
         action: 'POI: Starting Firebase updatePOI call',
         screen: 'CyclingPOIsNotifier',
@@ -359,28 +472,30 @@ class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
           'poiId': poi.id,
           'poiName': poi.name,
           'poiType': poi.type,
+          'userId': user.uid,
+          'userEmail': user.email,
         },
       );
-      
+
       // Call Firebase to update the POI
-      await _firebaseService.updatePOI(documentId, poi.toMap());
-      
+      await _firebaseService.updatePOI(documentId, poiWithTracking.toMap());
+
       debugService.logAction(
         action: 'POI: Successfully updated in Firebase',
         screen: 'CyclingPOIsNotifier',
         result: 'POI updated in Firestore',
       );
-      
+
       // Reload POIs after successful update
       final pois = await getPOIsFromFirestore();
       state = AsyncValue.data(pois);
-      
+
       debugService.logAction(
         action: 'POI: Reloaded POIs after update',
         screen: 'CyclingPOIsNotifier',
         parameters: {'poiCount': pois.length},
       );
-      
+
       // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
@@ -389,53 +504,82 @@ class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
         screen: 'CyclingPOIsNotifier',
         error: error.toString(),
       );
-      
+
       state = AsyncValue.error(error, stackTrace);
       rethrow; // Re-throw so the UI can handle the error
     }
   }
 
-  /// Delete a POI
+  /// Soft delete a POI (mark as deleted instead of physical deletion)
   Future<void> deletePOI(String poiId) async {
     final debugService = DebugService();
-    
+
     try {
       state = const AsyncValue.loading();
-      
+
+      // Get current user info
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('User must be logged in to delete POI');
+      }
+
       debugService.logAction(
-        action: 'POI: Starting Firebase deletePOI call',
+        action: 'POI: Starting Firebase soft delete',
         screen: 'CyclingPOIsNotifier',
-        parameters: {'poiId': poiId},
+        parameters: {'poiId': poiId, 'userId': user.uid},
       );
-      
-      // Call Firebase to delete the POI
-      await _firebaseService.deletePOI(poiId);
-      
+
+      // First, get the current POI to preserve its data
+      final currentPois = await getPOIsFromFirestore();
+      final currentPoi = currentPois.firstWhere(
+        (poi) => poi.id == poiId,
+        orElse: () => throw Exception('POI not found'),
+      );
+
+      // Track deletion interaction
+      final updatedInteractions = _addUserInteraction(
+        currentPoi.userInteractions,
+        user.uid,
+        user.email ?? 'unknown@email.com',
+        'deleted',
+      );
+
+      // Mark as deleted
+      final deletedPoi = currentPoi.copyWith(
+        userInteractions: updatedInteractions,
+        isDeleted: true,
+        deletedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Update in Firebase (soft delete, not physical delete)
+      await _firebaseService.updatePOI(poiId, deletedPoi.toMap());
+
       debugService.logAction(
-        action: 'POI: Successfully deleted from Firebase',
+        action: 'POI: Successfully soft deleted in Firebase',
         screen: 'CyclingPOIsNotifier',
-        result: 'POI deleted from Firestore',
+        result: 'POI marked as deleted in Firestore',
       );
-      
-      // Reload POIs after successful deletion
+
+      // Reload POIs after successful soft deletion
       final pois = await getPOIsFromFirestore();
       state = AsyncValue.data(pois);
-      
+
       debugService.logAction(
-        action: 'POI: Reloaded POIs after deletion',
+        action: 'POI: Reloaded POIs after soft deletion',
         screen: 'CyclingPOIsNotifier',
         parameters: {'poiCount': pois.length},
       );
-      
+
       // Trigger background refresh of all map data
       _triggerOSMBackgroundRefresh();
     } catch (error, stackTrace) {
       debugService.logAction(
-        action: 'POI: Failed to delete from Firebase',
+        action: 'POI: Failed to soft delete in Firebase',
         screen: 'CyclingPOIsNotifier',
         error: error.toString(),
       );
-      
+
       state = AsyncValue.error(error, stackTrace);
       rethrow; // Re-throw so the UI can handle the error
     }
@@ -445,7 +589,7 @@ class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
   Future<void> refreshPOIs() async {
     await _loadPOIs();
   }
-  
+
   /// Trigger background refresh of all map data (POIs, Hazards, OSM POIs)
   Future<void> _triggerOSMBackgroundRefresh() async {
     try {
@@ -461,6 +605,25 @@ class CyclingPOIsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
       AppLogger.error('Failed to trigger global map data refresh', error: e);
       // Don't throw - this is a background operation
     }
+  }
+
+  /// Helper to add user interaction and maintain last 5 interactions
+  List<poi_model.UserInteraction> _addUserInteraction(
+    List<poi_model.UserInteraction> existing,
+    String userId,
+    String userEmail,
+    String action,
+  ) {
+    final newInteraction = poi_model.UserInteraction(
+      userId: userId,
+      userEmail: userEmail,
+      action: action,
+      timestamp: DateTime.now(),
+    );
+
+    // Add new interaction at the beginning and keep only last 5
+    final updated = [newInteraction, ...existing];
+    return updated.take(5).toList();
   }
 }
 

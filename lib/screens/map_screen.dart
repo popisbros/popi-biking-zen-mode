@@ -1499,8 +1499,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Add Community POI markers (only if showPOIs is true)
     if (mapState.showPOIs) {
       communityPOIsAsync.when(
-        data: (communityPOIs) {
-          AppLogger.map('Adding Community POI markers', data: {'count': communityPOIs.length});
+        data: (allCommunityPOIs) {
+          // Filter out deleted POIs
+          final communityPOIs = allCommunityPOIs.where((poi) => !poi.isDeleted).toList();
+
+          AppLogger.map('Adding Community POI markers', data: {
+            'total': allCommunityPOIs.length,
+            'visible': communityPOIs.length,
+            'deleted': allCommunityPOIs.length - communityPOIs.length,
+          });
           markers.addAll(communityPOIs.map((poi) => _buildCommunityPOIMarker(poi)));
         },
         loading: () {
@@ -1516,8 +1523,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     // Add warning markers (only if showWarnings is true)
     if (mapState.showWarnings) {
-      warningsAsync.whenData((warnings) {
-        AppLogger.map('Adding warning markers', data: {'count': warnings.length});
+      warningsAsync.whenData((allWarnings) {
+        // Filter out deleted warnings
+        final warnings = allWarnings.where((warning) => !warning.isDeleted).toList();
+
+        AppLogger.map('Adding warning markers', data: {
+          'total': allWarnings.length,
+          'visible': warnings.length,
+          'deleted': allWarnings.length - warnings.length,
+        });
         markers.addAll(warnings.map((warning) => _buildWarningMarker(warning)));
       });
     } else {
