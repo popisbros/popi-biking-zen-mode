@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,6 +29,8 @@ import '../utils/poi_dialog_handler.dart';
 import '../utils/poi_utils.dart';
 import '../utils/route_calculation_helper.dart';
 import '../utils/map_navigation_tracker.dart';
+import '../utils/mapbox_marker_utils.dart';
+import '../utils/mapbox_annotation_helper.dart';
 import '../models/map_models.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
@@ -2282,246 +2283,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     super.dispose();
   }
 
-  /// Convert a color to a lighter version for traveled route segments
-  /// Takes a Color object and returns a lighter int color value (ARGB)
-  int _getLighterColor(Color color) {
-    // Increase brightness by blending with white
-    // Extract ARGB components
-    final a = color.alpha;
-    final r = color.red;
-    final g = color.green;
-    final b = color.blue;
-
-    // Blend with white (70% original, 30% white) and reduce opacity to 60%
-    final lighterR = (r * 0.7 + 255 * 0.3).round();
-    final lighterG = (g * 0.7 + 255 * 0.3).round();
-    final lighterB = (b * 0.7 + 255 * 0.3).round();
-    final lighterA = (a * 0.6).round(); // Reduce opacity
-
-    // Combine into ARGB int
-    return (lighterA << 24) | (lighterR << 16) | (lighterG << 8) | lighterB;
-  }
-
-  /// Create an image from emoji text for use as marker icon
-  /// Uses proper background and border colors matching the 2D map configuration
-  Future<Uint8List> _createEmojiIcon(
-    String emoji,
-    POIMarkerType markerType,
-    {double size = 48}
-  ) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // Get colors from MarkerConfig
-    final fillColor = MarkerConfig.getFillColorForType(markerType);
-    final borderColor = MarkerConfig.getBorderColorForType(markerType);
-
-    // Draw filled circle background
-    final circlePaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
-
-    // Draw border
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
-
-    // Draw emoji text
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: emoji,
-        style: TextStyle(fontSize: size * 0.6),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        (size - textPainter.width) / 2,
-        (size - textPainter.height) / 2,
-      ),
-    );
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
-
-  /// Create user location marker icon matching 2D map style
-  /// White circle with purple border and Icons.navigation arrow
-  Future<Uint8List> _createUserLocationIcon({double? heading, double size = 48}) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // Use white background with purple border (matching 2D map)
-    final fillColor = Colors.white;
-    final borderColor = Colors.purple;
-
-    // Save canvas state for rotation
-    canvas.save();
-
-    // If we have a heading, rotate the entire marker
-    final hasHeading = heading != null && heading >= 0;
-    if (hasHeading) {
-      // Rotate around center
-      // Add 180° to flip direction (GPS heading was pointing opposite)
-      canvas.translate(size / 2, size / 2);
-      canvas.rotate((heading + 180) * 3.14159 / 180); // Convert to radians, flip 180°
-      canvas.translate(-size / 2, -size / 2);
-    }
-
-    // Draw filled circle background
-    final circlePaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
-
-    // Draw border
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
-
-    // Draw navigation arrow or my_location icon
-    // Match 2D map: icon size is 60% of marker size
-    final iconSize = size * 0.6;
-
-    if (hasHeading) {
-      // Draw navigation arrow (custom path matching Icons.navigation)
-      final arrowPaint = Paint()
-        ..color = borderColor
-        ..style = PaintingStyle.fill;
-
-      // Create triangular navigation arrow pointing up
-      final arrowPath = Path();
-      final centerX = size / 2;
-      final centerY = size / 2;
-      final halfIcon = iconSize / 2;
-
-      // Top point (pointing up/north)
-      arrowPath.moveTo(centerX, centerY - halfIcon * 0.9);
-      // Bottom right
-      arrowPath.lineTo(centerX + halfIcon * 0.35, centerY + halfIcon * 0.9);
-      // Bottom center notch
-      arrowPath.lineTo(centerX, centerY + halfIcon * 0.5);
-      // Bottom left
-      arrowPath.lineTo(centerX - halfIcon * 0.35, centerY + halfIcon * 0.9);
-      // Back to top
-      arrowPath.close();
-
-      canvas.drawPath(arrowPath, arrowPaint);
-    } else {
-      // Exploration mode: Purple dot inside purple circle with grey transparent background
-
-      // Large grey transparent circle (background)
-      final greyBgPaint = Paint()
-        ..color = Colors.grey.withValues(alpha: 0.1)
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(
-        Offset(size / 2, size / 2),
-        size / 2 - 1, // Almost full size
-        greyBgPaint,
-      );
-
-      // Purple outer circle (border)
-      final purpleCirclePaint = Paint()
-        ..color = borderColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.0;
-      canvas.drawCircle(
-        Offset(size / 2, size / 2),
-        iconSize / 2.5, // Medium circle
-        purpleCirclePaint,
-      );
-
-      // Purple center dot (filled)
-      final dotPaint = Paint()
-        ..color = borderColor
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(
-        Offset(size / 2, size / 2),
-        iconSize / 5, // Small dot
-        dotPaint,
-      );
-    }
-
-    // Restore canvas state
-    canvas.restore();
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
-
-  /// Create road sign warning image (orange circle matching community hazards style)
-  Future<Uint8List> _createRoadSignImage(String surfaceType, {double size = 48}) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // Orange circle with ~20% opacity to match community hazard transparency
-    final bgPaint = Paint()
-      ..color = const Color(0x33FFE0B2) // orange.shade100 with ~20% opacity
-      ..style = PaintingStyle.fill;
-    final borderPaint = Paint()
-      ..color = Colors.orange // Orange border (solid)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = MarkerConfig.circleStrokeWidth;
-
-    final center = Offset(size / 2, size / 2);
-    final radius = size / 2 - MarkerConfig.circleStrokeWidth;
-
-    // Draw orange filled circle
-    canvas.drawCircle(center, radius, bgPaint);
-    // Draw orange border
-    canvas.drawCircle(center, radius, borderPaint);
-
-    // Get surface-specific icon (matching 2D map)
-    final surfaceStr = surfaceType.toLowerCase();
-    IconData iconData;
-
-    if (surfaceStr.contains('gravel') || surfaceStr.contains('unpaved')) {
-      iconData = Icons.texture; // Gravel/unpaved
-    } else if (surfaceStr.contains('dirt') || surfaceStr.contains('sand') ||
-               surfaceStr.contains('grass') || surfaceStr.contains('mud')) {
-      iconData = Icons.warning; // Poor surfaces
-    } else if (surfaceStr.contains('cobble') || surfaceStr.contains('sett')) {
-      iconData = Icons.grid_4x4; // Cobblestone
-    } else {
-      iconData = Icons.warning; // Default warning
-    }
-
-    // Draw Material Icon using TextPainter with icon font
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: String.fromCharCode(iconData.codePoint),
-        style: TextStyle(
-          fontFamily: iconData.fontFamily,
-          package: iconData.fontPackage,
-          color: Colors.orange.shade900,
-          fontSize: size * 0.5,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(size / 2 - textPainter.width / 2, size / 2 - textPainter.height / 2),
-    );
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
-  }
-
   /// Add POI and warning markers to the map
   /// All markers use emoji icon images with proper colors
   Future<void> _addMarkers() async {
@@ -2554,15 +2315,39 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     await _addUserLocationMarker();
 
     // Add all POI markers as emoji icons
-    await _addOSMPOIsAsIcons(mapState);
-    await _addCommunityPOIsAsIcons(mapState);
-    await _addWarningsAsIcons(mapState);
+    await MapboxAnnotationHelper.addOSMPOIsAsIcons(
+      ref: ref,
+      pointAnnotationManager: _pointAnnotationManager!,
+      osmPoiById: _osmPoiById,
+      mapState: mapState,
+    );
+    await MapboxAnnotationHelper.addCommunityPOIsAsIcons(
+      ref: ref,
+      pointAnnotationManager: _pointAnnotationManager!,
+      communityPoiById: _communityPoiById,
+      mapState: mapState,
+    );
+    await MapboxAnnotationHelper.addWarningsAsIcons(
+      ref: ref,
+      pointAnnotationManager: _pointAnnotationManager!,
+      warningById: _warningById,
+      mapState: mapState,
+    );
 
     // Add route hazards during turn-by-turn navigation
-    await _addRouteHazards();
+    await MapboxAnnotationHelper.addRouteHazards(
+      ref: ref,
+      pointAnnotationManager: _pointAnnotationManager!,
+      warningById: _warningById,
+    );
 
     // Add favorites and destinations markers if toggle is enabled
-    await _addFavoritesAndDestinations();
+    await MapboxAnnotationHelper.addFavoritesAndDestinations(
+      ref: ref,
+      pointAnnotationManager: _pointAnnotationManager!,
+      destinationsById: _destinationsById,
+      favoritesById: _favoritesById,
+    );
 
     // Add search result marker if available
     await _addSearchResultMarker();
@@ -2586,7 +2371,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
 
     // Create grey marker icon with + symbol (matching POI style)
-    final markerIcon = await _createSearchResultIcon();
+    final markerIcon = await MapboxMarkerUtils.createSearchResultIcon();
 
     final searchMarker = PointAnnotationOptions(
       geometry: Point(coordinates: Position(selectedLoc.longitude, selectedLoc.latitude)),
@@ -2597,59 +2382,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     await _pointAnnotationManager!.create(searchMarker);
     AppLogger.success('Search result marker added', tag: 'MAP');
-  }
-
-  /// Create search result marker icon (grey circle with + symbol)
-  /// Matches user location marker size and uses same transparency
-  Future<Uint8List> _createSearchResultIcon({double size = 48}) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // Grey colors with transparency matching user location marker
-    final fillColor = const Color(0x33757575); // Grey with ~20% opacity (same as user location)
-    final borderColor = Colors.grey.shade700;
-
-    // Draw filled circle background
-    final circlePaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
-
-    // Draw border
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
-
-    // Draw + symbol in red
-    final plusPaint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0
-      ..strokeCap = StrokeCap.round;
-
-    final plusSize = size * 0.5;
-    final center = size / 2;
-
-    // Horizontal line of +
-    canvas.drawLine(
-      Offset(center - plusSize / 2, center),
-      Offset(center + plusSize / 2, center),
-      plusPaint,
-    );
-
-    // Vertical line of +
-    canvas.drawLine(
-      Offset(center, center - plusSize / 2),
-      Offset(center, center + plusSize / 2),
-      plusPaint,
-    );
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
   }
 
   /// Add route polyline to map
@@ -2908,7 +2640,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
           // Use lighter color for traveled segments, normal color for remaining
           final segmentColor = isTraveled
-              ? _getLighterColor(segment.color) // Lighter version of surface color
+              ? MapboxMarkerUtils.getLighterColor(segment.color) // Lighter version of surface color
               : segment.color.value; // Original surface color
 
           // Create line layer with surface color (lighter for traveled)
@@ -3006,7 +2738,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               marker.position.latitude,
             ),
           ),
-          image: await _createRoadSignImage(marker.surfaceType),
+          image: await MapboxMarkerUtils.createRoadSignImage(marker.surfaceType),
           iconSize: 1.5, // Match community POI/warning size
           iconAnchor: IconAnchor.CENTER,
         );
@@ -3056,7 +2788,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         // Create custom location icon matching 2D map
         // In navigation mode with heading: show arrow
         // Otherwise: show dot
-        final userIcon = await _createUserLocationIcon(
+        final userIcon = await MapboxMarkerUtils.createUserLocationIcon(
           heading: (isNavigationMode && hasHeading) ? heading : null,
         );
 
@@ -3071,263 +2803,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     });
     */
-  }
-
-  /// Add OSM POIs as emoji icons
-  Future<void> _addOSMPOIsAsIcons(mapState) async {
-    if (!mapState.showOSMPOIs) return;
-
-    final osmPOIs = ref.read(osmPOIsNotifierProvider).value ?? [];
-
-    // Filter POIs based on selected types using shared utility
-    final filteredPOIs = POIUtils.filterPOIsByType(osmPOIs, mapState.selectedOSMPOITypes);
-
-    List<PointAnnotationOptions> pointOptions = [];
-
-    AppLogger.debug('Adding OSM POIs as icons', tag: 'MAP', data: {
-      'total': osmPOIs.length,
-      'filtered': filteredPOIs.length,
-      'selectedTypes': mapState.selectedOSMPOITypes?.join(', ') ?? 'all',
-    });
-
-    for (var poi in filteredPOIs) {
-      final id = 'osm_${poi.latitude}_${poi.longitude}';
-      _osmPoiById[id] = poi;
-
-      // Get emoji for this POI type
-      final emoji = POITypeConfig.getOSMPOIEmoji(poi.type);
-
-      // Create icon image from emoji with proper colors
-      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.osmPOI);
-
-      pointOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-          image: iconImage,
-          iconSize: 1.5, // Optimized icon size
-        ),
-      );
-    }
-
-    if (pointOptions.isNotEmpty) {
-      await _pointAnnotationManager!.createMulti(pointOptions);
-      AppLogger.success('Added OSM POI icons', tag: 'MAP', data: {'count': pointOptions.length});
-    }
-  }
-
-  /// Add Community POIs as emoji icons
-  Future<void> _addCommunityPOIsAsIcons(mapState) async {
-    if (!mapState.showPOIs) return;
-
-    final communityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
-    List<PointAnnotationOptions> pointOptions = [];
-
-    AppLogger.debug('Adding Community POIs as icons', tag: 'MAP', data: {'count': communityPOIs.length});
-    for (var poi in communityPOIs) {
-      final id = 'community_${poi.latitude}_${poi.longitude}';
-      _communityPoiById[id] = poi;
-
-      // Get emoji for this POI type
-      final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
-
-      // Create icon image from emoji with proper colors
-      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.communityPOI);
-
-      pointOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-          image: iconImage,
-          iconSize: 1.5, // Optimized icon size
-        ),
-      );
-    }
-
-    if (pointOptions.isNotEmpty) {
-      await _pointAnnotationManager!.createMulti(pointOptions);
-      AppLogger.success('Added Community POI icons', tag: 'MAP', data: {'count': pointOptions.length});
-    } else {
-      AppLogger.warning('No Community POI icons to add', tag: 'MAP');
-    }
-  }
-
-  /// Add Warnings as emoji icons
-  Future<void> _addWarningsAsIcons(mapState) async {
-    if (!mapState.showWarnings) return;
-
-    final warnings = ref.read(communityWarningsBoundsNotifierProvider).value ?? [];
-    List<PointAnnotationOptions> pointOptions = [];
-
-    AppLogger.debug('Adding Warnings as icons', tag: 'MAP', data: {'count': warnings.length});
-    for (var warning in warnings) {
-      final id = 'warning_${warning.latitude}_${warning.longitude}';
-      _warningById[id] = warning;
-
-      // Get emoji for this warning type
-      final emoji = POITypeConfig.getWarningEmoji(warning.type);
-
-      // Create icon image from emoji with proper colors
-      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.warning);
-
-      pointOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-          image: iconImage,
-          iconSize: 1.5, // Optimized icon size
-        ),
-      );
-    }
-
-    if (pointOptions.isNotEmpty) {
-      await _pointAnnotationManager!.createMulti(pointOptions);
-      AppLogger.success('Added Warning icons', tag: 'MAP', data: {'count': pointOptions.length});
-    }
-  }
-
-  /// Add route hazards as warning markers (only during turn-by-turn navigation)
-  Future<void> _addRouteHazards() async {
-    if (_pointAnnotationManager == null) return;
-
-    final navState = ref.read(navigationProvider);
-    if (!navState.isNavigating || navState.activeRoute?.routeHazards == null) {
-      return;
-    }
-
-    final routeHazards = navState.activeRoute!.routeHazards!;
-    if (routeHazards.isEmpty) return;
-
-    List<PointAnnotationOptions> pointOptions = [];
-
-    AppLogger.debug('Adding route hazards as markers', tag: 'MAP', data: {'count': routeHazards.length});
-    for (var hazard in routeHazards) {
-      final warning = hazard.warning;
-      final id = 'route_hazard_${warning.latitude}_${warning.longitude}';
-      _warningById[id] = warning;
-
-      // Get emoji for this warning type
-      final emoji = POITypeConfig.getWarningEmoji(warning.type);
-
-      // Create icon image from emoji with warning colors (red circle)
-      final iconImage = await _createEmojiIcon(emoji, POIMarkerType.warning);
-
-      pointOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(warning.longitude, warning.latitude)),
-          image: iconImage,
-          iconSize: 1.5, // Same size as regular warnings
-        ),
-      );
-    }
-
-    if (pointOptions.isNotEmpty) {
-      await _pointAnnotationManager!.createMulti(pointOptions);
-      AppLogger.success('Added route hazard markers', tag: 'MAP', data: {'count': pointOptions.length});
-    }
-  }
-
-  /// Add favorites and destinations markers to map
-  Future<void> _addFavoritesAndDestinations() async {
-    if (_pointAnnotationManager == null) return;
-
-    final favoritesVisible = ref.read(favoritesVisibilityProvider);
-    if (!favoritesVisible) return;
-
-    final userProfile = ref.read(userProfileProvider).value;
-    if (userProfile == null) return;
-
-    List<PointAnnotationOptions> pointOptions = [];
-
-    AppLogger.debug('Adding favorites and destinations as markers', tag: 'MAP', data: {
-      'destinations': userProfile.recentDestinations.length,
-      'favorites': userProfile.favoriteLocations.length,
-    });
-
-    // Add destination markers (orange teardrop)
-    for (var destination in userProfile.recentDestinations) {
-      final id = 'destination_${destination.latitude}_${destination.longitude}';
-      _destinationsById[id] = (lat: destination.latitude, lng: destination.longitude, name: destination.name);
-
-      final iconImage = await _createFavoritesIcon(isDestination: true);
-
-      pointOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(destination.longitude, destination.latitude)),
-          image: iconImage,
-          iconSize: 1.5,
-          iconAnchor: IconAnchor.CENTER,
-        ),
-      );
-    }
-
-    // Add favorite markers (yellow star)
-    for (var favorite in userProfile.favoriteLocations) {
-      final id = 'favorite_${favorite.latitude}_${favorite.longitude}';
-      _favoritesById[id] = (lat: favorite.latitude, lng: favorite.longitude, name: favorite.name);
-
-      final iconImage = await _createFavoritesIcon(isDestination: false);
-
-      pointOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(favorite.longitude, favorite.latitude)),
-          image: iconImage,
-          iconSize: 1.5,
-          iconAnchor: IconAnchor.CENTER,
-        ),
-      );
-    }
-
-    if (pointOptions.isNotEmpty) {
-      await _pointAnnotationManager!.createMulti(pointOptions);
-      AppLogger.success('Added favorites/destinations markers', tag: 'MAP', data: {'count': pointOptions.length});
-    }
-  }
-
-  /// Create favorites/destinations icon (teardrop for destinations, star for favorites)
-  Future<Uint8List> _createFavoritesIcon({required bool isDestination, double size = 48}) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    // Colors based on type
-    final fillColor = isDestination
-        ? const Color(0xE6FFCC80) // Orange with ~90% opacity
-        : const Color(0xE6FFD54F); // Amber with ~90% opacity
-    final borderColor = isDestination
-        ? Colors.orange.shade700
-        : Colors.amber.shade700;
-
-    // Draw filled circle background
-    final circlePaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
-
-    // Draw border
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
-
-    // Draw emoji icon (teardrop for destinations, star for favorites)
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: isDestination ? '📍' : '⭐',
-        style: TextStyle(fontSize: size * 0.5, fontFamily: 'sans-serif'),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        (size - textPainter.width) / 2,
-        (size - textPainter.height) / 2,
-      ),
-    );
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(size.toInt(), size.toInt());
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
   }
 
   // ============================================================================
@@ -3559,7 +3034,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         // Calculate new color and width
         final newColor = isTraveled
-            ? _getLighterColor(segment.originalColor)
+            ? MapboxMarkerUtils.getLighterColor(segment.originalColor)
             : segment.originalColor.value;
         final newWidth = isTraveled ? 4.0 : 6.0;
 
