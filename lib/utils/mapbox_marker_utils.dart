@@ -203,9 +203,9 @@ class MapboxMarkerUtils {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Orange circle with ~20% opacity to match community hazard transparency
+    // Orange circle with ~90% opacity to match other markers
     final bgPaint = Paint()
-      ..color = const Color(0x33FFE0B2) // orange.shade100 with ~20% opacity
+      ..color = const Color(0xE6FFE0B2) // orange.shade100 with ~90% opacity
       ..style = PaintingStyle.fill;
     final borderPaint = Paint()
       ..color = Colors.orange // Orange border (solid)
@@ -269,8 +269,8 @@ class MapboxMarkerUtils {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Grey colors with transparency matching user location marker
-    final fillColor = const Color(0x33757575); // Grey with ~20% opacity (same as user location)
+    // Grey colors with transparency matching other markers
+    final fillColor = const Color(0xE6757575); // Grey with ~90% opacity
     final borderColor = Colors.grey.shade700;
 
     // Draw filled circle background
