@@ -768,6 +768,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: Colors.white.withValues(alpha: 0.6),
           title: Row(
             children: [
               Text(isDestination ? '📍' : '⭐', style: const TextStyle(fontSize: 24)),
