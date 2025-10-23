@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 class OSMDebugInfo {
   final DateTime timestamp;

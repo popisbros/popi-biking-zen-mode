@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -43,7 +42,7 @@ class ApiLogger {
           'URL: $url',
           'Parameters: ${parameters?.toString() ?? "none"}',
           'Status: $statusCode',
-          'Response: ${responseBody.length > 500 ? responseBody.substring(0, 500) + "..." : responseBody}',
+          'Response: ${responseBody.length > 500 ? "${responseBody.substring(0, 500)}..." : responseBody}',
           'Error: ${error ?? "none"}',
           'Duration: ${durationMs ?? 0}ms',
         ],
@@ -63,7 +62,7 @@ class ApiLogger {
         'parameters': parameters,
         'statusCode': statusCode,
         'responseBody': responseBody.length > 1000
-            ? responseBody.substring(0, 1000) + '...(truncated)'
+            ? '${responseBody.substring(0, 1000)}...(truncated)'
             : responseBody,
         'error': error,
         'durationMs': durationMs,

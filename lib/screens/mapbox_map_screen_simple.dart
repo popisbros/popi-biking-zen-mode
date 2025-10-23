@@ -1,8 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,14 +12,12 @@ import '../providers/location_provider.dart';
 import '../providers/osm_poi_provider.dart';
 import '../providers/community_provider.dart';
 import '../providers/map_provider.dart';
-import '../providers/compass_provider.dart';
 import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorites_visibility_provider.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
-import '../services/ios_navigation_service.dart';
 import '../services/toast_service.dart';
 import '../services/conditional_poi_loader.dart';
 import '../models/cycling_poi.dart';
@@ -43,10 +38,6 @@ import '../widgets/profile_button.dart';
 import '../services/route_surface_helper.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/arrival_dialog.dart';
-import '../widgets/dialogs/poi_detail_dialog.dart';
-import '../widgets/dialogs/warning_detail_dialog.dart';
-import '../widgets/dialogs/route_selection_dialog.dart';
-import '../widgets/dialogs/community_poi_detail_dialog.dart';
 import '../widgets/map_toggle_button.dart';
 import '../widgets/osm_poi_selector_button.dart';
 import '../providers/debug_provider.dart';
@@ -800,7 +791,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         MapAnimationOptions(duration: 1000),
       );
       AppLogger.debug('Camera positioned for navigation', tag: 'NAVIGATION', data: {
-        'pitch': '${navigationPitch}°',
+        'pitch': '$navigationPitch°',
       });
     }
   }
@@ -2787,7 +2778,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     AppLogger.debug('Route rendering decision', tag: 'MAP', data: {
       'isNavigating': turnByTurnNavState.isNavigating,
       'hasActiveRoute': turnByTurnNavState.activeRoute != null,
-      'hasRoutePoints': routePoints != null && routePoints!.isNotEmpty,
+      'hasRoutePoints': routePoints != null && routePoints.isNotEmpty,
     });
 
     // Use navigation route if active, otherwise use selected route
@@ -2952,7 +2943,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to add route polyline', tag: 'MAP', error: e, stackTrace: stackTrace, data: {
-        'routePointsCount': routeToRender?.length ?? 0,
+        'routePointsCount': routeToRender.length ?? 0,
         'errorType': e.runtimeType.toString(),
       });
     }

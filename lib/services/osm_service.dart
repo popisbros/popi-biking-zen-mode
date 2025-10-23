@@ -1,7 +1,5 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:http/http.dart' as http;
-import 'package:latlong2/latlong.dart';
 import '../models/cycling_poi.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
@@ -69,7 +67,7 @@ class OSMService {
         }
         return [];
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       stopwatch.stop();
 
       // Log error to Firestore
@@ -159,7 +157,7 @@ class OSMService {
         });
         return [];
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       stopwatch.stop();
 
       // Log fallback error to Firestore

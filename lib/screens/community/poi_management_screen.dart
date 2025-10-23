@@ -365,7 +365,7 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(
                   labelText: 'Type *',
                   border: OutlineInputBorder(),

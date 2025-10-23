@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/cycling_poi.dart';
@@ -160,7 +159,7 @@ class FirebaseService {
               return null;
             }
           })
-          .where((poi) => poi != null && poi!.longitude >= west && poi.longitude <= east)
+          .where((poi) => poi != null && poi.longitude >= west && poi.longitude <= east)
           .cast<CyclingPOI>()
           .toList();
 

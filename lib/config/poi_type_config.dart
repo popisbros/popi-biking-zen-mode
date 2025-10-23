@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 /// POI Type Configuration with Emojis and Labels
 ///

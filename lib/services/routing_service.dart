@@ -427,8 +427,8 @@ class RoutingService {
     );
 
     AppLogger.api('Calculating route', data: {
-      'from': '${startLat},${startLon}',
-      'to': '${endLat},${endLon}',
+      'from': '$startLat,$startLon',
+      'to': '$endLat,$endLon',
       'vehicle': 'bike',
     });
 

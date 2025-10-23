@@ -30,7 +30,7 @@ class CyclingPOI {
 
   factory CyclingPOI.fromMap(Map<String, dynamic> map) {
     // Helper function to convert Firestore Timestamp or int to DateTime
-    DateTime _parseTimestamp(dynamic value) {
+    DateTime parseTimestamp(dynamic value) {
       if (value == null) return DateTime.now();
       if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
       // Handle Firestore Timestamp object
@@ -51,8 +51,8 @@ class CyclingPOI {
       phone: map['phone'],
       website: map['website'],
       metadata: map['metadata'],
-      createdAt: _parseTimestamp(map['createdAt']),
-      updatedAt: _parseTimestamp(map['updatedAt']),
+      createdAt: parseTimestamp(map['createdAt']),
+      updatedAt: parseTimestamp(map['updatedAt']),
     );
   }
 
@@ -127,32 +127,19 @@ class OSMPOI extends CyclingPOI {
     required this.osmType,
     required this.osmTags,
     this.isFromOSM = true,
-    String? id,
-    required String name,
-    required String type,
-    required double latitude,
-    required double longitude,
-    String? description,
-    String? address,
-    String? phone,
-    String? website,
-    Map<String, dynamic>? metadata,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-  }) : super(
-          id: id,
-          name: name,
-          type: type,
-          latitude: latitude,
-          longitude: longitude,
-          description: description,
-          address: address,
-          phone: phone,
-          website: website,
-          metadata: metadata,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-        );
+    super.id,
+    required super.name,
+    required super.type,
+    required super.latitude,
+    required super.longitude,
+    super.description,
+    super.address,
+    super.phone,
+    super.website,
+    super.metadata,
+    required super.createdAt,
+    required super.updatedAt,
+  });
 
   factory OSMPOI.fromOSMData(Map<String, dynamic> osmData) {
     final tags = osmData['tags'] as Map<String, dynamic>? ?? {};

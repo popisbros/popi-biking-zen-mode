@@ -184,7 +184,7 @@ class SearchNotifier extends Notifier<SearchState> {
         results: AsyncValue.data(combinedResults),
         isExpandedSearch: true,
       );
-    } catch (e, stackTrace) {
+    } catch (e) {
       AppLogger.error('Expand search failed', tag: 'SEARCH', error: e);
       // On error, restore previous results without trigger
       state = state.copyWith(

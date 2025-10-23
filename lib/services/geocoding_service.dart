@@ -128,7 +128,7 @@ class GeocodingService {
       } else {
         throw Exception('LocationIQ API error: ${response.statusCode}');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       stopwatch.stop();
 
       // Log error to Firestore
@@ -203,7 +203,7 @@ class GeocodingService {
       } else {
         throw Exception('Nominatim API error: ${response.statusCode}');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       stopwatch.stop();
 
       // Log error to Firestore

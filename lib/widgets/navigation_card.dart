@@ -245,7 +245,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
 
                         // Distance text
                         final distanceText = navState.isOffRoute
-                          ? '${navState.offRouteDistanceMeters?.toStringAsFixed(0) ?? "?"}m'
+                          ? '${navState.offRouteDistanceMeters.toStringAsFixed(0) ?? "?"}m'
                           : '0m';
 
                         // Time as MM:SS (not full timestamp)

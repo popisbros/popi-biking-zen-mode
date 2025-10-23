@@ -201,7 +201,7 @@ class AppLogger {
         debugPrint('  $title');
         debugPrint('${'=' * 60}\n');
       } else {
-        debugPrint('${'─' * 60}');
+        debugPrint('─' * 60);
       }
     }
   }

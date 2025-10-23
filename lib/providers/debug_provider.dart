@@ -55,10 +55,10 @@ class DebugNotifier extends Notifier<DebugState> {
           .map((msg) => DebugLogEntry(msg, DateTime.now()))
           .toList();
 
-      // Debug: print how many logs we're loading
-      print('DEBUG OVERLAY: Loading ${allLogs.length} logs from AppLogger buffer');
+      // Debug: log how many logs we're loading
+      AppLogger.debug('DEBUG OVERLAY: Loading ${allLogs.length} logs from AppLogger buffer');
       if (allLogs.isNotEmpty) {
-        print('DEBUG OVERLAY: First log: ${allLogs.first.message}');
+        AppLogger.debug('DEBUG OVERLAY: First log: ${allLogs.first.message}');
       }
 
       state = state.copyWith(isVisible: true, logEntries: allLogs);

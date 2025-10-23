@@ -33,7 +33,12 @@
       "Bash(wc -l echo \"\" echo \"Note: _TriangleBorderPainter (lines 2149-2173) is USED in navigation_card.dart - NOT dead code\" echo \"\" echo \"Total truly dead code: 20 + 23 + 24 = 67 lines\" echo \"Plus 3 unused imports + 3 unused fields = 73 lines total\")",
       "Bash(rm:*)",
       "Bash(pod install)",
-      "Bash(git restore --staged SECURE_API_KEYS_GUIDE.md)"
+      "Bash(git restore --staged SECURE_API_KEYS_GUIDE.md)",
+      "Bash(pod repo update:*)",
+      "Bash(pod install:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git cat-file:*)",
+      "Bash(dart fix:*)"
     ],
     "deny": [],
     "ask": []

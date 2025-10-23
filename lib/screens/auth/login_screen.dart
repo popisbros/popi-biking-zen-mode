@@ -239,7 +239,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      final credential = await ref.read(authNotifierProvider.notifier).signInWithEmail(email, password);
+      await ref.read(authNotifierProvider.notifier).signInWithEmail(email, password);
 
       if (!mounted) return;
 

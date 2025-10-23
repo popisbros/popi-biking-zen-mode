@@ -39,6 +39,7 @@ dependencies:
   # HTTP & API
   http: ^1.2.2
 
+  riverpod: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

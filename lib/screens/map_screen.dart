@@ -35,7 +35,6 @@ import '../widgets/search_bar_widget.dart';
 import '../widgets/debug_overlay.dart';
 import '../widgets/navigation_card.dart';
 import '../widgets/navigation_controls.dart';
-import '../widgets/dialogs/route_selection_dialog.dart';
 import '../widgets/arrival_dialog.dart';
 import '../widgets/map_toggle_button.dart';
 import '../widgets/osm_poi_selector_button.dart';
@@ -67,7 +66,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _hasTriggeredInitialPOILoad = false; // Track if we've loaded POIs on first location
 
   // Smart reload logic - store loaded bounds and buffer zone
-  BoundingBox? _lastLoadedBounds;
   BoundingBox? _reloadTriggerBounds;
 
   // Compass rotation state (Native only)
@@ -85,12 +83,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // Smooth auto-zoom state
   DateTime? _lastZoomChangeTime;
   double? _currentAutoZoom;
-  double? _targetAutoZoom;
   static const Duration _zoomChangeInterval = Duration(seconds: 3);
   static const double _minZoomChangeThreshold = 0.5;
-
-  // Active route for persistent navigation sheet
-  RouteResult? _activeRoute;
 
   @override
   void initState() {
@@ -349,15 +343,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   /// Load OSM POIs only if data doesn't exist or bounds changed significantly
-  void _loadOSMPOIsIfNeeded() {
-    final camera = _mapController.camera;
-    final bounds = _calculateExtendedBounds(camera.visibleBounds);
-    ConditionalPOILoader.loadOSMPOIsIfNeeded(
-      ref: ref,
-      extendedBounds: bounds,
-    );
-  }
-
   /// Load Community POIs only if data doesn't exist
   void _loadCommunityPOIsIfNeeded() {
     final camera = _mapController.camera;
@@ -1510,7 +1495,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         final rotation = -next;
         AppLogger.debug('Rotating map', tag: 'COMPASS', data: {
           'rotation': '${rotation.toStringAsFixed(1)}°',
-          'heading': '${next}°',
+          'heading': '$next°',
           'threshold': _compassThreshold,
         });
         _mapController.rotate(rotation);

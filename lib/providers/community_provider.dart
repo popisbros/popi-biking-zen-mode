@@ -472,7 +472,6 @@ final cyclingPOIsNotifierProvider = NotifierProvider<CyclingPOIsNotifier, AsyncV
 /// State notifier for bounds-based community warnings
 class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<CommunityWarning>>> {
   late final FirebaseService _firebaseService;
-  final DebugService _debugService = DebugService();
   BoundingBox? _lastLoadedBounds;
 
   @override
@@ -633,7 +632,6 @@ class CommunityWarningsBoundsNotifier extends Notifier<AsyncValue<List<Community
 /// State notifier for bounds-based cycling POIs
 class CyclingPOIsBoundsNotifier extends Notifier<AsyncValue<List<CyclingPOI>>> {
   late final FirebaseService _firebaseService;
-  final DebugService _debugService = DebugService();
   BoundingBox? _lastLoadedBounds;
 
   @override

@@ -35,7 +35,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await ref.read(authNotifierProvider.notifier).registerWithEmail(
+      await ref.read(authNotifierProvider.notifier).registerWithEmail(
             _emailController.text.trim(),
             _passwordController.text,
             _nameController.text.trim(),
