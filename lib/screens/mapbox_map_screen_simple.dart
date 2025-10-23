@@ -513,8 +513,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                      CommonDialog.buildListTileButton(
                         leading: Icon(Icons.add_location, color: Colors.green[700]),
                         title: const Text(
                           'Add Community here',
@@ -525,8 +524,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           _showAddPOIDialog(lat, lng);
                         },
                       ),
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                      CommonDialog.buildListTileButton(
                         leading: Icon(Icons.warning, color: Colors.orange[700]),
                         title: const Text(
                           'Report Hazard here',
@@ -537,8 +535,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           _showReportHazardDialog(lat, lng);
                         },
                       ),
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                      CommonDialog.buildListTileButton(
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
                         title: const Text(
                           'Calculate a route to',
@@ -550,8 +547,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                       ),
                       if (authUser != null)
-                        ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                        CommonDialog.buildListTileButton(
                           leading: const Icon(Icons.star_border, color: Colors.amber),
                           title: const Text(
                             'Add to Favorites',
@@ -564,6 +560,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                               lat,
                               lng,
                             );
+                            // Auto-enable favorites visibility so user can see their new favorite
+                            ref.read(favoritesVisibilityProvider.notifier).state = true;
                           },
                         ),
                     ],
@@ -623,8 +621,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                      CommonDialog.buildListTileButton(
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
                         title: const Text(
                           'Calculate a route to',
@@ -636,8 +633,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                       ),
                       if (authUser != null)
-                        ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                        CommonDialog.buildListTileButton(
                           leading: Icon(isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
                           title: Text(
                             isFavorite ? 'Favorited' : 'Add to Favorites',

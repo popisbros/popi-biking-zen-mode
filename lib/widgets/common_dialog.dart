@@ -165,4 +165,88 @@ class CommonDialog {
       ),
     );
   }
+
+  /// Create a standard ListTile button with border for better visibility
+  ///
+  /// Parameters:
+  /// - leading: Leading widget (icon)
+  /// - title: Title widget (text)
+  /// - onTap: Callback when tapped
+  /// - borderColor: Border color (default: grey with 30% opacity)
+  /// - enabled: Whether the button is enabled (default: true)
+  static Widget buildListTileButton({
+    required Widget leading,
+    required Widget title,
+    required VoidCallback onTap,
+    Color? borderColor,
+    bool enabled = true,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: borderColor ?? Colors.grey.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+        leading: leading,
+        title: title,
+        onTap: enabled ? onTap : null,
+        enabled: enabled,
+      ),
+    );
+  }
+
+  /// Create a standard TextButton with border for better visibility
+  ///
+  /// Parameters:
+  /// - label: Button label
+  /// - onPressed: Callback when pressed
+  /// - icon: Optional icon widget
+  /// - borderColor: Border color (default: grey with 30% opacity)
+  /// - textColor: Text color (optional)
+  static Widget buildBorderedTextButton({
+    required String label,
+    required VoidCallback onPressed,
+    Widget? icon,
+    Color? borderColor,
+    Color? textColor,
+  }) {
+    final button = icon != null
+        ? TextButton.icon(
+            onPressed: onPressed,
+            icon: icon,
+            label: Text(label, style: textColor != null ? TextStyle(color: textColor) : null),
+            style: TextButton.styleFrom(
+              side: BorderSide(
+                color: borderColor ?? Colors.grey.withValues(alpha: 0.3),
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          )
+        : TextButton(
+            onPressed: onPressed,
+            style: TextButton.styleFrom(
+              side: BorderSide(
+                color: borderColor ?? Colors.grey.withValues(alpha: 0.3),
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(label, style: textColor != null ? TextStyle(color: textColor) : null),
+          );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: button,
+    );
+  }
 }
