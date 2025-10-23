@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/community_warning.dart';
 import '../../config/poi_type_config.dart';
 import '../../constants/app_colors.dart';
+import '../../providers/auth_provider.dart';
 import '../common_dialog.dart';
 
 /// Warning detail dialog widget
 ///
 /// Displays detailed information about a community warning/hazard
 /// Consolidates duplicate dialogs from map_screen and mapbox_map_screen_simple
-class WarningDetailDialog extends StatelessWidget {
+class WarningDetailDialog extends ConsumerWidget {
   final CommunityWarning warning;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -23,7 +25,9 @@ class WarningDetailDialog extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Check if user is logged in
+    final authUser = ref.watch(authStateProvider).value;
     // Get warning type emoji and label
     final typeEmoji = POITypeConfig.getWarningEmoji(warning.type);
     final typeLabel = POITypeConfig.getWarningLabel(warning.type);
@@ -140,27 +144,31 @@ class WarningDetailDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Edit button
-            CommonDialog.buildBorderedTextButton(
-              label: 'EDIT',
-              textColor: Colors.blue,
-              onPressed: () {
-                Navigator.pop(context);
-                onEdit();
-              },
-            ),
-            const SizedBox(height: 8),
-            // Delete button
-            CommonDialog.buildBorderedTextButton(
-              label: 'DELETE',
-              textColor: Colors.red,
-              borderColor: Colors.red.withValues(alpha: 0.5),
-              onPressed: () {
-                Navigator.pop(context);
-                onDelete();
-              },
-            ),
-            const SizedBox(height: 8),
+            // Edit button (only show if user is logged in)
+            if (authUser != null)
+              CommonDialog.buildBorderedTextButton(
+                label: 'EDIT',
+                textColor: Colors.blue,
+                onPressed: () {
+                  Navigator.pop(context);
+                  onEdit();
+                },
+              ),
+            if (authUser != null)
+              const SizedBox(height: 8),
+            // Delete button (only show if user is logged in)
+            if (authUser != null)
+              CommonDialog.buildBorderedTextButton(
+                label: 'DELETE',
+                textColor: Colors.red,
+                borderColor: Colors.red.withValues(alpha: 0.5),
+                onPressed: () {
+                  Navigator.pop(context);
+                  onDelete();
+                },
+              ),
+            if (authUser != null)
+              const SizedBox(height: 8),
             // Close button
             CommonDialog.buildBorderedTextButton(
               label: 'CLOSE',
