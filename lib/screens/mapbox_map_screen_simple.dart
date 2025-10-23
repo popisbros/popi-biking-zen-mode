@@ -431,7 +431,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Get screen coordinate for the map point
       final screenCoordinate = await _mapboxMap!.pixelForCoordinate(coordinates);
 
-      if (!mounted) return;
+      if (!mounted) return {
+        'alignment': const Alignment(0.0, -0.33),
+        'screenY': 0.0,
+        'screenHeight': 0.0,
+        'normalizedY': 0.0,
+        'inMiddleThird': false,
+      };
       // Get screen size
       final size = MediaQuery.of(context).size;
 
