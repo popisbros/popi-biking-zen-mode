@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/cycling_poi.dart';
 import '../../config/poi_type_config.dart';
 import '../../providers/auth_provider.dart';
+import '../common_dialog.dart';
 
 /// POI detail dialog widget
 ///
@@ -32,23 +33,18 @@ class POIDetailDialog extends ConsumerWidget {
       (loc) => loc.latitude == poi.latitude && loc.longitude == poi.longitude
     ) ?? false;
 
-    // Styling based on compact mode
-    final backgroundOpacity = 0.6; // Always use 60% opacity for consistency
-    final titleFontSize = compact ? 14.0 : null;
-    final bodyFontSize = compact ? 12.0 : null;
-    final titlePadding = compact ? const EdgeInsets.fromLTRB(24, 16, 24, 8) : null;
-    final contentPadding = compact ? const EdgeInsets.fromLTRB(24, 0, 24, 8) : null;
-    final actionsPadding = compact ? const EdgeInsets.fromLTRB(24, 0, 16, 8) : null;
-    final sectionSpacing = compact ? 6.0 : 12.0;
-
+    // Use CommonDialog styling for consistency
     return AlertDialog(
-      backgroundColor: Colors.white.withValues(alpha: backgroundOpacity),
-      titlePadding: titlePadding,
-      contentPadding: contentPadding,
-      actionsPadding: actionsPadding,
+      backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+      titlePadding: CommonDialog.titlePadding,
+      contentPadding: CommonDialog.contentPadding,
+      actionsPadding: CommonDialog.actionsPadding,
       title: Text(
         poi.name,
-        style: titleFontSize != null ? TextStyle(fontSize: titleFontSize) : null,
+        style: const TextStyle(
+          fontSize: CommonDialog.titleFontSize,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -60,98 +56,84 @@ class POIDetailDialog extends ConsumerWidget {
               children: [
                 Text(
                   'Type: ',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: bodyFontSize,
+                    fontSize: CommonDialog.bodyFontSize,
                   ),
                 ),
                 Text(
                   typeEmoji,
-                  style: TextStyle(fontSize: compact ? 14 : 16),
+                  style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   typeLabel,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.w500,
-                    fontSize: bodyFontSize,
+                    fontSize: CommonDialog.bodyFontSize,
                   ),
                 ),
               ],
             ),
 
             // Coordinates
-            SizedBox(height: compact ? 4 : 4),
-            Text(
+            const SizedBox(height: 8),
+            CommonDialog.buildCaptionText(
               'Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}',
-              style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
             ),
 
             // Optional fields
             if (poi.description != null && poi.description!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
-              Text(
+              const SizedBox(height: 12),
+              const Text(
                 'Description:',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
-              Text(
-                poi.description!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
-              ),
+              CommonDialog.buildBodyText(poi.description!),
             ],
 
             if (poi.address != null && poi.address!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
-              Text(
+              const SizedBox(height: 12),
+              const Text(
                 'Address:',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
-              Text(
-                poi.address!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
-              ),
+              CommonDialog.buildBodyText(poi.address!),
             ],
 
             if (poi.phone != null && poi.phone!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
-              Text(
+              const SizedBox(height: 12),
+              const Text(
                 'Phone:',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
-              Text(
-                poi.phone!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
-              ),
+              CommonDialog.buildBodyText(poi.phone!),
             ],
 
             if (poi.website != null && poi.website!.isNotEmpty) ...[
-              SizedBox(height: sectionSpacing),
-              Text(
+              const SizedBox(height: 12),
+              const Text(
                 'Website:',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
-                  fontSize: bodyFontSize,
+                  fontSize: CommonDialog.bodyFontSize,
                 ),
               ),
-              Text(
-                poi.website!,
-                style: bodyFontSize != null ? TextStyle(fontSize: bodyFontSize) : null,
-              ),
+              CommonDialog.buildBodyText(poi.website!),
             ],
           ],
         ),
       ),
       actions: [
-        // Two rows of buttons
         Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -160,23 +142,17 @@ class POIDetailDialog extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
+                CommonDialog.buildActionButton(
+                  label: 'ROUTE TO',
+                  icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
                   onPressed: () {
                     Navigator.pop(context);
                     onRouteTo();
                   },
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('🚴‍♂️', style: TextStyle(fontSize: 14)),
-                      SizedBox(width: 4),
-                      Text('ROUTE TO', style: TextStyle(fontSize: 12)),
-                    ],
-                  ),
                 ),
-                TextButton(
+                CommonDialog.buildActionButton(
+                  label: 'CLOSE',
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('CLOSE', style: TextStyle(fontSize: 12)),
                 ),
               ],
             ),
@@ -184,7 +160,7 @@ class POIDetailDialog extends ConsumerWidget {
             if (authUser != null)
               Align(
                 alignment: Alignment.centerLeft,
-                child: TextButton(
+                child: TextButton.icon(
                   onPressed: () {
                     ref.read(authNotifierProvider.notifier).toggleFavorite(
                       poi.name,
@@ -192,21 +168,12 @@ class POIDetailDialog extends ConsumerWidget {
                       poi.longitude,
                     );
                   },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isFavorite ? Icons.star : Icons.star_border,
-                        size: 16,
-                        color: isFavorite ? Colors.amber : Colors.grey,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
+                  icon: Icon(
+                    isFavorite ? Icons.star : Icons.star_border,
+                    size: 18,
+                    color: isFavorite ? Colors.amber : Colors.grey,
                   ),
+                  label: Text(isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES'),
                 ),
               ),
           ],
@@ -233,11 +200,10 @@ class POIDetailDialog extends ConsumerWidget {
     required OSMPOI poi,
     required VoidCallback onRouteTo,
     bool compact = false,
-    bool transparentBarrier = false,
   }) {
     return showDialog(
       context: context,
-      barrierColor: transparentBarrier ? Colors.transparent : null,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => POIDetailDialog(
         poi: poi,
         onRouteTo: onRouteTo,
