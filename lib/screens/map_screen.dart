@@ -569,7 +569,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
-      color: Colors.white.withValues(alpha: 0.6),
+      color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
       items: [
         PopupMenuItem<String>(
           value: 'add_poi',
@@ -577,7 +577,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               Icon(Icons.add_location, color: Colors.green[700]),
               const SizedBox(width: 8),
-              const Text('Add Community here', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const Text(
+                'Add Community here',
+                style: TextStyle(
+                  fontSize: CommonDialog.bodyFontSize,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -587,7 +593,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               Icon(Icons.warning, color: Colors.orange[700]),
               const SizedBox(width: 8),
-              const Text('Report Hazard here', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const Text(
+                'Report Hazard here',
+                style: TextStyle(
+                  fontSize: CommonDialog.bodyFontSize,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -597,7 +609,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               const Text('🚴‍♂️', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
-              const Text('Calculate a route to', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const Text(
+                'Calculate a route to',
+                style: TextStyle(
+                  fontSize: CommonDialog.bodyFontSize,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -608,7 +626,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               children: [
                 const Icon(Icons.star_border, color: Colors.amber),
                 const SizedBox(width: 8),
-                const Text('Add to Favorites', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                const Text(
+                  'Add to Favorites',
+                  style: TextStyle(
+                    fontSize: CommonDialog.bodyFontSize,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),
@@ -658,7 +682,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
-      color: Colors.white.withValues(alpha: 0.6),
+      color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
       items: [
         PopupMenuItem<String>(
           value: 'calculate_route',
@@ -666,7 +690,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               const Text('🚴‍♂️', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
-              const Text('Calculate a route to', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const Text(
+                'Calculate a route to',
+                style: TextStyle(
+                  fontSize: CommonDialog.bodyFontSize,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -679,7 +709,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 const SizedBox(width: 8),
                 Text(
                   isFavorite ? 'Favorited' : 'Add to Favorites',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: CommonDialog.bodyFontSize,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
