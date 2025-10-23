@@ -1,9 +1,10 @@
 /// API Keys Configuration
-/// Keys MUST be injected at build time using --dart-define flags or environment variables
-/// NO default values are provided for security reasons
+/// Keys are injected at build time via --dart-define flags
 ///
-/// For local development, create a .env file with your keys (see .env.example)
-/// For GitHub Actions, configure secrets in repository settings
+/// Three methods to provide API keys:
+/// 1. Native iOS builds from Xcode: Keys configured in Runner.xcscheme (EnvironmentVariables section)
+/// 2. GitHub Actions web builds: Keys stored as GitHub secrets and injected during build
+/// 3. Local shell script builds: Keys loaded from .env file and passed via --dart-define flags
 ///
 /// Required environment variables:
 /// - THUNDERFOREST_API_KEY: https://www.thunderforest.com/
