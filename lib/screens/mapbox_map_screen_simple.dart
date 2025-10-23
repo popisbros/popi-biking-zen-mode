@@ -298,6 +298,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   // Re-add markers after style change
                   _pointAnnotationManager = await _mapboxMap?.annotations.createPointAnnotationManager();
                   _addMarkers();
+                  if (!mounted) return;
                   Navigator.pop(context);
                   AppLogger.map('Style changed to ${mapService.getStyleName(style)}');
                 },
@@ -339,6 +340,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 onTap: () async {
                   setState(() => _currentPitch = pitch);
                   await _mapboxMap?.setCamera(CameraOptions(pitch: pitch));
+                  if (!mounted) return;
                   Navigator.pop(context);
                   AppLogger.map('Pitch changed to $pitch°');
                 },
@@ -378,6 +380,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       });
     }
 
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -428,6 +431,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Get screen coordinate for the map point
       final screenCoordinate = await _mapboxMap!.pixelForCoordinate(coordinates);
 
+      if (!mounted) return;
       // Get screen size
       final size = MediaQuery.of(context).size;
 
@@ -777,6 +781,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         });
       }
 
+      if (!mounted) return;
       final screenHeight = MediaQuery.of(context).size.height;
       final offsetPixels = screenHeight / 4; // User at 3/4 from top
 
