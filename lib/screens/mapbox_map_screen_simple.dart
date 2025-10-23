@@ -513,28 +513,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CommonDialog.buildListTileButton(
-                        leading: Icon(Icons.add_location, color: Colors.green[700]),
-                        title: const Text(
-                          'Add Community here',
-                          style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                      if (authUser != null)
+                        CommonDialog.buildListTileButton(
+                          leading: Icon(Icons.add_location, color: Colors.green[700]),
+                          title: const Text(
+                            'Add Community here',
+                            style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showAddPOIDialog(lat, lng);
+                          },
                         ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showAddPOIDialog(lat, lng);
-                        },
-                      ),
-                      CommonDialog.buildListTileButton(
-                        leading: Icon(Icons.warning, color: Colors.orange[700]),
-                        title: const Text(
-                          'Report Hazard here',
-                          style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                      if (authUser != null)
+                        CommonDialog.buildListTileButton(
+                          leading: Icon(Icons.warning, color: Colors.orange[700]),
+                          title: const Text(
+                            'Report Hazard here',
+                            style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showReportHazardDialog(lat, lng);
+                          },
                         ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showReportHazardDialog(lat, lng);
-                        },
-                      ),
                       CommonDialog.buildListTileButton(
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
                         title: const Text(

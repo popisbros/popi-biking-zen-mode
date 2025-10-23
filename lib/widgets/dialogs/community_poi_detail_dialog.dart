@@ -175,39 +175,41 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
                     ],
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // Navigate to edit screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => POIManagementScreenWithLocation(
-                          initialLatitude: poi.latitude,
-                          initialLongitude: poi.longitude,
-                          editingPOIId: poi.id,
+                if (authUser != null)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // Navigate to edit screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => POIManagementScreenWithLocation(
+                            initialLatitude: poi.latitude,
+                            initialLongitude: poi.longitude,
+                            editingPOIId: poi.id,
+                          ),
                         ),
-                      ),
-                    ).then((_) {
-                      // Reload map data after edit
-                      onDataChanged();
-                    });
-                  },
-                  child: const Text('EDIT', style: const TextStyle(fontSize: 12)),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    if (poi.id != null) {
-                      AppLogger.map('Deleting POI', data: {'id': poi.id});
-                      await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
-                      // Reload map data
-                      onDataChanged();
-                    }
-                  },
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: const Text('DELETE', style: const TextStyle(fontSize: 12)),
-                ),
+                      ).then((_) {
+                        // Reload map data after edit
+                        onDataChanged();
+                      });
+                    },
+                    child: const Text('EDIT', style: const TextStyle(fontSize: 12)),
+                  ),
+                if (authUser != null)
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      if (poi.id != null) {
+                        AppLogger.map('Deleting POI', data: {'id': poi.id});
+                        await ref.read(cyclingPOIsNotifierProvider.notifier).deletePOI(poi.id!);
+                        // Reload map data
+                        onDataChanged();
+                      }
+                    },
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('DELETE', style: const TextStyle(fontSize: 12)),
+                  ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('CLOSE', style: const TextStyle(fontSize: 12)),
