@@ -12,8 +12,7 @@ class AppTheme {
         primary: AppColors.urbanBlue,
         secondary: AppColors.mossGreen,
         tertiary: AppColors.signalYellow,
-        surface: AppColors.surface,
-        background: AppColors.background,
+        surface: AppColors.background, // Use surface instead of deprecated background
         error: AppColors.dangerRed,
       ),
       textTheme: GoogleFonts.interTextTheme().copyWith(

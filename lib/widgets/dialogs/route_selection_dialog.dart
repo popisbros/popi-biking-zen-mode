@@ -40,11 +40,11 @@ class RouteSelectionDialog extends ConsumerWidget {
               maxWidth: 400, // Maximum width
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6), // 60% opacity
+              color: Colors.white.withValues(alpha: 0.6), // 60% opacity
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),

@@ -615,7 +615,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
-      color: Colors.white.withOpacity(0.6),
+      color: Colors.white.withValues(alpha: 0.6),
       items: [
         PopupMenuItem<String>(
           value: 'add_poi',
@@ -704,7 +704,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         tapPosition.global & Size.zero,
         Offset.zero & overlay.size,
       ),
-      color: Colors.white.withOpacity(0.6),
+      color: Colors.white.withValues(alpha: 0.6),
       items: [
         PopupMenuItem<String>(
           value: 'calculate_route',
@@ -1296,7 +1296,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           height: size,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.orange.shade100.withOpacity(0.9),
+            color: Colors.orange.shade100.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             border: Border.all(
               color: Colors.orange.shade700,
@@ -1332,7 +1332,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           height: size,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.amber.shade100.withOpacity(0.9),
+            color: Colors.amber.shade100.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             border: Border.all(
               color: Colors.amber.shade700,

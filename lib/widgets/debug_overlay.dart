@@ -42,7 +42,7 @@ class _DebugOverlayState extends ConsumerState<DebugOverlay> {
       return Positioned.fill(
         child: IgnorePointer(
           child: Container(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             padding: const EdgeInsets.all(16),
             child: const Align(
               alignment: Alignment.topLeft,

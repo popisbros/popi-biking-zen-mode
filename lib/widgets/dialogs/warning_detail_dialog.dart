@@ -47,7 +47,7 @@ class WarningDetailDialog extends StatelessWidget {
     final topSpacing = compact ? 4.0 : 8.0;
 
     return AlertDialog(
-      backgroundColor: Colors.white.withOpacity(backgroundOpacity),
+      backgroundColor: Colors.white.withValues(alpha: backgroundOpacity),
       titlePadding: titlePadding,
       contentPadding: contentPadding,
       actionsPadding: actionsPadding,

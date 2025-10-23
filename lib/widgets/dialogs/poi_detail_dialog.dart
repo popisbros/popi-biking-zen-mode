@@ -42,7 +42,7 @@ class POIDetailDialog extends ConsumerWidget {
     final sectionSpacing = compact ? 6.0 : 12.0;
 
     return AlertDialog(
-      backgroundColor: Colors.white.withOpacity(backgroundOpacity),
+      backgroundColor: Colors.white.withValues(alpha: backgroundOpacity),
       titlePadding: titlePadding,
       contentPadding: contentPadding,
       actionsPadding: actionsPadding,
