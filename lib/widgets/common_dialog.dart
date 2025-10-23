@@ -184,7 +184,7 @@ class CommonDialog {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: borderColor ?? Colors.grey.withValues(alpha: 0.3),
+          color: borderColor ?? Colors.grey.withValues(alpha: 0.5),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(8),
@@ -222,7 +222,7 @@ class CommonDialog {
             label: Text(label, style: textColor != null ? TextStyle(color: textColor) : null),
             style: TextButton.styleFrom(
               side: BorderSide(
-                color: borderColor ?? Colors.grey.withValues(alpha: 0.3),
+                color: borderColor ?? Colors.grey.withValues(alpha: 0.5),
                 width: 1,
               ),
               shape: RoundedRectangleBorder(
@@ -234,7 +234,7 @@ class CommonDialog {
             onPressed: onPressed,
             style: TextButton.styleFrom(
               side: BorderSide(
-                color: borderColor ?? Colors.grey.withValues(alpha: 0.3),
+                color: borderColor ?? Colors.grey.withValues(alpha: 0.5),
                 width: 1,
               ),
               shape: RoundedRectangleBorder(
