@@ -1966,6 +1966,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Delayed GPS centering (retry after 2 seconds in case first attempt failed)
     Future.delayed(const Duration(seconds: 2), () {
+      // Check if widget is still mounted before accessing ref
+      if (!mounted) return;
+
       final locationState = ref.read(locationNotifierProvider);
       locationState.whenData((location) {
         if (location != null && mounted && _mapboxMap != null) {
@@ -2534,6 +2537,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.warning('Could not delete existing markers: $e', tag: 'MAP');
       // Continue anyway - might be first load
     }
+
+    // Check if widget is still mounted after async operation
+    if (!mounted) return;
 
     final mapState = ref.read(mapProvider);
 
