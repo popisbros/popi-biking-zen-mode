@@ -1249,6 +1249,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         // Show arrival dialog
         showDialog(
           context: context,
+          barrierColor: CommonDialog.barrierColor,
           barrierDismissible: false,
           builder: (context) => ArrivalDialog(
             destinationName: 'Your Destination',
