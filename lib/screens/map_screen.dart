@@ -29,6 +29,8 @@ import '../utils/geo_utils.dart';
 import '../utils/navigation_utils.dart';
 import '../utils/poi_dialog_handler.dart';
 import '../utils/route_calculation_helper.dart';
+import '../utils/map_navigation_tracker.dart';
+import '../models/map_models.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -75,11 +77,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   static const double _compassThreshold = 5.0; // Only rotate if change > 5°
 
   // Navigation mode: GPS breadcrumb tracking for map rotation
-  final List<_LocationBreadcrumb> _breadcrumbs = [];
-  double? _lastNavigationBearing; // Smoothed bearing for navigation mode
-  static const int _maxBreadcrumbs = 5;
-  static const double _minBreadcrumbDistance = 5.0; // meters - responsive at cycling speeds
-  static const Duration _breadcrumbMaxAge = Duration(seconds: 20); // 20s window for stable tracking
+  final MapNavigationTracker _navigationTracker = MapNavigationTracker();
 
   // Smooth auto-zoom state
   DateTime? _lastZoomChangeTime;
@@ -561,15 +559,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             final travelBearing = _calculateTravelDirection();
             if (travelBearing != null) {
               _mapController.rotate(-travelBearing); // Negative: up = direction of travel
-              _lastNavigationBearing = travelBearing;
 
               AppLogger.map('Navigation rotation', data: {
                 'bearing': '${travelBearing.toStringAsFixed(1)}°',
-                'breadcrumbs': _breadcrumbs.length,
+                'breadcrumbs': _navigationTracker.breadcrumbCount,
               });
-            } else if (_lastNavigationBearing != null) {
+            } else if (_navigationTracker.lastBearing != null) {
               // Keep last bearing when stationary
-              _mapController.rotate(-_lastNavigationBearing!);
+              _mapController.rotate(-_navigationTracker.lastBearing!);
             }
           } else {
             // Exploration mode: simple auto-center, keep zoom and rotation
@@ -943,7 +940,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
             // Rotate map to face the route direction
             _mapController.rotate(-initialBearing); // Negative: up = direction of travel
-            _lastNavigationBearing = initialBearing;
 
             AppLogger.debug('Map rotated to initial route bearing', tag: 'ROUTING', data: {
               'bearing': '${initialBearing.toStringAsFixed(1)}°',
@@ -1013,60 +1009,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Add GPS breadcrumb for navigation mode rotation
   void _addBreadcrumb(LocationData location) {
-    final now = DateTime.now();
-    final newPosition = LatLng(location.latitude, location.longitude);
-
-    // Remove old breadcrumbs
-    _breadcrumbs.removeWhere((b) => now.difference(b.timestamp) > _breadcrumbMaxAge);
-
-    // Only add if moved significant distance from last breadcrumb
-    if (_breadcrumbs.isNotEmpty) {
-      final lastPos = _breadcrumbs.last.position;
-      final distance = GeoUtils.calculateDistance(
-        lastPos.latitude, lastPos.longitude,
-        newPosition.latitude, newPosition.longitude,
-      );
-      if (distance < _minBreadcrumbDistance) return; // Too close, skip
-    }
-
-    _breadcrumbs.add(_LocationBreadcrumb(
-      position: newPosition,
-      timestamp: now,
-      speed: location.speed,
-    ));
-
-    // Keep only recent breadcrumbs
-    if (_breadcrumbs.length > _maxBreadcrumbs) {
-      _breadcrumbs.removeAt(0);
-    }
+    _navigationTracker.addBreadcrumb(location);
   }
 
   /// Calculate travel direction from breadcrumbs (returns null if insufficient data)
   double? _calculateTravelDirection() {
-    if (_breadcrumbs.length < 2) return null;
-
-    final start = _breadcrumbs.first.position;
-    final end = _breadcrumbs.last.position;
-
-    final totalDistance = GeoUtils.calculateDistance(
-      start.latitude, start.longitude,
-      end.latitude, end.longitude,
-    );
-
-    // Need at least 8m total movement (slightly more than GPS accuracy)
-    if (totalDistance < 8) return null;
-
-    final bearing = GeoUtils.calculateBearing(start, end);
-
-    // Smooth bearing with last value (70% new, 30% old) - 3x more responsive
-    if (_lastNavigationBearing != null) {
-      final diff = (bearing - _lastNavigationBearing!).abs();
-      if (diff < 180) {
-        return bearing * 0.7 + _lastNavigationBearing! * 0.3;
-      }
-    }
-
-    return bearing;
+    return _navigationTracker.calculateTravelDirection(smoothingRatio: 0.7);
   }
 
   void _open3DMap() {
@@ -1562,9 +1510,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         // Use navigation bearing if available (from route or GPS movement),
         // otherwise use compass/GPS heading as fallback
         double? heading;
-        if (isNavigationMode && _lastNavigationBearing != null) {
+        if (isNavigationMode && _navigationTracker.lastBearing != null) {
           // Use calculated navigation bearing (from route or breadcrumbs)
-          heading = _lastNavigationBearing;
+          heading = _navigationTracker.lastBearing;
         } else {
           // Fallback to compass heading on Native, or GPS heading
           heading = !kIsWeb && compassHeading != null ? compassHeading : location.heading;
@@ -1575,7 +1523,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'heading': heading?.toStringAsFixed(1),
           'hasHeading': hasHeading,
           'isNavigationMode': isNavigationMode,
-          'source': isNavigationMode && _lastNavigationBearing != null ? 'navigation' : 'gps/compass',
+          'source': isNavigationMode && _navigationTracker.lastBearing != null ? 'navigation' : 'gps/compass',
         });
 
         final userSize = MarkerConfig.getRadiusForType(POIMarkerType.userLocation) * 2;
@@ -2449,17 +2397,4 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       const DebugOverlay(),
     ]; // End map and controls list
   }
-}
-
-/// Helper class for tracking GPS breadcrumbs (navigation mode)
-class _LocationBreadcrumb {
-  final LatLng position;
-  final DateTime timestamp;
-  final double? speed; // m/s
-
-  _LocationBreadcrumb({
-    required this.position,
-    required this.timestamp,
-    this.speed,
-  });
 }

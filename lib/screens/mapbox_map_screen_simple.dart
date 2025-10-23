@@ -29,6 +29,8 @@ import '../utils/navigation_utils.dart';
 import '../utils/poi_dialog_handler.dart';
 import '../utils/poi_utils.dart';
 import '../utils/route_calculation_helper.dart';
+import '../utils/map_navigation_tracker.dart';
+import '../models/map_models.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
 import '../widgets/search_bar_widget.dart';
@@ -67,11 +69,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   double? _lastCameraZoom;
 
   // Navigation mode: GPS breadcrumb tracking for map rotation
-  final List<_LocationBreadcrumb> _breadcrumbs = [];
-  double? _lastNavigationBearing; // Smoothed bearing for navigation mode
-  static const int _maxBreadcrumbs = 5;
-  static const double _minBreadcrumbDistance = 5.0; // meters - responsive at cycling speeds
-  static const Duration _breadcrumbMaxAge = Duration(seconds: 20); // 20s window for stable tracking
+  final MapNavigationTracker _navigationTracker = MapNavigationTracker();
 
   // GPS auto-center tracking
   latlong.LatLng? _originalGPSReference;
@@ -87,7 +85,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   final Set<int> _traveledSegmentIndices = {};
 
   // Cache segment metadata for efficient updates
-  final List<_RouteSegmentMetadata> _routeSegments = [];
+  final List<RouteSegmentMetadata> _routeSegments = [];
 
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
@@ -780,7 +778,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final firstRoutePoint = route.points.first;
         final initialBearing = GeoUtils.calculateBearing(userPosition, firstRoutePoint);
         bearing = initialBearing;
-        _lastNavigationBearing = initialBearing;
 
         AppLogger.debug('Initial route bearing calculated', tag: 'NAVIGATION', data: {
           'bearing': '${initialBearing.toStringAsFixed(1)}°',
@@ -2885,7 +2882,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           final isTraveled = currentPointIndex != null && segmentEndIndex < currentPointIndex;
 
           // Cache segment metadata for efficient updates
-          _routeSegments.add(_RouteSegmentMetadata(
+          _routeSegments.add(RouteSegmentMetadata(
             index: i,
             endIndex: segmentEndIndex,
             originalColor: segment.color,
@@ -3419,14 +3416,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
               MapAnimationOptions(duration: 500), // 500ms smooth animation
             );
-            _lastNavigationBearing = travelBearing;
-          } else if (_lastNavigationBearing != null) {
+          } else if (_navigationTracker.lastBearing != null) {
             // Keep last bearing when stationary
             await _mapboxMap!.easeTo(
               CameraOptions(
                 center: Point(coordinates: Position(location.longitude, location.latitude)),
                 zoom: actualZoom,
-                bearing: -_lastNavigationBearing!,
+                bearing: -_navigationTracker.lastBearing!,
                 pitch: _currentPitch,
               ),
               MapAnimationOptions(duration: 500),
@@ -3474,81 +3470,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Add breadcrumb for navigation mode rotation
   void _addBreadcrumb(LocationData location) {
-    final now = DateTime.now();
-    final newPosition = latlong.LatLng(location.latitude, location.longitude);
-
-    // Remove old breadcrumbs
-    _breadcrumbs.removeWhere((b) => now.difference(b.timestamp) > _breadcrumbMaxAge);
-
-    // Only add if moved significant distance from last breadcrumb
-    if (_breadcrumbs.isNotEmpty) {
-      final lastPos = _breadcrumbs.last.position;
-      final distance = GeoUtils.calculateDistance(
-        lastPos.latitude, lastPos.longitude,
-        newPosition.latitude, newPosition.longitude,
-      );
-      if (distance < _minBreadcrumbDistance) return; // Too close, skip
-    }
-
-    _breadcrumbs.add(_LocationBreadcrumb(
-      position: newPosition,
-      timestamp: now,
-      speed: location.speed,
-    ));
-
-    // Keep only recent breadcrumbs
-    if (_breadcrumbs.length > _maxBreadcrumbs) {
-      _breadcrumbs.removeAt(0);
-    }
+    _navigationTracker.addBreadcrumb(location);
   }
 
   /// Calculate travel direction from breadcrumbs with smoothing
   double? _calculateTravelDirection() {
-    if (_breadcrumbs.length < 2) return null;
-
-    final start = _breadcrumbs.first.position;
-    final end = _breadcrumbs.last.position;
-
-    final totalDistance = GeoUtils.calculateDistance(
-      start.latitude, start.longitude,
-      end.latitude, end.longitude,
+    return _navigationTracker.calculateTravelDirection(
+      smoothingRatio: 0.9,
+      enableLogging: true,
     );
-
-    // Need at least 8m total movement (slightly more than GPS accuracy)
-    if (totalDistance < 8) return null;
-
-    final bearing = GeoUtils.calculateBearing(start, end);
-
-    AppLogger.debug('Bearing calculation', tag: 'BEARING', data: {
-      'startLat': start.latitude.toStringAsFixed(6),
-      'startLon': start.longitude.toStringAsFixed(6),
-      'endLat': end.latitude.toStringAsFixed(6),
-      'endLon': end.longitude.toStringAsFixed(6),
-      'calculatedBearing': '${bearing.toStringAsFixed(1)}°',
-      'direction': GeoUtils.formatBearing(bearing),
-    });
-
-    // Smooth bearing with last value (90% new, 10% old) - very responsive
-    double finalBearing = bearing;
-    if (_lastNavigationBearing != null) {
-      final diff = (bearing - _lastNavigationBearing!).abs();
-      if (diff < 180) {
-        finalBearing = bearing * 0.9 + _lastNavigationBearing! * 0.1;
-        AppLogger.debug('Bearing smoothed', tag: 'BEARING', data: {
-          'oldBearing': '${_lastNavigationBearing!.toStringAsFixed(1)}°',
-          'newBearing': '${bearing.toStringAsFixed(1)}°',
-          'smoothedBearing': '${finalBearing.toStringAsFixed(1)}°',
-          'appliedToMap': '${(-finalBearing).toStringAsFixed(1)}°',
-        });
-      }
-    } else {
-      AppLogger.debug('First bearing (no smoothing)', tag: 'BEARING', data: {
-        'bearing': '${finalBearing.toStringAsFixed(1)}°',
-        'appliedToMap': '${(-finalBearing).toStringAsFixed(1)}°',
-      });
-    }
-
-    return finalBearing;
   }
 
   /// Update traveled route segments efficiently by only updating changed segments
@@ -3697,8 +3627,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Keep current map rotation (don't reset to north)
 
     // Clear breadcrumbs
-    _breadcrumbs.clear();
-    _lastNavigationBearing = null;
+    _navigationTracker.clear();
 
     // Clear active route sheet
     setState(() {
@@ -3728,32 +3657,6 @@ class _OnPointClickListener extends OnPointAnnotationClickListener {
     AppLogger.map('Point annotation clicked', data: {'lat': coords.lat, 'lng': coords.lng});
     onTap(coords.lat.toDouble(), coords.lng.toDouble());
   }
-}
-
-/// Helper class for GPS breadcrumb tracking
-class _LocationBreadcrumb {
-  final latlong.LatLng position;
-  final DateTime timestamp;
-  final double? speed; // m/s
-
-  _LocationBreadcrumb({
-    required this.position,
-    required this.timestamp,
-    this.speed,
-  });
-}
-
-/// Helper class to cache route segment metadata for efficient updates
-class _RouteSegmentMetadata {
-  final int index;
-  final int endIndex;
-  final Color originalColor;
-
-  _RouteSegmentMetadata({
-    required this.index,
-    required this.endIndex,
-    required this.originalColor,
-  });
 }
 
 /// Route stat widget for navigation sheet
