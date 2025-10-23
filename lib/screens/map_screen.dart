@@ -66,6 +66,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _hasTriggeredInitialPOILoad = false; // Track if we've loaded POIs on first location
 
   // Smart reload logic - store loaded bounds and buffer zone
+  BoundingBox? _lastLoadedBounds;
   BoundingBox? _reloadTriggerBounds;
 
   // Compass rotation state (Native only)
@@ -83,8 +84,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // Smooth auto-zoom state
   DateTime? _lastZoomChangeTime;
   double? _currentAutoZoom;
+  double? _targetAutoZoom;
   static const Duration _zoomChangeInterval = Duration(seconds: 3);
   static const double _minZoomChangeThreshold = 0.5;
+
+  // Active route for persistent navigation sheet
+  RouteResult? _activeRoute;
 
   @override
   void initState() {
