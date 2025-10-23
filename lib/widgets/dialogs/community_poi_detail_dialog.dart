@@ -38,7 +38,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
     ) ?? false;
 
     // Styling based on compact mode
-    final backgroundOpacity = compact ? 0.9 : 0.6;
+    final backgroundOpacity = 0.6; // Always use 60% opacity for consistency
     final titleFontSize = compact ? 14.0 : null;
     final bodyFontSize = compact ? 12.0 : null;
     final titlePadding = compact ? const EdgeInsets.fromLTRB(24, 16, 24, 8) : null;

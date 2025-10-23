@@ -500,7 +500,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withValues(alpha: 0.9),
+                  backgroundColor: Colors.white.withValues(alpha: 0.6),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
@@ -592,7 +592,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withValues(alpha: 0.9),
+                  backgroundColor: Colors.white.withValues(alpha: 0.6),
                   titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
                   contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
                   title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
