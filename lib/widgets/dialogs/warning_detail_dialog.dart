@@ -189,11 +189,10 @@ class WarningDetailDialog extends StatelessWidget {
     required VoidCallback onEdit,
     required VoidCallback onDelete,
     bool compact = false,
-    bool transparentBarrier = false,
   }) {
     return showDialog(
       context: context,
-      barrierColor: transparentBarrier ? Colors.transparent : null,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => WarningDetailDialog(
         warning: warning,
         onEdit: onEdit,

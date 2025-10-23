@@ -499,17 +499,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withValues(alpha: 0.6),
-                  titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
+                  backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+                  titlePadding: CommonDialog.titlePadding,
+                  contentPadding: CommonDialog.contentPadding,
+                  title: const Text(
+                    'Possible Actions for this Location',
+                    style: TextStyle(
+                      fontSize: CommonDialog.titleFontSize,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: Icon(Icons.add_location, color: Colors.green[700]),
-                        title: const Text('Add Community here', style: TextStyle(fontSize: 12)),
+                        title: const Text(
+                          'Add Community here',
+                          style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                        ),
                         onTap: () {
                           Navigator.pop(context);
                           _showAddPOIDialog(lat, lng);
@@ -518,7 +527,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: Icon(Icons.warning, color: Colors.orange[700]),
-                        title: const Text('Report Hazard here', style: TextStyle(fontSize: 12)),
+                        title: const Text(
+                          'Report Hazard here',
+                          style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                        ),
                         onTap: () {
                           Navigator.pop(context);
                           _showReportHazardDialog(lat, lng);
@@ -527,7 +539,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
-                        title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
+                        title: const Text(
+                          'Calculate a route to',
+                          style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                        ),
                         onTap: () {
                           Navigator.pop(context);
                           _calculateRouteTo(lat, lng);
@@ -537,7 +552,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                           leading: const Icon(Icons.star_border, color: Colors.amber),
-                          title: const Text('Add to Favorites', style: TextStyle(fontSize: 12)),
+                          title: const Text(
+                            'Add to Favorites',
+                            style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                          ),
                           onTap: () {
                             Navigator.pop(context);
                             ref.read(authNotifierProvider.notifier).toggleFavorite(
@@ -591,17 +609,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                 right: 20,
                 top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
                 child: AlertDialog(
-                  backgroundColor: Colors.white.withValues(alpha: 0.6),
-                  titlePadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                  contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                  title: const Text('Possible Actions for this Location', style: TextStyle(fontSize: 14)),
+                  backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+                  titlePadding: CommonDialog.titlePadding,
+                  contentPadding: CommonDialog.contentPadding,
+                  title: const Text(
+                    'Possible Actions for this Location',
+                    style: TextStyle(
+                      fontSize: CommonDialog.titleFontSize,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                         leading: const Text('🚴‍♂️', style: TextStyle(fontSize: 22)),
-                        title: const Text('Calculate a route to', style: TextStyle(fontSize: 12)),
+                        title: const Text(
+                          'Calculate a route to',
+                          style: TextStyle(fontSize: CommonDialog.bodyFontSize),
+                        ),
                         onTap: () {
                           Navigator.pop(context);
                           _calculateRouteTo(lat, lng);
@@ -611,7 +638,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
                           leading: Icon(isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
-                          title: Text(isFavorite ? 'Favorited' : 'Add to Favorites', style: const TextStyle(fontSize: 12)),
+                          title: Text(
+                            isFavorite ? 'Favorited' : 'Add to Favorites',
+                            style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
+                          ),
                           onTap: () {
                             Navigator.pop(context);
                             // Get the search result name if available
