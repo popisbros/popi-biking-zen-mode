@@ -40,6 +40,7 @@ import '../widgets/navigation_card.dart';
 import '../widgets/navigation_controls.dart';
 import '../widgets/arrival_dialog.dart';
 import '../widgets/map_toggle_button.dart';
+import '../widgets/common_dialog.dart';
 import '../widgets/osm_poi_selector_button.dart';
 import '../widgets/profile_button.dart';
 import '../providers/debug_provider.dart';
@@ -712,94 +713,74 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Show dialog for favorites/destinations markers
   void _showFavoriteDestinationDetailsDialog(double latitude, double longitude, String name, bool isDestination) {
-    showDialog(
+    CommonDialog.show(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white.withValues(alpha: 0.6),
-          title: Row(
-            children: [
-              Text(isDestination ? '📍' : '⭐', style: const TextStyle(fontSize: 24)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  name,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+      title: CommonDialog.buildTitle(
+        emoji: isDestination ? '📍' : '⭐',
+        text: name,
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonDialog.buildCaptionText(
+            'Coordinates: ${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}',
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Coordinates: ${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            ],
-          ),
-          actions: [
-            Column(
+        ],
+      ),
+      actions: [
+        Column(
+          children: [
+            // First row: Route To and Close
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // First row: Route To and Close
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _calculateRouteTo(latitude, longitude, destinationName: name);
-                      },
-                      icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
-                      label: const Text('ROUTE TO'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('CLOSE'),
-                    ),
-                  ],
+                CommonDialog.buildActionButton(
+                  label: 'ROUTE TO',
+                  icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _calculateRouteTo(latitude, longitude, destinationName: name);
+                  },
                 ),
-                // Second row: Remove button (left-aligned)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // Find and remove the destination or favorite
-                      final userProfile = ref.read(userProfileProvider).value;
-                      if (userProfile != null) {
-                        if (isDestination) {
-                          final index = userProfile.recentDestinations.indexWhere(
-                            (dest) => dest.latitude == latitude && dest.longitude == longitude,
-                          );
-                          if (index != -1) {
-                            ref.read(authNotifierProvider.notifier).deleteDestination(index);
-                          }
-                        } else {
-                          final index = userProfile.favoriteLocations.indexWhere(
-                            (fav) => fav.latitude == latitude && fav.longitude == longitude,
-                          );
-                          if (index != -1) {
-                            ref.read(authNotifierProvider.notifier).deleteFavorite(index);
-                          }
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.delete, color: Colors.red, size: 18),
-                    label: Text(
-                      isDestination ? 'REMOVE FROM DESTINATIONS' : 'REMOVE FROM FAVORITES',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
+                CommonDialog.buildActionButton(
+                  label: 'CLOSE',
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
+            // Second row: Remove button (left-aligned)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CommonDialog.buildDestructiveButton(
+                label: isDestination ? 'REMOVE FROM DESTINATIONS' : 'REMOVE FROM FAVORITES',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Find and remove the destination or favorite
+                  final userProfile = ref.read(userProfileProvider).value;
+                  if (userProfile != null) {
+                    if (isDestination) {
+                      final index = userProfile.recentDestinations.indexWhere(
+                        (dest) => dest.latitude == latitude && dest.longitude == longitude,
+                      );
+                      if (index != -1) {
+                        ref.read(authNotifierProvider.notifier).deleteDestination(index);
+                      }
+                    } else {
+                      final index = userProfile.favoriteLocations.indexWhere(
+                        (fav) => fav.latitude == latitude && fav.longitude == longitude,
+                      );
+                      if (index != -1) {
+                        ref.read(authNotifierProvider.notifier).deleteFavorite(index);
+                      }
+                    }
+                  }
+                },
+              ),
+            ),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 
