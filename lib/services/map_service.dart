@@ -91,10 +91,10 @@ class MapService {
         return 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
 
       case MapLayerType.wike2D:
-        // Wike 2D - Raster tiles from the same Wike 3D Mapbox style
+        // Wike 2D - Raster tiles from Wike 2D Mapbox style
         // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{tilesize}/{z}/{x}/{y}
         // Using @2x for high-resolution (retina) tiles, or use 256 for standard
-        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmgclfgn400f001pd72ofcdg9/tiles/512/{z}/{x}/{y}@2x?access_token=${ApiKeys.mapboxAccessToken}';
+        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/512/{z}/{x}/{y}@2x?access_token=${ApiKeys.mapboxAccessToken}';
 
       case MapLayerType.satellite:
         // MapTiler Satellite
