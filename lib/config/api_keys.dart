@@ -12,6 +12,7 @@
 /// - MAPBOX_ACCESS_TOKEN: https://account.mapbox.com/
 /// - LOCATIONIQ_API_KEY: https://locationiq.com/
 /// - GRAPHHOPPER_API_KEY: https://www.graphhopper.com/
+/// - OPENROUTESERVICE_API_KEY: https://openrouteservice.org/
 class ApiKeys {
   // Thunderforest API Key (for OpenCycleMap, Cycle, Outdoors layers)
   static const String thunderforestApiKey = String.fromEnvironment(
@@ -40,6 +41,12 @@ class ApiKeys {
   // Graphhopper API Key (for routing)
   static const String graphhopperApiKey = String.fromEnvironment(
     'GRAPHHOPPER_API_KEY',
+    defaultValue: '', // No default - must be provided via environment
+  );
+
+  // OpenRouteService API Key (for routing - alternative to GraphHopper)
+  static const String openrouteserviceApiKey = String.fromEnvironment(
+    'OPENROUTESERVICE_API_KEY',
     defaultValue: '', // No default - must be provided via environment
   );
 }
