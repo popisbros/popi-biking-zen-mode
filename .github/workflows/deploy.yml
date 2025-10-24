@@ -39,6 +39,7 @@ jobs:
           MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
           LOCATIONIQ_API_KEY: ${{ secrets.LOCATIONIQ_API_KEY }}
           GRAPHHOPPER_API_KEY: ${{ secrets.GRAPHHOPPER_API_KEY }}
+          OPENROUTESERVICE_API_KEY: ${{ secrets.OPENROUTESERVICE_API_KEY }}
         run: |
           flutter build web --debug \
             --base-href="/popi-biking-zen-mode/" \
@@ -46,7 +47,8 @@ jobs:
             --dart-define=MAPTILER_API_KEY="${MAPTILER_API_KEY}" \
             --dart-define=MAPBOX_ACCESS_TOKEN="${MAPBOX_ACCESS_TOKEN}" \
             --dart-define=LOCATIONIQ_API_KEY="${LOCATIONIQ_API_KEY}" \
-            --dart-define=GRAPHHOPPER_API_KEY="${GRAPHHOPPER_API_KEY}"
+            --dart-define=GRAPHHOPPER_API_KEY="${GRAPHHOPPER_API_KEY}" \
+            --dart-define=OPENROUTESERVICE_API_KEY="${OPENROUTESERVICE_API_KEY}"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
