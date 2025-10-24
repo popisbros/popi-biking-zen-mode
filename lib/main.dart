@@ -57,6 +57,15 @@ void main() async {
     if (!kIsWeb) {
       AppLogger.info('Initializing Firebase Crashlytics', tag: 'CRASHLYTICS');
 
+      // Disable Crashlytics collection in debug mode to reduce noise
+      if (kDebugMode) {
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
+        AppLogger.info('Crashlytics collection DISABLED in debug mode', tag: 'CRASHLYTICS');
+      } else {
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+        AppLogger.info('Crashlytics collection ENABLED in release mode', tag: 'CRASHLYTICS');
+      }
+
       // Pass all uncaught "fatal" errors from the framework to Crashlytics
       FlutterError.onError = (FlutterErrorDetails details) {
         AppLogger.error('Flutter error (sent to Crashlytics)', error: details.exception, stackTrace: details.stack);
