@@ -18,8 +18,8 @@ enum MapLayerType {
   /// CyclOSM - Community cycling map focused on bike infrastructure
   cyclOSM,
 
-  /// Wike 2D - Custom cycling style rendered as raster tiles from Mapbox
-  wike2D,
+  /// Wike 2D - Custom cycling style (DISABLED - Mapbox GL styles cannot be exported as raster tiles)
+  // wike2D,
 
   /// Satellite - Aerial imagery
   satellite,
@@ -90,14 +90,14 @@ class MapService {
         // CyclOSM - Community-driven cycling map
         return 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
 
-      case MapLayerType.wike2D:
-        // Wike 2D - Trying Mapbox Raster Tiles API v4 format
-        // Docs: https://docs.mapbox.com/api/maps/raster-tiles/
-        // Format: https://api.mapbox.com/v4/{map_id}/{z}/{x}/{y}@2x.png?access_token=...
-        // Note: This requires the style to be published and accessible
-
-        // Try the v4 raster endpoint (older but more compatible)
-        return 'https://api.mapbox.com/v4/sylvainbrosset.cmh4kecsz008101s705b482zb/{z}/{x}/{y}.png?access_token=${ApiKeys.mapboxAccessToken}';
+      // case MapLayerType.wike2D:
+      //   // Wike 2D - DISABLED
+      //   // Mapbox GL styles (like cmh4kecsz008101s705b482zb) cannot be exported as raster tiles
+      //   // They are vector-only and require Mapbox GL rendering (like in the 3D map)
+      //   // To use Wike styling in 2D map, you would need to:
+      //   // 1. Export the style to MapTiler and use their raster tile endpoint
+      //   // 2. Or use a different 2D tile provider for flutter_map
+      //   return '';
 
       case MapLayerType.satellite:
         // MapTiler Satellite
@@ -138,8 +138,8 @@ class MapService {
       case MapLayerType.cyclOSM:
         return '© CyclOSM, © OpenStreetMap contributors';
 
-      case MapLayerType.wike2D:
-        return '© Mapbox, © OpenStreetMap contributors';
+      // case MapLayerType.wike2D:
+      //   return '© Mapbox, © OpenStreetMap contributors';
 
       case MapLayerType.satellite:
         return '© MapTiler, © OpenStreetMap contributors';
@@ -167,8 +167,8 @@ class MapService {
         return 'Outdoors (Thunderforest)';
       case MapLayerType.cyclOSM:
         return 'CyclOSM (Community)';
-      case MapLayerType.wike2D:
-        return 'Wike 2D (Mapbox)';
+      // case MapLayerType.wike2D:
+      //   return 'Wike 2D (Mapbox)';
       case MapLayerType.satellite:
         return 'Satellite (MapTiler)';
       case MapLayerType.terrain:
