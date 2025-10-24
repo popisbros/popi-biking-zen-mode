@@ -91,11 +91,13 @@ class MapService {
         return 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
 
       case MapLayerType.wike2D:
-        // Wike 2D - Raster tiles from Wike 2D Mapbox style
-        // Mapbox Static Tiles API: https://docs.mapbox.com/api/maps/static-tiles/
-        // Standard 256x256 tiles (without @2x for now to test if it works)
-        // TODO: Once working, can try @2x for higher resolution
-        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/256/{z}/{x}/{y}?access_token=${ApiKeys.mapboxAccessToken}';
+        // Wike 2D - Trying Mapbox Raster Tiles API v4 format
+        // Docs: https://docs.mapbox.com/api/maps/raster-tiles/
+        // Format: https://api.mapbox.com/v4/{map_id}/{z}/{x}/{y}@2x.png?access_token=...
+        // Note: This requires the style to be published and accessible
+
+        // Try the v4 raster endpoint (older but more compatible)
+        return 'https://api.mapbox.com/v4/sylvainbrosset.cmh4kecsz008101s705b482zb/{z}/{x}/{y}.png?access_token=${ApiKeys.mapboxAccessToken}';
 
       case MapLayerType.satellite:
         // MapTiler Satellite
