@@ -92,10 +92,10 @@ class MapService {
 
       case MapLayerType.wike2D:
         // Wike 2D - Mapbox Static Tiles API v1
-        // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{tilesize}/{z}/{x}/{y}.png
-        // Using standard 256px tiles with .png extension for flutter_map compatibility
-        // Note: Tiles ARE working (tested via browser), format confirmed as valid PNG
-        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/256/{z}/{x}/{y}.png?access_token=${ApiKeys.mapboxAccessToken}';
+        // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{tilesize}/{z}/{x}/{y}
+        // NO .png extension (causes 404 Not Found)
+        // Tile 0/0/0 tested successfully, returns valid PNG
+        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/256/{z}/{x}/{y}?access_token=${ApiKeys.mapboxAccessToken}';
 
       case MapLayerType.satellite:
         // MapTiler Satellite
