@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/api_keys.dart';
@@ -7,6 +7,7 @@ import '../models/routing_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
 import 'route_hazard_detector.dart';
+import 'toast_service.dart';
 
 /// Route type enumeration
 enum RouteType {
@@ -188,13 +189,34 @@ class RoutingService {
   }) async {
     // OpenRouteService doesn't support CORS for web browsers
     if (kIsWeb) {
-      AppLogger.error('OpenRouteService is not available for web builds due to CORS restrictions', tag: 'ROUTING');
+      const errorMsg = 'OpenRouteService is not available for web builds due to CORS restrictions';
+      AppLogger.error(errorMsg, tag: 'ROUTING');
+      if (kDebugMode) {
+        ToastService.error('Debug: $errorMsg');
+      }
       return null;
     }
 
     if (ApiKeys.openrouteserviceApiKey.isEmpty) {
-      AppLogger.error('OpenRouteService API key not configured', tag: 'ROUTING');
+      const errorMsg = 'OpenRouteService API key not configured';
+      AppLogger.error(errorMsg, tag: 'ROUTING');
+      if (kDebugMode) {
+        ToastService.error('Debug: $errorMsg');
+      }
       return null;
+    }
+
+    AppLogger.debug('OpenRouteService: Starting route calculation', tag: 'ROUTING', data: {
+      'from': '$startLat,$startLon',
+      'to': '$endLat,$endLon',
+    });
+
+    // EXPLICIT console output for debugging
+    if (kDebugMode) {
+      print('🔵 [OPENROUTESERVICE DEBUG] Starting route calculation');
+      print('🔵 [OPENROUTESERVICE DEBUG] From: $startLat,$startLon');
+      print('🔵 [OPENROUTESERVICE DEBUG] To: $endLat,$endLon');
+      print('🔵 [OPENROUTESERVICE DEBUG] API Key: ${ApiKeys.openrouteserviceApiKey.isEmpty ? "EMPTY" : "configured (${ApiKeys.openrouteserviceApiKey.length} chars)"}');
     }
 
     // Calculate all three routes in parallel with different preferences
@@ -229,13 +251,20 @@ class RoutingService {
     final validRoutes = results.whereType<RouteResult>().toList();
 
     if (validRoutes.isEmpty) {
-      AppLogger.warning('No routes found', tag: 'ROUTING');
+      const errorMsg = 'OpenRouteService: No routes found';
+      AppLogger.warning(errorMsg, tag: 'ROUTING');
+      if (kDebugMode) {
+        ToastService.error('Debug: $errorMsg');
+      }
       return null;
     }
 
-    AppLogger.success('Calculated ${validRoutes.length} route(s)', tag: 'ROUTING', data: {
+    AppLogger.success('OpenRouteService: Calculated ${validRoutes.length} route(s)', tag: 'ROUTING', data: {
       'types': validRoutes.map((r) => r.type.name).join(', '),
     });
+    if (kDebugMode) {
+      ToastService.success('Debug: OpenRouteService returned ${validRoutes.length} routes');
+    }
     return validRoutes;
   }
 
@@ -250,8 +279,16 @@ class RoutingService {
   }) async {
     final stopwatch = Stopwatch()..start();
 
+    if (kDebugMode) {
+      print('🔵 [OPENROUTESERVICE DEBUG] Calculating ${type.name} route with preference: $preference');
+    }
+
     try {
       final uri = Uri.parse('$_openrouteserviceBaseUrl/directions/cycling-regular/geojson');
+
+      if (kDebugMode) {
+        print('🔵 [OPENROUTESERVICE DEBUG] URL: $uri');
+      }
 
       final requestBody = jsonEncode({
         "coordinates": [
@@ -265,6 +302,10 @@ class RoutingService {
         "instructions": false,
         "elevation": false,
       });
+
+      if (kDebugMode) {
+        print('🔵 [OPENROUTESERVICE DEBUG] Request body: $requestBody');
+      }
 
       final response = await http.post(
         uri,
@@ -281,6 +322,14 @@ class RoutingService {
       );
 
       stopwatch.stop();
+
+      if (kDebugMode) {
+        print('🔵 [OPENROUTESERVICE DEBUG] Response status: ${response.statusCode}');
+        print('🔵 [OPENROUTESERVICE DEBUG] Response body length: ${response.body.length} chars');
+        if (response.statusCode != 200) {
+          print('🔴 [OPENROUTESERVICE DEBUG] ERROR Response body: ${response.body}');
+        }
+      }
 
       // Log API call to Firestore
       await ApiLogger.logApiCall(
@@ -301,10 +350,15 @@ class RoutingService {
       );
 
       if (response.statusCode != 200) {
-        AppLogger.error('OpenRouteService API error for ${type.name} route', tag: 'ROUTING', data: {
+        final errorMsg = 'OpenRouteService API error for ${type.name} route: HTTP ${response.statusCode}';
+        AppLogger.error(errorMsg, tag: 'ROUTING', data: {
           'statusCode': response.statusCode,
           'body': response.body,
+          'preference': preference,
         });
+        if (kDebugMode) {
+          ToastService.error('Debug: $errorMsg\nBody: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}');
+        }
         return null;
       }
 
@@ -350,7 +404,14 @@ class RoutingService {
     } catch (e, stackTrace) {
       stopwatch.stop();
 
-      AppLogger.error('Failed to calculate ${type.name} route', tag: 'ROUTING', error: e, stackTrace: stackTrace);
+      final errorMsg = 'Failed to calculate ${type.name} route with OpenRouteService: ${e.toString()}';
+      AppLogger.error(errorMsg, tag: 'ROUTING', error: e, stackTrace: stackTrace, data: {
+        'preference': preference,
+        'coordinates': '$startLat,$startLon -> $endLat,$endLon',
+      });
+      if (kDebugMode) {
+        ToastService.error('Debug: $errorMsg');
+      }
       return null;
     }
   }
