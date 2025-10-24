@@ -93,9 +93,9 @@ class MapService {
       case MapLayerType.wike2D:
         // Wike 2D - Raster tiles from Wike 2D Mapbox style
         // Mapbox Static Tiles API: https://docs.mapbox.com/api/maps/static-tiles/
-        // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{z}/{x}/{y}@2x?access_token=...
-        // @2x provides high-resolution (512x512) tiles for retina displays
-        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/{z}/{x}/{y}@2x?access_token=${ApiKeys.mapboxAccessToken}';
+        // Standard 256x256 tiles (without @2x for now to test if it works)
+        // TODO: Once working, can try @2x for higher resolution
+        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/256/{z}/{x}/{y}?access_token=${ApiKeys.mapboxAccessToken}';
 
       case MapLayerType.satellite:
         // MapTiler Satellite

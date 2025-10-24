@@ -1744,6 +1744,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     subdomains: mapState.tileUrl.contains('mapbox.com') ? const [] : const ['a', 'b', 'c'],
                     // Set tile size to 512 for high-res Mapbox @2x tiles, otherwise 256
                     tileSize: mapState.tileUrl.contains('@2x') ? 512 : 256,
+                    // Error handler for tile loading failures
+                    errorTileCallback: (tile, error, stackTrace) {
+                      AppLogger.error('Tile loading failed', tag: 'MAP', error: error, stackTrace: stackTrace, data: {
+                        'tileUrl': mapState.tileUrl,
+                        'errorMessage': error.toString(),
+                      });
+                    },
                   ),
                   // Preview routes layer (shown during route selection)
                   if (searchState.previewFastestRoute != null && (searchState.previewSafestRoute != null || searchState.previewShortestRoute != null))
