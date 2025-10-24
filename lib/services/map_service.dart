@@ -18,8 +18,8 @@ enum MapLayerType {
   /// CyclOSM - Community cycling map focused on bike infrastructure
   cyclOSM,
 
-  /// Wike 2D - Custom cycling style rendered as raster tiles from Mapbox
-  wike2D,
+  /// Wike 2D - DISABLED (style returns empty tiles, not suitable for raster export)
+  // wike2D,
 
   /// Satellite - Aerial imagery
   satellite,
@@ -90,12 +90,12 @@ class MapService {
         // CyclOSM - Community-driven cycling map
         return 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
 
-      case MapLayerType.wike2D:
-        // Wike 2D - Mapbox Static Tiles API v1
-        // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{tilesize}/{z}/{x}/{y}
-        // NO .png extension (causes 404 Not Found)
-        // Tile 0/0/0 tested successfully, returns valid PNG
-        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/256/{z}/{x}/{y}?access_token=${ApiKeys.mapboxAccessToken}';
+      // case MapLayerType.wike2D:
+      //   // Wike 2D - DISABLED
+      //   // Style cmh4kecsz008101s705b482zb returns empty/white tiles
+      //   // Mapbox GL styles with 3D data don't export well to raster tiles
+      //   // Use CyclOSM or OpenCycleMap for 2D cycling maps instead
+      //   return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/256/{z}/{x}/{y}?access_token=${ApiKeys.mapboxAccessToken}';
 
       case MapLayerType.satellite:
         // MapTiler Satellite
@@ -136,8 +136,8 @@ class MapService {
       case MapLayerType.cyclOSM:
         return '© CyclOSM, © OpenStreetMap contributors';
 
-      case MapLayerType.wike2D:
-        return '© Mapbox, © OpenStreetMap contributors';
+      // case MapLayerType.wike2D:
+      //   return '© Mapbox, © OpenStreetMap contributors';
 
       case MapLayerType.satellite:
         return '© MapTiler, © OpenStreetMap contributors';
@@ -165,8 +165,8 @@ class MapService {
         return 'Outdoors (Thunderforest)';
       case MapLayerType.cyclOSM:
         return 'CyclOSM (Community)';
-      case MapLayerType.wike2D:
-        return 'Wike 2D (Mapbox)';
+      // case MapLayerType.wike2D:
+      //   return 'Wike 2D (Mapbox)';
       case MapLayerType.satellite:
         return 'Satellite (MapTiler)';
       case MapLayerType.terrain:
