@@ -92,9 +92,10 @@ class MapService {
 
       case MapLayerType.wike2D:
         // Wike 2D - Raster tiles from Wike 2D Mapbox style
-        // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{tilesize}/{z}/{x}/{y}
-        // Using @2x for high-resolution (retina) tiles, or use 256 for standard
-        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/512/{z}/{x}/{y}@2x?access_token=${ApiKeys.mapboxAccessToken}';
+        // Mapbox Static Tiles API: https://docs.mapbox.com/api/maps/static-tiles/
+        // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/{z}/{x}/{y}@2x?access_token=...
+        // @2x provides high-resolution (512x512) tiles for retina displays
+        return 'https://api.mapbox.com/styles/v1/sylvainbrosset/cmh4kecsz008101s705b482zb/tiles/{z}/{x}/{y}@2x?access_token=${ApiKeys.mapboxAccessToken}';
 
       case MapLayerType.satellite:
         // MapTiler Satellite

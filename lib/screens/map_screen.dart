@@ -1742,8 +1742,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     userAgentPackageName: 'com.popibiking.popiBikingFresh',
                     // Only use subdomains for tile providers that support it (not Mapbox)
                     subdomains: mapState.tileUrl.contains('mapbox.com') ? const [] : const ['a', 'b', 'c'],
-                    // Set tile size to 512 for high-res Mapbox tiles
-                    tileSize: mapState.tileUrl.contains('tiles/512') ? 512 : 256,
+                    // Set tile size to 512 for high-res Mapbox @2x tiles, otherwise 256
+                    tileSize: mapState.tileUrl.contains('@2x') ? 512 : 256,
                   ),
                   // Preview routes layer (shown during route selection)
                   if (searchState.previewFastestRoute != null && (searchState.previewSafestRoute != null || searchState.previewShortestRoute != null))
