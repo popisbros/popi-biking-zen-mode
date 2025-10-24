@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/routing_provider.dart';
@@ -28,6 +29,20 @@ class _RoutingProviderDialogState extends ConsumerState<RoutingProviderDialog> {
   Widget build(BuildContext context) {
     final currentProvider = ref.watch(routingProviderProvider);
     _selectedProvider ??= currentProvider;
+
+    // Filter providers based on platform
+    final availableProviders = RoutingProvider.values.where((provider) {
+      // OpenRouteService doesn't work on web due to CORS
+      if (kIsWeb && provider == RoutingProvider.openrouteservice) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    // If current selection is not available, default to first available
+    if (!availableProviders.contains(_selectedProvider)) {
+      _selectedProvider = availableProviders.first;
+    }
 
     return AlertDialog(
       backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
@@ -62,10 +77,40 @@ class _RoutingProviderDialogState extends ConsumerState<RoutingProviderDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Provider options
-            ...RoutingProvider.values.map((provider) {
+            ...availableProviders.map((provider) {
               return _buildProviderOption(provider);
             }),
             const SizedBox(height: 16),
+            // Web limitation notice
+            if (kIsWeb)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_outlined, size: 20, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'OpenRouteService is not available on web due to browser CORS restrictions. Use the mobile app for all routing providers.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[300],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // Info text
             Container(
               padding: const EdgeInsets.all(12),

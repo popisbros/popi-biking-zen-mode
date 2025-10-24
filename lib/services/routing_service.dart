@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/api_keys.dart';
@@ -185,6 +186,12 @@ class RoutingService {
     required double endLat,
     required double endLon,
   }) async {
+    // OpenRouteService doesn't support CORS for web browsers
+    if (kIsWeb) {
+      AppLogger.error('OpenRouteService is not available for web builds due to CORS restrictions', tag: 'ROUTING');
+      return null;
+    }
+
     if (ApiKeys.openrouteserviceApiKey.isEmpty) {
       AppLogger.error('OpenRouteService API key not configured', tag: 'ROUTING');
       return null;
