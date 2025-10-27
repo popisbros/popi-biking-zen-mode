@@ -1977,7 +1977,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         MapToggleButton(
                           isActive: favoritesVisible,
                           icon: Icons.star,
-                          activeColor: Colors.yellow.shade700,
+                          activeColor: Colors.yellow.shade600,
                           count: totalCount,
                           enabled: true, // Always enabled (not zoom-dependent)
                           onPressed: () {
