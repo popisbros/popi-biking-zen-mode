@@ -39,9 +39,6 @@ dependencies:
   # HTTP & API
   http: ^1.2.2
 
-  # Storage
-  shared_preferences: ^2.3.5
-
   riverpod: any
 dev_dependencies:
   flutter_test:

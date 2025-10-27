@@ -1,13 +1,10 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import '../config/api_keys.dart';
-import '../models/routing_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
 import 'route_hazard_detector.dart';
-import 'toast_service.dart';
 
 /// Route type enumeration
 enum RouteType {
@@ -89,10 +86,9 @@ class RouteInstruction {
   }
 }
 
-/// Service for calculating cycling routes using multiple routing providers
+/// Service for calculating cycling routes using Graphhopper API
 class RoutingService {
   static const String _graphhopperBaseUrl = 'https://graphhopper.com/api/1';
-  static const String _openrouteserviceBaseUrl = 'https://api.openrouteservice.org/v2';
 
   /// Calculate multiple routes with different profiles (fastest, safest, shortest)
   ///
@@ -102,44 +98,16 @@ class RoutingService {
     required double startLon,
     required double endLat,
     required double endLon,
-    RoutingProvider provider = RoutingProvider.graphhopper,
-  }) async {
-    AppLogger.api('Calculating multiple routes (fastest, safest, shortest)', data: {
-      'from': '$startLat,$startLon',
-      'to': '$endLat,$endLon',
-      'provider': provider.displayName,
-    });
-
-    // Route to appropriate provider
-    switch (provider) {
-      case RoutingProvider.graphhopper:
-        return _calculateGraphHopperRoutes(
-          startLat: startLat,
-          startLon: startLon,
-          endLat: endLat,
-          endLon: endLon,
-        );
-      case RoutingProvider.openrouteservice:
-        return _calculateOpenRouteServiceRoutes(
-          startLat: startLat,
-          startLon: startLon,
-          endLat: endLat,
-          endLon: endLon,
-        );
-    }
-  }
-
-  /// Calculate routes using GraphHopper
-  Future<List<RouteResult>?> _calculateGraphHopperRoutes({
-    required double startLat,
-    required double startLon,
-    required double endLat,
-    required double endLon,
   }) async {
     if (ApiKeys.graphhopperApiKey.isEmpty) {
       AppLogger.error('Graphhopper API key not configured', tag: 'ROUTING');
       return null;
     }
+
+    AppLogger.api('Calculating multiple routes (fastest, safest, shortest)', data: {
+      'from': '$startLat,$startLon',
+      'to': '$endLat,$endLon',
+    });
 
     // Calculate all three routes in parallel
     final results = await Future.wait([
@@ -180,243 +148,7 @@ class RoutingService {
     return validRoutes;
   }
 
-  /// Calculate routes using OpenRouteService
-  Future<List<RouteResult>?> _calculateOpenRouteServiceRoutes({
-    required double startLat,
-    required double startLon,
-    required double endLat,
-    required double endLon,
-  }) async {
-    // OpenRouteService doesn't support CORS for web browsers
-    if (kIsWeb) {
-      const errorMsg = 'OpenRouteService is not available for web builds due to CORS restrictions';
-      AppLogger.error(errorMsg, tag: 'ROUTING');
-      if (kDebugMode) {
-        ToastService.error('Debug: $errorMsg');
-      }
-      return null;
-    }
-
-    if (ApiKeys.openrouteserviceApiKey.isEmpty) {
-      const errorMsg = 'OpenRouteService API key not configured';
-      AppLogger.error(errorMsg, tag: 'ROUTING');
-      if (kDebugMode) {
-        ToastService.error('Debug: $errorMsg');
-      }
-      return null;
-    }
-
-    AppLogger.debug('OpenRouteService: Starting route calculation', tag: 'ROUTING', data: {
-      'from': '$startLat,$startLon',
-      'to': '$endLat,$endLon',
-    });
-
-    // EXPLICIT console output for debugging
-    if (kDebugMode) {
-      print('🔵 [OPENROUTESERVICE DEBUG] Starting route calculation');
-      print('🔵 [OPENROUTESERVICE DEBUG] From: $startLat,$startLon');
-      print('🔵 [OPENROUTESERVICE DEBUG] To: $endLat,$endLon');
-      print('🔵 [OPENROUTESERVICE DEBUG] API Key: ${ApiKeys.openrouteserviceApiKey.isEmpty ? "EMPTY" : "configured (${ApiKeys.openrouteserviceApiKey.length} chars)"}');
-    }
-
-    // Calculate all three routes in parallel with different preferences
-    final results = await Future.wait([
-      _calculateOpenRouteServiceRoute(
-        startLat: startLat,
-        startLon: startLon,
-        endLat: endLat,
-        endLon: endLon,
-        type: RouteType.fastest,
-        preference: 'fastest',
-      ),
-      _calculateOpenRouteServiceRoute(
-        startLat: startLat,
-        startLon: startLon,
-        endLat: endLat,
-        endLon: endLon,
-        type: RouteType.safest,
-        preference: 'recommended', // Uses safety and comfort
-      ),
-      _calculateOpenRouteServiceRoute(
-        startLat: startLat,
-        startLon: startLon,
-        endLat: endLat,
-        endLon: endLon,
-        type: RouteType.shortest,
-        preference: 'shortest',
-      ),
-    ]);
-
-    // Filter out null results
-    final validRoutes = results.whereType<RouteResult>().toList();
-
-    if (validRoutes.isEmpty) {
-      const errorMsg = 'OpenRouteService: No routes found';
-      AppLogger.warning(errorMsg, tag: 'ROUTING');
-      if (kDebugMode) {
-        ToastService.error('Debug: $errorMsg');
-      }
-      return null;
-    }
-
-    AppLogger.success('OpenRouteService: Calculated ${validRoutes.length} route(s)', tag: 'ROUTING', data: {
-      'types': validRoutes.map((r) => r.type.name).join(', '),
-    });
-    if (kDebugMode) {
-      ToastService.success('Debug: OpenRouteService returned ${validRoutes.length} routes');
-    }
-    return validRoutes;
-  }
-
-  /// Calculate a single OpenRouteService route
-  Future<RouteResult?> _calculateOpenRouteServiceRoute({
-    required double startLat,
-    required double startLon,
-    required double endLat,
-    required double endLon,
-    required RouteType type,
-    required String preference,
-  }) async {
-    final stopwatch = Stopwatch()..start();
-
-    if (kDebugMode) {
-      print('🔵 [OPENROUTESERVICE DEBUG] Calculating ${type.name} route with preference: $preference');
-    }
-
-    try {
-      final uri = Uri.parse('$_openrouteserviceBaseUrl/directions/cycling-regular/geojson');
-
-      if (kDebugMode) {
-        print('🔵 [OPENROUTESERVICE DEBUG] URL: $uri');
-      }
-
-      final requestBody = jsonEncode({
-        "coordinates": [
-          [startLon, startLat],
-          [endLon, endLat],
-        ],
-        "preference": preference,
-        "units": "m",
-        "language": "en",
-        "geometry": true,
-        "instructions": false,
-        "elevation": false,
-      });
-
-      if (kDebugMode) {
-        print('🔵 [OPENROUTESERVICE DEBUG] Request body: $requestBody');
-      }
-
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': ApiKeys.openrouteserviceApiKey,
-        },
-        body: requestBody,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Request timed out after 10 seconds');
-        },
-      );
-
-      stopwatch.stop();
-
-      if (kDebugMode) {
-        print('🔵 [OPENROUTESERVICE DEBUG] Response status: ${response.statusCode}');
-        print('🔵 [OPENROUTESERVICE DEBUG] Response body length: ${response.body.length} chars');
-        if (response.statusCode != 200) {
-          print('🔴 [OPENROUTESERVICE DEBUG] ERROR Response body: ${response.body}');
-        }
-      }
-
-      // Log API call to Firestore
-      await ApiLogger.logApiCall(
-        endpoint: 'openrouteservice/directions',
-        method: 'POST',
-        url: uri.toString(),
-        parameters: {
-          'start': '$startLat,$startLon',
-          'end': '$endLat,$endLon',
-          'profile': 'cycling-regular',
-          'preference': preference,
-          'routeType': type.name,
-        },
-        statusCode: response.statusCode,
-        responseBody: response.body,
-        error: response.statusCode != 200 ? 'HTTP ${response.statusCode}' : null,
-        durationMs: stopwatch.elapsedMilliseconds,
-      );
-
-      if (response.statusCode != 200) {
-        final errorMsg = 'OpenRouteService API error for ${type.name} route: HTTP ${response.statusCode}';
-        AppLogger.error(errorMsg, tag: 'ROUTING', data: {
-          'statusCode': response.statusCode,
-          'body': response.body,
-          'preference': preference,
-        });
-        if (kDebugMode) {
-          ToastService.error('Debug: $errorMsg\nBody: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}');
-        }
-        return null;
-      }
-
-      final data = json.decode(response.body) as Map<String, dynamic>;
-
-      if (data['features'] == null || (data['features'] as List).isEmpty) {
-        AppLogger.warning('No ${type.name} route found', tag: 'ROUTING');
-        return null;
-      }
-
-      final feature = (data['features'] as List)[0] as Map<String, dynamic>;
-      final geometry = feature['geometry'] as Map<String, dynamic>;
-      final coordinates = geometry['coordinates'] as List;
-      final properties = feature['properties'] as Map<String, dynamic>;
-      final summary = properties['summary'] as Map<String, dynamic>;
-
-      // Convert GeoJSON coordinates to LatLng list
-      // OpenRouteService returns coordinates as [longitude, latitude]
-      final routePoints = coordinates.map((coord) {
-        final coordList = coord as List;
-        return LatLng(
-          coordList[1] as double, // latitude
-          coordList[0] as double, // longitude
-        );
-      }).toList();
-
-      final distance = (summary['distance'] as num).toDouble();
-      final duration = ((summary['duration'] as num).toDouble() * 1000).toInt(); // Convert seconds to milliseconds
-
-      AppLogger.success('${type.name} route calculated', tag: 'ROUTING', data: {
-        'points': routePoints.length,
-        'distance': '${(distance / 1000).toStringAsFixed(2)} km',
-        'duration': '${(duration / 60000).toStringAsFixed(0)} min',
-        'preference': preference,
-      });
-
-      return RouteResult(
-        type: type,
-        points: routePoints,
-        distanceMeters: distance,
-        durationMillis: duration,
-      );
-    } catch (e, stackTrace) {
-      stopwatch.stop();
-
-      final errorMsg = 'Failed to calculate ${type.name} route with OpenRouteService: ${e.toString()}';
-      AppLogger.error(errorMsg, tag: 'ROUTING', error: e, stackTrace: stackTrace, data: {
-        'preference': preference,
-        'coordinates': '$startLat,$startLon -> $endLat,$endLon',
-      });
-      if (kDebugMode) {
-        ToastService.error('Debug: $errorMsg');
-      }
-      return null;
-    }
-  }
-
-  /// Calculate a single route with specific type (GraphHopper)
+  /// Calculate a single route with specific type
   Future<RouteResult?> _calculateSingleRoute({
     required double startLat,
     required double startLon,

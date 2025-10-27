@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/location_data.dart';
-import '../models/routing_provider.dart';
 import '../services/routing_service.dart';
 import '../services/toast_service.dart';
 import '../providers/search_provider.dart';
@@ -12,9 +11,7 @@ import '../providers/navigation_provider.dart';
 import '../providers/location_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorites_visibility_provider.dart';
-import '../providers/routing_provider_notifier.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
-import '../widgets/dialogs/routing_provider_dialog.dart';
 import 'app_logger.dart';
 
 /// Helper class for route calculation and display logic
@@ -50,24 +47,6 @@ class RouteCalculationHelper {
       'to': '$destLat,$destLon',
     });
 
-    // Show provider selection dialog
-    if (!context.mounted) return false;
-
-    final selectedProvider = await showDialog<RoutingProvider>(
-      context: context,
-      builder: (context) => const RoutingProviderDialog(),
-    );
-
-    // User cancelled
-    if (selectedProvider == null) {
-      AppLogger.debug('User cancelled provider selection', tag: 'ROUTE_HELPER');
-      return false;
-    }
-
-    AppLogger.debug('User selected provider', tag: 'ROUTE_HELPER', data: {
-      'provider': selectedProvider.displayName,
-    });
-
     // Show loading indicator
     ToastService.loading('Calculating routes...');
 
@@ -77,7 +56,6 @@ class RouteCalculationHelper {
       startLon: location.longitude,
       endLat: destLat,
       endLon: destLon,
-      provider: selectedProvider,
     );
 
     if (routes == null || routes.isEmpty) {
