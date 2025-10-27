@@ -327,11 +327,9 @@ class MapboxMarkerUtils {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Colors based on type
-    final fillColor = isDestination
-        ? const Color(0xE6FFCC80) // Orange with ~90% opacity
-        : const Color(0xE6FFD54F); // Amber with ~90% opacity
-    final borderColor = isDestination ? Colors.orange.shade700 : Colors.amber.shade700;
+    // Colors based on type - light yellow for both
+    final fillColor = const Color(0xE6FFF9C4); // Light yellow with ~90% opacity
+    final borderColor = Colors.yellow.shade600;
 
     // Draw filled circle background
     final circlePaint = Paint()

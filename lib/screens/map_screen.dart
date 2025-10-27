@@ -1163,10 +1163,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           height: size,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.orange.shade100.withValues(alpha: 0.9),
+            color: Colors.yellow.shade100.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.orange.shade700,
+              color: Colors.yellow.shade600,
               width: MarkerConfig.circleStrokeWidth,
             ),
           ),
@@ -1199,10 +1199,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           height: size,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.amber.shade100.withValues(alpha: 0.9),
+            color: Colors.yellow.shade100.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.amber.shade700,
+              color: Colors.yellow.shade600,
               width: MarkerConfig.circleStrokeWidth,
             ),
           ),
