@@ -48,7 +48,7 @@ class ProfileButton extends ConsumerWidget {
                       backgroundImage: NetworkImage(profile!.photoURL!),
                     )
                   : Text(
-                      profile?.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                      profile?.getInitials() ?? 'U',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

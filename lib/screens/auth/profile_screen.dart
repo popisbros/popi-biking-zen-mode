@@ -12,7 +12,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
   late TextEditingController _phoneController;
   late TextEditingController _countryController;
 
@@ -22,14 +23,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
     _phoneController = TextEditingController();
     _countryController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _phoneController.dispose();
     _countryController.dispose();
     super.dispose();
@@ -41,7 +44,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     setState(() => _isLoading = true);
 
     await ref.read(authNotifierProvider.notifier).updateProfile(
-          displayName: _nameController.text.trim(),
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
           country: _countryController.text.trim(),
         );
@@ -109,8 +113,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               }
 
               // Update controllers when profile loads
-              if (_nameController.text.isEmpty) {
-                _nameController.text = profile.displayName ?? '';
+              if (_firstNameController.text.isEmpty) {
+                _firstNameController.text = profile.firstName ?? '';
+                _lastNameController.text = profile.lastName ?? '';
                 _phoneController.text = profile.phoneNumber ?? '';
                 _countryController.text = profile.country ?? '';
               }
@@ -121,7 +126,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // Avatar
+                      // Avatar with initials
                       CircleAvatar(
                         radius: 50,
                         backgroundImage: profile.photoURL != null
@@ -129,7 +134,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             : null,
                         child: profile.photoURL == null
                             ? Text(
-                                profile.displayName?.substring(0, 1).toUpperCase() ?? 'U',
+                                profile.getInitials(),
                                 style: const TextStyle(fontSize: 40),
                               )
                             : null,
@@ -150,18 +155,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Full Name
+                      // First Name
                       TextFormField(
-                        controller: _nameController,
+                        controller: _firstNameController,
                         decoration: const InputDecoration(
-                          labelText: 'Full Name',
+                          labelText: 'First Name',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.person),
                         ),
                         enabled: _isEditing,
+                        textCapitalization: TextCapitalization.words,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your name';
+                            return 'Please enter your first name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Last Name
+                      TextFormField(
+                        controller: _lastNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Last Name',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                        enabled: _isEditing,
+                        textCapitalization: TextCapitalization.words,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your last name';
                           }
                           return null;
                         },
@@ -203,7 +228,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   setState(() {
                                     _isEditing = false;
                                     // Reset controllers
-                                    _nameController.text = profile.displayName ?? '';
+                                    _firstNameController.text = profile.firstName ?? '';
+                                    _lastNameController.text = profile.lastName ?? '';
                                     _phoneController.text = profile.phoneNumber ?? '';
                                     _countryController.text = profile.country ?? '';
                                   });
