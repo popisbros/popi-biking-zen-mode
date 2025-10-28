@@ -19,6 +19,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   bool _isEditing = false;
   bool _isLoading = false;
+  bool _controllersInitialized = false;
 
   @override
   void initState() {
@@ -27,6 +28,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _lastNameController = TextEditingController();
     _phoneController = TextEditingController();
     _countryController = TextEditingController();
+  }
+
+  void _initializeControllersFromProfile(UserProfile profile) {
+    if (!_controllersInitialized) {
+      _firstNameController.text = profile.firstName ?? '';
+      _lastNameController.text = profile.lastName ?? '';
+      _phoneController.text = profile.phoneNumber ?? '';
+      _countryController.text = profile.country ?? '';
+      _controllersInitialized = true;
+    }
   }
 
   @override
@@ -112,13 +123,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 return const Center(child: Text('Profile not found'));
               }
 
-              // Update controllers when profile loads
-              if (_firstNameController.text.isEmpty) {
-                _firstNameController.text = profile.firstName ?? '';
-                _lastNameController.text = profile.lastName ?? '';
-                _phoneController.text = profile.phoneNumber ?? '';
-                _countryController.text = profile.country ?? '';
-              }
+              // Initialize controllers from profile data once
+              _initializeControllersFromProfile(profile);
 
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
