@@ -106,17 +106,30 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
   }
 
   /// Register with Email/Password
-  Future<UserCredential?> registerWithEmail(String email, String password, String displayName) async {
+  Future<UserCredential?> registerWithEmail(String email, String password, String firstName, String lastName) async {
     try {
-      AppLogger.info('Starting Email Registration', tag: 'AUTH');
+      AppLogger.info('Starting Email Registration', tag: 'AUTH', data: {
+        'email': email,
+        'firstName': firstName,
+        'lastName': lastName,
+      });
 
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
+      // Update Firebase Auth displayName with combined name
+      final displayName = '$firstName $lastName'.trim();
       await userCredential.user?.updateDisplayName(displayName);
-      await _createOrUpdateUserProfile(userCredential.user!, 'email');
+
+      // Create user profile with separate firstName/lastName
+      await _createOrUpdateUserProfile(
+        userCredential.user!,
+        'email',
+        firstName: firstName,
+        lastName: lastName,
+      );
 
       AppLogger.success('Email Registration successful', tag: 'AUTH');
       return userCredential;
@@ -156,7 +169,12 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
   }
 
   /// Create or update user profile in Firestore
-  Future<void> _createOrUpdateUserProfile(User user, String authProvider) async {
+  Future<void> _createOrUpdateUserProfile(
+    User user,
+    String authProvider, {
+    String? firstName,
+    String? lastName,
+  }) async {
     final userDoc = _firestore.collection('users').doc(user.uid);
     final docSnapshot = await userDoc.get();
 
@@ -167,9 +185,21 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
       };
 
       if (user.email != null) updates['email'] = user.email;
-      if (user.displayName != null) updates['displayName'] = user.displayName;
       if (user.phoneNumber != null) updates['phoneNumber'] = user.phoneNumber;
       if (user.photoURL != null) updates['photoURL'] = user.photoURL;
+
+      // Update firstName/lastName if provided
+      if (firstName != null) updates['firstName'] = firstName;
+      if (lastName != null) updates['lastName'] = lastName;
+
+      // If firstName/lastName not provided but displayName exists, split it
+      if (firstName == null && lastName == null && user.displayName != null) {
+        final parts = user.displayName!.trim().split(' ');
+        updates['firstName'] = parts.first;
+        if (parts.length > 1) {
+          updates['lastName'] = parts.sublist(1).join(' ');
+        }
+      }
 
       await userDoc.update(updates);
       AppLogger.debug('Updated existing user profile (only non-null fields)', tag: 'AUTH');
@@ -183,14 +213,21 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
         photoURL: user.photoURL,
         authProvider: authProvider,
       );
-      await userDoc.set(profile.toFirestore());
+
+      // Override firstName/lastName if explicitly provided
+      final profileData = profile.toFirestore();
+      if (firstName != null) profileData['firstName'] = firstName;
+      if (lastName != null) profileData['lastName'] = lastName;
+
+      await userDoc.set(profileData);
       AppLogger.success('Created new user profile', tag: 'AUTH');
     }
   }
 
   /// Update user profile fields
   Future<void> updateProfile({
-    String? displayName,
+    String? firstName,
+    String? lastName,
     String? phoneNumber,
     String? country,
   }) async {
@@ -205,9 +242,13 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (displayName != null) {
-        updates['displayName'] = displayName;
-        AppLogger.debug('Updating displayName: $displayName', tag: 'AUTH');
+      if (firstName != null) {
+        updates['firstName'] = firstName;
+        AppLogger.debug('Updating firstName: $firstName', tag: 'AUTH');
+      }
+      if (lastName != null) {
+        updates['lastName'] = lastName;
+        AppLogger.debug('Updating lastName: $lastName', tag: 'AUTH');
       }
       if (phoneNumber != null) {
         updates['phoneNumber'] = phoneNumber;
@@ -216,6 +257,16 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
       if (country != null) {
         updates['country'] = country;
         AppLogger.debug('Updating country: $country', tag: 'AUTH');
+      }
+
+      // Also update Firebase Auth displayName if firstName or lastName changed
+      if (firstName != null || lastName != null) {
+        final currentProfile = ref.read(userProfileProvider).value;
+        final newFirstName = firstName ?? currentProfile?.firstName ?? '';
+        final newLastName = lastName ?? currentProfile?.lastName ?? '';
+        final newDisplayName = '$newFirstName $newLastName'.trim();
+        await user.updateDisplayName(newDisplayName);
+        AppLogger.debug('Updated Firebase Auth displayName: $newDisplayName', tag: 'AUTH');
       }
 
       // Use set with merge: true to create document if it doesn't exist

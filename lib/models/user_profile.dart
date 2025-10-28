@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class UserProfile {
   final String uid; // Firebase Auth UID
   final String? email;
-  final String? displayName;
+  final String? firstName;
+  final String? lastName;
   final String? phoneNumber;
   final String? photoURL;
   final String? country;
@@ -23,7 +24,8 @@ class UserProfile {
   const UserProfile({
     required this.uid,
     this.email,
-    this.displayName,
+    this.firstName,
+    this.lastName,
     this.phoneNumber,
     this.photoURL,
     this.country,
@@ -36,7 +38,29 @@ class UserProfile {
     required this.updatedAt,
   });
 
+  /// Get full name from first and last name
+  String? get displayName {
+    if (firstName == null && lastName == null) return null;
+    return '${firstName ?? ''} ${lastName ?? ''}'.trim();
+  }
+
+  /// Get initials from first and last name (e.g., "John Doe" -> "JD")
+  String getInitials() {
+    final first = firstName?.trim();
+    final last = lastName?.trim();
+
+    if (first != null && first.isNotEmpty && last != null && last.isNotEmpty) {
+      return '${first[0]}${last[0]}'.toUpperCase();
+    } else if (first != null && first.isNotEmpty) {
+      return first[0].toUpperCase();
+    } else if (last != null && last.isNotEmpty) {
+      return last[0].toUpperCase();
+    }
+    return '?';
+  }
+
   /// Create from Firebase Auth User
+  /// Splits displayName into firstName and lastName if provided
   factory UserProfile.fromAuth({
     required String uid,
     String? email,
@@ -46,10 +70,23 @@ class UserProfile {
     required String authProvider,
   }) {
     final now = DateTime.now();
+
+    // Split displayName into firstName and lastName
+    String? firstName;
+    String? lastName;
+    if (displayName != null && displayName.trim().isNotEmpty) {
+      final parts = displayName.trim().split(' ');
+      firstName = parts.first;
+      if (parts.length > 1) {
+        lastName = parts.sublist(1).join(' ');
+      }
+    }
+
     return UserProfile(
       uid: uid,
       email: email,
-      displayName: displayName,
+      firstName: firstName,
+      lastName: lastName,
       phoneNumber: phoneNumber,
       photoURL: photoURL,
       authProvider: authProvider,
@@ -61,10 +98,28 @@ class UserProfile {
   /// Create from Firestore document
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // Support both old (displayName) and new (firstName/lastName) formats
+    String? firstName = data['firstName'];
+    String? lastName = data['lastName'];
+
+    // Migration: if firstName/lastName not present but displayName is, split it
+    if (firstName == null && lastName == null && data['displayName'] != null) {
+      final displayName = data['displayName'] as String;
+      if (displayName.trim().isNotEmpty) {
+        final parts = displayName.trim().split(' ');
+        firstName = parts.first;
+        if (parts.length > 1) {
+          lastName = parts.sublist(1).join(' ');
+        }
+      }
+    }
+
     return UserProfile(
       uid: doc.id,
       email: data['email'],
-      displayName: data['displayName'],
+      firstName: firstName,
+      lastName: lastName,
       phoneNumber: data['phoneNumber'],
       photoURL: data['photoURL'],
       country: data['country'],
@@ -88,7 +143,8 @@ class UserProfile {
   Map<String, dynamic> toFirestore() {
     return {
       'email': email,
-      'displayName': displayName,
+      'firstName': firstName,
+      'lastName': lastName,
       'phoneNumber': phoneNumber,
       'photoURL': photoURL,
       'country': country,
@@ -105,7 +161,8 @@ class UserProfile {
   /// Copy with method for updates
   UserProfile copyWith({
     String? email,
-    String? displayName,
+    String? firstName,
+    String? lastName,
     String? phoneNumber,
     String? photoURL,
     String? country,
@@ -117,7 +174,8 @@ class UserProfile {
     return UserProfile(
       uid: uid,
       email: email ?? this.email,
-      displayName: displayName ?? this.displayName,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       photoURL: photoURL ?? this.photoURL,
       country: country ?? this.country,
