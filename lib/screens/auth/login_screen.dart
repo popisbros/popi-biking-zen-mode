@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
+import '../../widgets/common_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -171,7 +172,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final credentials = await showDialog<Map<String, String>>(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+        titlePadding: CommonDialog.titlePadding,
+        contentPadding: CommonDialog.contentPadding,
+        actionsPadding: CommonDialog.actionsPadding,
         title: const Text('Sign in with Email'),
         content: Column(
           mainAxisSize: MainAxisSize.min,

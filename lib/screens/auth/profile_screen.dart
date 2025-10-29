@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_profile.dart';
+import '../../widgets/common_dialog.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -435,7 +436,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final controller = TextEditingController(text: destination.name);
     final result = await showDialog<String>(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+        titlePadding: CommonDialog.titlePadding,
+        contentPadding: CommonDialog.contentPadding,
+        actionsPadding: CommonDialog.actionsPadding,
         title: const Text('Edit Destination Name'),
         content: TextField(
           controller: controller,
@@ -472,7 +478,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _deleteDestination(int index) async {
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+        titlePadding: CommonDialog.titlePadding,
+        contentPadding: CommonDialog.contentPadding,
+        actionsPadding: CommonDialog.actionsPadding,
         title: const Text('Delete Destination'),
         content: const Text('Are you sure you want to remove this destination?'),
         actions: [
@@ -499,7 +510,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final controller = TextEditingController(text: favorite.name);
     final result = await showDialog<String>(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+        titlePadding: CommonDialog.titlePadding,
+        contentPadding: CommonDialog.contentPadding,
+        actionsPadding: CommonDialog.actionsPadding,
         title: const Text('Edit Favorite Name'),
         content: TextField(
           controller: controller,
@@ -536,7 +552,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _deleteFavorite(int index) async {
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+        titlePadding: CommonDialog.titlePadding,
+        contentPadding: CommonDialog.contentPadding,
+        actionsPadding: CommonDialog.actionsPadding,
         title: const Text('Delete Favorite'),
         content: const Text('Are you sure you want to remove this favorite?'),
         actions: [

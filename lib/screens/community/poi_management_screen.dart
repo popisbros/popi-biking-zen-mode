@@ -5,6 +5,7 @@ import '../../providers/community_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../models/cycling_poi.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/common_dialog.dart';
 
 class POIManagementScreenWithLocation extends ConsumerStatefulWidget {
   final double initialLatitude;
@@ -180,7 +181,12 @@ class _POIManagementScreenWithLocationState extends ConsumerState<POIManagementS
 
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+        titlePadding: CommonDialog.titlePadding,
+        contentPadding: CommonDialog.contentPadding,
+        actionsPadding: CommonDialog.actionsPadding,
         title: const Text('Delete POI'),
         content: const Text('Are you sure you want to delete this POI? This cannot be undone.'),
         actions: [

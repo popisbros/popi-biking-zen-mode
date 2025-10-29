@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 /// Common dialog wrapper for consistent styling across the app
 ///
 /// Provides unified:
-/// - Background opacity (70%)
+/// - Background opacity (80%)
 /// - Barrier color (semi-transparent grey overlay)
 /// - Font sizes (title, body)
-/// - Padding (title, content, actions)
+/// - Compact padding (title, content, actions)
 ///
 /// Usage:
 /// ```dart
@@ -22,14 +22,15 @@ class CommonDialog {
   CommonDialog._();
 
   // Consistent styling constants
-  static const double backgroundOpacity = 0.7;
+  static const double backgroundOpacity = 0.8; // 80% opacity for better readability
   static const Color barrierColor = Colors.black54; // Semi-transparent grey overlay
   static const double titleFontSize = 16.0; // Consistent title size
   static const double bodyFontSize = 14.0; // Consistent body size
   static const double smallFontSize = 12.0; // For secondary text
-  static const EdgeInsets titlePadding = EdgeInsets.fromLTRB(24, 20, 24, 8);
-  static const EdgeInsets contentPadding = EdgeInsets.fromLTRB(24, 0, 24, 16);
-  static const EdgeInsets actionsPadding = EdgeInsets.fromLTRB(24, 0, 16, 16);
+  // More compact padding for denser presentation
+  static const EdgeInsets titlePadding = EdgeInsets.fromLTRB(20, 16, 20, 8);
+  static const EdgeInsets contentPadding = EdgeInsets.fromLTRB(20, 0, 20, 12);
+  static const EdgeInsets actionsPadding = EdgeInsets.fromLTRB(20, 0, 12, 12);
 
   /// Show a standard dialog with consistent styling
   ///

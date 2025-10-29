@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/search_provider.dart';
+import 'common_dialog.dart';
 
 /// Navigation control FAB (End Navigation)
 /// This appears alongside existing FABs when navigation is active
@@ -37,8 +38,13 @@ class NavigationControls extends ConsumerWidget {
   static void _showEndNavigationDialog(BuildContext context, WidgetRef ref, VoidCallback? onNavigationEnded) {
     showDialog(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
           title: const Text('End Navigation?'),
           content: const Text('Are you sure you want to stop navigation?'),
           actions: [

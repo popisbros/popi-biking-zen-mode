@@ -4,6 +4,7 @@ import '../../constants/app_colors.dart';
 import '../../providers/community_provider.dart';
 import '../../models/community_warning.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/common_dialog.dart';
 
 class HazardReportScreenWithLocation extends ConsumerStatefulWidget {
   final double initialLatitude;
@@ -139,7 +140,12 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
 
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+        titlePadding: CommonDialog.titlePadding,
+        contentPadding: CommonDialog.contentPadding,
+        actionsPadding: CommonDialog.actionsPadding,
         title: const Text('Delete Warning'),
         content: const Text('Are you sure you want to delete this warning? This cannot be undone.'),
         actions: [
