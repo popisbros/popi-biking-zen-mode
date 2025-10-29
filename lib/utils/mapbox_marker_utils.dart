@@ -8,9 +8,9 @@ import '../config/marker_config.dart';
 /// All methods are static and return PNG image data as Uint8List
 /// Icons match the 2D map styling for consistency
 class MapboxMarkerUtils {
-  /// Get lighter color with reduced opacity for backgrounds
+  /// Get lighter color with reduced opacity for traveled route segments
   ///
-  /// Blends color with white (70% original, 30% white) and reduces opacity to 60%
+  /// Blends color with white (50% original, 50% white) and reduces opacity to 50%
   static int getLighterColor(Color color) {
     // Extract ARGB components
     final a = color.alpha;
@@ -18,11 +18,11 @@ class MapboxMarkerUtils {
     final g = color.green;
     final b = color.blue;
 
-    // Blend with white (70% original, 30% white) and reduce opacity to 60%
-    final lighterR = (r * 0.7 + 255 * 0.3).round();
-    final lighterG = (g * 0.7 + 255 * 0.3).round();
-    final lighterB = (b * 0.7 + 255 * 0.3).round();
-    final lighterA = (a * 0.6).round(); // Reduce opacity
+    // Blend with white (50% original, 50% white) and reduce opacity to 50%
+    final lighterR = (r * 0.5 + 255 * 0.5).round();
+    final lighterG = (g * 0.5 + 255 * 0.5).round();
+    final lighterB = (b * 0.5 + 255 * 0.5).round();
+    final lighterA = (a * 0.5).round(); // 50% opacity for traveled segments
 
     // Combine into ARGB int
     return (lighterA << 24) | (lighterR << 16) | (lighterG << 8) | lighterB;

@@ -1800,14 +1800,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               pathDetails,
                             );
 
+                            // Calculate current point index to determine traveled segments
+                            int? currentPointIndex;
+                            final currentPos = navState.currentPosition;
+                            if (currentPos != null && navState.activeRoute!.points.isNotEmpty) {
+                              double minDistance = double.infinity;
+                              int closestIndex = 0;
+
+                              for (int i = 0; i < navState.activeRoute!.points.length; i++) {
+                                final routePoint = navState.activeRoute!.points[i];
+                                final distance = GeoUtils.calculateDistance(
+                                  currentPos.latitude,
+                                  currentPos.longitude,
+                                  routePoint.latitude,
+                                  routePoint.longitude,
+                                );
+
+                                if (distance < minDistance) {
+                                  minDistance = distance;
+                                  closestIndex = i;
+                                }
+                              }
+
+                              currentPointIndex = closestIndex;
+                            }
+
                             return PolylineLayer(
-                              polylines: segments.map((segment) => Polyline(
-                                points: segment.points,
-                                strokeWidth: 6.0,
-                                color: segment.color,
-                                borderStrokeWidth: 2.0,
-                                borderColor: Colors.white,
-                              )).toList(),
+                              polylines: segments.asMap().entries.map((entry) {
+                                final segment = entry.value;
+                                final isTraveled = currentPointIndex != null &&
+                                    segment.endIndex < currentPointIndex;
+
+                                // Apply lighter color and thinner width for traveled segments
+                                final color = isTraveled
+                                    ? _getLighterColor(segment.color)
+                                    : segment.color;
+                                final width = isTraveled ? 5.0 : 8.0;
+
+                                return Polyline(
+                                  points: segment.points,
+                                  strokeWidth: width,
+                                  color: color,
+                                  borderStrokeWidth: 2.0,
+                                  borderColor: Colors.white,
+                                );
+                              }).toList(),
                             );
                           }
                         }
@@ -1817,7 +1854,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           polylines: [
                             Polyline(
                               points: routePoints,
-                              strokeWidth: 6.0,
+                              strokeWidth: 8.0,
                               color: const Color(0xFF85a78b),
                               borderStrokeWidth: 2.0,
                               borderColor: Colors.white,
@@ -2331,5 +2368,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       // Debug overlay - on top of everything
       const DebugOverlay(),
     ]; // End map and controls list
+  }
+
+  /// Get lighter color for traveled route segments
+  ///
+  /// Blends color with white (50% original, 50% white) and reduces opacity to 50%
+  static Color _getLighterColor(Color color) {
+    // Extract RGB components
+    final r = color.red;
+    final g = color.green;
+    final b = color.blue;
+
+    // Blend with white (50% original, 50% white)
+    final lighterR = (r * 0.5 + 255 * 0.5).round();
+    final lighterG = (g * 0.5 + 255 * 0.5).round();
+    final lighterB = (b * 0.5 + 255 * 0.5).round();
+
+    // Return with 50% opacity
+    return Color.fromARGB(
+      (color.alpha * 0.5).round(),
+      lighterR,
+      lighterG,
+      lighterB,
+    );
   }
 }

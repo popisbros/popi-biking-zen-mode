@@ -2652,7 +2652,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             id: 'route-layer-$i',
             sourceId: 'route-source-$i',
             lineColor: segmentColor,
-            lineWidth: isTraveled ? 4.0 : 6.0, // Slightly thinner for traveled
+            lineWidth: isTraveled ? 5.0 : 8.0, // Thinner for traveled segments
             lineCap: LineCap.ROUND,
             lineJoin: LineJoin.ROUND,
           );
@@ -2688,7 +2688,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           id: 'route-layer',
           sourceId: 'route-source',
           lineColor: routeColor,
-          lineWidth: 6.0,
+          lineWidth: 8.0,
           lineCap: LineCap.ROUND,
           lineJoin: LineJoin.ROUND,
         );
