@@ -463,46 +463,43 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
         final threshold = isNavigationMode ? 3.0 : 25.0;
 
-        // Auto-center if user moved > threshold
-        if (distance > threshold) {
+        // Auto-center if user moved > threshold AND auto-zoom is enabled
+        final mapState = ref.read(mapProvider);
+        if (distance > threshold && mapState.autoZoomEnabled) {
           // Navigation mode: continuous tracking with dynamic zoom + rotation
           if (isNavigationMode) {
-            // Calculate target zoom (only if auto-zoom enabled)
-            final mapState = ref.read(mapProvider);
+            // Calculate target zoom
             final logicalZoom = NavigationUtils.calculateNavigationZoom(location.speed);
             final targetZoom = NavigationUtils.toFlutterMapZoom(logicalZoom);
             _targetAutoZoom = targetZoom;
 
-            // Determine actual zoom to use (with throttling if auto-zoom enabled)
+            // Determine actual zoom to use (with throttling)
             double actualZoom = _mapController.camera.zoom;
+            final now = DateTime.now();
+            final canChangeZoom = _lastZoomChangeTime == null ||
+                now.difference(_lastZoomChangeTime!) >= _zoomChangeInterval;
 
-            if (mapState.autoZoomEnabled) {
-              final now = DateTime.now();
-              final canChangeZoom = _lastZoomChangeTime == null ||
-                  now.difference(_lastZoomChangeTime!) >= _zoomChangeInterval;
+            if (canChangeZoom) {
+              final currentZoom = _currentAutoZoom ?? _mapController.camera.zoom;
+              final zoomDifference = (targetZoom - currentZoom).abs();
 
-              if (canChangeZoom) {
-                final currentZoom = _currentAutoZoom ?? _mapController.camera.zoom;
-                final zoomDifference = (targetZoom - currentZoom).abs();
+              // Only change zoom if difference >= 0.5
+              if (zoomDifference >= _minZoomChangeThreshold) {
+                _currentAutoZoom = targetZoom;
+                _lastZoomChangeTime = now;
+                actualZoom = targetZoom;
 
-                // Only change zoom if difference >= 0.5
-                if (zoomDifference >= _minZoomChangeThreshold) {
-                  _currentAutoZoom = targetZoom;
-                  _lastZoomChangeTime = now;
-                  actualZoom = targetZoom;
-
-                  AppLogger.map('Auto-zoom change', data: {
-                    'from': currentZoom.toStringAsFixed(1),
-                    'to': targetZoom.toStringAsFixed(1),
-                    'speed': '${(location.speed ?? 0) * 3.6}km/h',
-                  });
-                } else {
-                  actualZoom = currentZoom;
-                }
+                AppLogger.map('Auto-zoom change', data: {
+                  'from': currentZoom.toStringAsFixed(1),
+                  'to': targetZoom.toStringAsFixed(1),
+                  'speed': '${(location.speed ?? 0) * 3.6}km/h',
+                });
               } else {
-                // Keep current auto-zoom during throttle period
-                actualZoom = _currentAutoZoom ?? _mapController.camera.zoom;
+                actualZoom = currentZoom;
               }
+            } else {
+              // Keep current auto-zoom during throttle period
+              actualZoom = _currentAutoZoom ?? _mapController.camera.zoom;
             }
 
             _mapController.move(newGPSPosition, actualZoom);
@@ -529,10 +526,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             'distance': '${distance.toStringAsFixed(1)}m',
             'mode': navState.mode.name,
             'threshold': '${threshold}m',
+            'autoZoom': 'enabled',
           });
 
           _loadAllMapDataWithBounds();
           _originalGPSReference = newGPSPosition;
+        } else if (distance > threshold && !mapState.autoZoomEnabled) {
+          AppLogger.location('GPS moved but auto-zoom disabled, skipping auto-center', data: {
+            'distance': '${distance.toStringAsFixed(1)}m',
+            'mode': navState.mode.name,
+            'autoZoom': 'disabled',
+          });
         }
       }
 
@@ -2141,8 +2145,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       mini: true,
                       heroTag: 'auto_zoom_toggle_2d',
                       onPressed: () {
+                        final wasEnabled = mapState.autoZoomEnabled;
                         ref.read(mapProvider.notifier).toggleAutoZoom();
-                        AppLogger.map('Auto-zoom ${mapState.autoZoomEnabled ? "disabled" : "enabled"} (2D)');
+                        AppLogger.map('Auto-zoom ${wasEnabled ? "disabled" : "enabled"} (2D)');
+
+                        // If we just enabled auto-zoom, immediately re-center on user position
+                        if (!wasEnabled) {
+                          final location = ref.read(locationNotifierProvider).value;
+                          if (location != null && _isMapReady) {
+                            final newPosition = LatLng(location.latitude, location.longitude);
+                            final logicalZoom = NavigationUtils.calculateNavigationZoom(location.speed);
+                            final targetZoom = NavigationUtils.toFlutterMapZoom(logicalZoom);
+                            _mapController.move(newPosition, targetZoom);
+                            _originalGPSReference = newPosition;
+                            AppLogger.map('Auto-zoom re-enabled, immediately re-centered on user');
+                          }
+                        }
                       },
                       backgroundColor: mapState.autoZoomEnabled ? Colors.blue : Colors.grey.shade300,
                       foregroundColor: mapState.autoZoomEnabled ? Colors.white : Colors.grey.shade600,

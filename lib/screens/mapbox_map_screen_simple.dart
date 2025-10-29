@@ -1482,9 +1482,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       return FloatingActionButton(
                         mini: true,
                         heroTag: 'auto_zoom_toggle_3d',
-                        onPressed: () {
+                        onPressed: () async {
+                          final wasEnabled = mapState.autoZoomEnabled;
                           ref.read(mapProvider.notifier).toggleAutoZoom();
-                          AppLogger.map('Auto-zoom ${mapState.autoZoomEnabled ? "disabled" : "enabled"} (3D)');
+                          AppLogger.map('Auto-zoom ${wasEnabled ? "disabled" : "enabled"} (3D)');
+
+                          // If we just enabled auto-zoom, immediately re-center on user position
+                          if (!wasEnabled && _mapboxMap != null) {
+                            final location = ref.read(locationNotifierProvider).value;
+                            if (location != null) {
+                              final targetZoom = NavigationUtils.calculateNavigationZoom(location.speed);
+                              final travelBearing = _calculateTravelDirection();
+                              await _mapboxMap!.easeTo(
+                                CameraOptions(
+                                  center: Point(coordinates: Position(location.longitude, location.latitude)),
+                                  zoom: targetZoom,
+                                  bearing: travelBearing != null ? -travelBearing : 0.0,
+                                  pitch: _currentPitch,
+                                ),
+                                MapAnimationOptions(duration: 800),
+                              );
+                              _originalGPSReference = latlong.LatLng(location.latitude, location.longitude);
+                              AppLogger.map('Auto-zoom re-enabled, immediately re-centered on user');
+                            }
+                          }
                         },
                         backgroundColor: mapState.autoZoomEnabled ? Colors.blue : Colors.grey.shade300,
                         foregroundColor: mapState.autoZoomEnabled ? Colors.white : Colors.grey.shade600,
@@ -2759,47 +2780,44 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       );
 
       final threshold = isNavigationMode ? 3.0 : 25.0;
+      final mapState = ref.read(mapProvider);
 
-      // Auto-center if user moved > threshold
-      if (distance > threshold) {
+      // Auto-center if user moved > threshold AND auto-zoom is enabled
+      if (distance > threshold && mapState.autoZoomEnabled) {
         // Navigation mode: continuous tracking with dynamic zoom + rotation
         if (isNavigationMode) {
-          // Calculate target zoom (only if auto-zoom enabled)
-          final mapState = ref.read(mapProvider);
+          // Calculate target zoom
           final targetZoom = NavigationUtils.calculateNavigationZoom(location.speed);
           _targetAutoZoom = targetZoom;
 
-          // Determine actual zoom to use (with throttling if auto-zoom enabled)
+          // Determine actual zoom to use (with throttling)
           final currentCamera = await _mapboxMap!.getCameraState();
           double actualZoom = currentCamera.zoom;
+          final now = DateTime.now();
+          final canChangeZoom = _lastZoomChangeTime == null ||
+              now.difference(_lastZoomChangeTime!) >= _zoomChangeInterval;
 
-          if (mapState.autoZoomEnabled) {
-            final now = DateTime.now();
-            final canChangeZoom = _lastZoomChangeTime == null ||
-                now.difference(_lastZoomChangeTime!) >= _zoomChangeInterval;
+          if (canChangeZoom) {
+            final currentZoom = _currentAutoZoom ?? currentCamera.zoom;
+            final zoomDifference = (targetZoom - currentZoom).abs();
 
-            if (canChangeZoom) {
-              final currentZoom = _currentAutoZoom ?? currentCamera.zoom;
-              final zoomDifference = (targetZoom - currentZoom).abs();
+            // Only change zoom if difference >= 0.5
+            if (zoomDifference >= _minZoomChangeThreshold) {
+              _currentAutoZoom = targetZoom;
+              _lastZoomChangeTime = now;
+              actualZoom = targetZoom;
 
-              // Only change zoom if difference >= 0.5
-              if (zoomDifference >= _minZoomChangeThreshold) {
-                _currentAutoZoom = targetZoom;
-                _lastZoomChangeTime = now;
-                actualZoom = targetZoom;
-
-                AppLogger.map('Auto-zoom change', data: {
-                  'from': currentZoom.toStringAsFixed(1),
-                  'to': targetZoom.toStringAsFixed(1),
-                  'speed': '${(location.speed ?? 0) * 3.6}km/h',
-                });
-              } else {
-                actualZoom = currentZoom;
-              }
+              AppLogger.map('Auto-zoom change', data: {
+                'from': currentZoom.toStringAsFixed(1),
+                'to': targetZoom.toStringAsFixed(1),
+                'speed': '${(location.speed ?? 0) * 3.6}km/h',
+              });
             } else {
-              // Keep current auto-zoom during throttle period
-              actualZoom = _currentAutoZoom ?? currentCamera.zoom;
+              actualZoom = currentZoom;
             }
+          } else {
+            // Keep current auto-zoom during throttle period
+            actualZoom = _currentAutoZoom ?? currentCamera.zoom;
           }
 
           // Rotate map based on travel direction (keep last rotation if stationary)
@@ -2852,6 +2870,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         await _loadAllPOIData();
         _originalGPSReference = newGPSPosition;
+      } else if (distance > threshold && !mapState.autoZoomEnabled) {
+        AppLogger.location('GPS moved but auto-zoom disabled, skipping auto-center', data: {
+          'distance': '${distance.toStringAsFixed(1)}m',
+          'mode': navState.mode.name,
+          'autoZoom': 'disabled',
+        });
       }
     } else {
       // First GPS fix - set reference
