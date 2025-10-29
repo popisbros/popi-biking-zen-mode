@@ -17,24 +17,8 @@ class NavigationCard extends ConsumerStatefulWidget {
 }
 
 class _NavigationCardState extends ConsumerState<NavigationCard> {
-  bool _isGraphHopperDataExpanded = false;
   bool _isManeuversExpanded = false;
   bool _showDebugSections = false; // Controls visibility of all debug sections
-
-  /// Get current GraphHopper instruction based on segment index
-  RouteInstruction? _getCurrentInstruction(int segmentIndex, List<RouteInstruction>? instructions) {
-    if (instructions == null || instructions.isEmpty) return null;
-
-    // Find instruction that contains the current segment
-    for (final instruction in instructions) {
-      final start = instruction.interval[0];
-      final end = instruction.interval[1];
-      if (segmentIndex >= start && segmentIndex <= end) {
-        return instruction;
-      }
-    }
-    return null;
-  }
 
   /// Get path detail value at current segment
   dynamic _getPathDetailAtSegment(int segmentIndex, Map<String, dynamic>? pathDetails, String key) {
@@ -165,41 +149,17 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
       return const SizedBox.shrink();
     }
 
-    // Get current and next GraphHopper instructions
-    final currentGHInstruction = _getCurrentInstruction(
-      navState.currentSegmentIndex,
-      navState.activeRoute?.instructions,
-    );
+    // Get next GraphHopper instruction
     final nextGHInstruction = _getNextGraphHopperInstruction(
       navState.currentSegmentIndex,
       navState.activeRoute?.instructions,
     );
 
-    // Get current GraphHopper path details
-    final streetName = _getPathDetailAtSegment(
-      navState.currentSegmentIndex,
-      navState.activeRoute?.pathDetails,
-      'street_name',
-    );
-    final lanes = _getPathDetailAtSegment(
-      navState.currentSegmentIndex,
-      navState.activeRoute?.pathDetails,
-      'lanes',
-    );
-    final roadClass = _getPathDetailAtSegment(
-      navState.currentSegmentIndex,
-      navState.activeRoute?.pathDetails,
-      'road_class',
-    );
+    // Get current max speed for speed limit sign
     final maxSpeed = _getPathDetailAtSegment(
       navState.currentSegmentIndex,
       navState.activeRoute?.pathDetails,
       'max_speed',
-    );
-    final surface = _getPathDetailAtSegment(
-      navState.currentSegmentIndex,
-      navState.activeRoute?.pathDetails,
-      'surface',
     );
 
     // Calculate distance to next GH instruction
@@ -277,22 +237,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          // Context bar: street name • road class
-                          if (nextGHInstruction.streetName != null || roadClass != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              [
-                                if (nextGHInstruction.streetName != null) nextGHInstruction.streetName!,
-                                if (roadClass != null) roadClass.toString(),
-                              ].join(' • '),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -485,129 +429,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
               // Warnings Section (community + road surface)
               ..._buildWarningsSection(navState),
 
-              // GraphHopper Path Details Section (Collapsible) - only shown when debug enabled
-              if (_showDebugSections && (streetName != null || lanes != null || roadClass != null || maxSpeed != null || surface != null)) ...[
-                const SizedBox(height: 12),
-                Divider(color: Colors.grey.shade300, height: 1),
-                const SizedBox(height: 8),
-                // Section header with expand/collapse button
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      _isGraphHopperDataExpanded = !_isGraphHopperDataExpanded;
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Text(
-                          'GRAPHHOPPER DATA (LIVE)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          _isGraphHopperDataExpanded ? Icons.expand_less : Icons.expand_more,
-                          size: 18,
-                          color: Colors.orange.shade700,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Expandable data grid
-                if (_isGraphHopperDataExpanded) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: [
-                      if (streetName != null)
-                        _buildDataChip(
-                          icon: Icons.signpost,
-                          label: 'Street',
-                          value: streetName.toString(),
-                          color: Colors.blue,
-                        ),
-                      if (currentGHInstruction?.streetRef != null)
-                        _buildDataChip(
-                          icon: Icons.route,
-                          label: 'Ref',
-                          value: currentGHInstruction!.streetRef!,
-                          color: Colors.green,
-                        ),
-                      if (currentGHInstruction?.streetDestination != null)
-                        _buildDataChip(
-                          icon: Icons.location_on,
-                          label: 'To',
-                          value: currentGHInstruction!.streetDestination!,
-                          color: Colors.purple,
-                        ),
-                      if (lanes != null)
-                        _buildDataChip(
-                          icon: Icons.multiple_stop,
-                          label: 'Lanes',
-                          value: lanes.toString(),
-                          color: Colors.orange,
-                        ),
-                      if (roadClass != null)
-                        _buildDataChip(
-                          icon: Icons.category,
-                          label: 'Class',
-                          value: roadClass.toString(),
-                          color: Colors.teal,
-                        ),
-                      if (surface != null)
-                        _buildDataChip(
-                          icon: Icons.texture,
-                          label: 'Surface',
-                          value: surface.toString(),
-                          color: Colors.brown,
-                        ),
-                    ],
-                  ),
-                  // GraphHopper Instruction (inside collapsible section)
-                  if (currentGHInstruction != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'GraphHopper Instruction:',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade900,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            currentGHInstruction.text,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.amber.shade900,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ],
-
-              // Maneuvers Section (Collapsible, DEBUG) - only shown when debug enabled
+              // Upcoming Instructions & Geometries Section (Collapsible, DEBUG) - only shown when debug enabled
               if (_showDebugSections) ...[
                 const SizedBox(height: 8),
                 Divider(color: Colors.grey.shade300, height: 1),
@@ -622,7 +444,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     child: Row(
                       children: [
                         Text(
-                          'MANEUVERS (DEBUG)',
+                          'UPCOMING INSTRUCTIONS & GEOMETRIES (DEBUG)',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -640,7 +462,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     ),
                   ),
                 ),
-                if (_isManeuversExpanded) ..._buildManeuversSection(navState),
+                if (_isManeuversExpanded) ..._buildUpcomingInstructionsDebugSection(navState, nextGHInstruction),
               ],
         ], // End main Column children
       ), // End Column
@@ -862,16 +684,17 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     return null;
   }
 
-  /// Build all maneuvers list with distances
-  List<Widget> _buildManeuversSection(NavigationState navState) {
-    final allManeuvers = navState.allManeuvers;
-    final currentPosition = navState.currentPosition;
+  /// Build debug section showing upcoming instructions and all geometries
+  List<Widget> _buildUpcomingInstructionsDebugSection(NavigationState navState, RouteInstruction? currentGHInstruction) {
+    final instructions = navState.activeRoute?.instructions;
+    final currentPos = navState.currentPosition;
     final routePoints = navState.activeRoute?.points;
-    final nextManeuver = navState.nextManeuver;
+    final allManeuvers = navState.allManeuvers;
 
-    if (allManeuvers.isEmpty) {
-      return [
-        const SizedBox(height: 8),
+    final List<Widget> widgets = [const SizedBox(height: 8)];
+
+    if (instructions == null || instructions.isEmpty || currentPos == null || routePoints == null) {
+      widgets.add(
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -879,102 +702,226 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: const Text(
-            'No maneuvers detected on this route.',
+            'No instructions available.',
             style: TextStyle(fontSize: 11, color: Colors.black87),
           ),
         ),
-      ];
-    }
-
-    if (currentPosition == null || routePoints == null) {
-      return [const SizedBox(height: 8)];
-    }
-
-    // Calculate current distance along route
-    final Distance distance = const Distance();
-    double currentDistanceAlongRoute = 0;
-    final currentSegmentIndex = navState.currentSegmentIndex;
-
-    for (int i = 0; i < currentSegmentIndex && i < routePoints.length - 1; i++) {
-      currentDistanceAlongRoute += distance.as(
-        LengthUnit.Meter,
-        routePoints[i],
-        routePoints[i + 1],
       );
-    }
-    if (currentSegmentIndex < routePoints.length) {
-      currentDistanceAlongRoute += distance.as(
-        LengthUnit.Meter,
-        routePoints[currentSegmentIndex],
-        currentPosition,
-      );
+      return widgets;
     }
 
-    // Build list of maneuvers with distances
-    final List<Widget> widgets = [const SizedBox(height: 8)];
+    // Get next upcoming GH instructions (same as Tier 2)
+    final nextInstructions = <RouteInstruction>[];
+    bool foundCurrent = currentGHInstruction == null;
 
-    for (final maneuver in allManeuvers) {
-      // Calculate distance to this maneuver
-      double distanceToManeuver = 0;
-      for (int i = 0; i < maneuver.routePointIndex && i < routePoints.length - 1; i++) {
-        distanceToManeuver += distance.as(
-          LengthUnit.Meter,
-          routePoints[i],
-          routePoints[i + 1],
-        );
+    for (final instruction in instructions) {
+      if (!foundCurrent) {
+        if (instruction == currentGHInstruction) {
+          foundCurrent = true;
+        }
+        continue;
       }
 
-      // Distance from current position (negative = passed, positive = ahead)
-      final double relativeDistance = distanceToManeuver - currentDistanceAlongRoute;
-      final bool isNext = nextManeuver != null && maneuver.routePointIndex == nextManeuver.routePointIndex;
+      if (currentGHInstruction != null && instruction.interval[0] == currentGHInstruction.interval[0]) {
+        continue;
+      }
 
+      nextInstructions.add(instruction);
+      if (nextInstructions.length >= 10) break; // Show more in debug mode
+    }
+
+    // Section 1: Upcoming GraphHopper Instructions
+    if (nextInstructions.isNotEmpty) {
       widgets.add(
-        Container(
-          margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isNext ? Colors.green.shade50 : Colors.purple.shade50,
-            borderRadius: BorderRadius.circular(6),
-            border: isNext ? Border.all(color: Colors.green.shade700, width: 2) : null,
-          ),
-          child: Row(
-            children: [
-              // Maneuver icon
-              Text(
-                maneuver.icon,
-                style: const TextStyle(fontSize: 20),
-              ),
-              const SizedBox(width: 8),
-              // Maneuver instruction
-              Expanded(
-                child: Text(
-                  maneuver.instruction,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Distance indicator
-              Text(
-                relativeDistance >= 0
-                    ? '+${relativeDistance.toStringAsFixed(0)}m'
-                    : '${relativeDistance.toStringAsFixed(0)}m',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: relativeDistance >= 0 ? Colors.green.shade700 : Colors.red.shade700,
-                ),
-              ),
-            ],
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'UPCOMING GRAPHHOPPER INSTRUCTIONS (${nextInstructions.length}):',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple.shade900,
+            ),
           ),
         ),
       );
+
+      for (final instruction in nextInstructions) {
+        final icon = _mapGraphHopperSignToIcon(instruction.sign);
+        final compactText = _convertToCompactText(instruction);
+        final distance = _calculateDistanceToGHInstruction(
+          currentPos,
+          routePoints,
+          navState.currentSegmentIndex,
+          instruction,
+        );
+
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Text(icon, style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    compactText,
+                    style: const TextStyle(fontSize: 11, color: Colors.black87),
+                  ),
+                ),
+                Text(
+                  _formatDistance(distance),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      widgets.add(const SizedBox(height: 12));
+    }
+
+    // Section 2: All Geometry Insights
+    if (allManeuvers.isNotEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'ALL GEOMETRY INSIGHTS (${allManeuvers.length}):',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple.shade900,
+            ),
+          ),
+        ),
+      );
+
+      for (final maneuver in allManeuvers) {
+        // Generate insight for each maneuver
+        final insight = _generateGeometryInsightForManeuver(maneuver, navState);
+
+        if (insight != null) {
+          widgets.add(
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: insight['color'],
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: insight['borderColor']),
+              ),
+              child: Row(
+                children: [
+                  Text(insight['icon'], style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      insight['text'],
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: insight['textColor'],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${maneuver.distanceMeters.toStringAsFixed(0)}m',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: insight['textColor'],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          // Show all maneuvers, even those without special insights
+          widgets.add(
+            Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  Text(maneuver.icon, style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      maneuver.instruction,
+                      style: const TextStyle(fontSize: 11, color: Colors.black87),
+                    ),
+                  ),
+                  Text(
+                    '${maneuver.distanceMeters.toStringAsFixed(0)}m',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
     }
 
     return widgets;
+  }
+
+  /// Generate geometry insight for a specific maneuver (for debug section)
+  Map<String, dynamic>? _generateGeometryInsightForManeuver(ManeuverInstruction maneuver, NavigationState navState) {
+    // Calculate angle from maneuver type
+    double? angle;
+    if (maneuver.type == ManeuverType.sharpLeft || maneuver.type == ManeuverType.sharpRight) {
+      angle = 125.0;
+    } else if (maneuver.type == ManeuverType.uTurn) {
+      angle = 160.0;
+    }
+
+    // Sharp turns
+    if (angle != null && angle > 120) {
+      return {
+        'icon': '⚠️',
+        'text': 'Sharp ${maneuver.type == ManeuverType.sharpLeft ? "left" : "right"} ${angle.toInt()}°',
+        'color': Colors.orange.shade50,
+        'borderColor': Colors.orange.shade300,
+        'textColor': Colors.orange.shade900,
+      };
+    }
+
+    // Gentle curves
+    if (maneuver.type == ManeuverType.slightLeft || maneuver.type == ManeuverType.slightRight) {
+      return {
+        'icon': '✓',
+        'text': 'Gentle ${maneuver.type == ManeuverType.slightLeft ? "left" : "right"} curve',
+        'color': Colors.green.shade50,
+        'borderColor': Colors.green.shade300,
+        'textColor': Colors.green.shade900,
+      };
+    }
+
+    // No special insight for this maneuver
+    return null;
   }
 
   /// Build a warning triangle sign for next upcoming warning
@@ -1174,44 +1121,6 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     }
   }
 
-  /// Build a data chip for GraphHopper details
-  Widget _buildDataChip({
-    required IconData icon,
-    required String label,
-    required String value,
-    required MaterialColor color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color.shade700),
-          const SizedBox(width: 4),
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color.shade700,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 11,
-              color: color.shade900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Custom painter for warning triangle sign (like European road signs)
