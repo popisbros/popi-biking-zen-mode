@@ -689,92 +689,99 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Compact upcoming instructions
+        // Compact upcoming instructions - each on separate line
         if (nextInstructions.isNotEmpty) ...[
-          Row(
-            children: [
-              Text(
-                'Then: ',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Expanded(
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
-                  children: nextInstructions.map((instruction) {
-                    final icon = _mapGraphHopperSignToIcon(instruction.sign);
-                    final compactText = _convertToCompactText(instruction);
-                    final distance = _calculateDistanceToGHInstruction(
-                      currentPos,
-                      routePoints,
-                      navState.currentSegmentIndex,
-                      instruction,
-                    );
-
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          icon,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          compactText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          _formatDistance(distance),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
+          // "Then:" label
+          Text(
+            'Then:',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          // Each instruction on its own line
+          ...nextInstructions.map((instruction) {
+            final icon = _mapGraphHopperSignToIcon(instruction.sign);
+            final compactText = _convertToCompactText(instruction);
+            final distance = _calculateDistanceToGHInstruction(
+              currentPos,
+              routePoints,
+              navState.currentSegmentIndex,
+              instruction,
+            );
+
+            return Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 2),
+              child: Row(
+                children: [
+                  Text(
+                    icon,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      compactText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _formatDistance(distance),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 6),
         ],
 
         // Geometry insight (if valuable)
         if (geometryInsight != null) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: geometryInsight['color'],
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: geometryInsight['borderColor']),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  geometryInsight['icon'],
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  geometryInsight['text'],
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: geometryInsight['textColor'],
-                    fontWeight: FontWeight.w600,
+          Padding(
+            padding: const EdgeInsets.only(left: 0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: geometryInsight['color'],
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: geometryInsight['borderColor']),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Geometry: ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: geometryInsight['textColor'],
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    geometryInsight['text'],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: geometryInsight['textColor'],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    geometryInsight['icon'],
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 8),
