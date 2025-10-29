@@ -99,6 +99,11 @@
             value = "f0a2e753-e8a8-4c16-af98-b5a77b5dc34e"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "OPENROUTESERVICE_API_KEY"
+            value = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjNjMTZiNDhlMzAxNTQ2ZDdhYTljZmQ4NGI4MzQ3N2JlIiwiaCI6Im11cm11cjY0In0"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction

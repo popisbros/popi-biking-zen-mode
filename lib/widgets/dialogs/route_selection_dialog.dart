@@ -26,62 +26,57 @@ class RouteSelectionDialog extends ConsumerWidget {
     final userProfile = ref.watch(userProfileProvider).value;
     final preferredProfile = userProfile?.defaultRouteProfile ?? 'bike';
 
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).size.height * 0.05, // 5% from bottom
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            constraints: const BoxConstraints(
-              maxWidth: 400, // Maximum width
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity), // 80% opacity
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(
+            maxWidth: 400, // Maximum width
+          ),
+          margin: const EdgeInsets.all(20), // Consistent margin
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity), // 80% opacity
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Title
+                Padding(
+                  padding: CommonDialog.titlePadding,
+                  child: const Text(
+                    'Choose Your Route',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+
+                // Routes list
+                ...routes.map((route) => _buildRouteOption(context, route, preferredProfile)),
+
+                // Cancel button
+                Padding(
+                  padding: CommonDialog.actionsPadding,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onCancel();
+                      },
+                      child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
                 ),
               ],
-            ),
-            child: IntrinsicWidth(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Title
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(24, 16, 24, 8),
-                    child: Text(
-                      'Choose Your Route',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-
-                  // Routes list
-                  ...routes.map((route) => _buildRouteOption(context, route, preferredProfile)),
-
-                  // Cancel button
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          onCancel();
-                        },
-                        child: const Text('CANCEL', style: TextStyle(fontSize: 12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
