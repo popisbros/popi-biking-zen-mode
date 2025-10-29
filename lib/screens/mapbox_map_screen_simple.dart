@@ -416,102 +416,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _showContextMenu(coordinates);
   }
 
-  /// Calculate dialog alignment based on marker position on screen
-  /// Returns alignment and debug info as a map
-  Future<Map<String, dynamic>> _calculateDialogAlignment(Point coordinates) async {
-    if (_mapboxMap == null) {
-      return {
-        'alignment': const Alignment(0.0, -0.33),
-        'screenY': 0.0,
-        'screenHeight': 0.0,
-        'normalizedY': 0.0,
-        'inMiddleThird': false,
-      };
-    }
-
-    try {
-      // Get screen coordinate for the map point
-      final screenCoordinate = await _mapboxMap!.pixelForCoordinate(coordinates);
-
-      if (!mounted) return {
-        'alignment': const Alignment(0.0, -0.33),
-        'screenY': 0.0,
-        'screenHeight': 0.0,
-        'normalizedY': 0.0,
-        'inMiddleThird': false,
-      };
-      // Get screen size
-      final size = MediaQuery.of(context).size;
-
-      // Calculate normalized position (0.0 to 1.0)
-      final normalizedY = screenCoordinate.y / size.height;
-      final inMiddleThird = normalizedY >= 0.33 && normalizedY <= 0.67;
-
-      // If marker is in middle third (0.33 to 0.67), show dialog at bottom
-      Alignment alignment;
-      if (inMiddleThird) {
-        alignment = const Alignment(0.0, 0.6); // Position at bottom third
-      } else {
-        alignment = const Alignment(0.0, -0.33);
-      }
-
-      return {
-        'alignment': alignment,
-        'screenY': screenCoordinate.y,
-        'screenHeight': size.height,
-        'normalizedY': normalizedY,
-        'inMiddleThird': inMiddleThird,
-      };
-    } catch (e) {
-      AppLogger.warning('Failed to calculate dialog alignment: $e', tag: 'MAP');
-      return {
-        'alignment': const Alignment(0.0, -0.33),
-        'screenY': 0.0,
-        'screenHeight': 0.0,
-        'normalizedY': 0.0,
-        'inMiddleThird': false,
-      };
-    }
-  }
-
   /// Show context menu for adding Community POI or reporting hazard
   Future<void> _showContextMenu(Point coordinates) async {
     final lat = coordinates.coordinates.lat.toDouble();
     final lng = coordinates.coordinates.lng.toDouble();
     final authUser = ref.read(authStateProvider).value;
 
-    // Calculate smart dialog alignment based on marker position
-    final alignmentData = await _calculateDialogAlignment(coordinates);
-    final alignment = alignmentData['alignment'] as Alignment;
-
     if (!mounted) return;
 
     showDialog(
       context: context,
-      barrierColor: Colors.black54,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) {
-        final inMiddleThird = alignmentData['inMiddleThird'] as bool;
-
-        return Material(
-          type: MaterialType.transparency,
-          child: Stack(
-            children: [
-              // Positioned dialog based on marker location
-              Positioned(
-                left: 20,
-                right: 20,
-                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
-                child: AlertDialog(
-                  backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-                  titlePadding: CommonDialog.titlePadding,
-                  contentPadding: CommonDialog.contentPadding,
-                  title: const Text(
-                    'Possible Actions for this Location',
-                    style: TextStyle(
-                      fontSize: CommonDialog.titleFontSize,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        return AlertDialog(
+          backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
+          title: const Text(
+            'Possible Actions for this Location',
+            style: TextStyle(
+              fontSize: CommonDialog.titleFontSize,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -570,10 +498,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         ),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -581,7 +505,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Show routing-only dialog (for search results)
   Future<void> _showRoutingDialog(double lat, double lng) async {
-    final coordinates = Point(coordinates: Position(lng, lat));
     final authUser = ref.read(authStateProvider).value;
 
     // Check if location is already favorited
@@ -590,38 +513,24 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       (loc) => loc.latitude == lat && loc.longitude == lng
     ) ?? false;
 
-    // Calculate smart dialog alignment based on marker position
-    final alignmentData = await _calculateDialogAlignment(coordinates);
-    final alignment = alignmentData['alignment'] as Alignment;
-
     if (!mounted) return;
 
     showDialog(
       context: context,
-      barrierColor: Colors.black54,
+      barrierColor: CommonDialog.barrierColor,
       builder: (context) {
-        final inMiddleThird = alignmentData['inMiddleThird'] as bool;
-
-        return Material(
-          type: MaterialType.transparency,
-          child: Stack(
-            children: [
-              // Positioned dialog based on marker location
-              Positioned(
-                left: 20,
-                right: 20,
-                top: inMiddleThird ? MediaQuery.of(context).size.height * 0.60 : MediaQuery.of(context).size.height * 0.28,
-                child: AlertDialog(
-                  backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-                  titlePadding: CommonDialog.titlePadding,
-                  contentPadding: CommonDialog.contentPadding,
-                  title: const Text(
-                    'Possible Actions for this Location',
-                    style: TextStyle(
-                      fontSize: CommonDialog.titleFontSize,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+        return AlertDialog(
+          backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
+          title: const Text(
+            'Possible Actions for this Location',
+            style: TextStyle(
+              fontSize: CommonDialog.titleFontSize,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -662,10 +571,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         ),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
         );
       },
     );
