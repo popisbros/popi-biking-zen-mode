@@ -2756,13 +2756,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Turn-by-turn navigation camera auto-follow (user at 3/4 from top)
     final turnByTurnNavState = ref.read(navigationProvider);
+    final mapState = ref.read(mapProvider);
     AppLogger.debug('Checking turn-by-turn nav state', tag: 'CAMERA', data: {
       'isNavigating': turnByTurnNavState.isNavigating,
+      'autoZoomEnabled': mapState.autoZoomEnabled,
     });
     if (turnByTurnNavState.isNavigating) {
-      AppLogger.success('Starting camera follow for turn-by-turn', tag: 'CAMERA');
-      _lastGPSPosition = newGPSPosition;
-      await _handleTurnByTurnCameraFollow(location);
+      // Only auto-follow camera if auto-zoom is enabled
+      if (mapState.autoZoomEnabled) {
+        AppLogger.success('Starting camera follow for turn-by-turn', tag: 'CAMERA');
+        _lastGPSPosition = newGPSPosition;
+        await _handleTurnByTurnCameraFollow(location);
+      } else {
+        AppLogger.debug('Turn-by-turn active but auto-zoom disabled, skipping camera follow', tag: 'CAMERA');
+      }
 
       // Update traveled route segments only when position changes significantly
       await _updateTraveledRouteIfNeeded(location);
