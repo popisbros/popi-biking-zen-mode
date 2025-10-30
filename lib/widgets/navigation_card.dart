@@ -462,7 +462,19 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     ),
                   ),
                 ),
-                if (_isManeuversExpanded) ..._buildUpcomingInstructionsDebugSection(navState, nextGHInstruction),
+                if (_isManeuversExpanded)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.4, // Max 40% of screen height
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _buildUpcomingInstructionsDebugSection(navState, nextGHInstruction),
+                      ),
+                    ),
+                  ),
               ],
         ], // End main Column children
       ), // End Column
