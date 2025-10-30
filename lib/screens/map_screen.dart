@@ -1007,7 +1007,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       case MapLayerType.openStreetMap:
       case MapLayerType.openCycleMap:
       case MapLayerType.cyclOSM:
-      // case MapLayerType.wike2D:
+      case MapLayerType.wike2D:
         return Icons.directions_bike;
       case MapLayerType.thunderforestOutdoors:
         return Icons.terrain;
