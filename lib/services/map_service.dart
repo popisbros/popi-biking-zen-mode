@@ -9,9 +9,6 @@ enum MapLayerType {
   /// OpenCycleMap - Cycling-specific with bike routes highlighted
   openCycleMap,
 
-  /// Thunderforest Cycle - Premium cycling map with elevation
-  thunderforestCycle,
-
   /// Thunderforest Outdoors - Great for off-road cycling
   thunderforestOutdoors,
 
@@ -81,10 +78,6 @@ class MapService {
         // OpenCycleMap powered by Thunderforest
         return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
 
-      case MapLayerType.thunderforestCycle:
-        // Thunderforest Cycle layer - Premium cycling map
-        return 'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
-
       case MapLayerType.thunderforestOutdoors:
         // Thunderforest Outdoors - Great for mountain biking
         return 'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
@@ -134,7 +127,6 @@ class MapService {
         return '© OpenStreetMap contributors';
 
       case MapLayerType.openCycleMap:
-      case MapLayerType.thunderforestCycle:
       case MapLayerType.thunderforestOutdoors:
         return '© Thunderforest, © OpenStreetMap contributors';
 
@@ -164,8 +156,6 @@ class MapService {
         return 'Standard (OSM)';
       case MapLayerType.openCycleMap:
         return 'OpenCycleMap (Thunderforest)';
-      case MapLayerType.thunderforestCycle:
-        return 'Cycle (Thunderforest)';
       case MapLayerType.thunderforestOutdoors:
         return 'Outdoors (Thunderforest)';
       case MapLayerType.cyclOSM:
