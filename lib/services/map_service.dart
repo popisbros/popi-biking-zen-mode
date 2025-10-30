@@ -38,6 +38,9 @@ enum MapboxStyleType {
 
   /// Wike 3D - Custom cycling style
   wike3D,
+
+  /// Wike 3D - Navigation - Optimized for turn-by-turn navigation
+  wike3DNavigation,
 }
 
 /// Service for managing map tiles and styles
@@ -116,6 +119,8 @@ class MapService {
         return 'mapbox://styles/mapbox/outdoors-v12';
       case MapboxStyleType.wike3D:
         return 'mapbox://styles/sylvainbrosset/cmgclfgn400f001pd72ofcdg9';
+      case MapboxStyleType.wike3DNavigation:
+        return 'mapbox://styles/sylvainbrosset/cmhd87drv004301qz6kpeh2zd';
     }
   }
 
@@ -183,6 +188,8 @@ class MapService {
         return 'Outdoors 3D';
       case MapboxStyleType.wike3D:
         return 'Wike 3D';
+      case MapboxStyleType.wike3DNavigation:
+        return 'Wike 3D - Navigation';
     }
   }
 

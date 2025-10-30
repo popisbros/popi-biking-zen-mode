@@ -95,6 +95,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   double? _pitchBeforeNavigation; // Store pitch before starting navigation
   static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
 
+  // Map style state for navigation mode
+  MapboxStyleType? _styleBeforeNavigation; // Store style before entering navigation mode
+
   // Zoom level state
   double _currentZoom = 15.0; // Default zoom
 
@@ -360,6 +363,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         return Icons.terrain;
       case MapboxStyleType.wike3D:
         return Icons.directions_bike;
+      case MapboxStyleType.wike3DNavigation:
+        return Icons.navigation;
     }
   }
 
@@ -684,6 +689,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     setState(() {
       _activeRoute = route;
     });
+
+    // 3D-specific: Switch to Navigation style and save current style
+    final mapService = MapService();
+    final currentStyle = mapService.current3DStyle;
+    if (currentStyle != MapboxStyleType.wike3DNavigation) {
+      setState(() {
+        _styleBeforeNavigation = currentStyle;
+      });
+      mapService.set3DStyle(MapboxStyleType.wike3DNavigation);
+      if (_mapboxMap != null) {
+        await _mapboxMap!.loadStyleURI(mapService.getMapboxStyleUri(MapboxStyleType.wike3DNavigation));
+        AppLogger.info('Switched to Navigation style', tag: 'NAVIGATION');
+      }
+    }
 
     // 3D-specific: Refresh map to show selected route and clear preview routes
     _addMarkers();
@@ -1616,6 +1635,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       // Refresh markers to remove route polyline
                       _addMarkers();
                       AppLogger.debug('Refreshed markers after navigation ended', tag: 'NAVIGATION');
+
+                      // Restore previous map style
+                      if (_styleBeforeNavigation != null) {
+                        final mapService = MapService();
+                        mapService.set3DStyle(_styleBeforeNavigation!);
+                        if (_mapboxMap != null) {
+                          await _mapboxMap!.loadStyleURI(mapService.getMapboxStyleUri(_styleBeforeNavigation!));
+                          AppLogger.info('Restored previous style after navigation', tag: 'NAVIGATION', data: {
+                            'style': mapService.getStyleName(_styleBeforeNavigation!),
+                          });
+                        }
+                        setState(() {
+                          _styleBeforeNavigation = null;
+                        });
+                      }
 
                       // Restore pitch and reset bearing to North
                       if (_mapboxMap != null && _pitchBeforeNavigation != null) {
