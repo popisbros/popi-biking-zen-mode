@@ -1485,10 +1485,23 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                     },
                     child: const Icon(Icons.remove),
                   ),
-                  const SizedBox(height: 6),
+                  // Conditional spacing before Profile (hidden when navigating)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      if (navState.isNavigating) return const SizedBox.shrink();
+                      return const SizedBox(height: 6);
+                    },
+                  ),
 
-                  // Profile button
-                  const ProfileButton(),
+                  // Profile button (hidden in navigation mode)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      if (navState.isNavigating) return const SizedBox.shrink();
+                      return const ProfileButton();
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1743,24 +1756,30 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             ),
           ],
 
-          // Search button (top-left, yellow) - rendered on top
-          if (_isMapReady)
-            Positioned(
-              top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
-              left: 10,
-              child: FloatingActionButton(
-                mini: true,
-                heroTag: 'search_button_3d',
-                backgroundColor: const Color(0xFFFFEB3B), // Yellow
-                foregroundColor: Colors.black87,
-                onPressed: () {
-                  AppLogger.map('Search button pressed (3D)');
-                  ref.read(searchProvider.notifier).toggleSearchBar();
-                },
-                tooltip: 'Search',
-                child: const Icon(Icons.search),
-              ),
-            ),
+          // Search button (top-left, yellow) - hidden in navigation mode
+          Consumer(
+            builder: (context, ref, child) {
+              final navState = ref.watch(navigationProvider);
+              if (!_isMapReady || navState.isNavigating) return const SizedBox.shrink();
+
+              return Positioned(
+                top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
+                left: 10,
+                child: FloatingActionButton(
+                  mini: true,
+                  heroTag: 'search_button_3d',
+                  backgroundColor: const Color(0xFFFFEB3B), // Yellow
+                  foregroundColor: Colors.black87,
+                  onPressed: () {
+                    AppLogger.map('Search button pressed (3D)');
+                    ref.read(searchProvider.notifier).toggleSearchBar();
+                  },
+                  tooltip: 'Search',
+                  child: const Icon(Icons.search),
+                ),
+              );
+            },
+          ),
 
           // Search bar widget (slides down from top) - rendered on top of everything
           Positioned(
