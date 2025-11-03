@@ -421,16 +421,16 @@ class NavigationNotifier extends Notifier<NavigationState> {
       'avgWithoutStops': '${(newAvgSpeedWithoutStops * 3.6).toStringAsFixed(1)} km/h',
     });
 
-    // Auto-collapse warnings after 10 seconds
+    // Auto-collapse warnings after 3 seconds
     bool warningsExpanded = state.warningsExpanded;
     DateTime? warningsExpandedAt = state.warningsExpandedAt;
 
     if (warningsExpanded && warningsExpandedAt != null) {
       final secondsSinceExpanded = now.difference(warningsExpandedAt).inSeconds;
-      if (secondsSinceExpanded >= 10) {
+      if (secondsSinceExpanded >= 3) {
         warningsExpanded = false;
         warningsExpandedAt = null;
-        AppLogger.debug('Auto-collapsing warnings after 10s', tag: 'NAVIGATION');
+        AppLogger.debug('Auto-collapsing warnings after 3s', tag: 'NAVIGATION');
       }
     }
 
