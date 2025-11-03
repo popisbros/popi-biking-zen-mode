@@ -1939,7 +1939,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               : 0,
                           enabled: togglesEnabled,
                         ),
-                        const SizedBox(height: 8),
+
+                        // Conditional spacing after OSM POI (hidden when navigating)
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final navState = ref.watch(navigationProvider);
+                            if (navState.isNavigating) return const SizedBox.shrink();
+                            return const SizedBox(height: 6);
+                          },
+                        ),
 
                         // Community POI toggle with count (hidden in navigation mode)
                         Consumer(
@@ -1947,30 +1955,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             final navState = ref.watch(navigationProvider);
                             if (navState.isNavigating) return const SizedBox.shrink();
 
-                            return Column(
-                              children: [
-                                MapToggleButton(
-                                  isActive: mapState.showPOIs,
-                                  icon: Icons.location_on,
-                                  activeColor: Colors.green,
-                                  count: communityPOIsAsync.value?.length ?? 0,
-                                  enabled: togglesEnabled,
-                                  onPressed: () {
-                                    AppLogger.map('Community POI toggle pressed');
-                                    final wasOff = !mapState.showPOIs;
-                                    ref.read(mapProvider.notifier).togglePOIs();
-                                    // If turning ON, load only this feature if needed
-                                    if (wasOff) {
-                                      _loadCommunityPOIsIfNeeded();
-                                    }
-                                  },
-                                  tooltip: 'Toggle Community POIs',
-                                ),
-                                const SizedBox(height: 8),
-                              ],
+                            return MapToggleButton(
+                              isActive: mapState.showPOIs,
+                              icon: Icons.location_on,
+                              activeColor: Colors.green,
+                              count: communityPOIsAsync.value?.length ?? 0,
+                              enabled: togglesEnabled,
+                              onPressed: () {
+                                AppLogger.map('Community POI toggle pressed');
+                                final wasOff = !mapState.showPOIs;
+                                ref.read(mapProvider.notifier).togglePOIs();
+                                // If turning ON, load only this feature if needed
+                                if (wasOff) {
+                                  _loadCommunityPOIsIfNeeded();
+                                }
+                              },
+                              tooltip: 'Toggle Community POIs',
                             );
                           },
                         ),
+                        const SizedBox(height: 6),
 
                         // Warning toggle with count
                         MapToggleButton(
@@ -1994,6 +1998,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
+                // Conditional spacing before Favorites (hidden if navigating or not logged in)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final navState = ref.watch(navigationProvider);
+                    final authUser = ref.watch(authStateProvider).value;
+                    if (navState.isNavigating || authUser == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return const SizedBox(height: 6);
+                  },
+                ),
+
                 // Favorites and destinations toggle (hidden in navigation mode or when user not logged in)
                 Consumer(
                   builder: (context, ref, child) {
@@ -2011,26 +2027,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     final favoritesCount = userProfile?.favoriteLocations.length ?? 0;
                     final totalCount = destinationsCount + favoritesCount;
 
-                    return Column(
-                      children: [
-                        const SizedBox(height: 8),
-                        MapToggleButton(
-                          isActive: favoritesVisible,
-                          icon: Icons.star,
-                          activeColor: Colors.yellow.shade600,
-                          count: totalCount,
-                          enabled: true, // Always enabled (not zoom-dependent)
-                          onPressed: () {
-                            AppLogger.map('Favorites/destinations toggle pressed');
-                            ref.read(favoritesVisibilityProvider.notifier).toggle();
-                          },
-                          tooltip: 'Toggle Favorites & Destinations',
-                        ),
-                        const SizedBox(height: 8),
-                      ],
+                    return MapToggleButton(
+                      isActive: favoritesVisible,
+                      icon: Icons.star,
+                      activeColor: Colors.yellow.shade600,
+                      count: totalCount,
+                      enabled: true, // Always enabled (not zoom-dependent)
+                      onPressed: () {
+                        AppLogger.map('Favorites/destinations toggle pressed');
+                        ref.read(favoritesVisibilityProvider.notifier).toggle();
+                      },
+                      tooltip: 'Toggle Favorites & Destinations',
                     );
                   },
                 ),
+                const SizedBox(height: 6),
 
                 // Zoom controls
                 FloatingActionButton(
@@ -2116,7 +2127,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   },
                   child: const Icon(Icons.remove),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // Profile button
                 const ProfileButton(),
@@ -2172,7 +2183,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationModeProvider);
-                    return navState.mode == NavMode.navigation ? const SizedBox(height: 8) : const SizedBox.shrink();
+                    return navState.mode == NavMode.navigation ? const SizedBox(height: 6) : const SizedBox.shrink();
                   },
                 ),
                 // Compass rotation toggle button (Native only)
@@ -2196,7 +2207,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     tooltip: 'Toggle Compass Rotation',
                     child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
                   ),
-                if (!kIsWeb) const SizedBox(height: 8), // Match zoom spacing
+                // Spacing after Compass (only on Native)
+                if (!kIsWeb)
+                  const SizedBox(height: 6),
                 // GPS center button
                 FloatingActionButton(
                   mini: true, // Match zoom button size
@@ -2216,31 +2229,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   tooltip: 'Center on Location',
                   child: const Icon(Icons.my_location),
                 ),
+                // Spacing after GPS center (only visible when NOT navigating - for Reload POIs)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final navState = ref.watch(navigationProvider);
+                    if (navState.isNavigating) return const SizedBox.shrink();
+                    return const SizedBox(height: 6);
+                  },
+                ),
                 // Reload POIs button (hidden in navigation mode)
                 Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationProvider);
                     if (navState.isNavigating) return const SizedBox.shrink();
 
-                    return Column(
-                      children: [
-                        const SizedBox(height: 8),
-                        FloatingActionButton(
-                          mini: true, // Match zoom button size
-                          heroTag: 'reload_pois_2d',
-                          onPressed: () {
-                            AppLogger.map('Manual POI reload requested (2D)');
-                            _loadAllMapDataWithBounds(forceReload: true);
-                          },
-                          backgroundColor: Colors.orange,
-                          tooltip: 'Reload POIs',
-                          child: const Icon(Icons.refresh),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
+                    return FloatingActionButton(
+                      mini: true, // Match zoom button size
+                      heroTag: 'reload_pois_2d',
+                      onPressed: () {
+                        AppLogger.map('Manual POI reload requested (2D)');
+                        _loadAllMapDataWithBounds(forceReload: true);
+                      },
+                      backgroundColor: Colors.orange,
+                      tooltip: 'Reload POIs',
+                      child: const Icon(Icons.refresh),
                     );
                   },
                 ),
+                const SizedBox(height: 6),
                 // Debug toggle button
                 Builder(
                   builder: (context) {
@@ -2258,17 +2274,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
-                // Navigation controls (End + Mute buttons) - spacing only when navigating
+                // Spacing before Nav Controls (only when navigating)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final navState = ref.watch(navigationProvider);
+                    if (!navState.isNavigating) return const SizedBox.shrink();
+                    return const SizedBox(height: 6);
+                  },
+                ),
+                // Navigation controls (End + Mute buttons) - only when navigating
                 Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationProvider);
                     if (!navState.isNavigating) return const SizedBox.shrink();
 
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 8),
-                        NavigationControls(
+                    return NavigationControls(
                           onNavigationEnded: () {
                             setState(() {
                               _activeRoute = null;
@@ -2277,9 +2297,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             _mapController.rotate(0.0);
                             AppLogger.debug('Reset map rotation to North after navigation ended', tag: 'NAVIGATION');
                           },
-                        ),
-                      ],
-                    );
+                        );
                   },
                 ),
               ],
@@ -2308,7 +2326,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     // 3D Map button - only show on Native (not on web/PWA)
                     if (!kIsWeb) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       FloatingActionButton(
                         mini: true, // Match zoom button size
                         heroTag: '3d_map',
@@ -2325,22 +2343,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
 
           // Search button (top-left, yellow) - rendered on top
-          Positioned(
-            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
-            left: 10,
-            child: FloatingActionButton(
-              mini: true,
-              heroTag: 'search_button',
-              backgroundColor: const Color(0xFFFFEB3B), // Yellow
-              foregroundColor: Colors.black87,
-              onPressed: () {
-                AppLogger.map('Search button pressed');
-                ref.read(searchProvider.notifier).toggleSearchBar();
-              },
-              tooltip: 'Search',
-              child: const Icon(Icons.search),
+          if (_isMapReady)
+            Positioned(
+              top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
+              left: 10,
+              child: FloatingActionButton(
+                mini: true,
+                heroTag: 'search_button',
+                backgroundColor: const Color(0xFFFFEB3B), // Yellow
+                foregroundColor: Colors.black87,
+                onPressed: () {
+                  AppLogger.map('Search button pressed');
+                  ref.read(searchProvider.notifier).toggleSearchBar();
+                },
+                tooltip: 'Search',
+                child: const Icon(Icons.search),
+              ),
             ),
-          ),
 
           // Route navigation sheet (persistent bottom sheet, non-modal)
           // Hidden when turn-by-turn navigation is active (new NavigationCard is used instead)
