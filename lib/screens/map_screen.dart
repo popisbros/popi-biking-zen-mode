@@ -1389,7 +1389,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ref.listen(navigationProvider, (previous, next) {
       // Show arrival dialog when user arrives
       if (next.hasArrived && !(previous?.hasArrived ?? false)) {
-        AppLogger.success('Showing arrival dialog', tag: 'NAVIGATION');
         final distance = next.totalDistanceRemaining;
 
         // Show arrival dialog
@@ -2408,7 +2407,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             });
                             // Reset rotation to North-up after ending navigation
                             _mapController.rotate(0.0);
-                            AppLogger.debug('Reset map rotation to North after navigation ended', tag: 'NAVIGATION');
                           },
                         );
                   },

@@ -716,7 +716,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       mapService.set3DStyle(MapboxStyleType.wike3DNavigation);
       if (_mapboxMap != null) {
         await _mapboxMap!.loadStyleURI(mapService.getMapboxStyleUri(MapboxStyleType.wike3DNavigation));
-        AppLogger.info('Switched to Navigation style', tag: 'NAVIGATION');
       }
     }
 
@@ -732,7 +731,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _currentPitch = _pitchBeforeRouteCalculation!;
       _pitchBeforeRouteCalculation = null;
     }
-    AppLogger.success('Turn-by-turn navigation started', tag: 'NAVIGATION');
 
     // Store current pitch and set navigation pitch (35° for better forward view)
     _pitchBeforeNavigation = _currentPitch;
@@ -753,10 +751,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final firstRoutePoint = route.points.first;
         final initialBearing = GeoUtils.calculateBearing(userPosition, firstRoutePoint);
         bearing = initialBearing;
-
-        AppLogger.debug('Initial route bearing calculated', tag: 'NAVIGATION', data: {
-          'bearing': '${initialBearing.toStringAsFixed(1)}°',
-        });
       }
 
       if (!mounted) return;
@@ -773,9 +767,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         ),
         MapAnimationOptions(duration: 1000),
       );
-      AppLogger.debug('Camera positioned for navigation', tag: 'NAVIGATION', data: {
-        'pitch': '$navigationPitch°',
-      });
     }
 
     // Start real-time location stream for smooth snapped marker updates
@@ -1190,7 +1181,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     ref.listen(navigationProvider, (previous, next) {
       // Show arrival dialog when user arrives
       if (next.hasArrived && !(previous?.hasArrived ?? false)) {
-        AppLogger.success('Showing arrival dialog', tag: 'NAVIGATION');
         final distance = next.totalDistanceRemaining;
 
         // Show arrival dialog
@@ -2942,10 +2932,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // CRITICAL: Prevent concurrent execution to avoid marker accumulation
     if (_isUpdatingMarker) {
       AppLogger.debug('⏭️  Skipping marker update - already in progress (MUTEX WORKING!)', tag: 'MARKER-MUTEX');
-      return; // Skip this update if already updating
+      return;
     }
 
-    _isUpdatingMarker = true; // Lock
+    _isUpdatingMarker = true;
     AppLogger.debug('🔒 Marker update started - mutex locked', tag: 'MARKER-MUTEX');
 
     try {
@@ -3033,15 +3023,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         _snappedPositionMarker = null; // Clear reference immediately to prevent race conditions
         await _pointAnnotationManager!.delete(oldMarker);
         AppLogger.debug('✅ Old marker deleted successfully', tag: 'MARKER-MUTEX');
-      } else {
-        AppLogger.debug('ℹ️  No old marker to delete (first marker creation)', tag: 'MARKER-MUTEX');
       }
 
       // Create new marker after old one is deleted
       _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-      AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX');
+      AppLogger.debug('✅ Marker created successfully', tag: 'MARKER-MUTEX');
     } finally {
-      _isUpdatingMarker = false; // Always unlock
+      _isUpdatingMarker = false;
       AppLogger.debug('🔓 Marker update complete - mutex unlocked', tag: 'MARKER-MUTEX');
     }
   }
@@ -3080,11 +3068,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.success('✅ Turn-by-turn navigation IS ACTIVE - will update traveled route', tag: 'NAV-CHECK');
       // Only auto-follow camera if auto-zoom is enabled
       if (mapState.autoZoomEnabled) {
-        AppLogger.success('Starting camera follow for turn-by-turn', tag: 'CAMERA');
         _lastGPSPosition = newGPSPosition;
         await _handleTurnByTurnCameraFollow(location);
-      } else {
-        AppLogger.debug('Turn-by-turn active but auto-zoom disabled, skipping camera follow', tag: 'CAMERA');
       }
 
       // Update traveled route segments only when position changes significantly
@@ -3530,14 +3515,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // NOTE: Do NOT use location.heading for map rotation, only for marker arrow
     final bearing = _calculateTravelDirection();
 
-    AppLogger.debug('Turn-by-turn camera update', tag: 'CAMERA', data: {
-      'speed': '${((location.speed ?? 0) * 3.6).toStringAsFixed(1)} km/h',
-      'zoom': targetZoom.toStringAsFixed(1),
-      'heading': location.heading?.toStringAsFixed(0) ?? 'null',
-      'bearing': bearing?.toStringAsFixed(0) ?? 'null',
-      'pitch': _currentPitch.toStringAsFixed(0),
-    });
-
     // Camera centered on user position
     await _mapboxMap!.easeTo(
       CameraOptions(
@@ -3549,18 +3526,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ),
       MapAnimationOptions(duration: 500), // Smooth 500ms animation
     );
-
-    AppLogger.debug('Turn-by-turn camera follow', tag: 'NAVIGATION', data: {
-      'zoom': targetZoom.toStringAsFixed(1),
-      'bearing': bearing?.toStringAsFixed(1) ?? 'none',
-      'speed': '${(location.speed ?? 0) * 3.6}km/h',
-    });
   }
 
   /// Stop navigation and clear route (comprehensive cleanup with style/pitch restoration)
   Future<void> _stopNavigationComplete() async {
-    AppLogger.debug('Navigation ended - starting complete cleanup', tag: 'NAVIGATION');
-
     // Stop real-time location stream
     _stopRealtimeLocationStream();
 
@@ -3580,19 +3549,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Stop turn-by-turn navigation
     ref.read(navigationProvider.notifier).stopNavigation();
-    AppLogger.debug('Stopped turn-by-turn navigation', tag: 'NAVIGATION');
 
     // Stop route navigation mode
     ref.read(navigationModeProvider.notifier).stopRouteNavigation();
-    AppLogger.debug('Stopped route navigation mode', tag: 'NAVIGATION');
 
     // Clear route from search provider to remove from map
     ref.read(searchProvider.notifier).clearRoute();
-    AppLogger.debug('Cleared route from search provider', tag: 'NAVIGATION');
 
     // Refresh markers to remove route polyline
     _addMarkers();
-    AppLogger.debug('Refreshed markers after navigation ended', tag: 'NAVIGATION');
 
     // Restore previous map style
     if (_styleBeforeNavigation != null) {
@@ -3600,9 +3565,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       mapService.set3DStyle(_styleBeforeNavigation!);
       if (_mapboxMap != null) {
         await _mapboxMap!.loadStyleURI(mapService.getMapboxStyleUri(_styleBeforeNavigation!));
-        AppLogger.info('Restored previous style after navigation', tag: 'NAVIGATION', data: {
-          'style': mapService.getStyleName(_styleBeforeNavigation!),
-        });
       }
       setState(() {
         _styleBeforeNavigation = null;
@@ -3619,14 +3581,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         MapAnimationOptions(duration: 500),
       );
       _currentPitch = _pitchBeforeNavigation!;
-      AppLogger.debug('Restored pitch and reset bearing after navigation', tag: 'NAVIGATION', data: {
-        'pitch': '${_pitchBeforeNavigation!}°',
-        'bearing': '0° (North)',
-      });
       _pitchBeforeNavigation = null;
     }
-
-    AppLogger.success('Navigation ended, route cleared', tag: 'NAVIGATION');
   }
 
   /// Stop navigation and clear route (basic cleanup, keeps current rotation)

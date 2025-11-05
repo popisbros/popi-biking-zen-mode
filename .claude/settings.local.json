@@ -10,7 +10,12 @@
       "Bash(flutter pub get:*)",
       "Bash(git rm:*)",
       "Bash(git revert:*)",
-      "Bash(flutter pub:*)"
+      "Bash(flutter pub:*)",
+      "Bash(flutter clean:*)",
+      "Bash(flutter run)",
+      "Bash(flutter run:*)",
+      "Bash(git fetch:*)",
+      "Bash(flutter doctor:*)"
     ],
     "deny": [],
     "ask": []
