@@ -1186,6 +1186,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           ),
         );
       }
+
+      // Toggle blue Mapbox puck visibility based on navigation state and debug mode
+      _updatePuckVisibility(next.isNavigating, next.debugModeEnabled);
     });
 
     // Use cached initial camera or default
@@ -1854,13 +1857,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
 
     // Enable built-in location component with default 2D puck
+    // Initial state: puck enabled (will be toggled based on navigation state)
     try {
+      final navState = ref.read(navigationProvider);
+      final shouldShowPuck = !navState.isNavigating || navState.debugModeEnabled;
+
       await mapboxMap.location.updateSettings(LocationComponentSettings(
-        enabled: true,
+        enabled: shouldShowPuck,
         puckBearingEnabled: true, // Show direction arrow with bearing
         pulsingEnabled: false, // Disable pulsing for cleaner look
       ));
-      AppLogger.success('Default location puck with bearing enabled', tag: 'MAP');
+      AppLogger.success('Location puck initialized', tag: 'MAP', data: {
+        'enabled': shouldShowPuck,
+        'reason': navState.isNavigating ? 'navigation active' : 'exploration mode',
+      });
     } catch (e) {
       AppLogger.error('Failed to enable 3D location component', error: e);
     }
@@ -2858,6 +2868,33 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Create new marker
       _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
       AppLogger.success('Created snapped position marker', tag: 'MAP');
+    }
+  }
+
+  /// Update blue Mapbox puck visibility based on navigation state and debug mode
+  /// - During navigation: Hide puck (purple snapped marker is shown instead)
+  /// - During navigation + debug mode: Show puck (to see real GPS position)
+  /// - Not navigating: Always show puck
+  void _updatePuckVisibility(bool isNavigating, bool debugModeEnabled) async {
+    if (_mapboxMap == null) return;
+
+    try {
+      // Show puck if: (1) not navigating, OR (2) navigating with debug mode enabled
+      final shouldShowPuck = !isNavigating || debugModeEnabled;
+
+      await _mapboxMap!.location.updateSettings(LocationComponentSettings(
+        enabled: shouldShowPuck,
+        puckBearingEnabled: true,
+        pulsingEnabled: false,
+      ));
+
+      AppLogger.debug('Updated puck visibility', tag: 'MAP', data: {
+        'isNavigating': isNavigating,
+        'debugMode': debugModeEnabled,
+        'puckVisible': shouldShowPuck,
+      });
+    } catch (e) {
+      AppLogger.error('Failed to update puck visibility', tag: 'MAP', error: e);
     }
   }
 
