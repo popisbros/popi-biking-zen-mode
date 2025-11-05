@@ -3215,7 +3215,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       if (segment.index < 3) { // Log first 3 segments for debugging
         AppLogger.debug('Segment check', tag: 'TRAVELED', data: {
           'segmentIndex': segment.index,
-          'startIndex': segment.startIndex,
           'endIndex': segment.endIndex,
           'shouldBeTraveled': shouldBeTraveled,
           'isTraveled': isTraveled,
