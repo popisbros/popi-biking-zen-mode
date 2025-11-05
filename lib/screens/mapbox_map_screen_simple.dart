@@ -2891,10 +2891,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // CRITICAL: Prevent concurrent execution to avoid marker accumulation
     if (_isUpdatingMarker) {
+      AppLogger.debug('⏭️  Skipping marker update - already in progress (MUTEX WORKING!)', tag: 'MARKER-MUTEX');
       return; // Skip this update if already updating
     }
 
     _isUpdatingMarker = true; // Lock
+    AppLogger.debug('🔒 Marker update started - mutex locked', tag: 'MARKER-MUTEX');
 
     try {
       final navProviderState = ref.read(navigationProvider);
@@ -2983,8 +2985,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       // Create new marker after old one is deleted
       _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+      AppLogger.debug('✅ Marker created successfully', tag: 'MARKER-MUTEX');
     } finally {
       _isUpdatingMarker = false; // Always unlock
+      AppLogger.debug('🔓 Marker update complete - mutex unlocked', tag: 'MARKER-MUTEX');
     }
   }
 
@@ -3169,10 +3173,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   /// Update traveled route segments efficiently by only updating changed segments
   /// Only updates individual layer properties instead of redrawing entire route
   Future<void> _updateTraveledRouteIfNeeded(LocationData location) async {
-    if (_mapboxMap == null || _routeSegments.isEmpty) return;
+    if (_mapboxMap == null || _routeSegments.isEmpty) {
+      AppLogger.warning('Cannot update traveled route - map not ready or no segments', tag: 'TRAVELED-INIT');
+      return;
+    }
 
     final navState = ref.read(navigationProvider);
-    if (!navState.isNavigating || navState.activeRoute == null) return;
+    if (!navState.isNavigating || navState.activeRoute == null) {
+      AppLogger.warning('Cannot update traveled route - not navigating', tag: 'TRAVELED-INIT');
+      return;
+    }
+
+    AppLogger.success('✅ TRAVELED ROUTE UPDATE CALLED - New code is running!', tag: 'TRAVELED-INIT');
 
     final routePoints = navState.activeRoute!.points;
     if (routePoints.isEmpty) return;
