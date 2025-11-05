@@ -12,9 +12,6 @@ enum MapLayerType {
   /// Thunderforest Outdoors - Great for off-road cycling
   thunderforestOutdoors,
 
-  /// CyclOSM - Community cycling map focused on bike infrastructure
-  cyclOSM,
-
   /// Wike 2D - Custom Mapbox cycling style (raster tiles)
   wike2D,
 
@@ -47,7 +44,7 @@ class MapService {
   MapService._internal();
 
   /// Current active 2D layer
-  MapLayerType _current2DLayer = MapLayerType.openCycleMap;
+  MapLayerType _current2DLayer = MapLayerType.openStreetMap;
 
   /// Current active 3D style
   MapboxStyleType _current3DStyle = MapboxStyleType.wike3D;
@@ -81,10 +78,6 @@ class MapService {
       case MapLayerType.thunderforestOutdoors:
         // Thunderforest Outdoors - Great for mountain biking
         return 'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=${ApiKeys.thunderforestApiKey}';
-
-      case MapLayerType.cyclOSM:
-        // CyclOSM - Community-driven cycling map
-        return 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png';
 
       case MapLayerType.wike2D:
         // Wike 2D - Custom Mapbox cycling style (raster tiles from Mapbox Static Tiles API)
@@ -127,9 +120,6 @@ class MapService {
       case MapLayerType.thunderforestOutdoors:
         return '© Thunderforest, © OpenStreetMap contributors';
 
-      case MapLayerType.cyclOSM:
-        return '© CyclOSM, © OpenStreetMap contributors';
-
       case MapLayerType.wike2D:
         return '© Mapbox, © OpenStreetMap contributors';
 
@@ -155,8 +145,6 @@ class MapService {
         return 'OpenCycleMap (Thunderforest)';
       case MapLayerType.thunderforestOutdoors:
         return 'Outdoors (Thunderforest)';
-      case MapLayerType.cyclOSM:
-        return 'CyclOSM (Community)';
       case MapLayerType.wike2D:
         return 'Wike 2D (Mapbox)';
       case MapLayerType.satellite:
