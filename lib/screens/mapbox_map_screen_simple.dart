@@ -1189,6 +1189,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             destinationName: 'Your Destination',
             finalDistance: distance,
             onFindParking: () => _findParkingNearDestination(),
+            onEndNavigation: () => _stopNavigationComplete(),
           ),
         );
       }
@@ -1649,69 +1650,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
                       return NavigationControls(
                     onNavigationEnded: () async {
-                      AppLogger.debug('Navigation ended - starting cleanup', tag: 'NAVIGATION');
-
-                      setState(() {
-                        _activeRoute = null;
-                      });
-
-                      // Stop turn-by-turn navigation
-                      ref.read(navigationProvider.notifier).stopNavigation();
-                      AppLogger.debug('Stopped turn-by-turn navigation', tag: 'NAVIGATION');
-
-                      // Stop route navigation mode
-                      ref.read(navigationModeProvider.notifier).stopRouteNavigation();
-                      AppLogger.debug('Stopped route navigation mode', tag: 'NAVIGATION');
-
-                      // Clear route from search provider to remove from map
-                      ref.read(searchProvider.notifier).clearRoute();
-                      AppLogger.debug('Cleared route from search provider', tag: 'NAVIGATION');
-
-                      // Log search provider state after clearing
-                      final searchState = ref.read(searchProvider);
-                      AppLogger.debug('Search provider state after clearRoute', tag: 'NAVIGATION', data: {
-                        'hasRoutePoints': searchState.routePoints != null && searchState.routePoints!.isNotEmpty,
-                        'routePointsCount': searchState.routePoints?.length ?? 0,
-                        'hasPreviewRoutes': searchState.previewFastestRoute != null,
-                      });
-
-                      // Refresh markers to remove route polyline
-                      _addMarkers();
-                      AppLogger.debug('Refreshed markers after navigation ended', tag: 'NAVIGATION');
-
-                      // Restore previous map style
-                      if (_styleBeforeNavigation != null) {
-                        final mapService = MapService();
-                        mapService.set3DStyle(_styleBeforeNavigation!);
-                        if (_mapboxMap != null) {
-                          await _mapboxMap!.loadStyleURI(mapService.getMapboxStyleUri(_styleBeforeNavigation!));
-                          AppLogger.info('Restored previous style after navigation', tag: 'NAVIGATION', data: {
-                            'style': mapService.getStyleName(_styleBeforeNavigation!),
-                          });
-                        }
-                        setState(() {
-                          _styleBeforeNavigation = null;
-                        });
-                      }
-
-                      // Restore pitch and reset bearing to North
-                      if (_mapboxMap != null && _pitchBeforeNavigation != null) {
-                        await _mapboxMap!.easeTo(
-                          CameraOptions(
-                            pitch: _pitchBeforeNavigation!,
-                            bearing: 0.0, // Reset to North up (exploration mode)
-                          ),
-                          MapAnimationOptions(duration: 500),
-                        );
-                        _currentPitch = _pitchBeforeNavigation!;
-                        AppLogger.debug('Restored pitch and reset bearing after navigation', tag: 'NAVIGATION', data: {
-                          'pitch': '${_pitchBeforeNavigation!}°',
-                          'bearing': '0° (North)',
-                        });
-                        _pitchBeforeNavigation = null;
-                      }
-
-                      AppLogger.success('Navigation ended, route cleared', tag: 'NAVIGATION');
+                      // Use comprehensive cleanup method
+                      await _stopNavigationComplete();
                     },
                   );
                     },
@@ -3295,7 +3235,69 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
   }
 
-  /// Stop navigation and clear route
+  /// Stop navigation and clear route (comprehensive cleanup with style/pitch restoration)
+  Future<void> _stopNavigationComplete() async {
+    AppLogger.debug('Navigation ended - starting complete cleanup', tag: 'NAVIGATION');
+
+    // Stop real-time location stream
+    _stopRealtimeLocationStream();
+
+    setState(() {
+      _activeRoute = null;
+    });
+
+    // Stop turn-by-turn navigation
+    ref.read(navigationProvider.notifier).stopNavigation();
+    AppLogger.debug('Stopped turn-by-turn navigation', tag: 'NAVIGATION');
+
+    // Stop route navigation mode
+    ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+    AppLogger.debug('Stopped route navigation mode', tag: 'NAVIGATION');
+
+    // Clear route from search provider to remove from map
+    ref.read(searchProvider.notifier).clearRoute();
+    AppLogger.debug('Cleared route from search provider', tag: 'NAVIGATION');
+
+    // Refresh markers to remove route polyline
+    _addMarkers();
+    AppLogger.debug('Refreshed markers after navigation ended', tag: 'NAVIGATION');
+
+    // Restore previous map style
+    if (_styleBeforeNavigation != null) {
+      final mapService = MapService();
+      mapService.set3DStyle(_styleBeforeNavigation!);
+      if (_mapboxMap != null) {
+        await _mapboxMap!.loadStyleURI(mapService.getMapboxStyleUri(_styleBeforeNavigation!));
+        AppLogger.info('Restored previous style after navigation', tag: 'NAVIGATION', data: {
+          'style': mapService.getStyleName(_styleBeforeNavigation!),
+        });
+      }
+      setState(() {
+        _styleBeforeNavigation = null;
+      });
+    }
+
+    // Restore pitch and reset bearing to North
+    if (_mapboxMap != null && _pitchBeforeNavigation != null) {
+      await _mapboxMap!.easeTo(
+        CameraOptions(
+          pitch: _pitchBeforeNavigation!,
+          bearing: 0.0, // Reset to North up (exploration mode)
+        ),
+        MapAnimationOptions(duration: 500),
+      );
+      _currentPitch = _pitchBeforeNavigation!;
+      AppLogger.debug('Restored pitch and reset bearing after navigation', tag: 'NAVIGATION', data: {
+        'pitch': '${_pitchBeforeNavigation!}°',
+        'bearing': '0° (North)',
+      });
+      _pitchBeforeNavigation = null;
+    }
+
+    AppLogger.success('Navigation ended, route cleared', tag: 'NAVIGATION');
+  }
+
+  /// Stop navigation and clear route (basic cleanup, keeps current rotation)
   void _stopNavigation() {
     // Stop real-time location stream
     _stopRealtimeLocationStream();

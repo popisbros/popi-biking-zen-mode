@@ -11,12 +11,14 @@ class ArrivalDialog extends ConsumerStatefulWidget {
   final String destinationName;
   final double finalDistance;
   final VoidCallback? onFindParking; // Callback when "Find a parking" is pressed
+  final Future<void> Function()? onEndNavigation; // Async callback when "End Navigation" is pressed
 
   const ArrivalDialog({
     super.key,
     required this.destinationName,
     required this.finalDistance,
     this.onFindParking,
+    this.onEndNavigation,
   });
 
   @override
@@ -140,9 +142,14 @@ class _ArrivalDialogState extends ConsumerState<ArrivalDialog> {
             // End Navigation button
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   _countdownTimer?.cancel();
                   Navigator.of(context).pop();
+
+                  // Call custom callback if provided (for comprehensive cleanup like stopping real-time stream, restoring style, etc.)
+                  await widget.onEndNavigation?.call();
+
+                  // Stop navigation in provider (redundant with callback, but safe fallback)
                   ref.read(navigationProvider.notifier).stopNavigation();
                 },
                 style: ElevatedButton.styleFrom(
