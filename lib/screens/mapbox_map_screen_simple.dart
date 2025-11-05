@@ -3202,9 +3202,25 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Find segments that changed state (from remaining → traveled)
     final segmentsToUpdate = <int>[];
 
+    AppLogger.debug('Checking traveled segments', tag: 'TRAVELED', data: {
+      'closestIndex': closestIndex,
+      'totalSegments': _routeSegments.length,
+      'currentlyTraveled': _traveledSegmentIndices.length,
+    });
+
     for (final segment in _routeSegments) {
       final shouldBeTraveled = segment.endIndex < closestIndex;
       final isTraveled = _traveledSegmentIndices.contains(segment.index);
+
+      if (segment.index < 3) { // Log first 3 segments for debugging
+        AppLogger.debug('Segment check', tag: 'TRAVELED', data: {
+          'segmentIndex': segment.index,
+          'startIndex': segment.startIndex,
+          'endIndex': segment.endIndex,
+          'shouldBeTraveled': shouldBeTraveled,
+          'isTraveled': isTraveled,
+        });
+      }
 
       // State changed: need to update this segment
       if (shouldBeTraveled != isTraveled) {
@@ -3212,6 +3228,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         if (shouldBeTraveled) {
           _traveledSegmentIndices.add(segment.index);
+          AppLogger.success('Segment marked as TRAVELED', tag: 'TRAVELED', data: {
+            'segmentIndex': segment.index,
+          });
         } else {
           _traveledSegmentIndices.remove(segment.index);
         }
@@ -3231,6 +3250,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final newWidth = isTraveled ? 5.0 : 8.0;
 
         try {
+          AppLogger.debug('Updating segment color', tag: 'TRAVELED', data: {
+            'segmentIndex': segmentIndex,
+            'color': isTraveled ? 'gray' : 'original',
+            'width': newWidth,
+          });
+
           // Update layer properties efficiently (no redraw needed)
           await _mapboxMap!.style.setStyleLayerProperty(
             'route-layer-$segmentIndex',
@@ -3242,8 +3267,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             'line-width',
             newWidth,
           );
+
+          AppLogger.success('Segment color updated successfully', tag: 'TRAVELED', data: {
+            'segmentIndex': segmentIndex,
+          });
         } catch (e) {
-          AppLogger.warning('Failed to update segment $segmentIndex: $e', tag: 'MAP');
+          AppLogger.error('Failed to update segment style', tag: 'TRAVELED', error: e, data: {
+            'segmentIndex': segmentIndex,
+          });
         }
       }
 
