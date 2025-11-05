@@ -55,12 +55,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
   /// Start turn-by-turn navigation with given route
   void startNavigation(RouteResult route) {
     AppLogger.separator('Starting Turn-by-Turn Navigation');
-    AppLogger.success('Starting navigation', tag: 'NAVIGATION', data: {
-      'routeType': route.type.name,
-      'points': route.points.length,
-      'distance': route.distanceKm,
-      'duration': route.durationMin,
-    });
 
     // Detect hazards on route
     // Try bounds provider first (likely loaded), then all warnings provider
@@ -90,10 +84,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
     List<RouteHazard> routeHazards = [];
 
     if (warnings.isNotEmpty) {
-      AppLogger.debug('Detecting hazards on route', tag: 'NAVIGATION', data: {
-        'totalWarnings': warnings.length,
-      });
-
       routeHazards = RouteHazardDetector.detectHazardsOnRoute(
         routePoints: route.points,
         allHazards: warnings,
@@ -102,7 +92,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       AppLogger.debug('Hazards detected', data: {'count': routeHazards.length});
 
       if (routeHazards.isNotEmpty) {
-        AppLogger.success('Found ${routeHazards.length} hazards on route', tag: 'NAVIGATION');
         for (var i = 0; i < routeHazards.length; i++) {
           AppLogger.debug('Hazard $i detected', data: {
             'index': i,
@@ -110,11 +99,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
             'distanceAlongRoute': '${routeHazards[i].distanceAlongRoute.toStringAsFixed(0)}m',
           });
         }
-      } else {
-        AppLogger.debug('No hazards found on route', tag: 'NAVIGATION');
       }
-    } else {
-      AppLogger.warning('No community warnings available for hazard detection', tag: 'NAVIGATION');
     }
 
     AppLogger.debug('Creating route with hazards', data: {'hazardCount': routeHazards.length});
@@ -124,9 +109,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Detect all maneuvers in the route
     _detectedManeuvers = NavigationEngine.detectManeuvers(route.points);
-    AppLogger.debug('Maneuvers detected', tag: 'NAVIGATION', data: {
-      'count': _detectedManeuvers.length,
-    });
 
     // Merge community warnings and road surface warnings
     final List<RouteWarning> mergedWarnings = [];
@@ -150,12 +132,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // 3. Sort by distance along route
     mergedWarnings.sort((a, b) => a.distanceAlongRoute.compareTo(b.distanceAlongRoute));
-
-    AppLogger.success('Warnings merged', tag: 'NAVIGATION', data: {
-      'community': routeHazards.length,
-      'surface': surfaceWarnings.length,
-      'total': mergedWarnings.length,
-    });
 
     // Initialize navigation state
     final initialPosition = route.points.first;
@@ -186,35 +162,26 @@ class NavigationNotifier extends Notifier<NavigationState> {
     );
 
     // Enable wakelock to keep screen on during navigation
-    WakelockPlus.enable().then((_) {
-      AppLogger.success('Screen wakelock enabled - screen will stay on', tag: 'NAVIGATION');
-    }).catchError((error) {
-      AppLogger.warning('Failed to enable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
+    WakelockPlus.enable().catchError((error) {
+      // Silently handle wakelock errors
     });
 
     // Notify ToastService that navigation is active (adjust toast positioning)
     ToastService.setNavigationActive(true);
 
     // Start listening to location updates (fire and forget, don't block navigation start)
-    _startLocationTracking().then((_) {
-      AppLogger.success('Location tracking initialized', tag: 'GPS');
-    }).catchError((error) {
-      AppLogger.error('Failed to start location tracking', tag: 'GPS', error: error);
+    _startLocationTracking().catchError((error) {
+      AppLogger.error('Failed to start location tracking', tag: 'LOCATION', error: error);
     });
 
-    AppLogger.success('Navigation started', tag: 'NAVIGATION');
     AppLogger.separator();
   }
 
   /// Stop navigation
   void stopNavigation() {
-    AppLogger.debug('Stopping navigation', tag: 'NAVIGATION');
-
     // Disable wakelock to allow screen to sleep
-    WakelockPlus.disable().then((_) {
-      AppLogger.success('Screen wakelock disabled - screen can sleep', tag: 'NAVIGATION');
-    }).catchError((error) {
-      AppLogger.warning('Failed to disable wakelock', tag: 'NAVIGATION', data: {'error': error.toString()});
+    WakelockPlus.disable().catchError((error) {
+      // Silently handle wakelock errors
     });
 
     // Notify ToastService that navigation is no longer active
@@ -225,16 +192,11 @@ class NavigationNotifier extends Notifier<NavigationState> {
     _detectedManeuvers = [];
 
     state = NavigationState.initial();
-
-    AppLogger.success('Navigation stopped', tag: 'NAVIGATION');
   }
 
   /// Toggle warnings section expanded/collapsed
   void toggleWarningsExpanded() {
     final newExpanded = !state.warningsExpanded;
-    AppLogger.debug('Toggling warnings', tag: 'NAVIGATION', data: {
-      'expanded': newExpanded,
-    });
 
     state = state.copyWith(
       warningsExpanded: newExpanded,
@@ -245,9 +207,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
   /// Toggle debug mode (shows grey GPS marker and debug sections)
   void toggleDebugMode() {
     final newDebugMode = !state.debugModeEnabled;
-    AppLogger.debug('Toggling debug mode', tag: 'NAVIGATION', data: {
-      'enabled': newDebugMode,
-    });
 
     state = state.copyWith(
       debugModeEnabled: newDebugMode,
@@ -256,10 +215,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
   /// Manually trigger route recalculation from current position
   Future<void> recalculateRoute() async {
-    AppLogger.debug('Manual route recalculation requested', tag: 'NAVIGATION');
-
     if (!state.isNavigating || state.currentPosition == null) {
-      AppLogger.warning('Cannot recalculate - not navigating or no position', tag: 'NAVIGATION');
       ToastService.warning('Cannot recalculate route - no current position');
       return;
     }
@@ -272,47 +228,28 @@ class NavigationNotifier extends Notifier<NavigationState> {
   Future<void> _startLocationTracking() async {
     final locationService = LocationService();
 
-    AppLogger.debug('Starting location tracking for navigation', tag: 'NAVIGATION');
-
     // IMPORTANT: Start the GPS position stream in LocationService (await it!)
-    AppLogger.debug('Calling startLocationTracking()', tag: 'GPS');
     await locationService.startLocationTracking();
-    AppLogger.debug('startLocationTracking() completed', tag: 'GPS');
 
     _locationSubscription = locationService.locationStream.listen(
       (locationData) {
         _onLocationUpdate(locationData);
       },
       onError: (error) {
-        AppLogger.error('Location stream error during navigation', tag: 'GPS', error: error);
-      },
-      onDone: () {
-        AppLogger.debug('Location stream completed', tag: 'GPS');
+        AppLogger.error('Location stream error during navigation', tag: 'LOCATION', error: error);
       },
     );
-
-    AppLogger.success('Subscribed to location stream - tracking active', tag: 'GPS');
   }
 
   /// Handle location update from GPS
   void _onLocationUpdate(LocationData locationData) {
-    AppLogger.debug('Location update received', tag: 'GPS', data: {
-      'latitude': locationData.latitude,
-      'longitude': locationData.longitude,
-    });
-
     if (!state.isNavigating || state.activeRoute == null) {
-      AppLogger.debug('Skipping location update - not navigating or no route', tag: 'GPS');
       return;
     }
 
     // Throttle updates to max once per 3 seconds
     final now = DateTime.now();
     if (_lastUpdateTime != null && now.difference(_lastUpdateTime!).inSeconds < 3) {
-      AppLogger.debug('Location update throttled', tag: 'GPS', data: {
-        'secondsSinceLastUpdate': now.difference(_lastUpdateTime!).inSeconds,
-        'throttleLimit': '3s',
-      });
       return; // Skip this update
     }
     _lastUpdateTime = now;
@@ -386,10 +323,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
     if (withinArrivalZone && goodGpsAccuracy) {
       // Immediate arrival: within 20m with good GPS accuracy
       hasArrived = true;
-      AppLogger.success('ARRIVED at destination!', tag: 'NAVIGATION', data: {
-        'distance': '${distanceToDestination.toStringAsFixed(1)}m',
-        'gpsAccuracy': '${gpsAccuracy.toStringAsFixed(1)}m',
-      });
     }
 
     // Calculate speed averages and tracking
@@ -425,15 +358,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
         ? newTotalDistanceTraveled / newTotalTimeMoving
         : 0.0;
 
-    AppLogger.debug('Speed tracking', tag: 'NAVIGATION', data: {
-      'distanceTraveled': '${distanceTraveled.toStringAsFixed(1)}m',
-      'totalDistance': '${newTotalDistanceTraveled.toStringAsFixed(0)}m',
-      'totalTime': '${newTotalTimeElapsed}s',
-      'timeMoving': '${newTotalTimeMoving}s',
-      'avgWithStops': '${(newAvgSpeedWithStops * 3.6).toStringAsFixed(1)} km/h',
-      'avgWithoutStops': '${(newAvgSpeedWithoutStops * 3.6).toStringAsFixed(1)} km/h',
-    });
-
     // Auto-collapse warnings after 3 seconds
     bool warningsExpanded = state.warningsExpanded;
     DateTime? warningsExpandedAt = state.warningsExpandedAt;
@@ -443,7 +367,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       if (secondsSinceExpanded >= 3) {
         warningsExpanded = false;
         warningsExpandedAt = null;
-        AppLogger.debug('Auto-collapsing warnings after 3s', tag: 'NAVIGATION');
       }
     }
 
@@ -512,17 +435,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       warningsExpandedAt: warningsExpandedAt,
     );
 
-    // Log navigation update (every update for debugging)
-    AppLogger.debug('Navigation update', tag: 'NAVIGATION', data: {
-      'segment': closestSegment,
-      'nextManeuver': nextManeuver?.type.name ?? 'none',
-      'distanceToNext': '${distanceToManeuver.toStringAsFixed(0)}m',
-      'remaining': '${(remainingDistance / 1000).toStringAsFixed(2)}km',
-      'speed': '${speedKmh.toStringAsFixed(1)}km/h',
-      'offRoute': isOffRoute,
-      'arrived': hasArrived,
-    });
-
     // Handle arrival
     if (hasArrived && !state.hasArrived) {
       // First time arrival detected
@@ -553,8 +465,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
   void _onArrival() {
     // Keep navigation active but mark as arrived
     // User can manually stop navigation
-    AppLogger.success('Arrived at destination', tag: 'NAVIGATION');
-
     // Show toast notification
     ToastService.success('You have arrived at your destination!');
 
@@ -582,10 +492,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       if (timeSinceLastReroute < _rerouteCooldownSeconds) {
         final remainingSeconds = _rerouteCooldownSeconds - timeSinceLastReroute;
         ToastService.info('Rerouting on cooldown, wait ${remainingSeconds}s');
-        AppLogger.debug('Rerouting cooldown active', tag: 'NAVIGATION', data: {
-          'timeSince': '${timeSinceLastReroute}s',
-          'cooldown': '${_rerouteCooldownSeconds}s',
-        });
         AppLogger.debug('Rerouting aborted - cooldown active', tag: 'REROUTE');
         return;
       }
@@ -608,10 +514,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
         // Same position as last successful reroute - abort
         final metersNeeded = (_reroutePositionThreshold - distance).toInt();
         ToastService.warning('Rerouting blocked: Move ${metersNeeded}m+ more');
-        AppLogger.warning('Rerouting aborted - same position', tag: 'NAVIGATION', data: {
-          'distance': '${distance.toStringAsFixed(1)}m',
-          'threshold': '${_reroutePositionThreshold}m',
-        });
 
         AppLogger.debug('Rerouting aborted - same position, updating cooldown', tag: 'REROUTE');
 
@@ -639,11 +541,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
     ToastService.info('Calculating new $routeTypeName route...');
 
     AppLogger.separator('Automatic Rerouting');
-    AppLogger.debug('Starting automatic reroute', tag: 'NAVIGATION', data: {
-      'routeType': routeType.name,
-      'from': '${currentPos.latitude},${currentPos.longitude}',
-      'to': '${destination.latitude},${destination.longitude}',
-    });
     AppLogger.debug('Calling routing service', tag: 'REROUTE');
 
     try {
@@ -658,7 +555,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
       );
 
       if (routes == null || routes.isEmpty) {
-        AppLogger.error('Failed to calculate new route', tag: 'NAVIGATION');
         ToastService.error('Failed to recalculate route');
 
         // Update cooldown even on failure
@@ -672,12 +568,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
         (r) => r.type == routeType,
         orElse: () => routes.first,
       );
-
-      AppLogger.success('New route calculated', tag: 'NAVIGATION', data: {
-        'type': newRoute.type.name,
-        'distance': newRoute.distanceKm,
-        'duration': newRoute.durationMin,
-      });
 
       // Show success toast
       ToastService.success('Route recalculated');
@@ -697,7 +587,6 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
       AppLogger.separator();
     } catch (e, stackTrace) {
-      AppLogger.error('Automatic rerouting failed', tag: 'NAVIGATION', error: e, stackTrace: stackTrace);
       ToastService.error('Rerouting failed');
 
       // Update cooldown even on failure

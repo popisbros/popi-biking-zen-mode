@@ -67,8 +67,6 @@ class NavigationModeNotifier extends Notifier<NavigationModeState> {
       mode: NavMode.navigation,
       isRouteActive: true,
     );
-
-    AppLogger.success('Route navigation started', tag: 'NAVIGATION');
   }
 
   /// Stop route navigation and return to exploration mode
