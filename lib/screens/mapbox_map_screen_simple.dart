@@ -2944,8 +2944,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         enableLogging: false, // Disable logging for real-time updates (too verbose)
       );
 
-      // Fallback to GPS heading if we don't have enough breadcrumbs yet
-      heading ??= location.heading;
+      // Fallback to route direction if we don't have enough breadcrumbs yet
+      if (heading == null) {
+        // Calculate bearing from current position to next point on route
+        final currentRouteIndex = route.points.indexWhere((p) =>
+          GeoUtils.calculateDistance(p.latitude, p.longitude, displayPos.latitude, displayPos.longitude) < 10.0
+        );
+        if (currentRouteIndex >= 0 && currentRouteIndex < route.points.length - 1) {
+          final nextPoint = route.points[currentRouteIndex + 1];
+          heading = GeoUtils.calculateBearing(displayPos, nextPoint);
+        } else {
+          // Last resort: use GPS heading
+          heading = location.heading;
+        }
+      }
+
       final hasHeading = heading != null && heading >= 0;
 
       // Create purple marker icon
