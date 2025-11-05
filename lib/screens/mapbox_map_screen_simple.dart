@@ -2919,13 +2919,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       iconSize: 1.8,
     );
 
-    // Update or create marker
-    if (_snappedPositionMarker != null) {
-      await _pointAnnotationManager!.delete(_snappedPositionMarker!);
-      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-    } else {
-      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+    // CRITICAL: Delete old marker BEFORE creating new one to prevent accumulation
+    // Store reference to old marker, delete it, then create new one
+    final oldMarker = _snappedPositionMarker;
+    if (oldMarker != null) {
+      _snappedPositionMarker = null; // Clear reference immediately to prevent race conditions
+      await _pointAnnotationManager!.delete(oldMarker);
     }
+
+    // Create new marker after old one is deleted
+    _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
   }
 
   // ============================================================================
