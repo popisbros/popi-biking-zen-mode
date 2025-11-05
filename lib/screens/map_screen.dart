@@ -1853,37 +1853,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         // During navigation with surface data, render color-coded segments
                         if (navState.isNavigating && navState.activeRoute != null) {
                           final pathDetails = navState.activeRoute!.pathDetails;
+                          final routePoints = navState.activeRoute!.points;
+
+                          // Calculate current point index to determine traveled segments
+                          int? currentPointIndex;
+                          final currentPos = navState.currentPosition;
+                          if (currentPos != null && routePoints.isNotEmpty) {
+                            double minDistance = double.infinity;
+                            int closestIndex = 0;
+
+                            for (int i = 0; i < routePoints.length; i++) {
+                              final routePoint = routePoints[i];
+                              final distance = GeoUtils.calculateDistance(
+                                currentPos.latitude,
+                                currentPos.longitude,
+                                routePoint.latitude,
+                                routePoint.longitude,
+                              );
+
+                              if (distance < minDistance) {
+                                minDistance = distance;
+                                closestIndex = i;
+                              }
+                            }
+
+                            currentPointIndex = closestIndex;
+                          }
 
                           if (pathDetails != null && pathDetails.containsKey('surface')) {
+                            // Has surface data - use color-coded segments
                             final segments = RouteSurfaceHelper.createSurfaceSegments(
-                              navState.activeRoute!.points,
+                              routePoints,
                               pathDetails,
                             );
-
-                            // Calculate current point index to determine traveled segments
-                            int? currentPointIndex;
-                            final currentPos = navState.currentPosition;
-                            if (currentPos != null && navState.activeRoute!.points.isNotEmpty) {
-                              double minDistance = double.infinity;
-                              int closestIndex = 0;
-
-                              for (int i = 0; i < navState.activeRoute!.points.length; i++) {
-                                final routePoint = navState.activeRoute!.points[i];
-                                final distance = GeoUtils.calculateDistance(
-                                  currentPos.latitude,
-                                  currentPos.longitude,
-                                  routePoint.latitude,
-                                  routePoint.longitude,
-                                );
-
-                                if (distance < minDistance) {
-                                  minDistance = distance;
-                                  closestIndex = i;
-                                }
-                              }
-
-                              currentPointIndex = closestIndex;
-                            }
 
                             return PolylineLayer(
                               polylines: segments.asMap().entries.map((entry) {
@@ -1906,6 +1908,47 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 );
                               }).toList(),
                             );
+                          } else {
+                            // No surface data - create two polylines (traveled + remaining)
+                            if (currentPointIndex == null || currentPointIndex == 0) {
+                              // No traveled portion yet - show entire route in blue
+                              return PolylineLayer(
+                                polylines: [
+                                  Polyline(
+                                    points: routePoints,
+                                    strokeWidth: 8.0,
+                                    color: Colors.blue,
+                                    borderStrokeWidth: 2.0,
+                                    borderColor: Colors.white,
+                                  ),
+                                ],
+                              );
+                            } else {
+                              // Split into traveled (gray) and remaining (blue)
+                              final traveledPoints = routePoints.sublist(0, currentPointIndex + 1);
+                              final remainingPoints = routePoints.sublist(currentPointIndex);
+
+                              return PolylineLayer(
+                                polylines: [
+                                  // Traveled portion (gray, thinner)
+                                  Polyline(
+                                    points: traveledPoints,
+                                    strokeWidth: 5.0,
+                                    color: Color(MapboxMarkerUtils.getTraveledSegmentColor()),
+                                    borderStrokeWidth: 2.0,
+                                    borderColor: Colors.white,
+                                  ),
+                                  // Remaining portion (blue, normal width)
+                                  Polyline(
+                                    points: remainingPoints,
+                                    strokeWidth: 8.0,
+                                    color: Colors.blue,
+                                    borderStrokeWidth: 2.0,
+                                    borderColor: Colors.white,
+                                  ),
+                                ],
+                              );
+                            }
                           }
                         }
 
