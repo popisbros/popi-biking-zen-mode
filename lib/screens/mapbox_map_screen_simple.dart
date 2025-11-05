@@ -3295,6 +3295,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final segmentChanged = _currentSegmentIndex != currentSegmentIndex;
     final progressChanged = pointIndexChanged || _lastProgressPointIndex == null;
 
+    AppLogger.debug('Progressive traveled check', tag: 'PROGRESS', data: {
+      'currentSegmentIndex': currentSegmentIndex,
+      'closestIndex': closestIndex,
+      'segmentChanged': segmentChanged,
+      'progressChanged': progressChanged,
+      'pointIndexChanged': pointIndexChanged,
+      '_lastProgressPointIndex': _lastProgressPointIndex,
+    });
+
     if (!segmentChanged && !progressChanged) {
       return; // No update needed
     }
@@ -3333,8 +3342,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       (closestIndex + 1).clamp(segmentStartIndex, segmentEndIndex + 1),
     );
 
+    AppLogger.debug('Creating progress line', tag: 'PROGRESS', data: {
+      'segmentStartIndex': segmentStartIndex,
+      'segmentEndIndex': segmentEndIndex,
+      'closestIndex': closestIndex,
+      'partialPointsCount': partialPoints.length,
+    });
+
     if (partialPoints.length < 2) {
       // Not enough points to draw a line
+      AppLogger.warning('Not enough points for progress line', tag: 'PROGRESS');
       return;
     }
 
@@ -3373,6 +3390,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     );
 
     await _mapboxMap!.style.addLayer(lineLayer);
+
+    AppLogger.success('Progressive traveled route updated', tag: 'PROGRESS', data: {
+      'partialPointsCount': partialPoints.length,
+      'color': 'gray',
+    });
 
     AppLogger.debug('Updated current segment progress', tag: 'MAP', data: {
       'segmentIndex': currentSegmentIndex,
