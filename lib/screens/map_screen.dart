@@ -1414,11 +1414,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     locationAsync.whenData((location) {
       if (location != null) {
         final navState = ref.read(navigationModeProvider);
+        final navProviderState = ref.read(navigationProvider);
         final isNavigationMode = navState.mode == NavMode.navigation;
+
+        // Determine which position to show for the main marker
+        // Use displayPosition (snapped) if available during navigation, otherwise use real GPS position
+        final displayPos = navProviderState.isNavigating && navProviderState.displayPosition != null
+            ? navProviderState.displayPosition!
+            : LatLng(location.latitude, location.longitude);
 
         AppLogger.map('Adding user location marker', data: {
           'lat': location.latitude,
           'lng': location.longitude,
+          'displayLat': displayPos.latitude,
+          'displayLng': displayPos.longitude,
+          'snapped': navProviderState.displayPosition != null,
           'navMode': navState.mode.name,
         });
 
@@ -1442,9 +1452,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         });
 
         final userSize = MarkerConfig.getRadiusForType(POIMarkerType.userLocation) * 2;
+
+        // Main marker (purple, shows snapped position during navigation)
         markers.add(
           Marker(
-            point: LatLng(location.latitude, location.longitude),
+            point: displayPos,
             width: userSize,
             height: userSize,
             alignment: Alignment.center,
@@ -1482,6 +1494,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
         );
+
+        // Debug marker (grey, shows real GPS position when debug mode enabled)
+        if (navProviderState.debugModeEnabled && navProviderState.isNavigating) {
+          final realGpsPos = LatLng(location.latitude, location.longitude);
+          markers.add(
+            Marker(
+              point: realGpsPos,
+              width: userSize,
+              height: userSize,
+              alignment: Alignment.center,
+              child: Transform.rotate(
+                angle: (isNavigationMode && hasHeading) ? (heading * math.pi / 180) : 0,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Outer circle (grey)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.grey,
+                          width: MarkerConfig.circleStrokeWidth,
+                        ),
+                      ),
+                    ),
+                    // Icon: Arrow in navigation mode, dot in exploration mode (grey)
+                    if (isNavigationMode && hasHeading)
+                      Icon(
+                        Icons.navigation,
+                        color: Colors.grey,
+                        size: userSize * 0.6,
+                      )
+                    else
+                      Icon(
+                        Icons.circle,
+                        color: Colors.grey,
+                        size: userSize * 0.4,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
       }
     });
 

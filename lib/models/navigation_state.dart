@@ -11,8 +11,11 @@ class NavigationState {
   /// The active route being navigated
   final RouteResult? activeRoute;
 
-  /// Current GPS position
+  /// Current GPS position (real position, used for calculations)
   final LatLng? currentPosition;
+
+  /// Display position (snapped to route during navigation, null if off-route or not snapping)
+  final LatLng? displayPosition;
 
   /// Current speed in meters per second
   final double? currentSpeed;
@@ -74,13 +77,17 @@ class NavigationState {
   /// Whether warnings section is expanded
   final bool warningsExpanded;
 
-  /// When warnings section was last expanded (for 10s auto-collapse)
+  /// When warnings section was last expanded (for 3s auto-collapse)
   final DateTime? warningsExpandedAt;
+
+  /// Whether debug mode is enabled (shows grey GPS marker and debug sections)
+  final bool debugModeEnabled;
 
   const NavigationState({
     this.isNavigating = false,
     this.activeRoute,
     this.currentPosition,
+    this.displayPosition,
     this.currentSpeed,
     this.currentHeading,
     this.currentSegmentIndex = 0,
@@ -102,6 +109,7 @@ class NavigationState {
     this.routeWarnings = const [],
     this.warningsExpanded = true,
     this.warningsExpandedAt,
+    this.debugModeEnabled = false,
   });
 
   /// Get human-readable remaining distance
@@ -252,6 +260,7 @@ class NavigationState {
     bool? isNavigating,
     RouteResult? activeRoute,
     LatLng? currentPosition,
+    LatLng? displayPosition,
     double? currentSpeed,
     double? currentHeading,
     int? currentSegmentIndex,
@@ -273,11 +282,13 @@ class NavigationState {
     List<RouteWarning>? routeWarnings,
     bool? warningsExpanded,
     DateTime? warningsExpandedAt,
+    bool? debugModeEnabled,
   }) {
     return NavigationState(
       isNavigating: isNavigating ?? this.isNavigating,
       activeRoute: activeRoute ?? this.activeRoute,
       currentPosition: currentPosition ?? this.currentPosition,
+      displayPosition: displayPosition ?? this.displayPosition,
       currentSpeed: currentSpeed ?? this.currentSpeed,
       currentHeading: currentHeading ?? this.currentHeading,
       currentSegmentIndex: currentSegmentIndex ?? this.currentSegmentIndex,
@@ -299,6 +310,7 @@ class NavigationState {
       routeWarnings: routeWarnings ?? this.routeWarnings,
       warningsExpanded: warningsExpanded ?? this.warningsExpanded,
       warningsExpandedAt: warningsExpandedAt ?? this.warningsExpandedAt,
+      debugModeEnabled: debugModeEnabled ?? this.debugModeEnabled,
     );
   }
 

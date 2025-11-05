@@ -18,7 +18,6 @@ class NavigationCard extends ConsumerStatefulWidget {
 
 class _NavigationCardState extends ConsumerState<NavigationCard> {
   bool _isManeuversExpanded = false;
-  bool _showDebugSections = false; // Controls visibility of all debug sections
 
   /// Get path detail value at current segment
   dynamic _getPathDetailAtSegment(int segmentIndex, Map<String, dynamic>? pathDetails, String key) {
@@ -298,7 +297,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     ),
                   ),
                   // Off-route distance (DEBUG) with countdown timer until next check - only shown when debug enabled
-                  if (_showDebugSections) ...[
+                  if (navState.debugModeEnabled) ...[
                     const SizedBox(width: 12),
                     Icon(
                       Icons.warning_amber_rounded,
@@ -400,15 +399,13 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   // Debug toggle button (20x20px)
                   GestureDetector(
                     onTap: () {
-                      setState(() {
-                        _showDebugSections = !_showDebugSections;
-                      });
+                      ref.read(navigationProvider.notifier).toggleDebugMode();
                     },
                     child: Container(
                       width: 20,
                       height: 20,
                       decoration: BoxDecoration(
-                        color: _showDebugSections ? Colors.orange : Colors.grey.shade400,
+                        color: navState.debugModeEnabled ? Colors.orange : Colors.grey.shade400,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Center(
@@ -417,7 +414,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: _showDebugSections ? Colors.white : Colors.grey.shade700,
+                            color: navState.debugModeEnabled ? Colors.white : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -430,7 +427,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
               ..._buildWarningsSection(navState),
 
               // Upcoming Instructions & Geometries Section (Collapsible, DEBUG) - only shown when debug enabled
-              if (_showDebugSections) ...[
+              if (navState.debugModeEnabled) ...[
                 const SizedBox(height: 8),
                 Divider(color: Colors.grey.shade300, height: 1),
                 InkWell(

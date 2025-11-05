@@ -186,4 +186,118 @@ class GeoUtils {
     final index = ((bearing + 22.5) / 45).floor() % 8;
     return directions[index];
   }
+
+  /// Project a point onto a line segment (snap to closest point on segment)
+  ///
+  /// Calculates the closest point on the line segment from [segmentStart] to [segmentEnd]
+  /// to the given [point]. This is used for map matching / snap-to-route.
+  ///
+  /// Returns the closest point on the segment (may be start, end, or anywhere in between)
+  ///
+  /// Example:
+  /// ```dart
+  /// final point = LatLng(48.8566, 2.3522);
+  /// final segStart = LatLng(48.8550, 2.3500);
+  /// final segEnd = LatLng(48.8580, 2.3550);
+  /// final snapped = GeoUtils.projectPointOnSegment(point, segStart, segEnd);
+  /// ```
+  static LatLng projectPointOnSegment(
+    LatLng point,
+    LatLng segmentStart,
+    LatLng segmentEnd,
+  ) {
+    // Vector from segment start to point
+    final dx = point.latitude - segmentStart.latitude;
+    final dy = point.longitude - segmentStart.longitude;
+
+    // Vector from segment start to segment end
+    final sx = segmentEnd.latitude - segmentStart.latitude;
+    final sy = segmentEnd.longitude - segmentStart.longitude;
+
+    // Calculate dot product and segment length squared
+    final dotProduct = dx * sx + dy * sy;
+    final segmentLengthSquared = sx * sx + sy * sy;
+
+    // Handle degenerate case (segment has zero length)
+    if (segmentLengthSquared == 0) {
+      return segmentStart;
+    }
+
+    // Calculate parameter t (0 to 1) representing position on segment
+    // t = 0 means closest point is segmentStart
+    // t = 1 means closest point is segmentEnd
+    // 0 < t < 1 means closest point is somewhere in between
+    final t = (dotProduct / segmentLengthSquared).clamp(0.0, 1.0);
+
+    // Calculate the projected point
+    final projectedLat = segmentStart.latitude + t * sx;
+    final projectedLon = segmentStart.longitude + t * sy;
+
+    return LatLng(projectedLat, projectedLon);
+  }
+
+  /// Snap GPS position to the nearest point on a route
+  ///
+  /// Finds the closest point on the route polyline to the given GPS position.
+  /// Only searches within a window of route points around [currentSegmentIndex]
+  /// for performance optimization.
+  ///
+  /// Parameters:
+  /// - gpsPosition: Current GPS position
+  /// - routePoints: Full route polyline
+  /// - currentSegmentIndex: Current position on route (for performance)
+  /// - maxSnapDistanceMeters: Maximum distance to snap (default 20m)
+  /// - searchWindowSize: Number of points to search before/after current (default 50)
+  ///
+  /// Returns the snapped position, or null if GPS is too far from route
+  ///
+  /// Example:
+  /// ```dart
+  /// final snapped = GeoUtils.snapToRoute(
+  ///   gpsPosition,
+  ///   routePoints,
+  ///   currentSegmentIndex: 100,
+  ///   maxSnapDistanceMeters: 20,
+  /// );
+  /// ```
+  static LatLng? snapToRoute(
+    LatLng gpsPosition,
+    List<LatLng> routePoints,
+    int currentSegmentIndex, {
+    double maxSnapDistanceMeters = 20.0,
+    int searchWindowSize = 50,
+  }) {
+    if (routePoints.length < 2) return null;
+
+    // Define search window (current segment ± windowSize points)
+    final startIdx = math.max(0, currentSegmentIndex - searchWindowSize);
+    final endIdx = math.min(routePoints.length - 1, currentSegmentIndex + searchWindowSize);
+
+    LatLng? closestPoint;
+    double minDistance = double.infinity;
+
+    // Check each segment in the search window
+    for (int i = startIdx; i < endIdx; i++) {
+      final segmentStart = routePoints[i];
+      final segmentEnd = routePoints[i + 1];
+
+      // Project GPS position onto this segment
+      final projected = projectPointOnSegment(gpsPosition, segmentStart, segmentEnd);
+
+      // Calculate distance from GPS to projected point
+      final distance = calculateDistanceLatLng(gpsPosition, projected);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPoint = projected;
+      }
+    }
+
+    // Only return snapped position if within threshold
+    if (minDistance <= maxSnapDistanceMeters) {
+      return closestPoint;
+    }
+
+    return null; // Too far from route, don't snap
+  }
 }

@@ -96,19 +96,24 @@ class MapboxMarkerUtils {
 
   /// Create user location marker icon matching 2D map style
   ///
-  /// White circle with purple border and Icons.navigation arrow
+  /// White circle with colored border and Icons.navigation arrow
   /// If heading is provided, shows navigation arrow pointing in that direction
-  /// If no heading, shows exploration mode with purple dot and transparent grey background
+  /// If no heading, shows exploration mode with colored dot and transparent grey background
+  ///
+  /// Parameters:
+  /// - heading: Direction in degrees (null for exploration mode)
+  /// - size: Icon size in pixels (default 48)
+  /// - borderColor: Border and icon color (default purple for navigation, grey for debug)
   static Future<Uint8List> createUserLocationIcon({
     double? heading,
     double size = 48,
+    Color borderColor = Colors.purple,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    // Use white background with purple border (matching 2D map)
+    // Use white background with colored border
     final fillColor = Colors.white;
-    final borderColor = Colors.purple;
 
     // Save canvas state for rotation
     canvas.save();

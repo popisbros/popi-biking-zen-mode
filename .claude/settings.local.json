@@ -6,7 +6,10 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(find:*)",
-      "Bash(lib/providers/community_provider.dart)"
+      "Bash(lib/providers/community_provider.dart)",
+      "Bash(flutter pub get:*)",
+      "Bash(git rm:*)",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": []

@@ -14,6 +14,7 @@ import '../services/toast_service.dart';
 import '../services/route_hazard_detector.dart';
 import '../services/road_surface_analyzer.dart';
 import '../utils/app_logger.dart';
+import '../utils/geo_utils.dart';
 import 'community_provider.dart';
 
 /// Provider for navigation state
@@ -241,6 +242,18 @@ class NavigationNotifier extends Notifier<NavigationState> {
     );
   }
 
+  /// Toggle debug mode (shows grey GPS marker and debug sections)
+  void toggleDebugMode() {
+    final newDebugMode = !state.debugModeEnabled;
+    AppLogger.debug('Toggling debug mode', tag: 'NAVIGATION', data: {
+      'enabled': newDebugMode,
+    });
+
+    state = state.copyWith(
+      debugModeEnabled: newDebugMode,
+    );
+  }
+
   /// Manually trigger route recalculation from current position
   Future<void> recalculateRoute() async {
     AppLogger.debug('Manual route recalculation requested', tag: 'NAVIGATION');
@@ -461,9 +474,23 @@ class NavigationNotifier extends Notifier<NavigationState> {
       }
     }
 
+    // Calculate display position (snap to route if on-route and navigating)
+    LatLng? displayPos;
+    if (!isOffRoute && route.points.isNotEmpty) {
+      displayPos = GeoUtils.snapToRoute(
+        currentPos,
+        route.points,
+        closestSegment,
+        maxSnapDistanceMeters: 20.0,
+        searchWindowSize: 50,
+      );
+    }
+    // If off-route or snap failed, displayPosition will be null
+
     // Update state
     state = state.copyWith(
       currentPosition: currentPos,
+      displayPosition: displayPos,
       currentSpeed: speed.toDouble(),
       currentHeading: locationData.heading,
       currentSegmentIndex: closestSegment,

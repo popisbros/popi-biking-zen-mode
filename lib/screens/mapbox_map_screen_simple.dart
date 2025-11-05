@@ -98,6 +98,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Map style state for navigation mode
   MapboxStyleType? _styleBeforeNavigation; // Store style before entering navigation mode
 
+  // Snapped position marker for navigation (shows display position on route)
+  PointAnnotation? _snappedPositionMarker;
+
   // Zoom level state
   double _currentZoom = 15.0; // Default zoom
 
@@ -2804,6 +2807,60 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     */
   }
 
+  /// Update snapped position marker (purple marker on route during navigation)
+  ///
+  /// Shows the display position (snapped to route) during turn-by-turn navigation.
+  /// The default Mapbox puck shows the real GPS position, this marker shows where
+  /// the user appears to be on the route.
+  Future<void> _updateSnappedPositionMarker(LocationData location) async {
+    if (_pointAnnotationManager == null) return;
+
+    final navProviderState = ref.read(navigationProvider);
+    final navModeState = ref.read(navigationModeProvider);
+    final isNavigationMode = navModeState.mode == NavMode.navigation;
+
+    // Only show snapped marker if:
+    // 1. In turn-by-turn navigation
+    // 2. Display position is available (snap was successful)
+    if (!navProviderState.isNavigating || navProviderState.displayPosition == null) {
+      // Remove marker if present
+      if (_snappedPositionMarker != null) {
+        await _pointAnnotationManager!.delete(_snappedPositionMarker!);
+        _snappedPositionMarker = null;
+        AppLogger.debug('Removed snapped position marker', tag: 'MAP');
+      }
+      return;
+    }
+
+    // Get heading for marker rotation
+    double? heading = _navigationTracker.lastBearing ?? location.heading;
+    final hasHeading = heading != null && heading >= 0;
+
+    // Create purple marker icon
+    final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
+      heading: (isNavigationMode && hasHeading) ? heading : null,
+      borderColor: Colors.purple,
+    );
+
+    final displayPos = navProviderState.displayPosition!;
+    final markerOptions = PointAnnotationOptions(
+      geometry: Point(coordinates: Position(displayPos.longitude, displayPos.latitude)),
+      image: markerIcon,
+      iconSize: 1.8,
+    );
+
+    // Update or create marker
+    if (_snappedPositionMarker != null) {
+      // Delete old marker and create new one (PointAnnotation doesn't support copyWith)
+      await _pointAnnotationManager!.delete(_snappedPositionMarker!);
+      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+    } else {
+      // Create new marker
+      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+      AppLogger.success('Created snapped position marker', tag: 'MAP');
+    }
+  }
+
   // ============================================================================
   // NAVIGATION MODE METHODS (GPS-based rotation, auto-center, breadcrumbs)
   // ============================================================================
@@ -2823,8 +2880,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       _addBreadcrumb(location);
     }
 
-    // Turn-by-turn navigation camera auto-follow (user at 3/4 from top)
+    // Update snapped position marker for turn-by-turn navigation
     final turnByTurnNavState = ref.read(navigationProvider);
+    await _updateSnappedPositionMarker(location);
+
+    // Turn-by-turn navigation camera auto-follow (user at 3/4 from top)
     final mapState = ref.read(mapProvider);
     AppLogger.debug('Checking turn-by-turn nav state', tag: 'CAMERA', data: {
       'isNavigating': turnByTurnNavState.isNavigating,
