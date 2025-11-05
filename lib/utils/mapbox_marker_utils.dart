@@ -8,9 +8,24 @@ import '../config/marker_config.dart';
 /// All methods are static and return PNG image data as Uint8List
 /// Icons match the 2D map styling for consistency
 class MapboxMarkerUtils {
-  /// Get lighter color with reduced opacity for traveled route segments
+  /// Get grey color for traveled route segments
+  ///
+  /// Returns a medium grey color (RGB: 150, 150, 150) with 70% opacity
+  /// to clearly distinguish traveled segments from the active route ahead
+  static int getTraveledSegmentColor() {
+    const greyValue = 150; // Medium grey
+    const opacity = 0.7; // 70% opacity
+
+    final a = (255 * opacity).round();
+
+    // Return grey ARGB int
+    return (a << 24) | (greyValue << 16) | (greyValue << 8) | greyValue;
+  }
+
+  /// Get lighter color with reduced opacity (deprecated - use getTraveledSegmentColor for traveled segments)
   ///
   /// Blends color with white (50% original, 50% white) and reduces opacity to 50%
+  @deprecated
   static int getLighterColor(Color color) {
     // Extract ARGB components
     final a = color.alpha;

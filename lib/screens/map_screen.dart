@@ -31,6 +31,7 @@ import '../utils/poi_dialog_handler.dart';
 import '../utils/route_calculation_helper.dart';
 import '../utils/map_navigation_tracker.dart';
 import '../utils/map_bounds_utils.dart';
+import '../utils/mapbox_marker_utils.dart';
 import '../models/map_models.dart';
 import '../config/marker_config.dart';
 import '../config/poi_type_config.dart';
@@ -1834,9 +1835,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 final isTraveled = currentPointIndex != null &&
                                     segment.endIndex < currentPointIndex;
 
-                                // Apply lighter color and thinner width for traveled segments
+                                // Apply grey color and thinner width for traveled segments
                                 final color = isTraveled
-                                    ? _getLighterColor(segment.color)
+                                    ? Color(MapboxMarkerUtils.getTraveledSegmentColor())
                                     : segment.color;
                                 final width = isTraveled ? 5.0 : 8.0;
 
@@ -2425,9 +2426,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     ]; // End map and controls list
   }
 
-  /// Get lighter color for traveled route segments
+  /// Get lighter color for traveled route segments (deprecated - use MapboxMarkerUtils.getTraveledSegmentColor)
   ///
   /// Blends color with white (50% original, 50% white) and reduces opacity to 50%
+  @deprecated
   static Color _getLighterColor(Color color) {
     // Extract RGB components
     final r = color.red;

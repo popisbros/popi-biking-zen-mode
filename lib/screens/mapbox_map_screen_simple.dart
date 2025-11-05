@@ -2637,10 +2637,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             _traveledSegmentIndices.add(i);
           }
 
-          // Use lighter color for traveled segments, normal color for remaining
+          // Use grey for traveled segments, normal color for remaining route
           final segmentColor = isTraveled
-              ? MapboxMarkerUtils.getLighterColor(segment.color) // Lighter version of surface color
-              : segment.color.value; // Original surface color
+              ? MapboxMarkerUtils.getTraveledSegmentColor() // Grey color for traveled segments
+              : segment.color.value; // Original surface color for route ahead
 
           // Create line layer with surface color (lighter for traveled)
           final lineLayer = LineLayer(
@@ -3043,9 +3043,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         // Calculate new color and width
         final newColor = isTraveled
-            ? MapboxMarkerUtils.getLighterColor(segment.originalColor)
+            ? MapboxMarkerUtils.getTraveledSegmentColor()
             : segment.originalColor.value;
-        final newWidth = isTraveled ? 4.0 : 6.0;
+        final newWidth = isTraveled ? 5.0 : 8.0;
 
         try {
           // Update layer properties efficiently (no redraw needed)
