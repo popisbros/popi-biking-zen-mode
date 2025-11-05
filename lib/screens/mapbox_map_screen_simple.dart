@@ -2638,39 +2638,89 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         // Render single-color route (preview or no surface data)
         final routeColor = isNavigating ? 0xFF2196F3 : 0xFF85a78b; // Blue for navigation without data, green for preview
 
+        // Clear segment metadata if not navigating
+        if (!isNavigating) {
+          _routeSegments.clear();
+          _traveledSegmentIndices.clear();
+        }
+
         // Convert LatLng points to Mapbox Position list
         final positions = routeToRender.map((point) =>
           Position(point.longitude, point.latitude)
         ).toList();
 
-        // Create LineString geometry
-        final lineString = LineString(coordinates: positions);
+        // For navigation without surface data, create a single segment to enable traveled route
+        if (isNavigating) {
+          _routeSegments.clear();
+          _traveledSegmentIndices.clear();
 
-        // Create GeoJSON source with JSON string
-        final geoJsonSource = GeoJsonSource(
-          id: 'route-source',
-          data: jsonEncode(lineString.toJson()),
-        );
+          // Create LineString geometry
+          final lineString = LineString(coordinates: positions);
 
-        // Add source to map
-        await _mapboxMap?.style.addSource(geoJsonSource);
+          // Create GeoJSON source with JSON string
+          final geoJsonSource = GeoJsonSource(
+            id: 'route-source-0',
+            data: jsonEncode(lineString.toJson()),
+          );
 
-        // Create line layer for the route
-        final lineLayer = LineLayer(
-          id: 'route-layer',
-          sourceId: 'route-source',
-          lineColor: routeColor,
-          lineWidth: 8.0,
-          lineCap: LineCap.ROUND,
-          lineJoin: LineJoin.ROUND,
-        );
+          // Add source to map
+          await _mapboxMap?.style.addSource(geoJsonSource);
 
-        // Add layer to map
-        await _mapboxMap?.style.addLayer(lineLayer);
+          // Create line layer for the route
+          final lineLayer = LineLayer(
+            id: 'route-layer-0',
+            sourceId: 'route-source-0',
+            lineColor: routeColor,
+            lineWidth: 8.0,
+            lineCap: LineCap.ROUND,
+            lineJoin: LineJoin.ROUND,
+          );
 
-        AppLogger.success('Single-color route added', tag: 'MAP', data: {
-          'points': routeToRender.length,
-        });
+          // Add layer to map
+          await _mapboxMap?.style.addLayer(lineLayer);
+
+          // Add single segment metadata covering entire route
+          _routeSegments.add(RouteSegmentMetadata(
+            index: 0,
+            endIndex: routeToRender.length - 1,
+            originalColor: Color(routeColor),
+          ));
+
+          AppLogger.success('Single-segment navigation route added (traveled route ENABLED)', tag: 'MAP', data: {
+            'points': routeToRender.length,
+            'segmentCount': 1,
+          });
+        } else {
+          // Preview route (not navigating) - single layer without segments
+          // Create LineString geometry
+          final lineString = LineString(coordinates: positions);
+
+          // Create GeoJSON source with JSON string
+          final geoJsonSource = GeoJsonSource(
+            id: 'route-source',
+            data: jsonEncode(lineString.toJson()),
+          );
+
+          // Add source to map
+          await _mapboxMap?.style.addSource(geoJsonSource);
+
+          // Create line layer for the route
+          final lineLayer = LineLayer(
+            id: 'route-layer',
+            sourceId: 'route-source',
+            lineColor: routeColor,
+            lineWidth: 8.0,
+            lineCap: LineCap.ROUND,
+            lineJoin: LineJoin.ROUND,
+          );
+
+          // Add layer to map
+          await _mapboxMap?.style.addLayer(lineLayer);
+
+          AppLogger.success('Single-color preview route added', tag: 'MAP', data: {
+            'points': routeToRender.length,
+          });
+        }
       }
     } catch (e, stackTrace) {
       AppLogger.error('Failed to add route polyline', tag: 'MAP', error: e, stackTrace: stackTrace, data: {
