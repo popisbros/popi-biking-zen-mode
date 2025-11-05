@@ -770,6 +770,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Start real-time location stream for smooth snapped marker updates
     _startRealtimeLocationStream();
+
+    // Explicitly hide Mapbox puck during navigation (purple snapped marker will be shown instead)
+    _updatePuckVisibility(true, false);
   }
 
   /// Display route directly (without selection dialog) - legacy method
