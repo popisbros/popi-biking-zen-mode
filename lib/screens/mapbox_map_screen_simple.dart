@@ -3017,11 +3017,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Turn-by-turn navigation camera auto-follow (user at 3/4 from top)
     final mapState = ref.read(mapProvider);
-    AppLogger.debug('Checking turn-by-turn nav state', tag: 'CAMERA', data: {
+    AppLogger.debug('🔍 GPS location change - checking turn-by-turn nav state', tag: 'NAV-CHECK', data: {
       'isNavigating': turnByTurnNavState.isNavigating,
       'autoZoomEnabled': mapState.autoZoomEnabled,
+      'hasRoute': turnByTurnNavState.activeRoute != null,
     });
     if (turnByTurnNavState.isNavigating) {
+      AppLogger.success('✅ Turn-by-turn navigation IS ACTIVE - will update traveled route', tag: 'NAV-CHECK');
       // Only auto-follow camera if auto-zoom is enabled
       if (mapState.autoZoomEnabled) {
         AppLogger.success('Starting camera follow for turn-by-turn', tag: 'CAMERA');
@@ -3032,9 +3034,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
 
       // Update traveled route segments only when position changes significantly
+      AppLogger.debug('📍 About to call _updateTraveledRouteIfNeeded', tag: 'NAV-CHECK');
       await _updateTraveledRouteIfNeeded(location);
+      AppLogger.debug('✅ _updateTraveledRouteIfNeeded completed', tag: 'NAV-CHECK');
 
       return; // Skip regular navigation mode camera (turn-by-turn takes priority)
+    } else {
+      AppLogger.warning('❌ Turn-by-turn navigation NOT ACTIVE - traveled route will NOT update', tag: 'NAV-CHECK');
     }
 
     // Auto-center logic (threshold: navigation 3m, exploration 25m)
