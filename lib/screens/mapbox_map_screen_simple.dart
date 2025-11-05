@@ -73,6 +73,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Navigation mode: GPS breadcrumb tracking for map rotation
   final MapNavigationTracker _navigationTracker = MapNavigationTracker();
 
+  // Snapped position breadcrumb tracking for marker rotation during navigation
+  final MapNavigationTracker _snappedPositionTracker = MapNavigationTracker();
+
   // GPS auto-center tracking
   latlong.LatLng? _originalGPSReference;
   latlong.LatLng? _lastGPSPosition;
@@ -2911,8 +2914,27 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Only update marker if snap succeeded
     if (displayPos == null) return;
 
-    // Get heading for marker rotation
-    double? heading = _navigationTracker.lastBearing ?? location.heading;
+    // Add snapped position to breadcrumb tracker for marker rotation
+    final snappedLocationData = LocationData(
+      latitude: displayPos.latitude,
+      longitude: displayPos.longitude,
+      altitude: location.altitude,
+      accuracy: location.accuracy,
+      speed: location.speed,
+      heading: location.heading,
+      timestamp: location.timestamp,
+    );
+    _snappedPositionTracker.addBreadcrumb(snappedLocationData);
+
+    // Calculate heading from snapped position breadcrumbs (uses last 5 snapped positions)
+    // This ensures the marker points in the direction of travel along the route, not raw GPS direction
+    double? heading = _snappedPositionTracker.calculateTravelDirection(
+      smoothingRatio: 0.7, // Less smoothing for more responsive marker rotation
+      enableLogging: false, // Disable logging for real-time updates (too verbose)
+    );
+
+    // Fallback to GPS heading if we don't have enough breadcrumbs yet
+    heading ??= location.heading;
     final hasHeading = heading != null && heading >= 0;
 
     // Create purple marker icon
@@ -3387,6 +3409,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _traveledSegmentIndices.clear();
     _routeSegments.clear();
 
+    // Clear breadcrumb trackers
+    _snappedPositionTracker.clear();
+
     setState(() {
       _activeRoute = null;
     });
@@ -3467,6 +3492,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Clear breadcrumbs
     _navigationTracker.clear();
+    _snappedPositionTracker.clear();
 
     // Clear active route sheet
     setState(() {
