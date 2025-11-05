@@ -3029,13 +3029,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Store reference to old marker, delete it, then create new one
       final oldMarker = _snappedPositionMarker;
       if (oldMarker != null) {
+        AppLogger.debug('🗑️  Deleting old marker before creating new one', tag: 'MARKER-MUTEX');
         _snappedPositionMarker = null; // Clear reference immediately to prevent race conditions
         await _pointAnnotationManager!.delete(oldMarker);
+        AppLogger.debug('✅ Old marker deleted successfully', tag: 'MARKER-MUTEX');
+      } else {
+        AppLogger.debug('ℹ️  No old marker to delete (first marker creation)', tag: 'MARKER-MUTEX');
       }
 
       // Create new marker after old one is deleted
       _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-      AppLogger.debug('✅ Marker created successfully', tag: 'MARKER-MUTEX');
+      AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX');
     } finally {
       _isUpdatingMarker = false; // Always unlock
       AppLogger.debug('🔓 Marker update complete - mutex unlocked', tag: 'MARKER-MUTEX');
