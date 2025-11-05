@@ -2929,7 +2929,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Calculate heading from snapped position breadcrumbs (uses last 5 snapped positions)
     // This ensures the marker points in the direction of travel along the route, not raw GPS direction
     double? heading = _snappedPositionTracker.calculateTravelDirection(
-      smoothingRatio: 0.7, // Less smoothing for more responsive marker rotation
+      smoothingRatio: 0.85, // High smoothing ratio for very responsive marker rotation
       enableLogging: false, // Disable logging for real-time updates (too verbose)
     );
 
