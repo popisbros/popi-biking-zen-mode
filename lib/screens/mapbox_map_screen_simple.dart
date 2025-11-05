@@ -92,6 +92,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Cache segment metadata for efficient updates
   final List<RouteSegmentMetadata> _routeSegments = [];
 
+  // Track current segment for progressive traveled route updates
+  int? _currentSegmentIndex;
+  int? _lastProgressPointIndex; // Last point index within current segment that was rendered as traveled
+
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
   double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
@@ -2381,6 +2385,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       sourcesToRemove.add('route-source-$i');
     }
 
+    // Remove current segment progress layer (partial traveled visualization)
+    layersToRemove.add('current-segment-progress-layer');
+    sourcesToRemove.add('current-segment-progress-source');
+
     // Step 1: Remove all layers
     int layersRemoved = 0;
     for (final layer in layersToRemove) {
@@ -3138,12 +3146,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     }
 
-    // Only update if position changed significantly
-    if (_lastRoutePointIndex == null || closestIndex == _lastRoutePointIndex) {
-      _lastRoutePointIndex = closestIndex;
-      return;
-    }
-
+    // Update last route point index
+    final bool pointIndexChanged = _lastRoutePointIndex != closestIndex;
     _lastRoutePointIndex = closestIndex;
 
     // Find segments that changed state (from remaining → traveled)
@@ -3200,6 +3204,134 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'totalSegments': _routeSegments.length,
       });
     }
+
+    // Update partial progress within current segment (for smoother traveled route visualization)
+    await _updateCurrentSegmentProgress(closestIndex, routePoints, pointIndexChanged);
+  }
+
+  /// Update partial traveled progress within the current segment
+  /// This provides smooth visual feedback on long segments by showing traveled distance every 3 seconds
+  Future<void> _updateCurrentSegmentProgress(int closestIndex, List<latlong.LatLng> routePoints, bool pointIndexChanged) async {
+    if (_mapboxMap == null || _routeSegments.isEmpty) return;
+
+    // Find which segment contains the current position
+    int? currentSegmentIndex;
+    RouteSegmentMetadata? currentSegment;
+
+    for (final segment in _routeSegments) {
+      // Find the segment that contains the current point (not yet fully traveled)
+      // The segment should have: segment.startIndex <= closestIndex <= segment.endIndex
+      // But we need to find the metadata by looking at the segment that hasn't been fully passed yet
+      if (closestIndex <= segment.endIndex && !_traveledSegmentIndices.contains(segment.index)) {
+        currentSegmentIndex = segment.index;
+        currentSegment = segment;
+        break;
+      }
+    }
+
+    // If no current segment found (e.g., at end of route), remove progress layer and return
+    if (currentSegment == null || currentSegmentIndex == null) {
+      try {
+        await _mapboxMap!.style.removeStyleLayer('current-segment-progress-layer');
+        await _mapboxMap!.style.removeStyleSource('current-segment-progress-source');
+      } catch (e) {
+        // Layer doesn't exist, that's fine
+      }
+      _currentSegmentIndex = null;
+      _lastProgressPointIndex = null;
+      return;
+    }
+
+    // Check if we need to update (segment changed or position changed significantly)
+    final segmentChanged = _currentSegmentIndex != currentSegmentIndex;
+    final progressChanged = pointIndexChanged || _lastProgressPointIndex == null;
+
+    if (!segmentChanged && !progressChanged) {
+      return; // No update needed
+    }
+
+    _currentSegmentIndex = currentSegmentIndex;
+    _lastProgressPointIndex = closestIndex;
+
+    // Get the actual segment points from the navigation state
+    final navState = ref.read(navigationProvider);
+    if (navState.activeRoute == null) return;
+
+    final pathDetails = navState.activeRoute!.pathDetails;
+    if (pathDetails == null || !pathDetails.containsKey('surface')) return;
+
+    final segments = RouteSurfaceHelper.createSurfaceSegments(routePoints, pathDetails);
+    if (currentSegmentIndex >= segments.length) return;
+
+    final actualSegment = segments[currentSegmentIndex];
+    final segmentStartIndex = actualSegment.startIndex;
+    final segmentEndIndex = actualSegment.endIndex;
+
+    // If current position is before or at segment start, no progress to show
+    if (closestIndex <= segmentStartIndex) {
+      try {
+        await _mapboxMap!.style.removeStyleLayer('current-segment-progress-layer');
+        await _mapboxMap!.style.removeStyleSource('current-segment-progress-source');
+      } catch (e) {
+        // Layer doesn't exist
+      }
+      return;
+    }
+
+    // Calculate partial segment: from segment start to current position
+    final partialPoints = routePoints.sublist(
+      segmentStartIndex,
+      (closestIndex + 1).clamp(segmentStartIndex, segmentEndIndex + 1),
+    );
+
+    if (partialPoints.length < 2) {
+      // Not enough points to draw a line
+      return;
+    }
+
+    // Convert to Mapbox positions
+    final positions = partialPoints.map((point) =>
+      Position(point.longitude, point.latitude)
+    ).toList();
+
+    // Create LineString geometry for partial progress
+    final lineString = LineString(coordinates: positions);
+
+    // Remove existing progress layer/source if exists
+    try {
+      await _mapboxMap!.style.removeStyleLayer('current-segment-progress-layer');
+      await _mapboxMap!.style.removeStyleSource('current-segment-progress-source');
+    } catch (e) {
+      // Layer/source doesn't exist yet
+    }
+
+    // Create GeoJSON source for partial progress
+    final geoJsonSource = GeoJsonSource(
+      id: 'current-segment-progress-source',
+      data: jsonEncode(lineString.toJson()),
+    );
+
+    await _mapboxMap!.style.addSource(geoJsonSource);
+
+    // Create line layer with traveled color
+    final lineLayer = LineLayer(
+      id: 'current-segment-progress-layer',
+      sourceId: 'current-segment-progress-source',
+      lineColor: MapboxMarkerUtils.getTraveledSegmentColor(),
+      lineWidth: 5.0, // Same as fully traveled segments
+      lineCap: LineCap.ROUND,
+      lineJoin: LineJoin.ROUND,
+    );
+
+    await _mapboxMap!.style.addLayer(lineLayer);
+
+    AppLogger.debug('Updated current segment progress', tag: 'MAP', data: {
+      'segmentIndex': currentSegmentIndex,
+      'segmentStartIndex': segmentStartIndex,
+      'segmentEndIndex': segmentEndIndex,
+      'currentPointIndex': closestIndex,
+      'partialPoints': partialPoints.length,
+    });
   }
 
   /// Handle camera auto-follow for turn-by-turn navigation
@@ -3247,6 +3379,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Stop real-time location stream
     _stopRealtimeLocationStream();
+
+    // Clear segment progress tracking
+    _currentSegmentIndex = null;
+    _lastProgressPointIndex = null;
+    _lastRoutePointIndex = null;
+    _traveledSegmentIndices.clear();
+    _routeSegments.clear();
 
     setState(() {
       _activeRoute = null;
@@ -3307,6 +3446,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   void _stopNavigation() {
     // Stop real-time location stream
     _stopRealtimeLocationStream();
+
+    // Clear segment progress tracking
+    _currentSegmentIndex = null;
+    _lastProgressPointIndex = null;
+    _lastRoutePointIndex = null;
+    _traveledSegmentIndices.clear();
+    _routeSegments.clear();
 
     // Clear route from provider
     ref.read(searchProvider.notifier).clearRoute();
