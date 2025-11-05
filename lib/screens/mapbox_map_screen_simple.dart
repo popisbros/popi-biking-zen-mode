@@ -3179,10 +3179,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   /// Update traveled route segments efficiently by only updating changed segments
   /// Only updates individual layer properties instead of redrawing entire route
   Future<void> _updateTraveledRouteIfNeeded(LocationData location) async {
-    if (_mapboxMap == null || _routeSegments.isEmpty) {
-      AppLogger.warning('Cannot update traveled route - map not ready or no segments', tag: 'TRAVELED-INIT');
+    if (_mapboxMap == null) {
+      AppLogger.error('❌ Cannot update traveled route - _mapboxMap is NULL', tag: 'TRAVELED-INIT');
       return;
     }
+
+    if (_routeSegments.isEmpty) {
+      AppLogger.error('❌ Cannot update traveled route - _routeSegments is EMPTY', tag: 'TRAVELED-INIT', data: {
+        'routeSegmentsLength': _routeSegments.length,
+      });
+      return;
+    }
+
+    AppLogger.success('✅ Map and segments ready - proceeding with traveled route update', tag: 'TRAVELED-INIT', data: {
+      'segmentCount': _routeSegments.length,
+    });
 
     final navState = ref.read(navigationProvider);
     if (!navState.isNavigating || navState.activeRoute == null) {
