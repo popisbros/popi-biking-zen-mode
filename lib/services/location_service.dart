@@ -11,12 +11,18 @@ class LocationService {
   LocationService._internal();
 
   StreamSubscription<Position>? _positionStream;
+  StreamSubscription<Position>? _realtimePositionStream;
   Timer? _pollTimer;
   final StreamController<LocationData> _locationController =
       StreamController<LocationData>.broadcast();
+  final StreamController<LocationData> _realtimeLocationController =
+      StreamController<LocationData>.broadcast();
 
-  /// Stream of location updates
+  /// Stream of location updates (3-second polling for navigation calculations)
   Stream<LocationData> get locationStream => _locationController.stream;
+
+  /// Real-time stream of location updates (native GPS updates for smooth marker movement)
+  Stream<LocationData> get realtimeLocationStream => _realtimeLocationController.stream;
 
   /// Current location
   LocationData? _currentLocation;
@@ -180,6 +186,61 @@ class LocationService {
     }
   }
 
+  /// Start real-time location stream (for smooth marker updates on 3D map)
+  Future<void> startRealtimeLocationStream() async {
+    try {
+      // Check if already streaming
+      if (_realtimePositionStream != null) {
+        AppLogger.warning('Real-time location stream already running', tag: 'LOCATION');
+        return;
+      }
+
+      final permission = await checkPermission();
+      if (permission != LocationPermission.whileInUse && permission != LocationPermission.always) {
+        AppLogger.error('Cannot start real-time stream - no permission', tag: 'LOCATION');
+        return;
+      }
+
+      const locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0, // Get all updates (no distance filter)
+      );
+
+      // Start real-time position stream
+      _realtimePositionStream = Geolocator.getPositionStream(
+        locationSettings: locationSettings,
+      ).listen(
+        (position) {
+          final locationData = LocationData(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            altitude: position.altitude,
+            accuracy: position.accuracy,
+            speed: position.speed,
+            heading: position.heading,
+            timestamp: position.timestamp,
+          );
+
+          _realtimeLocationController.add(locationData);
+        },
+        onError: (error, stackTrace) {
+          AppLogger.error('Real-time stream error', tag: 'LOCATION', error: error, stackTrace: stackTrace);
+        },
+      );
+
+      AppLogger.success('Real-time location stream started', tag: 'LOCATION');
+    } catch (e) {
+      AppLogger.error('Error starting real-time stream', tag: 'LOCATION', error: e);
+    }
+  }
+
+  /// Stop real-time location stream
+  Future<void> stopRealtimeLocationStream() async {
+    await _realtimePositionStream?.cancel();
+    _realtimePositionStream = null;
+    AppLogger.success('Real-time location stream stopped', tag: 'LOCATION');
+  }
+
   /// Stop location tracking
   Future<void> stopLocationTracking() async {
     // Cancel timer if running
@@ -212,6 +273,8 @@ class LocationService {
   /// Dispose resources
   void dispose() {
     stopLocationTracking();
+    stopRealtimeLocationStream();
     _locationController.close();
+    _realtimeLocationController.close();
   }
 }

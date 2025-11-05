@@ -9,7 +9,8 @@
       "Bash(lib/providers/community_provider.dart)",
       "Bash(flutter pub get:*)",
       "Bash(git rm:*)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash(flutter pub:*)"
     ],
     "deny": [],
     "ask": []

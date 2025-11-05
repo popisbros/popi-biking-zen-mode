@@ -80,6 +80,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Active route for persistent navigation sheet
   RouteResult? _activeRoute;
 
+  // Real-time location subscription for smooth snapped marker updates
+  StreamSubscription<LocationData>? _realtimeLocationSubscription;
+
   // Track last route point index to avoid unnecessary redraws
   int? _lastRoutePointIndex;
 
@@ -764,6 +767,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'pitch': '$navigationPitch°',
       });
     }
+
+    // Start real-time location stream for smooth snapped marker updates
+    _startRealtimeLocationStream();
   }
 
   /// Display route directly (without selection dialog) - legacy method
@@ -2292,6 +2298,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   void dispose() {
     _debounceTimer?.cancel();
     _cameraCheckTimer?.cancel();
+    _stopRealtimeLocationStream();
     super.dispose();
   }
 
@@ -2898,6 +2905,86 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     }
   }
 
+  /// Start real-time location stream for smooth snapped marker updates during navigation
+  void _startRealtimeLocationStream() {
+    final locationService = ref.read(locationServiceProvider);
+    locationService.startRealtimeLocationStream();
+
+    _realtimeLocationSubscription = locationService.realtimeLocationStream.listen((location) {
+      _updateSnappedPositionMarkerRealtime(location);
+    });
+
+    AppLogger.success('Real-time location stream started for snapped marker', tag: 'MAP');
+  }
+
+  /// Stop real-time location stream
+  void _stopRealtimeLocationStream() {
+    _realtimeLocationSubscription?.cancel();
+    _realtimeLocationSubscription = null;
+
+    final locationService = ref.read(locationServiceProvider);
+    locationService.stopRealtimeLocationStream();
+
+    AppLogger.success('Real-time location stream stopped', tag: 'MAP');
+  }
+
+  /// Update snapped position marker in real-time (called from real-time GPS stream)
+  Future<void> _updateSnappedPositionMarkerRealtime(LocationData location) async {
+    if (_pointAnnotationManager == null) return;
+
+    final navProviderState = ref.read(navigationProvider);
+    final navModeState = ref.read(navigationModeProvider);
+    final isNavigationMode = navModeState.mode == NavMode.navigation;
+
+    // Only update if in turn-by-turn navigation
+    if (!navProviderState.isNavigating || navProviderState.activeRoute == null) {
+      return;
+    }
+
+    // Calculate snapped position in real-time
+    final currentPos = latlong.LatLng(location.latitude, location.longitude);
+    final route = navProviderState.activeRoute!;
+
+    // Use current segment index from navigation state (updated every 3s)
+    final closestSegment = navProviderState.currentSegmentIndex;
+
+    // Snap to route
+    final displayPos = GeoUtils.snapToRoute(
+      currentPos,
+      route.points,
+      closestSegment,
+      maxSnapDistanceMeters: 20.0,
+      searchWindowSize: 50,
+    );
+
+    // Only update marker if snap succeeded
+    if (displayPos == null) return;
+
+    // Get heading for marker rotation
+    double? heading = _navigationTracker.lastBearing ?? location.heading;
+    final hasHeading = heading != null && heading >= 0;
+
+    // Create purple marker icon
+    final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
+      heading: (isNavigationMode && hasHeading) ? heading : null,
+      borderColor: Colors.purple,
+    );
+
+    final markerOptions = PointAnnotationOptions(
+      geometry: Point(coordinates: Position(displayPos.longitude, displayPos.latitude)),
+      image: markerIcon,
+      iconSize: 1.8,
+    );
+
+    // Update or create marker
+    if (_snappedPositionMarker != null) {
+      await _pointAnnotationManager!.delete(_snappedPositionMarker!);
+      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+    } else {
+      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+    }
+  }
+
   // ============================================================================
   // NAVIGATION MODE METHODS (GPS-based rotation, auto-center, breadcrumbs)
   // ============================================================================
@@ -3210,6 +3297,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Stop navigation and clear route
   void _stopNavigation() {
+    // Stop real-time location stream
+    _stopRealtimeLocationStream();
+
     // Clear route from provider
     ref.read(searchProvider.notifier).clearRoute();
 
