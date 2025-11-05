@@ -99,6 +99,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   int? _currentSegmentIndex;
   int? _lastProgressPointIndex; // Last point index within current segment that was rendered as traveled
 
+  // Mutex to prevent concurrent marker updates
+  bool _isUpdatingMarker = false;
+
   // Pitch angle state
   double _currentPitch = 60.0; // Default pitch
   double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
@@ -2886,79 +2889,90 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Future<void> _updateSnappedPositionMarkerRealtime(LocationData location) async {
     if (_pointAnnotationManager == null) return;
 
-    final navProviderState = ref.read(navigationProvider);
-    final navModeState = ref.read(navigationModeProvider);
-    final isNavigationMode = navModeState.mode == NavMode.navigation;
-
-    // Only update if in turn-by-turn navigation
-    if (!navProviderState.isNavigating || navProviderState.activeRoute == null) {
-      return;
+    // CRITICAL: Prevent concurrent execution to avoid marker accumulation
+    if (_isUpdatingMarker) {
+      return; // Skip this update if already updating
     }
 
-    // Calculate snapped position in real-time
-    final currentPos = latlong.LatLng(location.latitude, location.longitude);
-    final route = navProviderState.activeRoute!;
+    _isUpdatingMarker = true; // Lock
 
-    // Use current segment index from navigation state (updated every 3s)
-    final closestSegment = navProviderState.currentSegmentIndex;
+    try {
+      final navProviderState = ref.read(navigationProvider);
+      final navModeState = ref.read(navigationModeProvider);
+      final isNavigationMode = navModeState.mode == NavMode.navigation;
 
-    // Snap to route
-    final displayPos = GeoUtils.snapToRoute(
-      currentPos,
-      route.points,
-      closestSegment,
-      maxSnapDistanceMeters: 20.0,
-      searchWindowSize: 50,
-    );
+      // Only update if in turn-by-turn navigation
+      if (!navProviderState.isNavigating || navProviderState.activeRoute == null) {
+        return;
+      }
 
-    // Only update marker if snap succeeded
-    if (displayPos == null) return;
+      // Calculate snapped position in real-time
+      final currentPos = latlong.LatLng(location.latitude, location.longitude);
+      final route = navProviderState.activeRoute!;
 
-    // Add snapped position to breadcrumb tracker for marker rotation
-    final snappedLocationData = LocationData(
-      latitude: displayPos.latitude,
-      longitude: displayPos.longitude,
-      altitude: location.altitude,
-      accuracy: location.accuracy,
-      speed: location.speed,
-      heading: location.heading,
-      timestamp: location.timestamp,
-    );
-    _snappedPositionTracker.addBreadcrumb(snappedLocationData);
+      // Use current segment index from navigation state (updated every 3s)
+      final closestSegment = navProviderState.currentSegmentIndex;
 
-    // Calculate heading from snapped position breadcrumbs (uses last 5 snapped positions)
-    // This ensures the marker points in the direction of travel along the route, not raw GPS direction
-    double? heading = _snappedPositionTracker.calculateTravelDirection(
-      smoothingRatio: 0.85, // High smoothing ratio for very responsive marker rotation
-      enableLogging: false, // Disable logging for real-time updates (too verbose)
-    );
+      // Snap to route
+      final displayPos = GeoUtils.snapToRoute(
+        currentPos,
+        route.points,
+        closestSegment,
+        maxSnapDistanceMeters: 20.0,
+        searchWindowSize: 50,
+      );
 
-    // Fallback to GPS heading if we don't have enough breadcrumbs yet
-    heading ??= location.heading;
-    final hasHeading = heading != null && heading >= 0;
+      // Only update marker if snap succeeded
+      if (displayPos == null) return;
 
-    // Create purple marker icon
-    final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
-      heading: (isNavigationMode && hasHeading) ? heading : null,
-      borderColor: Colors.purple,
-    );
+      // Add snapped position to breadcrumb tracker for marker rotation
+      final snappedLocationData = LocationData(
+        latitude: displayPos.latitude,
+        longitude: displayPos.longitude,
+        altitude: location.altitude,
+        accuracy: location.accuracy,
+        speed: location.speed,
+        heading: location.heading,
+        timestamp: location.timestamp,
+      );
+      _snappedPositionTracker.addBreadcrumb(snappedLocationData);
 
-    final markerOptions = PointAnnotationOptions(
-      geometry: Point(coordinates: Position(displayPos.longitude, displayPos.latitude)),
-      image: markerIcon,
-      iconSize: 1.8,
-    );
+      // Calculate heading from snapped position breadcrumbs (uses last 5 snapped positions)
+      // This ensures the marker points in the direction of travel along the route, not raw GPS direction
+      double? heading = _snappedPositionTracker.calculateTravelDirection(
+        smoothingRatio: 0.85, // High smoothing ratio for very responsive marker rotation
+        enableLogging: false, // Disable logging for real-time updates (too verbose)
+      );
 
-    // CRITICAL: Delete old marker BEFORE creating new one to prevent accumulation
-    // Store reference to old marker, delete it, then create new one
-    final oldMarker = _snappedPositionMarker;
-    if (oldMarker != null) {
-      _snappedPositionMarker = null; // Clear reference immediately to prevent race conditions
-      await _pointAnnotationManager!.delete(oldMarker);
+      // Fallback to GPS heading if we don't have enough breadcrumbs yet
+      heading ??= location.heading;
+      final hasHeading = heading != null && heading >= 0;
+
+      // Create purple marker icon
+      final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
+        heading: (isNavigationMode && hasHeading) ? heading : null,
+        borderColor: Colors.purple,
+      );
+
+      final markerOptions = PointAnnotationOptions(
+        geometry: Point(coordinates: Position(displayPos.longitude, displayPos.latitude)),
+        image: markerIcon,
+        iconSize: 1.8,
+      );
+
+      // CRITICAL: Delete old marker BEFORE creating new one to prevent accumulation
+      // Store reference to old marker, delete it, then create new one
+      final oldMarker = _snappedPositionMarker;
+      if (oldMarker != null) {
+        _snappedPositionMarker = null; // Clear reference immediately to prevent race conditions
+        await _pointAnnotationManager!.delete(oldMarker);
+      }
+
+      // Create new marker after old one is deleted
+      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+    } finally {
+      _isUpdatingMarker = false; // Always unlock
     }
-
-    // Create new marker after old one is deleted
-    _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
   }
 
   // ============================================================================
