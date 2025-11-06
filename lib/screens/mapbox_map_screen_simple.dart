@@ -3044,6 +3044,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
 
       final hasHeading = heading != null && heading >= 0;
+      final rotationDegrees = (isNavigationMode && hasHeading) ? heading! : 0.0;
+
+      AppLogger.debug('Preparing marker creation', tag: 'MARKER-MUTEX', data: {
+        'isNavigationMode': isNavigationMode,
+        'hasHeading': hasHeading,
+        'headingValue': heading?.toStringAsFixed(1) ?? 'null',
+        'rotationDegrees': rotationDegrees.toStringAsFixed(1),
+        'position': '${displayPos.latitude.toStringAsFixed(6)}, ${displayPos.longitude.toStringAsFixed(6)}',
+      });
 
       // Create purple marker icon (arrow pointing UP - rotation handled by iconRotate)
       // Pass 0.0 (not null) to trigger arrow drawing; iconRotate will handle actual direction
@@ -3057,7 +3066,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         image: markerIcon,
         iconSize: 1.8,
         // Rotate the marker icon to match heading (Mapbox handles rotation dynamically)
-        iconRotate: (isNavigationMode && hasHeading) ? heading : 0.0,
+        iconRotate: rotationDegrees,
       );
 
       // Strategy: Delete ALL tracked purple markers, then create new one
