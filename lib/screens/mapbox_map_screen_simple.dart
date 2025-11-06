@@ -323,14 +323,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
                   // CRITICAL: Clear purple marker tracking when manager is recreated
                   // Old markers are from old manager and will become orphaned
-                  final orphanedCount = _purpleMarkers.length;
                   _purpleMarkers.clear();
                   _snappedPositionMarker = null;
-                  AppLogger.debug('🔄 Manager recreated - cleared purple marker tracking', tag: 'MARKER-DEBUG', data: {
-                    'oldManagerHash': oldManagerHash ?? 'null',
-                    'newManagerHash': _pointAnnotationManager?.hashCode ?? 'null',
-                    'orphanedMarkers': orphanedCount,
-                  });
 
                   _addMarkers();
                   if (!mounted) return;
@@ -1848,9 +1842,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // CRITICAL: Clear purple marker tracking when manager is first created
     _purpleMarkers.clear();
     _snappedPositionMarker = null;
-    AppLogger.debug('Initial manager created', tag: 'MARKER-DEBUG', data: {
-      'managerHashCode': _pointAnnotationManager?.hashCode ?? 'null',
-    });
 
     // Add click listener for tap handling
     _pointAnnotationManager!.addOnPointAnnotationClickListener(
@@ -2864,6 +2855,17 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   /// causing marker accumulation bugs. The realtime function handles all marker
   /// creation with proper tracking.
 
+  /// Convert bearing (0-360°) to compass direction (N, NE, E, SE, S, SW, W, NW)
+  String _bearingToCompass(double bearing) {
+    // Normalize bearing to 0-360
+    bearing = bearing % 360;
+    if (bearing < 0) bearing += 360;
+
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    final index = ((bearing + 22.5) / 45).floor() % 8;
+    return directions[index];
+  }
+
   /// Update blue Mapbox puck visibility based on navigation state and debug mode
   /// - During navigation: Hide puck (purple snapped marker is shown instead)
   /// - During navigation + debug mode: Show puck (to see real GPS position)
@@ -2920,12 +2922,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // CRITICAL: Prevent concurrent execution to avoid marker accumulation
     if (_isUpdatingMarker) {
-      AppLogger.debug('⏭️  Skipping marker update - already in progress (MUTEX WORKING!)', tag: 'MARKER-MUTEX');
+      // AppLogger.debug('⏭️  Skipping marker update - already in progress (MUTEX WORKING!)', tag: 'MARKER-MUTEX');
       return;
     }
 
     _isUpdatingMarker = true;
-    AppLogger.debug('🔒 Marker update started - mutex locked', tag: 'MARKER-MUTEX');
+    // AppLogger.debug('🔒 Marker update started - mutex locked', tag: 'MARKER-MUTEX');
 
     try {
       final navProviderState = ref.read(navigationProvider);
@@ -2987,13 +2989,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       );
 
       AppLogger.debug('Heading calculation result', tag: 'HEADING-DEBUG', data: {
-        'heading': heading?.toStringAsFixed(1) ?? 'null',
+        'heading': heading != null ? '${heading.toStringAsFixed(1)}°' : 'null',
+        'direction': heading != null ? _bearingToCompass(heading) : 'N/A',
         'willUseFallback': heading == null,
       });
 
       // Fallback to route direction if we don't have enough breadcrumbs yet
       if (heading == null) {
-        AppLogger.debug('No breadcrumb heading - using route-based bearing', tag: 'MARKER-MUTEX');
+        // AppLogger.debug('No breadcrumb heading - using route-based bearing', tag: 'MARKER-MUTEX');
 
         // Find closest point on route and calculate bearing to next point
         final currentRouteIndex = route.points.indexWhere((p) =>
@@ -3004,40 +3007,24 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Calculate bearing from snapped position to next route point
           final nextPoint = route.points[currentRouteIndex + 1];
           heading = GeoUtils.calculateBearing(displayPos, nextPoint);
-          AppLogger.debug('Route-based bearing calculated', tag: 'MARKER-MUTEX', data: {
-            'bearing': '${heading?.toStringAsFixed(1)}°',
-            'fromIndex': currentRouteIndex,
-            'toIndex': currentRouteIndex + 1,
-          });
+          // AppLogger.debug('Route-based bearing calculated', tag: 'MARKER-MUTEX', data: {});
         } else if (route.points.length > 1) {
           // Fallback: Use bearing between first two route points (early navigation)
           heading = GeoUtils.calculateBearing(route.points[0], route.points[1]);
-          AppLogger.debug('Using first-segment bearing (early navigation)', tag: 'MARKER-MUTEX', data: {
-            'bearing': '${heading?.toStringAsFixed(1)}°',
-          });
+          // AppLogger.debug('Using first-segment bearing (early navigation)', tag: 'MARKER-MUTEX', data: {});
         } else {
           // Last resort: use GPS heading (rare case)
           heading = location.heading;
-          AppLogger.warning('Using raw GPS heading as last resort', tag: 'MARKER-MUTEX', data: {
-            'heading': '${heading?.toStringAsFixed(1)}°',
-          });
+          // AppLogger.warning('Using raw GPS heading as last resort', tag: 'MARKER-MUTEX', data: {});
         }
-      } else {
-        AppLogger.debug('Using breadcrumb-based heading', tag: 'MARKER-MUTEX', data: {
-          'breadcrumbHeading': '${heading.toStringAsFixed(1)}°',
-          'rawGPSHeading': location.heading != null ? '${location.heading!.toStringAsFixed(1)}°' : 'null',
-          'difference': location.heading != null ? '${(heading - location.heading!).toStringAsFixed(1)}°' : 'N/A',
-        });
       }
+      // else {
+      //   AppLogger.debug('Using breadcrumb-based heading', tag: 'MARKER-MUTEX', data: {});
+      // }
 
       final hasHeading = heading != null && heading >= 0;
 
-      AppLogger.debug('Preparing marker creation', tag: 'MARKER-MUTEX', data: {
-        'isNavigationMode': isNavigationMode,
-        'hasHeading': hasHeading,
-        'headingValue': heading?.toStringAsFixed(1) ?? 'null',
-        'position': '${displayPos.latitude.toStringAsFixed(6)}, ${displayPos.longitude.toStringAsFixed(6)}',
-      });
+      // AppLogger.debug('Preparing marker creation', tag: 'MARKER-MUTEX', data: {});
 
       // Create purple marker icon with PRE-ROTATION baked into the image
       // IMPORTANT: iconRotate property does NOT work in Mapbox 3D with pitch/tilt
@@ -3058,94 +3045,31 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Strategy: Delete ALL tracked purple markers
       // IMPORTANT: Markers must be from the CURRENT manager instance
 
-      // Log manager state before deletion
-      AppLogger.debug('Manager state before deletion', tag: 'MARKER-DEBUG', data: {
-        'managerHashCode': _pointAnnotationManager.hashCode,
-        'trackedMarkersCount': _purpleMarkers.length,
-        'trackedMarkerIds': _purpleMarkers.map((m) => m.id).join(', '),
-      });
-
       // Step 1: Delete ALL tracked purple markers
       if (_purpleMarkers.isNotEmpty) {
-        AppLogger.debug('Starting deletion of ${_purpleMarkers.length} tracked purple markers', tag: 'MARKER-MUTEX');
-
         for (var i = _purpleMarkers.length - 1; i >= 0; i--) {
           final marker = _purpleMarkers[i];
-          AppLogger.debug('Attempting to delete marker', tag: 'MARKER-DEBUG', data: {
-            'index': i,
-            'markerId': marker.id,
-            'markerHashCode': marker.hashCode,
-          });
-
           try {
             await _pointAnnotationManager!.delete(marker);
-            AppLogger.debug('✅ Deleted purple marker', tag: 'MARKER-MUTEX', data: {
-              'deletedId': marker.id,
-              'remaining': i,
-            });
-
-            // Remove from tracking list after successful deletion
             _purpleMarkers.removeAt(i);
           } catch (e) {
-            AppLogger.warning('Failed to delete purple marker (may not exist)', tag: 'MARKER-MUTEX', data: {
-              'error': e.toString(),
-              'markerId': marker.id,
-            });
             // Remove from list anyway to prevent accumulation
             _purpleMarkers.removeAt(i);
           }
         }
-
-        // Clear tracked reference
         _snappedPositionMarker = null;
-
-        AppLogger.debug('Deletion complete', tag: 'MARKER-DEBUG', data: {
-          'remainingInList': _purpleMarkers.length,
-        });
-      } else {
-        AppLogger.debug('No markers to delete (list empty)', tag: 'MARKER-DEBUG');
       }
 
       // Step 2: Create new marker
-      AppLogger.debug('About to create new marker', tag: 'MARKER-DEBUG', data: {
-        'managerHashCode': _pointAnnotationManager.hashCode,
-        'currentTrackedCount': _purpleMarkers.length,
-      });
-
       try {
         _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-        final newId = _snappedPositionMarker!.id;
-
-        AppLogger.debug('Marker created by SDK', tag: 'MARKER-DEBUG', data: {
-          'newMarkerId': newId,
-          'newMarkerHashCode': _snappedPositionMarker!.hashCode,
-        });
-
-        // Add to tracking list
         _purpleMarkers.add(_snappedPositionMarker!);
-
-        AppLogger.debug('✅ New purple marker created', tag: 'MARKER-MUTEX', data: {
-          'newId': newId,
-          'lat': displayPos.latitude.toStringAsFixed(6),
-          'lng': displayPos.longitude.toStringAsFixed(6),
-          'rotation': hasHeading ? '${heading!.toStringAsFixed(1)}°' : 'none',
-          'totalTracked': _purpleMarkers.length,
-        });
-
-        AppLogger.debug('Added to tracking list', tag: 'MARKER-DEBUG', data: {
-          'listSize': _purpleMarkers.length,
-          'allMarkerIds': _purpleMarkers.map((m) => m.id).join(', '),
-        });
       } catch (e) {
-        AppLogger.error('Failed to create new marker', tag: 'MARKER-MUTEX', data: {
-          'error': e.toString(),
-        });
         _snappedPositionMarker = null;
         rethrow;
       }
     } finally {
       _isUpdatingMarker = false;
-      AppLogger.debug('🔓 Marker update complete - mutex unlocked', tag: 'MARKER-MUTEX');
     }
   }
 
