@@ -318,13 +318,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   final styleUri = mapService.getMapboxStyleUri(style);
                   await _mapboxMap?.loadStyleURI(styleUri);
                   // Re-add markers after style change
+                  final oldManagerHash = _pointAnnotationManager?.hashCode;
                   _pointAnnotationManager = await _mapboxMap?.annotations.createPointAnnotationManager();
 
                   // CRITICAL: Clear purple marker tracking when manager is recreated
                   // Old markers are from old manager and will become orphaned
+                  final orphanedCount = _purpleMarkers.length;
                   _purpleMarkers.clear();
                   _snappedPositionMarker = null;
-                  AppLogger.debug('Cleared purple marker tracking after manager recreation', tag: 'MARKER-MUTEX');
+                  AppLogger.debug('🔄 Manager recreated - cleared purple marker tracking', tag: 'MARKER-DEBUG', data: {
+                    'oldManagerHash': oldManagerHash ?? 'null',
+                    'newManagerHash': _pointAnnotationManager?.hashCode ?? 'null',
+                    'orphanedMarkers': orphanedCount,
+                  });
 
                   _addMarkers();
                   if (!mounted) return;
@@ -1842,6 +1848,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // CRITICAL: Clear purple marker tracking when manager is first created
     _purpleMarkers.clear();
     _snappedPositionMarker = null;
+    AppLogger.debug('Initial manager created', tag: 'MARKER-DEBUG', data: {
+      'managerHashCode': _pointAnnotationManager?.hashCode ?? 'null',
+    });
 
     // Add click listener for tap handling
     _pointAnnotationManager!.addOnPointAnnotationClickListener(
@@ -3008,12 +3017,28 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       );
       _snappedPositionTracker.addBreadcrumb(snappedLocationData);
 
+      // Log breadcrumb state before calculation
+      AppLogger.debug('Breadcrumb state before heading calculation', tag: 'HEADING-DEBUG', data: {
+        'breadcrumbCount': _snappedPositionTracker.breadcrumbs.length,
+        'firstPos': _snappedPositionTracker.breadcrumbs.isNotEmpty
+          ? '${_snappedPositionTracker.breadcrumbs.first.position.latitude.toStringAsFixed(6)},${_snappedPositionTracker.breadcrumbs.first.position.longitude.toStringAsFixed(6)}'
+          : 'none',
+        'lastPos': _snappedPositionTracker.breadcrumbs.isNotEmpty
+          ? '${_snappedPositionTracker.breadcrumbs.last.position.latitude.toStringAsFixed(6)},${_snappedPositionTracker.breadcrumbs.last.position.longitude.toStringAsFixed(6)}'
+          : 'none',
+      });
+
       // Calculate heading from snapped position breadcrumbs (uses last 5 snapped positions)
       // This ensures the marker points in the direction of travel along the route, not raw GPS direction
       double? heading = _snappedPositionTracker.calculateTravelDirection(
         smoothingRatio: 0.85, // High smoothing ratio for very responsive marker rotation
-        enableLogging: false, // Disable logging for real-time updates (too verbose)
+        enableLogging: true, // ENABLE logging to diagnose frozen heading issue
       );
+
+      AppLogger.debug('Heading calculation result', tag: 'HEADING-DEBUG', data: {
+        'heading': heading?.toStringAsFixed(1) ?? 'null',
+        'willUseFallback': heading == null,
+      });
 
       // Fallback to route direction if we don't have enough breadcrumbs yet
       if (heading == null) {
@@ -3082,12 +3107,25 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Strategy: Delete ALL tracked purple markers
       // IMPORTANT: Markers must be from the CURRENT manager instance
 
+      // Log manager state before deletion
+      AppLogger.debug('Manager state before deletion', tag: 'MARKER-DEBUG', data: {
+        'managerHashCode': _pointAnnotationManager.hashCode,
+        'trackedMarkersCount': _purpleMarkers.length,
+        'trackedMarkerIds': _purpleMarkers.map((m) => m.id).join(', '),
+      });
+
       // Step 1: Delete ALL tracked purple markers
       if (_purpleMarkers.isNotEmpty) {
-        AppLogger.debug('Deleting ${_purpleMarkers.length} tracked purple markers', tag: 'MARKER-MUTEX');
+        AppLogger.debug('Starting deletion of ${_purpleMarkers.length} tracked purple markers', tag: 'MARKER-MUTEX');
 
         for (var i = _purpleMarkers.length - 1; i >= 0; i--) {
           final marker = _purpleMarkers[i];
+          AppLogger.debug('Attempting to delete marker', tag: 'MARKER-DEBUG', data: {
+            'index': i,
+            'markerId': marker.id,
+            'markerHashCode': marker.hashCode,
+          });
+
           try {
             await _pointAnnotationManager!.delete(marker);
             AppLogger.debug('✅ Deleted purple marker', tag: 'MARKER-MUTEX', data: {
@@ -3109,12 +3147,28 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
         // Clear tracked reference
         _snappedPositionMarker = null;
+
+        AppLogger.debug('Deletion complete', tag: 'MARKER-DEBUG', data: {
+          'remainingInList': _purpleMarkers.length,
+        });
+      } else {
+        AppLogger.debug('No markers to delete (list empty)', tag: 'MARKER-DEBUG');
       }
 
       // Step 2: Create new marker
+      AppLogger.debug('About to create new marker', tag: 'MARKER-DEBUG', data: {
+        'managerHashCode': _pointAnnotationManager.hashCode,
+        'currentTrackedCount': _purpleMarkers.length,
+      });
+
       try {
         _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
         final newId = _snappedPositionMarker!.id;
+
+        AppLogger.debug('Marker created by SDK', tag: 'MARKER-DEBUG', data: {
+          'newMarkerId': newId,
+          'newMarkerHashCode': _snappedPositionMarker!.hashCode,
+        });
 
         // Add to tracking list
         _purpleMarkers.add(_snappedPositionMarker!);
@@ -3125,6 +3179,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           'lng': displayPos.longitude.toStringAsFixed(6),
           'rotation': hasHeading ? '${heading!.toStringAsFixed(1)}°' : 'none',
           'totalTracked': _purpleMarkers.length,
+        });
+
+        AppLogger.debug('Added to tracking list', tag: 'MARKER-DEBUG', data: {
+          'listSize': _purpleMarkers.length,
+          'allMarkerIds': _purpleMarkers.map((m) => m.id).join(', '),
         });
       } catch (e) {
         AppLogger.error('Failed to create new marker', tag: 'MARKER-MUTEX', data: {

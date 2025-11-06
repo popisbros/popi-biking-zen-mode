@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Native App</string>
+	<string>Wike</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -51,18 +51,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<!-- Google Sign-In -->
 	<key>CFBundleURLTypes</key>
 	<array>
-    	<dict>
-        	<key>CFBundleTypeRole</key>
-        	<string>Editor</string>
-        	<key>CFBundleURLSchemes</key>
-        	<array>
-            	<!-- Your reversed client ID from GoogleService-Info.plist -->
-            	<string>com.googleusercontent.apps.762853433576-b381umg6j6rvabai47niv3t5b1v2fpoj</string>
-        	</array>
-    	</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.762853433576-b381umg6j6rvabai47niv3t5b1v2fpoj</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

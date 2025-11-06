@@ -29,6 +29,17 @@ done
 
 echo "✅ All API keys found in .env"
 echo "📱 Running on device: $DEVICE_ID"
+
+# Uninstall existing app version
+BUNDLE_ID="com.popibiking.popiBikingFresh"
+echo "🗑️  Uninstalling existing app (if present)..."
+xcrun devicectl device uninstall app --device "$DEVICE_ID" "$BUNDLE_ID" 2>/dev/null
+if [ $? -eq 0 ]; then
+    echo "✅ Existing app uninstalled"
+else
+    echo "ℹ️  No existing app found (or uninstall not needed)"
+fi
+
 echo "🚀 Starting app in release mode..."
 
 # Run on device with dart-define flags

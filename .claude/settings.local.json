@@ -1,21 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter analyze:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(find:*)",
-      "Bash(lib/providers/community_provider.dart)",
-      "Bash(flutter pub get:*)",
-      "Bash(git rm:*)",
-      "Bash(git revert:*)",
-      "Bash(flutter pub:*)",
-      "Bash(flutter clean:*)",
-      "Bash(flutter run)",
-      "Bash(flutter run:*)",
-      "Bash(git fetch:*)",
-      "Bash(flutter doctor:*)"
+      "Bash(tr:*)"
     ],
     "deny": [],
     "ask": []
