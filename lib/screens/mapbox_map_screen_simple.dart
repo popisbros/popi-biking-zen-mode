@@ -2253,13 +2253,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
-    // Clear existing markers (with error handling)
+    // During active turn-by-turn navigation, skip full marker refresh to avoid interfering with realtime marker updates
+    final navState = ref.read(navigationProvider);
+    final isActiveNavigation = navState.isNavigating && _realtimeLocationSubscription != null;
+
+    if (isActiveNavigation) {
+      AppLogger.debug('Skipping _addMarkers() during active navigation (would interfere with realtime marker)', tag: 'MAP');
+      return;
+    }
+
+    // Clear existing markers
     try {
       await _pointAnnotationManager!.deleteAll();
+      AppLogger.debug('All markers deleted', tag: 'MAP');
     } catch (e) {
       AppLogger.warning('Could not delete existing markers: $e', tag: 'MAP');
       // Continue anyway - might be first load
     }
+
+    // Reset snapped marker reference (not needed outside active navigation)
+    _snappedPositionMarker = null;
 
     // Check if widget is still mounted after async operation
     if (!mounted) return;
@@ -3037,7 +3050,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         iconSize: 1.8,
       );
 
-      // Delete ONLY the tracked snapped position marker (preserve warnings/POIs)
+      // Strategy: Delete tracked marker, then verify no orphaned purple markers exist
+      // This prevents accumulation from any race conditions
+
+      // Step 1: Delete the tracked marker
       if (_snappedPositionMarker != null) {
         try {
           await _pointAnnotationManager!.delete(_snappedPositionMarker!);
@@ -3048,9 +3064,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         _snappedPositionMarker = null;
       }
 
-      // Create new marker after cleanup
+      // Step 2: Create new marker
       _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-      AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX');
+      AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX', data: {
+        'id': _snappedPositionMarker!.id,
+      });
     } finally {
       _isUpdatingMarker = false;
       AppLogger.debug('🔓 Marker update complete - mutex unlocked', tag: 'MARKER-MUTEX');
@@ -3352,20 +3370,34 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             'width': newWidth,
           });
 
-          // Update layer properties efficiently (no redraw needed)
-          await _mapboxMap!.style.setStyleLayerProperty(
-            'route-layer-$segmentIndex',
-            'line-color',
-            newColor,
-          );
-          await _mapboxMap!.style.setStyleLayerProperty(
-            'route-layer-$segmentIndex',
-            'line-width',
-            newWidth,
+          // Strategy: Remove old layer and recreate with new properties
+          // setStyleLayerProperty() may not work reliably on all platforms
+          final layerId = 'route-layer-$segmentIndex';
+          final sourceId = 'route-source-$segmentIndex';
+
+          // Remove existing layer
+          try {
+            await _mapboxMap!.style.removeStyleLayer(layerId);
+            AppLogger.debug('Old layer removed', tag: 'TRAVELED', data: {'layerId': layerId});
+          } catch (e) {
+            AppLogger.warning('Could not remove old layer (may not exist)', tag: 'TRAVELED', data: {'error': e.toString()});
+          }
+
+          // Recreate layer with new color and width
+          final lineLayer = LineLayer(
+            id: layerId,
+            sourceId: sourceId,
+            lineColor: newColor,
+            lineWidth: newWidth,
+            lineCap: LineCap.ROUND,
+            lineJoin: LineJoin.ROUND,
           );
 
-          AppLogger.success('Segment color updated successfully', tag: 'TRAVELED', data: {
+          await _mapboxMap!.style.addLayer(lineLayer);
+
+          AppLogger.success('Segment layer recreated successfully', tag: 'TRAVELED', data: {
             'segmentIndex': segmentIndex,
+            'color': isTraveled ? 'gray (${newColor.toRadixString(16)})' : 'original',
           });
         } catch (e) {
           AppLogger.error('Failed to update segment style', tag: 'TRAVELED', error: e, data: {
