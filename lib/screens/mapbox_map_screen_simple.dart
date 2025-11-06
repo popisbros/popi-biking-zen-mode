@@ -103,7 +103,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   bool _isUpdatingMarker = false;
 
   // Pitch angle state
-  double _currentPitch = 60.0; // Default pitch
+  double _currentPitch = 35.0; // Default pitch (changed from 60° to 35°)
   double? _pitchBeforeRouteCalculation; // Store pitch before showing route selection
   double? _pitchBeforeNavigation; // Store pitch before starting navigation
   static const List<double> _pitchOptions = [10.0, 35.0, 60.0, 85.0];
