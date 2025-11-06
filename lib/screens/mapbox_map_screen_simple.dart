@@ -3037,27 +3037,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         iconSize: 1.8,
       );
 
-      // CRITICAL: Delete ALL existing markers to prevent accumulation
-      // This aggressive cleanup ensures no markers are left behind
-      AppLogger.debug('🗑️  Deleting ALL existing markers before creating new one', tag: 'MARKER-MUTEX');
-
-      // Delete the tracked marker if it exists
+      // Delete ONLY the tracked snapped position marker (preserve warnings/POIs)
       if (_snappedPositionMarker != null) {
         try {
           await _pointAnnotationManager!.delete(_snappedPositionMarker!);
-          AppLogger.debug('✅ Tracked marker deleted', tag: 'MARKER-MUTEX');
+          AppLogger.debug('✅ Tracked snapped marker deleted', tag: 'MARKER-MUTEX');
         } catch (e) {
           AppLogger.warning('Failed to delete tracked marker', tag: 'MARKER-MUTEX', data: {'error': e.toString()});
         }
         _snappedPositionMarker = null;
-      }
-
-      // Delete ALL markers as a safety measure (in case any leaked)
-      try {
-        await _pointAnnotationManager!.deleteAll();
-        AppLogger.debug('✅ ALL markers cleared (aggressive cleanup)', tag: 'MARKER-MUTEX');
-      } catch (e) {
-        AppLogger.warning('Failed to clear all markers', tag: 'MARKER-MUTEX', data: {'error': e.toString()});
       }
 
       // Create new marker after cleanup
