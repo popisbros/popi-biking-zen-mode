@@ -3351,11 +3351,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         final isTraveled = _traveledSegmentIndices.contains(segmentIndex);
 
         // Calculate new color and width
-        // IMPORTANT: Gray traveled route MUST be wider than green route to cover it completely
+        // IMPORTANT: Gray traveled route uses same 8px width as green route to cover it exactly
         final newColor = isTraveled
             ? MapboxMarkerUtils.getTraveledSegmentColor()
             : segment.originalColor.value;
-        final newWidth = isTraveled ? 10.0 : 8.0; // 10px gray > 8px green
+        const newWidth = 8.0; // Always 8px - same for both traveled (gray) and active (green) segments
 
         try {
           AppLogger.debug('Updating segment color', tag: 'TRAVELED', data: {
