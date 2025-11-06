@@ -3044,20 +3044,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
 
       final hasHeading = heading != null && heading >= 0;
-      final rotationDegrees = (isNavigationMode && hasHeading) ? heading! : 0.0;
 
       AppLogger.debug('Preparing marker creation', tag: 'MARKER-MUTEX', data: {
         'isNavigationMode': isNavigationMode,
         'hasHeading': hasHeading,
         'headingValue': heading?.toStringAsFixed(1) ?? 'null',
-        'rotationDegrees': rotationDegrees.toStringAsFixed(1),
         'position': '${displayPos.latitude.toStringAsFixed(6)}, ${displayPos.longitude.toStringAsFixed(6)}',
       });
 
-      // Create purple marker icon (arrow pointing UP - rotation handled by iconRotate)
-      // Pass 0.0 (not null) to trigger arrow drawing; iconRotate will handle actual direction
+      // Create purple marker icon with PRE-ROTATION baked into the image
+      // IMPORTANT: iconRotate property does NOT work in Mapbox 3D with pitch/tilt
+      // We MUST rotate the image itself, not use iconRotate
       final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
-        heading: 0.0, // Arrow points UP (North/0°), iconRotate property handles actual rotation
+        heading: hasHeading ? heading : null, // Pass heading to bake rotation into image
         borderColor: Colors.purple,
       );
 
@@ -3065,8 +3064,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         geometry: Point(coordinates: Position(displayPos.longitude, displayPos.latitude)),
         image: markerIcon,
         iconSize: 1.8,
-        // Rotate the marker icon to match heading (Mapbox handles rotation dynamically)
-        iconRotate: rotationDegrees,
+        // Do NOT use iconRotate - it doesn't work in 3D with pitch
+        // Rotation is baked into the image above
       );
 
       // Strategy: Delete ALL tracked purple markers, then create new one

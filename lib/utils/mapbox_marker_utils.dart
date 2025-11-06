@@ -115,11 +115,21 @@ class MapboxMarkerUtils {
     // Use white background with colored border
     final fillColor = Colors.white;
 
+    // Save canvas state for rotation
+    canvas.save();
+
     // Determine if we should draw arrow or dot based on heading parameter
-    // When used with Mapbox 3D, rotation is handled by iconRotate property (not canvas rotation)
-    // heading: 0.0 = draw arrow pointing UP, iconRotate will handle actual direction
-    // heading: null = draw exploration mode dot
     final hasHeading = heading != null && heading >= 0;
+
+    // Rotate canvas if we have a heading
+    // IMPORTANT: In Mapbox 3D with pitch, iconRotate doesn't work
+    // We MUST rotate the canvas to bake the rotation into the image
+    if (hasHeading) {
+      // Rotate around center
+      canvas.translate(size / 2, size / 2);
+      canvas.rotate(heading * 3.14159 / 180); // Convert degrees to radians
+      canvas.translate(-size / 2, -size / 2);
+    }
 
     // Draw filled circle background
     final circlePaint = Paint()
@@ -196,6 +206,9 @@ class MapboxMarkerUtils {
         dotPaint,
       );
     }
+
+    // Restore canvas state
+    canvas.restore();
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(size.toInt(), size.toInt());
