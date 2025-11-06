@@ -2253,16 +2253,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
-    // During active turn-by-turn navigation, skip full marker refresh to avoid interfering with realtime marker updates
+    // During active turn-by-turn navigation, skip marker refresh but allow route rendering
     final navState = ref.read(navigationProvider);
     final isActiveNavigation = navState.isNavigating && _realtimeLocationSubscription != null;
 
     if (isActiveNavigation) {
-      AppLogger.debug('Skipping _addMarkers() during active navigation (would interfere with realtime marker)', tag: 'MAP');
+      AppLogger.debug('Active navigation detected - rendering route only (preserving markers)', tag: 'MAP');
+      // Only render route polyline (for route segments metadata), skip marker operations
+      await _addRoutePolyline();
       return;
     }
 
-    // Clear existing markers
+    // Clear existing markers (normal mode - not during active navigation)
     try {
       await _pointAnnotationManager!.deleteAll();
       AppLogger.debug('All markers deleted', tag: 'MAP');
@@ -3032,7 +3034,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         }
       } else {
         AppLogger.debug('Using breadcrumb-based heading', tag: 'MARKER-MUTEX', data: {
-          'heading': '${heading.toStringAsFixed(1)}°',
+          'breadcrumbHeading': '${heading.toStringAsFixed(1)}°',
+          'rawGPSHeading': location.heading != null ? '${location.heading!.toStringAsFixed(1)}°' : 'null',
+          'difference': location.heading != null ? '${(heading - location.heading!).toStringAsFixed(1)}°' : 'N/A',
         });
       }
 

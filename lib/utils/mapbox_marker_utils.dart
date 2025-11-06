@@ -122,7 +122,9 @@ class MapboxMarkerUtils {
     final hasHeading = heading != null && heading >= 0;
     if (hasHeading) {
       // Rotate around center
-      // Breadcrumb-based bearing is already in correct direction (forward movement)
+      // IMPORTANT: Arrow is drawn pointing UP (North/0°)
+      // Breadcrumb bearing gives direction FROM first TO last breadcrumb (forward direction)
+      // But Icons.navigation in Flutter points UP when heading=0, so we rotate by the bearing angle
       canvas.translate(size / 2, size / 2);
       canvas.rotate(heading * 3.14159 / 180); // Convert to radians
       canvas.translate(-size / 2, -size / 2);
