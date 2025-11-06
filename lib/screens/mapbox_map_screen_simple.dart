@@ -3057,25 +3057,42 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         iconRotate: (isNavigationMode && hasHeading) ? heading : 0.0,
       );
 
-      // Strategy: Delete tracked marker, then verify no orphaned purple markers exist
-      // This prevents accumulation from any race conditions
+      // Strategy: Delete tracked marker, then create new one
+      // Use try-catch to handle any deletion failures gracefully
 
       // Step 1: Delete the tracked marker
       if (_snappedPositionMarker != null) {
         try {
           await _pointAnnotationManager!.delete(_snappedPositionMarker!);
-          AppLogger.debug('✅ Tracked snapped marker deleted', tag: 'MARKER-MUTEX');
+          AppLogger.debug('✅ Tracked snapped marker deleted', tag: 'MARKER-MUTEX', data: {
+            'deletedId': _snappedPositionMarker!.id,
+          });
+          _snappedPositionMarker = null;
         } catch (e) {
-          AppLogger.warning('Failed to delete tracked marker', tag: 'MARKER-MUTEX', data: {'error': e.toString()});
+          AppLogger.warning('Failed to delete tracked marker - attempting to continue', tag: 'MARKER-MUTEX', data: {
+            'error': e.toString(),
+            'markerId': _snappedPositionMarker!.id,
+          });
+          // Still set to null to prevent referencing invalid marker
+          _snappedPositionMarker = null;
         }
-        _snappedPositionMarker = null;
       }
 
       // Step 2: Create new marker
-      _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-      AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX', data: {
-        'id': _snappedPositionMarker!.id,
-      });
+      try {
+        _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
+        AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX', data: {
+          'newId': _snappedPositionMarker!.id,
+          'lat': displayPos.latitude.toStringAsFixed(6),
+          'lng': displayPos.longitude.toStringAsFixed(6),
+        });
+      } catch (e) {
+        AppLogger.error('Failed to create new marker', tag: 'MARKER-MUTEX', data: {
+          'error': e.toString(),
+        });
+        _snappedPositionMarker = null;
+        rethrow;
+      }
     } finally {
       _isUpdatingMarker = false;
       AppLogger.debug('🔓 Marker update complete - mutex unlocked', tag: 'MARKER-MUTEX');
