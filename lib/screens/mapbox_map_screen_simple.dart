@@ -3042,9 +3042,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       final hasHeading = heading != null && heading >= 0;
 
-      // Create purple marker icon
+      // Create purple marker icon (always pointing UP - rotation handled by Mapbox)
       final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
-        heading: (isNavigationMode && hasHeading) ? heading : null,
+        heading: null, // Don't bake rotation into image - let Mapbox handle it
         borderColor: Colors.purple,
       );
 
@@ -3052,6 +3052,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         geometry: Point(coordinates: Position(displayPos.longitude, displayPos.latitude)),
         image: markerIcon,
         iconSize: 1.8,
+        // Rotate the marker icon to match heading (Mapbox handles rotation dynamically)
+        iconRotate: (isNavigationMode && hasHeading) ? heading : 0.0,
       );
 
       // Strategy: Delete tracked marker, then verify no orphaned purple markers exist
