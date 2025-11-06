@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tr:*)"
+      "Bash(tr:*)",
+      "Bash(./run_ios_device.sh:*)"
     ],
     "deny": [],
     "ask": []
