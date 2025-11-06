@@ -3042,9 +3042,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       final hasHeading = heading != null && heading >= 0;
 
-      // Create purple marker icon (always pointing UP - rotation handled by Mapbox)
+      // Create purple marker icon (arrow pointing UP - rotation handled by iconRotate)
+      // Pass 0.0 (not null) to trigger arrow drawing; iconRotate will handle actual direction
       final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
-        heading: null, // Don't bake rotation into image - let Mapbox handle it
+        heading: 0.0, // Arrow points UP (North/0°), iconRotate property handles actual rotation
         borderColor: Colors.purple,
       );
 
