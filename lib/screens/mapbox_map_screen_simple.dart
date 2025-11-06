@@ -2988,17 +2988,39 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
       // Fallback to route direction if we don't have enough breadcrumbs yet
       if (heading == null) {
-        // Calculate bearing from current position to next point on route
+        AppLogger.debug('No breadcrumb heading - using route-based bearing', tag: 'MARKER-MUTEX');
+
+        // Find closest point on route and calculate bearing to next point
         final currentRouteIndex = route.points.indexWhere((p) =>
           GeoUtils.calculateDistance(p.latitude, p.longitude, displayPos.latitude, displayPos.longitude) < 10.0
         );
+
         if (currentRouteIndex >= 0 && currentRouteIndex < route.points.length - 1) {
+          // Calculate bearing from snapped position to next route point
           final nextPoint = route.points[currentRouteIndex + 1];
           heading = GeoUtils.calculateBearing(displayPos, nextPoint);
+          AppLogger.debug('Route-based bearing calculated', tag: 'MARKER-MUTEX', data: {
+            'bearing': '${heading?.toStringAsFixed(1)}°',
+            'fromIndex': currentRouteIndex,
+            'toIndex': currentRouteIndex + 1,
+          });
+        } else if (route.points.length > 1) {
+          // Fallback: Use bearing between first two route points (early navigation)
+          heading = GeoUtils.calculateBearing(route.points[0], route.points[1]);
+          AppLogger.debug('Using first-segment bearing (early navigation)', tag: 'MARKER-MUTEX', data: {
+            'bearing': '${heading?.toStringAsFixed(1)}°',
+          });
         } else {
-          // Last resort: use GPS heading
+          // Last resort: use GPS heading (rare case)
           heading = location.heading;
+          AppLogger.warning('Using raw GPS heading as last resort', tag: 'MARKER-MUTEX', data: {
+            'heading': '${heading?.toStringAsFixed(1)}°',
+          });
         }
+      } else {
+        AppLogger.debug('Using breadcrumb-based heading', tag: 'MARKER-MUTEX', data: {
+          'heading': '${heading.toStringAsFixed(1)}°',
+        });
       }
 
       final hasHeading = heading != null && heading >= 0;
@@ -3015,19 +3037,32 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         iconSize: 1.8,
       );
 
-      // CRITICAL: Delete old marker BEFORE creating new one to prevent accumulation
-      // Store reference to old marker, delete it, then create new one
-      final oldMarker = _snappedPositionMarker;
-      if (oldMarker != null) {
-        AppLogger.debug('🗑️  Deleting old marker before creating new one', tag: 'MARKER-MUTEX');
-        _snappedPositionMarker = null; // Clear reference immediately to prevent race conditions
-        await _pointAnnotationManager!.delete(oldMarker);
-        AppLogger.debug('✅ Old marker deleted successfully', tag: 'MARKER-MUTEX');
+      // CRITICAL: Delete ALL existing markers to prevent accumulation
+      // This aggressive cleanup ensures no markers are left behind
+      AppLogger.debug('🗑️  Deleting ALL existing markers before creating new one', tag: 'MARKER-MUTEX');
+
+      // Delete the tracked marker if it exists
+      if (_snappedPositionMarker != null) {
+        try {
+          await _pointAnnotationManager!.delete(_snappedPositionMarker!);
+          AppLogger.debug('✅ Tracked marker deleted', tag: 'MARKER-MUTEX');
+        } catch (e) {
+          AppLogger.warning('Failed to delete tracked marker', tag: 'MARKER-MUTEX', data: {'error': e.toString()});
+        }
+        _snappedPositionMarker = null;
       }
 
-      // Create new marker after old one is deleted
+      // Delete ALL markers as a safety measure (in case any leaked)
+      try {
+        await _pointAnnotationManager!.deleteAll();
+        AppLogger.debug('✅ ALL markers cleared (aggressive cleanup)', tag: 'MARKER-MUTEX');
+      } catch (e) {
+        AppLogger.warning('Failed to clear all markers', tag: 'MARKER-MUTEX', data: {'error': e.toString()});
+      }
+
+      // Create new marker after cleanup
       _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-      AppLogger.debug('✅ Marker created successfully', tag: 'MARKER-MUTEX');
+      AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX');
     } finally {
       _isUpdatingMarker = false;
       AppLogger.debug('🔓 Marker update complete - mutex unlocked', tag: 'MARKER-MUTEX');
@@ -3306,15 +3341,21 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Update only the segments that changed
     if (segmentsToUpdate.isNotEmpty) {
+      AppLogger.success('📊 UPDATING ${segmentsToUpdate.length} SEGMENTS', tag: 'TRAVELED', data: {
+        'segmentsToUpdate': segmentsToUpdate.toString(),
+        'totalTraveled': _traveledSegmentIndices.length,
+      });
+
       for (final segmentIndex in segmentsToUpdate) {
         final segment = _routeSegments[segmentIndex];
         final isTraveled = _traveledSegmentIndices.contains(segmentIndex);
 
         // Calculate new color and width
+        // IMPORTANT: Gray traveled route MUST be wider than green route to cover it completely
         final newColor = isTraveled
             ? MapboxMarkerUtils.getTraveledSegmentColor()
             : segment.originalColor.value;
-        final newWidth = isTraveled ? 5.0 : 8.0;
+        final newWidth = isTraveled ? 10.0 : 8.0; // 10px gray > 8px green
 
         try {
           AppLogger.debug('Updating segment color', tag: 'TRAVELED', data: {
@@ -3345,10 +3386,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         }
       }
 
-      AppLogger.debug('Updated ${segmentsToUpdate.length} route segments', tag: 'MAP', data: {
+      AppLogger.success('✅ Traveled route update COMPLETE', tag: 'TRAVELED', data: {
         'pointIndex': closestIndex,
-        'segmentsChanged': segmentsToUpdate.length,
+        'segmentsUpdated': segmentsToUpdate.length,
         'totalSegments': _routeSegments.length,
+        'totalTraveled': _traveledSegmentIndices.length,
+      });
+    } else {
+      AppLogger.debug('No segment state changes this update', tag: 'TRAVELED', data: {
+        'closestIndex': closestIndex,
+        'totalTraveled': _traveledSegmentIndices.length,
       });
     }
 
