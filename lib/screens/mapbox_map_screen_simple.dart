@@ -319,6 +319,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   await _mapboxMap?.loadStyleURI(styleUri);
                   // Re-add markers after style change
                   _pointAnnotationManager = await _mapboxMap?.annotations.createPointAnnotationManager();
+
+                  // CRITICAL: Clear purple marker tracking when manager is recreated
+                  // Old markers are from old manager and will become orphaned
+                  _purpleMarkers.clear();
+                  _snappedPositionMarker = null;
+                  AppLogger.debug('Cleared purple marker tracking after manager recreation', tag: 'MARKER-MUTEX');
+
                   _addMarkers();
                   if (!mounted) return;
                   Navigator.pop(context);
@@ -1832,6 +1839,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
     AppLogger.success('Point annotation manager created', tag: 'MAP');
 
+    // CRITICAL: Clear purple marker tracking when manager is first created
+    _purpleMarkers.clear();
+    _snappedPositionMarker = null;
+
     // Add click listener for tap handling
     _pointAnnotationManager!.addOnPointAnnotationClickListener(
       _OnPointClickListener(onTap: _handleMarkerTap),
@@ -3068,8 +3079,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         // Rotation is baked into the image above
       );
 
-      // Strategy: Delete ALL tracked purple markers, then create new one
-      // Store marker objects directly and delete them one by one
+      // Strategy: Delete ALL tracked purple markers
+      // IMPORTANT: Markers must be from the CURRENT manager instance
 
       // Step 1: Delete ALL tracked purple markers
       if (_purpleMarkers.isNotEmpty) {
