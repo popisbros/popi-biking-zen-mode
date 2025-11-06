@@ -114,6 +114,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Snapped position marker for navigation (shows display position on route)
   PointAnnotation? _snappedPositionMarker;
 
+  // Track ALL purple marker objects to ensure complete cleanup
+  final List<PointAnnotation> _purpleMarkers = [];
+
   // Zoom level state
   double _currentZoom = 15.0; // Default zoom
 
@@ -3057,34 +3060,52 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         iconRotate: (isNavigationMode && hasHeading) ? heading : 0.0,
       );
 
-      // Strategy: Delete tracked marker, then create new one
-      // Use try-catch to handle any deletion failures gracefully
+      // Strategy: Delete ALL tracked purple markers, then create new one
+      // Store marker objects directly and delete them one by one
 
-      // Step 1: Delete the tracked marker
-      if (_snappedPositionMarker != null) {
-        try {
-          await _pointAnnotationManager!.delete(_snappedPositionMarker!);
-          AppLogger.debug('✅ Tracked snapped marker deleted', tag: 'MARKER-MUTEX', data: {
-            'deletedId': _snappedPositionMarker!.id,
-          });
-          _snappedPositionMarker = null;
-        } catch (e) {
-          AppLogger.warning('Failed to delete tracked marker - attempting to continue', tag: 'MARKER-MUTEX', data: {
-            'error': e.toString(),
-            'markerId': _snappedPositionMarker!.id,
-          });
-          // Still set to null to prevent referencing invalid marker
-          _snappedPositionMarker = null;
+      // Step 1: Delete ALL tracked purple markers
+      if (_purpleMarkers.isNotEmpty) {
+        AppLogger.debug('Deleting ${_purpleMarkers.length} tracked purple markers', tag: 'MARKER-MUTEX');
+
+        for (var i = _purpleMarkers.length - 1; i >= 0; i--) {
+          final marker = _purpleMarkers[i];
+          try {
+            await _pointAnnotationManager!.delete(marker);
+            AppLogger.debug('✅ Deleted purple marker', tag: 'MARKER-MUTEX', data: {
+              'deletedId': marker.id,
+              'remaining': i,
+            });
+
+            // Remove from tracking list after successful deletion
+            _purpleMarkers.removeAt(i);
+          } catch (e) {
+            AppLogger.warning('Failed to delete purple marker (may not exist)', tag: 'MARKER-MUTEX', data: {
+              'error': e.toString(),
+              'markerId': marker.id,
+            });
+            // Remove from list anyway to prevent accumulation
+            _purpleMarkers.removeAt(i);
+          }
         }
+
+        // Clear tracked reference
+        _snappedPositionMarker = null;
       }
 
       // Step 2: Create new marker
       try {
         _snappedPositionMarker = await _pointAnnotationManager!.create(markerOptions);
-        AppLogger.debug('✅ New marker created successfully', tag: 'MARKER-MUTEX', data: {
-          'newId': _snappedPositionMarker!.id,
+        final newId = _snappedPositionMarker!.id;
+
+        // Add to tracking list
+        _purpleMarkers.add(_snappedPositionMarker!);
+
+        AppLogger.debug('✅ New purple marker created', tag: 'MARKER-MUTEX', data: {
+          'newId': newId,
           'lat': displayPos.latitude.toStringAsFixed(6),
           'lng': displayPos.longitude.toStringAsFixed(6),
+          'rotation': hasHeading ? '${heading!.toStringAsFixed(1)}°' : 'none',
+          'totalTracked': _purpleMarkers.length,
         });
       } catch (e) {
         AppLogger.error('Failed to create new marker', tag: 'MARKER-MUTEX', data: {
@@ -3702,6 +3723,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Clear breadcrumbs
     _navigationTracker.clear();
     _snappedPositionTracker.clear();
+
+    // Clear purple marker tracking
+    _purpleMarkers.clear();
+    _snappedPositionMarker = null;
 
     // Clear active route sheet
     setState(() {
