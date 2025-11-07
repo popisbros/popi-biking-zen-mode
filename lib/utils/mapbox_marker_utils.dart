@@ -115,29 +115,16 @@ class MapboxMarkerUtils {
     // Use white background with colored border
     final fillColor = Colors.white;
 
-    // Save canvas state for rotation
-    canvas.save();
-
     // Determine if we should draw arrow or dot based on heading parameter
-    final hasHeading = heading != null && heading >= 0;
+    final hasHeading = heading != null;
 
-    // Rotate canvas if we have a heading
-    // IMPORTANT: In Mapbox 3D with pitch, iconRotate doesn't work
-    // We MUST rotate the canvas to bake the rotation into the image
-    if (hasHeading) {
-      // Rotate around center
-      canvas.translate(size / 2, size / 2);
-      canvas.rotate(heading * 3.14159 / 180); // Convert degrees to radians
-      canvas.translate(-size / 2, -size / 2);
-    }
-
-    // Draw filled circle background
+    // Draw filled circle background (always centered, no rotation)
     final circlePaint = Paint()
       ..color = fillColor
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2, circlePaint);
 
-    // Draw border
+    // Draw border (always centered, no rotation)
     final borderPaint = Paint()
       ..color = borderColor
       ..style = PaintingStyle.stroke
@@ -149,26 +136,22 @@ class MapboxMarkerUtils {
     final iconSize = size * 0.6;
 
     if (hasHeading) {
-      // Draw navigation arrow (custom path matching Icons.navigation)
+      // Draw simple navigation arrow (no rotation - deprecated for 3D map)
+      // For 3D navigation, use null heading to show purple dot instead
       final arrowPaint = Paint()
         ..color = borderColor
         ..style = PaintingStyle.fill;
 
-      // Create triangular navigation arrow pointing up
-      final arrowPath = Path();
       final centerX = size / 2;
       final centerY = size / 2;
       final halfIcon = iconSize / 2;
 
-      // Top point (pointing up/north)
-      arrowPath.moveTo(centerX, centerY - halfIcon * 0.9);
-      // Bottom right
-      arrowPath.lineTo(centerX + halfIcon * 0.35, centerY + halfIcon * 0.9);
-      // Bottom center notch
-      arrowPath.lineTo(centerX, centerY + halfIcon * 0.5);
-      // Bottom left
-      arrowPath.lineTo(centerX - halfIcon * 0.35, centerY + halfIcon * 0.9);
-      // Back to top
+      // Simple arrow pointing North (UP)
+      final arrowPath = Path();
+      arrowPath.moveTo(centerX, centerY - halfIcon * 0.9); // top
+      arrowPath.lineTo(centerX + halfIcon * 0.35, centerY + halfIcon * 0.9); // bottom right
+      arrowPath.lineTo(centerX, centerY + halfIcon * 0.5); // bottom center
+      arrowPath.lineTo(centerX - halfIcon * 0.35, centerY + halfIcon * 0.9); // bottom left
       arrowPath.close();
 
       canvas.drawPath(arrowPath, arrowPaint);
@@ -206,9 +189,6 @@ class MapboxMarkerUtils {
         dotPaint,
       );
     }
-
-    // Restore canvas state
-    canvas.restore();
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(size.toInt(), size.toInt());

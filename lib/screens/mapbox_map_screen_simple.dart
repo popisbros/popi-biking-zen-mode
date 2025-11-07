@@ -2924,16 +2924,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     return directions[index];
   }
 
-  /// Update blue Mapbox puck visibility based on navigation state and debug mode
-  /// - During navigation: Hide puck (purple snapped marker is shown instead)
-  /// - During navigation + debug mode: Show puck (to see real GPS position)
-  /// - Not navigating: Always show puck
+  /// Update blue Mapbox puck visibility based on navigation state
+  /// - Puck is now always visible alongside the purple dot marker during navigation
+  /// - This shows the user's real GPS position (puck) and the snapped position on route (purple dot)
   void _updatePuckVisibility(bool isNavigating, bool debugModeEnabled) async {
     if (_mapboxMap == null) return;
 
     try {
-      // Show puck if: (1) not navigating, OR (2) navigating with debug mode enabled
-      final shouldShowPuck = !isNavigating || debugModeEnabled;
+      // Always show puck alongside the purple dot marker during navigation
+      final shouldShowPuck = true;
 
       await _mapboxMap!.location.updateSettings(LocationComponentSettings(
         enabled: shouldShowPuck,
@@ -3035,58 +3034,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       );
       _snappedPositionTracker.addBreadcrumb(snappedLocationData);
 
-      // Use native device heading directly from iOS CoreLocation (matches puck behavior)
-      // This provides instant, accurate bearing from device compass/gyroscope
-      // No breadcrumbs needed - we trust the device heading like the Mapbox puck does
-      double? heading = location.heading;
-
-      // Only fallback to route-based bearing if native heading unavailable
-      if (heading == null || heading < 0) {
-        AppLogger.debug('No native heading - using route-based bearing', tag: 'MARKER-INIT');
-
-        // Find closest point on route and calculate bearing to next point
-        final currentRouteIndex = route.points.indexWhere((p) =>
-          GeoUtils.calculateDistance(p.latitude, p.longitude, displayPos.latitude, displayPos.longitude) < 10.0
-        );
-
-        if (currentRouteIndex >= 0 && currentRouteIndex < route.points.length - 1) {
-          // Calculate bearing from snapped position to next route point
-          final nextPoint = route.points[currentRouteIndex + 1];
-          heading = GeoUtils.calculateBearing(displayPos, nextPoint);
-        } else if (route.points.length > 1) {
-          // Fallback: Use bearing between first two route points (early navigation)
-          heading = GeoUtils.calculateBearing(route.points[0], route.points[1]);
-        } else {
-          // Last resort: use 0° (north)
-          heading = 0.0;
-        }
-      }
-
-      final hasHeading = heading != null && heading >= 0;
-
-      // Get current map bearing to adjust marker rotation
-      // CRITICAL: Since rotation is baked into the image, we need to account for map rotation
-      // Marker should point in absolute direction (relative to true north), not relative to map
-      final cameraState = await _mapboxMap!.getCameraState();
-      final mapBearing = cameraState.bearing; // Map's current rotation (0 = north up)
-
-      // Calculate marker rotation relative to map's current bearing
-      // If map is rotated 45° and travel direction is 90°, marker should show 45° on rotated map
-      final markerRotation = hasHeading ? (heading - mapBearing) : null;
-
-      // Comprehensive marker rotation log
-      AppLogger.debug('🧭 MARKER ROTATION', tag: 'MARKER-ROT', data: {
-        'native_heading': heading != null ? '${heading.toStringAsFixed(1)}° (${_bearingToCompass(heading)})' : 'null',
-        'map_bearing': '${mapBearing.toStringAsFixed(1)}° (${_bearingToCompass(mapBearing)})',
-        'marker_rotation': markerRotation != null ? '${markerRotation.toStringAsFixed(1)}°' : 'null',
-        'has_heading': hasHeading,
-      });
-
-      // Create purple marker icon with PRE-ROTATION baked into the image
-      // IMPORTANT: iconRotate property does NOT work in Mapbox 3D with pitch/tilt
-      // We MUST rotate the image itself, not use iconRotate
+      // Create purple dot marker (no arrow, just a simple dot)
+      // Pass null for heading to create exploration-style marker
       final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
-        heading: markerRotation, // Pass adjusted rotation to bake into image
+        heading: null, // No arrow - just purple dot
         borderColor: Colors.purple,
       );
 
@@ -3094,8 +3045,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         geometry: Point(coordinates: Position(displayPos.longitude, displayPos.latitude)),
         image: markerIcon,
         iconSize: 1.8,
-        // Do NOT use iconRotate - it doesn't work in 3D with pitch
-        // Rotation is baked into the image above
+        // Do NOT use iconRotate - rotation is baked into the image
       );
 
       // Strategy: Delete ALL tracked purple markers
