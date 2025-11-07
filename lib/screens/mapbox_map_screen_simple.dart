@@ -89,6 +89,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Track last route point index to avoid unnecessary redraws
   int? _lastRoutePointIndex;
 
+  // Track map bearing to detect rotations for marker updates
+  double? _lastMapBearing;
+  LocationData? _lastRealtimeLocation;
+
   // Track which route segments are currently marked as "traveled"
   final Set<int> _traveledSegmentIndices = {};
 
@@ -826,7 +830,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
+    // Check if turn-by-turn navigation is active
+    // If navigating, preserve current bearing (don't reset to North)
+    final navState = ref.read(navigationProvider);
+    final isNavigating = navState.isNavigating;
+
     try {
+      // Get current camera state to preserve bearing during navigation
+      final currentCamera = await _mapboxMap!.getCameraState();
+      final currentBearing = isNavigating ? currentCamera.bearing : 0.0;
+
       // Convert route points to Mapbox coordinates
       final coordinates = routePoints.map((point) =>
         Point(coordinates: Position(point.longitude, point.latitude))
@@ -845,7 +858,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           bottom: padding.bottom,
           right: padding.right,
         ),
-        0.0, // bearing - North up for route preview
+        currentBearing, // Preserve bearing during navigation, North up for preview
         _currentPitch, // pitch
       );
 
@@ -855,7 +868,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           center: cameraOptions.center,
           zoom: cameraOptions.zoom,
           pitch: _currentPitch,
-          bearing: 0.0, // North up for route preview
+          bearing: currentBearing, // Preserve bearing during navigation
         ),
         MapAnimationOptions(duration: 1500),
       );
@@ -1205,6 +1218,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             onEndNavigation: () => _stopNavigationComplete(),
           ),
         );
+      }
+
+      // Detect route changes (rerouting) and redraw route polylines
+      if (next.isNavigating && next.activeRoute != null) {
+        final previousRoute = previous?.activeRoute;
+        final currentRoute = next.activeRoute;
+
+        // Check if route changed (different route object or different points)
+        if (previousRoute != currentRoute) {
+          AppLogger.debug('Route changed, redrawing polylines', tag: 'REROUTE', data: {
+            'previousPoints': previousRoute?.points.length ?? 0,
+            'newPoints': currentRoute!.points.length,
+          });
+
+          // Update active route and redraw on map
+          setState(() {
+            _activeRoute = currentRoute;
+          });
+          _addMarkers(); // Redraw route polylines
+        }
       }
 
       // Toggle blue Mapbox puck visibility based on navigation state and debug mode
@@ -2229,7 +2262,32 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   }
 
   /// Handle camera change events (debounced to avoid excessive reloads)
-  void _onCameraChanged() {
+  void _onCameraChanged() async {
+    // Check if map bearing has changed significantly (for marker rotation update)
+    final navProviderState = ref.read(navigationProvider);
+    if (navProviderState.isNavigating && _lastRealtimeLocation != null) {
+      try {
+        final cameraState = await _mapboxMap?.getCameraState();
+        if (cameraState != null) {
+          final currentBearing = cameraState.bearing;
+
+          // If bearing changed by more than 5 degrees, update marker
+          if (_lastMapBearing == null || (currentBearing - _lastMapBearing!).abs() > 5.0) {
+            AppLogger.debug('Map bearing changed, updating marker', tag: 'MARKER-ROT', data: {
+              'oldBearing': _lastMapBearing?.toStringAsFixed(1),
+              'newBearing': currentBearing.toStringAsFixed(1),
+            });
+            _lastMapBearing = currentBearing;
+
+            // Recreate marker with new map bearing
+            await _updateSnappedPositionMarkerRealtime(_lastRealtimeLocation!);
+          }
+        }
+      } catch (e) {
+        AppLogger.error('Error checking bearing change', tag: 'MARKER-ROT', error: e);
+      }
+    }
+
     // Cancel existing timer
     _debounceTimer?.cancel();
 
@@ -2920,6 +2978,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   Future<void> _updateSnappedPositionMarkerRealtime(LocationData location) async {
     if (_pointAnnotationManager == null) return;
 
+    // Store location for bearing change detection
+    _lastRealtimeLocation = location;
+
     // CRITICAL: Prevent concurrent execution to avoid marker accumulation
     if (_isUpdatingMarker) {
       // AppLogger.debug('⏭️  Skipping marker update - already in progress (MUTEX WORKING!)', tag: 'MARKER-MUTEX');
@@ -2958,7 +3019,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       // Only update marker if snap succeeded
       if (displayPos == null) return;
 
-      // Add snapped position to breadcrumb tracker for marker rotation
+      // Add REAL GPS position to navigation tracker for accurate bearing calculation
+      // This is crucial: marker position = snapped, marker rotation = real GPS movement
+      _navigationTracker.addBreadcrumb(location);
+
+      // Add snapped position to breadcrumb tracker (kept for debugging/future use)
       final snappedLocationData = LocationData(
         latitude: displayPos.latitude,
         longitude: displayPos.longitude,
@@ -2970,33 +3035,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       );
       _snappedPositionTracker.addBreadcrumb(snappedLocationData);
 
-      // Log breadcrumb state before calculation
-      AppLogger.debug('Breadcrumb state before heading calculation', tag: 'HEADING-DEBUG', data: {
-        'breadcrumbCount': _snappedPositionTracker.breadcrumbs.length,
-        'firstPos': _snappedPositionTracker.breadcrumbs.isNotEmpty
-          ? '${_snappedPositionTracker.breadcrumbs.first.position.latitude.toStringAsFixed(6)},${_snappedPositionTracker.breadcrumbs.first.position.longitude.toStringAsFixed(6)}'
-          : 'none',
-        'lastPos': _snappedPositionTracker.breadcrumbs.isNotEmpty
-          ? '${_snappedPositionTracker.breadcrumbs.last.position.latitude.toStringAsFixed(6)},${_snappedPositionTracker.breadcrumbs.last.position.longitude.toStringAsFixed(6)}'
-          : 'none',
-      });
+      // Use native device heading directly from iOS CoreLocation (matches puck behavior)
+      // This provides instant, accurate bearing from device compass/gyroscope
+      // No breadcrumbs needed - we trust the device heading like the Mapbox puck does
+      double? heading = location.heading;
 
-      // Calculate heading from snapped position breadcrumbs (uses last 5 snapped positions)
-      // This ensures the marker points in the direction of travel along the route, not raw GPS direction
-      double? heading = _snappedPositionTracker.calculateTravelDirection(
-        smoothingRatio: 0.85, // High smoothing ratio for very responsive marker rotation
-        enableLogging: true, // ENABLE logging to diagnose frozen heading issue
-      );
-
-      AppLogger.debug('Heading calculation result', tag: 'HEADING-DEBUG', data: {
-        'heading': heading != null ? '${heading.toStringAsFixed(1)}°' : 'null',
-        'direction': heading != null ? _bearingToCompass(heading) : 'N/A',
-        'willUseFallback': heading == null,
-      });
-
-      // Fallback to route direction if we don't have enough breadcrumbs yet
-      if (heading == null) {
-        // AppLogger.debug('No breadcrumb heading - using route-based bearing', tag: 'MARKER-MUTEX');
+      // Only fallback to route-based bearing if native heading unavailable
+      if (heading == null || heading < 0) {
+        AppLogger.debug('No native heading - using route-based bearing', tag: 'MARKER-INIT');
 
         // Find closest point on route and calculate bearing to next point
         final currentRouteIndex = route.points.indexWhere((p) =>
@@ -3007,30 +3053,40 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Calculate bearing from snapped position to next route point
           final nextPoint = route.points[currentRouteIndex + 1];
           heading = GeoUtils.calculateBearing(displayPos, nextPoint);
-          // AppLogger.debug('Route-based bearing calculated', tag: 'MARKER-MUTEX', data: {});
         } else if (route.points.length > 1) {
           // Fallback: Use bearing between first two route points (early navigation)
           heading = GeoUtils.calculateBearing(route.points[0], route.points[1]);
-          // AppLogger.debug('Using first-segment bearing (early navigation)', tag: 'MARKER-MUTEX', data: {});
         } else {
-          // Last resort: use GPS heading (rare case)
-          heading = location.heading;
-          // AppLogger.warning('Using raw GPS heading as last resort', tag: 'MARKER-MUTEX', data: {});
+          // Last resort: use 0° (north)
+          heading = 0.0;
         }
       }
-      // else {
-      //   AppLogger.debug('Using breadcrumb-based heading', tag: 'MARKER-MUTEX', data: {});
-      // }
 
       final hasHeading = heading != null && heading >= 0;
 
-      // AppLogger.debug('Preparing marker creation', tag: 'MARKER-MUTEX', data: {});
+      // Get current map bearing to adjust marker rotation
+      // CRITICAL: Since rotation is baked into the image, we need to account for map rotation
+      // Marker should point in absolute direction (relative to true north), not relative to map
+      final cameraState = await _mapboxMap!.getCameraState();
+      final mapBearing = cameraState.bearing; // Map's current rotation (0 = north up)
+
+      // Calculate marker rotation relative to map's current bearing
+      // If map is rotated 45° and travel direction is 90°, marker should show 45° on rotated map
+      final markerRotation = hasHeading ? (heading - mapBearing) : null;
+
+      // Comprehensive marker rotation log
+      AppLogger.debug('🧭 MARKER ROTATION', tag: 'MARKER-ROT', data: {
+        'native_heading': heading != null ? '${heading.toStringAsFixed(1)}° (${_bearingToCompass(heading)})' : 'null',
+        'map_bearing': '${mapBearing.toStringAsFixed(1)}° (${_bearingToCompass(mapBearing)})',
+        'marker_rotation': markerRotation != null ? '${markerRotation.toStringAsFixed(1)}°' : 'null',
+        'has_heading': hasHeading,
+      });
 
       // Create purple marker icon with PRE-ROTATION baked into the image
       // IMPORTANT: iconRotate property does NOT work in Mapbox 3D with pitch/tilt
       // We MUST rotate the image itself, not use iconRotate
       final markerIcon = await MapboxMarkerUtils.createUserLocationIcon(
-        heading: hasHeading ? heading : null, // Pass heading to bake rotation into image
+        heading: markerRotation, // Pass adjusted rotation to bake into image
         borderColor: Colors.purple,
       );
 
@@ -3578,15 +3634,33 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final targetZoom = NavigationUtils.calculateNavigationZoom(location.speed);
 
     // Calculate bearing from travel direction (breadcrumbs) - matches 2D behavior
-    // NOTE: Do NOT use location.heading for map rotation, only for marker arrow
-    final bearing = _calculateTravelDirection();
+    // Fallback hierarchy: breadcrumbs > native device heading > current map bearing (preserve)
+    double? bearing = _calculateTravelDirection();
+
+    // Use native device heading (iOS CoreLocation) as fallback for initial state
+    // This provides instant, accurate bearing without requiring movement
+    if (bearing == null && location.heading != null && location.heading! >= 0) {
+      bearing = location.heading;
+      AppLogger.debug('Using native heading for camera', tag: 'CAM-INIT', data: {
+        'heading': '${location.heading!.toStringAsFixed(1)}°',
+      });
+    }
+
+    // If still no bearing, preserve current map bearing (don't reset to North!)
+    if (bearing == null) {
+      final currentCamera = await _mapboxMap!.getCameraState();
+      bearing = currentCamera.bearing;
+      AppLogger.debug('Preserving current map bearing', tag: 'CAM-INIT', data: {
+        'bearing': '${bearing.toStringAsFixed(1)}°',
+      });
+    }
 
     // Camera centered on user position
     await _mapboxMap!.easeTo(
       CameraOptions(
         center: Point(coordinates: Position(location.longitude, location.latitude)),
         zoom: targetZoom,
-        bearing: bearing ?? 0, // Positive bearing: direction at top of screen
+        bearing: bearing, // Never null - always has a value from fallbacks
         pitch: _currentPitch,
         padding: MbxEdgeInsets(top: 0, left: 0, bottom: 0, right: 0),
       ),
