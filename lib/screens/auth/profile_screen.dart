@@ -267,12 +267,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 16),
 
                       // Preferences Section
-                      const Text(
+                      Text(
                         'Preferences',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.urbanBlue,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.mossGreen
+                              : AppColors.urbanBlue,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -552,15 +554,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   /// Build preference card
   Widget _buildPreferenceCard(String title, String subtitle, IconData icon, Widget trailing) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppColors.darkSurface : Colors.white;
+    final borderColor = isDark ? AppColors.darkSurfaceVariant : AppColors.lightGrey;
+    final iconBgColor = isDark
+        ? AppColors.mossGreen.withValues(alpha: 0.2)
+        : AppColors.urbanBlue.withValues(alpha: 0.1);
+    final iconColor = isDark ? AppColors.mossGreen : AppColors.urbanBlue;
+    final subtitleColor = isDark ? AppColors.darkOnSurface.withValues(alpha: 0.7) : Colors.black54;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lightGrey),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -571,10 +582,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.urbanBlue.withValues(alpha: 0.1),
+              color: iconBgColor,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: AppColors.urbanBlue, size: 24),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -591,9 +602,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: subtitleColor,
                   ),
                 ),
               ],

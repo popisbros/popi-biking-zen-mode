@@ -52,8 +52,13 @@ class CommonDialog {
       barrierColor: barrierColor,
       barrierDismissible: barrierDismissible,
       builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final backgroundColor = isDark
+            ? const Color(0xFF2C2C2C).withValues(alpha: backgroundOpacity)
+            : Colors.white.withValues(alpha: backgroundOpacity);
+
         return AlertDialog(
-          backgroundColor: Colors.white.withValues(alpha: backgroundOpacity),
+          backgroundColor: backgroundColor,
           titlePadding: titlePadding,
           contentPadding: contentPadding,
           actionsPadding: actions != null ? actionsPadding : EdgeInsets.zero,
@@ -111,13 +116,19 @@ class CommonDialog {
   ///
   /// Parameters:
   /// - text: Caption text
-  /// - color: Text color (default: grey)
-  static Widget buildCaptionText(String text, {Color color = Colors.grey}) {
+  /// - color: Text color (default: grey, or theme-based if context provided)
+  /// - context: BuildContext for theme detection (optional)
+  static Widget buildCaptionText(String text, {Color? color, BuildContext? context}) {
+    Color textColor = color ?? Colors.grey;
+    if (color == null && context != null) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      textColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
+    }
     return Text(
       text,
       style: TextStyle(
         fontSize: smallFontSize,
-        color: color,
+        color: textColor,
       ),
     );
   }

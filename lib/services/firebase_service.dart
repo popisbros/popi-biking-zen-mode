@@ -148,10 +148,18 @@ class FirebaseService {
         upvotes++;
         userVotes[userId] = 'up';
 
+        // Update vote history (keep last 5 votes, most recent first)
+        final lastVotes = List<String>.from(data['lastVotes'] ?? []);
+        lastVotes.insert(0, 'up'); // Add new vote at beginning
+        if (lastVotes.length > 5) {
+          lastVotes.removeLast(); // Keep only last 5
+        }
+
         transaction.update(docRef, {
           'upvotes': upvotes,
           'downvotes': downvotes,
           'userVotes': userVotes,
+          'lastVotes': lastVotes,
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
@@ -198,56 +206,47 @@ class FirebaseService {
         downvotes++;
         userVotes[userId] = 'down';
 
-        transaction.update(docRef, {
+        // Update vote history (keep last 5 votes, most recent first)
+        final lastVotes = List<String>.from(data['lastVotes'] ?? []);
+        lastVotes.insert(0, 'down'); // Add new vote at beginning
+        if (lastVotes.length > 5) {
+          lastVotes.removeLast(); // Keep only last 5
+        }
+
+        // Calculate new vote score
+        final voteScore = upvotes - downvotes;
+
+        // Check for 3 consecutive downvotes
+        final hasThreeConsecutiveDownvotes = lastVotes.length >= 3 &&
+            lastVotes[0] == 'down' &&
+            lastVotes[1] == 'down' &&
+            lastVotes[2] == 'down';
+
+        // Auto-resolve if score <= -3 OR 3 consecutive downvotes
+        final Map<String, dynamic> updates = {
           'upvotes': upvotes,
           'downvotes': downvotes,
           'userVotes': userVotes,
+          'lastVotes': lastVotes,
           'updatedAt': FieldValue.serverTimestamp(),
-        });
+        };
 
-        AppLogger.success('Warning downvoted successfully');
+        if (data['status'] == 'active' && (voteScore <= -3 || hasThreeConsecutiveDownvotes)) {
+          updates['status'] = 'resolved';
+          updates['resolvedAt'] = FieldValue.serverTimestamp();
+          updates['resolvedBy'] = 'community';
+          final reason = hasThreeConsecutiveDownvotes ? '3 consecutive downvotes' : 'score <= -3';
+          AppLogger.info('Auto-resolving warning due to $reason');
+        }
+
+        transaction.update(docRef, updates);
+
+        final resolveMsg = (voteScore <= -3 || hasThreeConsecutiveDownvotes) ? ' (auto-resolved)' : '';
+        AppLogger.success('Warning downvoted successfully$resolveMsg');
         return true;
       });
     } catch (e) {
       AppLogger.firebase('Error downvoting warning', error: e);
-      rethrow;
-    }
-  }
-
-  /// Verify a warning (requires 3 verifications to be marked as verified)
-  /// Returns true if verification was added, false if user already verified
-  Future<bool> verifyWarning(String warningId, String userId) async {
-    try {
-      final docRef = _firestoreInstance.collection(_warningsCollection).doc(warningId);
-
-      return await _firestoreInstance.runTransaction((transaction) async {
-        final snapshot = await transaction.get(docRef);
-        if (!snapshot.exists) {
-          throw Exception('Warning not found');
-        }
-
-        final data = snapshot.data()!;
-        final verifiedBy = List<String>.from(data['verifiedBy'] ?? []);
-
-        // Check if user already verified
-        if (verifiedBy.contains(userId)) {
-          AppLogger.warning('User already verified this warning');
-          return false;
-        }
-
-        // Add user to verifiedBy list
-        verifiedBy.add(userId);
-
-        transaction.update(docRef, {
-          'verifiedBy': verifiedBy,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        AppLogger.success('Warning verified successfully (${verifiedBy.length}/3 verifications)');
-        return true;
-      });
-    } catch (e) {
-      AppLogger.firebase('Error verifying warning', error: e);
       rethrow;
     }
   }

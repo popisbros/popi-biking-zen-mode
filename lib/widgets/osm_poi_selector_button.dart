@@ -26,11 +26,15 @@ class OSMPOISelectorButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mapState = ref.watch(mapProvider);
     final selectedTypes = mapState.selectedOSMPOITypes;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Determine button state
     final bool isActive = mapState.showOSMPOIs &&
                          (selectedTypes == null || selectedTypes.isNotEmpty);
     final Color activeColor = Colors.blue;
+    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final disabledColor = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+    final disabledForeground = isDark ? Colors.grey.shade600 : Colors.grey.shade400;
 
     return Tooltip(
       message: enabled ? 'Select OSM POI types' : 'POI selector (disabled at zoom ≤ 12)',
@@ -40,9 +44,9 @@ class OSMPOISelectorButton extends ConsumerWidget {
           FloatingActionButton(
             mini: true,
             backgroundColor: enabled
-                ? (isActive ? activeColor : Colors.grey.shade300)
-                : Colors.grey.shade200,
-            foregroundColor: enabled ? Colors.white : Colors.grey.shade400,
+                ? (isActive ? activeColor : inactiveColor)
+                : disabledColor,
+            foregroundColor: enabled ? Colors.white : disabledForeground,
             onPressed: enabled ? () => _showPOISelector(context, ref) : null,
             heroTag: 'osm_poi_selector',
             child: const Icon(Icons.location_on),

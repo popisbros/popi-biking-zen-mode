@@ -29,6 +29,13 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Theme detection
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBgColor = isDark
+        ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+        : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+    final textColor = isDark ? Colors.white : Colors.black;
+
     final typeEmoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
     final typeLabel = POITypeConfig.getCommunityPOILabel(poi.type);
 
@@ -41,15 +48,16 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
 
     // Use CommonDialog styling for consistency
     return AlertDialog(
-      backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+      backgroundColor: dialogBgColor,
       titlePadding: CommonDialog.titlePadding,
       contentPadding: CommonDialog.contentPadding,
       actionsPadding: CommonDialog.actionsPadding,
       title: Text(
         poi.name,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: CommonDialog.titleFontSize,
           fontWeight: FontWeight.bold,
+          color: textColor,
         ),
       ),
       content: SingleChildScrollView(
@@ -62,9 +70,10 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               children: [
                 Text(
                   'Type: ',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: CommonDialog.bodyFontSize,
+                    color: textColor,
                   ),
                 ),
                 Text(
@@ -74,9 +83,10 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
                 const SizedBox(width: 4),
                 Text(
                   typeLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: CommonDialog.bodyFontSize,
+                    color: textColor,
                   ),
                 ),
               ],
@@ -86,6 +96,7 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
             const SizedBox(height: 4),
             CommonDialog.buildCaptionText(
               'Coordinates: ${poi.latitude.toStringAsFixed(6)}, ${poi.longitude.toStringAsFixed(6)}',
+              context: context,
             ),
 
             // Optional fields
@@ -93,14 +104,15 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 'Description:',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: CommonDialog.bodyFontSize,
+                  color: textColor,
                 ),
               ),
               Text(
                 poi.description!,
-                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
+                style: TextStyle(fontSize: CommonDialog.bodyFontSize, color: textColor),
               ),
             ],
 
@@ -108,14 +120,15 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 'Address:',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: CommonDialog.bodyFontSize,
+                  color: textColor,
                 ),
               ),
               Text(
                 poi.address!,
-                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
+                style: TextStyle(fontSize: CommonDialog.bodyFontSize, color: textColor),
               ),
             ],
 
@@ -123,14 +136,15 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 'Phone:',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: CommonDialog.bodyFontSize,
+                  color: textColor,
                 ),
               ),
               Text(
                 poi.phone!,
-                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
+                style: TextStyle(fontSize: CommonDialog.bodyFontSize, color: textColor),
               ),
             ],
 
@@ -138,14 +152,15 @@ class CommunityPOIDetailDialog extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 'Website:',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: CommonDialog.bodyFontSize,
+                  color: textColor,
                 ),
               ),
               Text(
                 poi.website!,
-                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
+                style: TextStyle(fontSize: CommonDialog.bodyFontSize, color: textColor),
               ),
             ],
           ],

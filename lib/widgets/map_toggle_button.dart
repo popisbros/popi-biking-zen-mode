@@ -52,6 +52,11 @@ class MapToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final disabledColor = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+    final disabledForeground = isDark ? Colors.grey.shade600 : Colors.grey.shade400;
+
     return Tooltip(
       message: enabled ? tooltip : '$tooltip (disabled at zoom ≤ 12)',
       child: Stack(
@@ -60,9 +65,9 @@ class MapToggleButton extends StatelessWidget {
           FloatingActionButton(
             mini: true,
             backgroundColor: enabled
-                ? (isActive ? activeColor : Colors.grey.shade300)
-                : Colors.grey.shade200,
-            foregroundColor: enabled ? Colors.white : Colors.grey.shade400,
+                ? (isActive ? activeColor : inactiveColor)
+                : disabledColor,
+            foregroundColor: enabled ? Colors.white : disabledForeground,
             onPressed: enabled ? onPressed : null,
             heroTag: tooltip,
             child: Icon(icon),

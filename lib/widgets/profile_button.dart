@@ -11,6 +11,9 @@ class ProfileButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final buttonColor = isDark ? Colors.grey.shade700 : Colors.white;
+    final iconColor = isDark ? Colors.lightBlue : Colors.blue;
 
     return authState.when(
       data: (user) {
@@ -19,13 +22,13 @@ class ProfileButton extends ConsumerWidget {
           return FloatingActionButton(
             mini: true,
             heroTag: 'profile_login',
-            backgroundColor: Colors.white,
+            backgroundColor: buttonColor,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
               );
             },
-            child: const Icon(Icons.login, color: Colors.blue),
+            child: Icon(Icons.login, color: iconColor),
           );
         }
 
@@ -37,7 +40,7 @@ class ProfileButton extends ConsumerWidget {
             return FloatingActionButton(
               mini: true,
               heroTag: 'profile_avatar',
-              backgroundColor: Colors.white,
+              backgroundColor: buttonColor,
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const ProfileScreen()),
@@ -49,10 +52,10 @@ class ProfileButton extends ConsumerWidget {
                     )
                   : Text(
                       profile?.getInitials() ?? 'U',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: iconColor,
                       ),
                     ),
             );
@@ -60,7 +63,7 @@ class ProfileButton extends ConsumerWidget {
           loading: () => FloatingActionButton(
             mini: true,
             heroTag: 'profile_loading',
-            backgroundColor: Colors.white,
+            backgroundColor: buttonColor,
             onPressed: null,
             child: const SizedBox(
               width: 20,
@@ -71,13 +74,13 @@ class ProfileButton extends ConsumerWidget {
           error: (_, __) => FloatingActionButton(
             mini: true,
             heroTag: 'profile_error',
-            backgroundColor: Colors.white,
+            backgroundColor: buttonColor,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProfileScreen()),
               );
             },
-            child: const Icon(Icons.person, color: Colors.blue),
+            child: Icon(Icons.person, color: iconColor),
           ),
         );
       },

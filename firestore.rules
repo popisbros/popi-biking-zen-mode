@@ -30,17 +30,37 @@ service cloud.firestore {
 
       // Allow updates for:
       // 1. The original reporter (full update including status='resolved')
-      // 2. Any authenticated user (voting/verification only)
+      // 2. Any authenticated user (voting only, with auto-resolution)
       allow update: if isSignedIn() && (
         // Original reporter can update their own warning
         request.auth.uid == resource.data.reportedBy
         ||
-        // Any authenticated user can vote/verify
-        // Only allowed to modify: upvotes, downvotes, verifiedBy, userVotes
-        // Cannot modify status (except reporter)
+        // Any authenticated user can vote
+        // Allowed to modify: upvotes, downvotes, userVotes, lastVotes, status (for auto-resolution)
+        // Status can only change to 'resolved' when score <= -3 OR 3 consecutive downvotes
         (
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['upvotes', 'downvotes', 'verifiedBy', 'userVotes'])
+            .hasOnly(['upvotes', 'downvotes', 'userVotes', 'lastVotes', 'status', 'resolvedAt', 'resolvedBy', 'updatedAt'])
+          &&
+          (
+            // Status unchanged OR auto-resolved due to downvotes
+            (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status']))
+            ||
+            (
+              request.resource.data.status == 'resolved'
+              && resource.data.status == 'active'
+              && (
+                // Score <= -3 OR 3 consecutive downvotes
+                (request.resource.data.upvotes - request.resource.data.downvotes) <= -3
+                || (
+                  request.resource.data.lastVotes.size() >= 3
+                  && request.resource.data.lastVotes[0] == 'down'
+                  && request.resource.data.lastVotes[1] == 'down'
+                  && request.resource.data.lastVotes[2] == 'down'
+                )
+              )
+            )
+          )
         )
       );
 

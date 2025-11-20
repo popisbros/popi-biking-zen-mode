@@ -64,6 +64,7 @@ class CommunityWarning {
   final int downvotes;
   final List<String> verifiedBy; // List of user IDs who verified
   final Map<String, String> userVotes; // userId -> 'up' or 'down'
+  final List<String> lastVotes; // Last 5 votes: 'up' or 'down' (most recent first)
 
   // NEW: Status management
   final String status; // active, resolved, disputed, expired
@@ -89,6 +90,7 @@ class CommunityWarning {
     this.downvotes = 0,
     this.verifiedBy = const [],
     this.userVotes = const {},
+    this.lastVotes = const [],
     this.status = 'active',
   });
 
@@ -117,6 +119,9 @@ class CommunityWarning {
       (key, value) => MapEntry(key, value.toString()),
     ) ?? {};
 
+    // Parse last votes list
+    final lastVotesList = (map['lastVotes'] as List?)?.cast<String>() ?? [];
+
     return CommunityWarning(
       id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
       type: map['type'] ?? '',
@@ -138,6 +143,7 @@ class CommunityWarning {
       downvotes: map['downvotes'] ?? 0,
       verifiedBy: verifiedByList,
       userVotes: userVotesMap,
+      lastVotes: lastVotesList,
       status: map['status'] ?? 'active',
     );
   }
@@ -162,6 +168,7 @@ class CommunityWarning {
       'downvotes': downvotes,
       'verifiedBy': verifiedBy,
       'userVotes': userVotes,
+      'lastVotes': lastVotes,
       'status': status,
     };
 
@@ -199,6 +206,7 @@ class CommunityWarning {
     int? downvotes,
     List<String>? verifiedBy,
     Map<String, String>? userVotes,
+    List<String>? lastVotes,
     String? status,
   }) {
     return CommunityWarning(
@@ -222,13 +230,14 @@ class CommunityWarning {
       downvotes: downvotes ?? this.downvotes,
       verifiedBy: verifiedBy ?? this.verifiedBy,
       userVotes: userVotes ?? this.userVotes,
+      lastVotes: lastVotes ?? this.lastVotes,
       status: status ?? this.status,
     );
   }
 
   // Computed properties for voting and verification
   int get voteScore => upvotes - downvotes;
-  bool get isVerified => verifiedBy.length >= 3;
+  bool get isVerified => voteScore >= 3; // Verified when score reaches +3 or higher
 
   /// Get time since report in human-readable format
   String get timeSinceReport {

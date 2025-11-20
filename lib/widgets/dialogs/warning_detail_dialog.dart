@@ -81,6 +81,14 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
     final userId = authUser?.uid;
     final isReporter = userId != null && userId == _warning.reportedBy;
 
+    // Theme detection
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBgColor = isDark
+        ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+        : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+    final textColor = isDark ? Colors.white : Colors.black;
+    final dividerColor = isDark ? Colors.grey[700] : Colors.grey[300];
+
     // Get warning type emoji and label
     final typeEmoji = POITypeConfig.getWarningEmoji(_warning.type);
     final typeLabel = POITypeConfig.getWarningLabel(_warning.type);
@@ -95,17 +103,16 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
 
     // Check user's vote
     final userVote = userId != null ? _warning.userVotes[userId] : null;
-    final hasVerified = userId != null && _warning.verifiedBy.contains(userId);
 
     // Use CommonDialog styling for consistency
     return AlertDialog(
-      backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+      backgroundColor: dialogBgColor,
       titlePadding: CommonDialog.titlePadding,
       contentPadding: CommonDialog.contentPadding,
       actionsPadding: CommonDialog.actionsPadding,
       title: Text(
         _warning.title,
-        style: const TextStyle(fontSize: CommonDialog.titleFontSize, fontWeight: FontWeight.bold),
+        style: TextStyle(fontSize: CommonDialog.titleFontSize, fontWeight: FontWeight.bold, color: textColor),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -115,11 +122,12 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
             // Type with icon
             Row(
               children: [
-                const Text(
+                Text(
                   'Type: ',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: CommonDialog.bodyFontSize,
+                    color: textColor,
                   ),
                 ),
                 Text(
@@ -129,9 +137,10 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
                 const SizedBox(width: 4),
                 Text(
                   typeLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: CommonDialog.bodyFontSize,
+                    color: textColor,
                   ),
                 ),
               ],
@@ -142,11 +151,12 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
             // Severity with colored badge
             Row(
               children: [
-                const Text(
+                Text(
                   'Severity: ',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: CommonDialog.bodyFontSize,
+                    color: textColor,
                   ),
                 ),
                 Container(
@@ -175,35 +185,38 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
             // Coordinates
             CommonDialog.buildCaptionText(
               'Coordinates: ${_warning.latitude.toStringAsFixed(6)}, ${_warning.longitude.toStringAsFixed(6)}',
+              context: context,
             ),
 
             // Description
             if (_warning.description.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Description:',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: CommonDialog.bodyFontSize,
+                  color: textColor,
                 ),
               ),
               Text(
                 _warning.description,
-                style: const TextStyle(fontSize: CommonDialog.bodyFontSize),
+                style: TextStyle(fontSize: CommonDialog.bodyFontSize, color: textColor),
               ),
             ],
 
             const SizedBox(height: 12),
-            const Divider(),
+            Divider(color: dividerColor),
 
             // Status Badge
             Row(
               children: [
-                const Text(
+                Text(
                   'Status: ',
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: CommonDialog.bodyFontSize,
+                    color: textColor,
                   ),
                 ),
                 _buildStatusBadge(_warning.status),
@@ -213,17 +226,18 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
             const SizedBox(height: 8),
 
             // Time since report
-            CommonDialog.buildCaptionText('Reported ${_warning.timeSinceReport}'),
+            CommonDialog.buildCaptionText('Reported ${_warning.timeSinceReport}', context: context),
 
             const SizedBox(height: 12),
 
             // Voting Section
             if (userId != null) ...[
-              const Text(
+              Text(
                 'Community Feedback:',
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: CommonDialog.bodyFontSize,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 8),
@@ -276,54 +290,29 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
 
               const SizedBox(height: 12),
 
-              // Verification Section
-              Row(
-                children: [
-                  if (_warning.isVerified)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.successGreen.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
+              // Verification Badge (displayed only if score ≥ 3)
+              if (_warning.isVerified)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.successGreen.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.verified, size: 16, color: AppColors.successGreen),
+                      SizedBox(width: 4),
+                      Text(
+                        'Community Verified',
+                        style: TextStyle(
+                          color: AppColors.successGreen,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.verified, size: 16, color: AppColors.successGreen),
-                          SizedBox(width: 4),
-                          Text(
-                            'Verified',
-                            style: TextStyle(
-                              color: AppColors.successGreen,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (!_warning.isVerified)
-                    Text(
-                      'Verifications: ${_warning.verifiedBy.length}/3',
-                      style: const TextStyle(
-                        fontSize: CommonDialog.bodyFontSize,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  const SizedBox(width: 8),
-                  if (!hasVerified && userId != null)
-                    ElevatedButton.icon(
-                      onPressed: _isProcessing ? null : () => _handleVerify(userId),
-                      icon: const Icon(Icons.check_circle_outline, size: 16),
-                      label: const Text('Verify'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.cyclewayPurple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        textStyle: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-                ],
-              ),
+                    ],
+                  ),
+                ),
             ],
           ],
         ),
@@ -415,13 +404,17 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
     required bool isActive,
     required VoidCallback? onPressed,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactiveBgColor = isDark ? Colors.grey[700] : Colors.grey[300];
+    final inactiveFgColor = isDark ? Colors.grey[300] : Colors.black87;
+
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor: isActive
             ? AppColors.cyclewayPurple
-            : Colors.grey[300],
-        foregroundColor: isActive ? Colors.white : Colors.black87,
+            : inactiveBgColor,
+        foregroundColor: isActive ? Colors.white : inactiveFgColor,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       child: Row(
@@ -533,47 +526,6 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
     }
   }
 
-  /// Handle verify
-  Future<void> _handleVerify(String userId) async {
-    if (_warning.id == null) return;
-
-    setState(() => _isProcessing = true);
-
-    try {
-      final success = await _firebaseService.verifyWarning(_warning.id!, userId);
-      if (success && mounted) {
-        // Update local state optimistically
-        setState(() {
-          final newVerifiedBy = List<String>.from(_warning.verifiedBy)..add(userId);
-          _warning = _warning.copyWith(verifiedBy: newVerifiedBy);
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                _warning.isVerified
-                    ? 'Verified! This hazard is now community-verified.'
-                    : 'Verification added (${_warning.verifiedBy.length}/3)',
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      AppLogger.error('Failed to verify', error: e);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to verify: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
   /// Handle mark as resolved
   Future<void> _handleResolve(String userId) async {
     if (_warning.id == null) return;
@@ -581,20 +533,29 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Mark as Resolved'),
-        content: const Text('Are you sure this hazard has been resolved?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('CONFIRM'),
-          ),
-        ],
-      ),
+      builder: (dialogContext) {
+        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+        final dialogBgColor = isDark
+            ? const Color(0xFF2C2C2C).withValues(alpha: 0.95)
+            : Colors.white.withValues(alpha: 0.95);
+        final textColor = isDark ? Colors.white : Colors.black;
+
+        return AlertDialog(
+          backgroundColor: dialogBgColor,
+          title: Text('Mark as Resolved', style: TextStyle(color: textColor)),
+          content: Text('Are you sure this hazard has been resolved?', style: TextStyle(color: textColor)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('CONFIRM'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed != true) return;

@@ -58,6 +58,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(searchProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Trigger animation when visibility changes
     if (searchState.isVisible && !_animationController.isCompleted) {
@@ -96,10 +97,10 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
         shadowColor: Colors.black.withValues(alpha: 0.3),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -124,6 +125,11 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
   }
 
   Widget _buildSearchInput(BuildContext context, SearchState searchState) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hintColor = isDark ? Colors.grey[600] : Colors.grey[400];
+    final borderColor = isDark ? Colors.grey[700] : Colors.grey[300];
+    final focusBorderColor = isDark ? Colors.lightBlue : Colors.blue;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -137,19 +143,19 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                 hintText: 'Type your address, location or GPS coordinates...',
                 hintStyle: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[400],
+                  color: hintColor,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: borderColor!),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2),
+                  borderSide: BorderSide(color: focusBorderColor, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
