@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_profile.dart';
@@ -534,4 +535,20 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
 /// Auth provider
 final authNotifierProvider = NotifierProvider<AuthNotifier, AsyncValue<User?>>(() {
   return AuthNotifier();
+});
+
+/// Theme mode provider based on user's appearance preference
+final themeModeProvider = Provider<ThemeMode>((ref) {
+  final userProfile = ref.watch(userProfileProvider).value;
+  final appearanceMode = userProfile?.appearanceMode ?? 'system';
+
+  switch (appearanceMode) {
+    case 'light':
+      return ThemeMode.light;
+    case 'dark':
+      return ThemeMode.dark;
+    case 'system':
+    default:
+      return ThemeMode.system;
+  }
 });

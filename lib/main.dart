@@ -16,6 +16,7 @@ import 'screens/mapbox_map_screen_simple.dart'
 import 'utils/app_logger.dart';
 import 'utils/api_logger.dart';
 import 'services/toast_service.dart';
+import 'providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -116,9 +117,14 @@ class MyApp extends ConsumerWidget {
     // Web starts with 2D map, Native starts directly with 3D map
     AppLogger.info('Starting with ${kIsWeb ? "2D map (WEB)" : "3D map (NATIVE)"}', tag: 'MyApp');
 
+    // Get user's theme preference
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp(
       title: 'Popi Biking',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       navigatorKey: ToastService.navigatorKey,
       home: SplashScreen(
         child: kIsWeb ? const MapScreen() : const MapboxMapScreenSimple(),

@@ -33,11 +33,18 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient accentGradient = LinearGradient(
     colors: [mossGreen, successGreen],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // Dark theme colors
+  static const Color darkBackground = Color(0xFF121212);
+  static const Color darkSurface = Color(0xFF1E1E1E);
+  static const Color darkSurfaceVariant = Color(0xFF2A2A2A);
+  static const Color darkOnSurface = Color(0xFFE0E0E0);
+  static const Color darkOnBackground = Color(0xFFE0E0E0);
 }
 

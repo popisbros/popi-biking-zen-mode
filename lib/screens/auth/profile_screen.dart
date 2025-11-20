@@ -387,9 +387,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 16),
 
                       // Stats and Lists
-                      _buildStatCard('Default Route', profile.defaultRouteProfile, null),
-                      const SizedBox(height: 16),
-
                       _buildExpandableSection(
                         'Recent Searches',
                         profile.recentSearches.length,

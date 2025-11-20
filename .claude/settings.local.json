@@ -5,7 +5,8 @@
       "Bash(./run_ios_device.sh:*)",
       "Bash(pkill:*)",
       "Bash(git tag:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
