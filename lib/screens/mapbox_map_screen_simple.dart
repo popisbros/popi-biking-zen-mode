@@ -1064,6 +1064,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Watch location updates to keep camera centered
     final mapState = ref.watch(mapProvider);
 
@@ -1367,8 +1369,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   FloatingActionButton(
                     mini: true,
                     heroTag: 'zoom_in_3d',
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.blue,
+                    backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                    foregroundColor: isDark ? Colors.white : Colors.blue,
                     onPressed: () async {
                       final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
                       if (currentZoom != null) {
@@ -1391,15 +1393,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       _currentZoom.toStringAsFixed(1),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.blue,
+                        color: isDark ? Colors.white : Colors.blue,
                       ),
                     ),
                   ),
@@ -1409,8 +1411,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   FloatingActionButton(
                     mini: true,
                     heroTag: 'zoom_out_3d',
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.blue,
+                    backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                    foregroundColor: isDark ? Colors.white : Colors.blue,
                     onPressed: () async {
                       final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
                       if (currentZoom != null) {

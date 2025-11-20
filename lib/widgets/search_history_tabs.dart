@@ -37,6 +37,7 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final authUser = ref.watch(authStateProvider).value;
 
     // Only show if user is logged in
@@ -53,7 +54,7 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
         return Container(
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: Colors.grey[300]!, width: 1),
+              top: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[300]!, width: 1),
             ),
           ),
           child: Column(
@@ -63,7 +64,7 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
               TabBar(
                 controller: _tabController,
                 labelColor: Colors.blue,
-                unselectedLabelColor: Colors.grey[600],
+                unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
                 indicatorColor: Colors.blue,
                 labelStyle: const TextStyle(
                   fontSize: 13,
@@ -143,10 +144,10 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
                 Expanded(
                   child: Text(
                     query,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -209,10 +210,10 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
                     children: [
                       Text(
                         location.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -287,10 +288,10 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
                     children: [
                       Text(
                         location.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
