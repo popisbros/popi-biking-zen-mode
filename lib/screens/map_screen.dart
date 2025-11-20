@@ -1988,88 +1988,97 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 const SizedBox(height: 6),
 
                 // Zoom controls
-                FloatingActionButton(
-                  mini: true,
-                  heroTag: 'zoom_in',
-                  backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                  foregroundColor: isDark ? Colors.white : Colors.blue,
-                  onPressed: () {
-                    AppLogger.map('Zoom in pressed');
-                    final currentZoom = _mapController.camera.zoom;
-                    // Use floor to get integer zoom: 17.6 -> 18
-                    final newZoom = currentZoom.floor() + 1.0;
-                    _mapController.move(
-                      _mapController.camera.center,
-                      newZoom,
+                Builder(
+                  builder: (context) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    return Column(
+                      children: [
+                        FloatingActionButton(
+                          mini: true,
+                          heroTag: 'zoom_in',
+                          backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                          foregroundColor: isDark ? Colors.white : Colors.blue,
+                          onPressed: () {
+                            AppLogger.map('Zoom in pressed');
+                            final currentZoom = _mapController.camera.zoom;
+                            // Use floor to get integer zoom: 17.6 -> 18
+                            final newZoom = currentZoom.floor() + 1.0;
+                            _mapController.move(
+                              _mapController.camera.center,
+                              newZoom,
+                            );
+                            AppLogger.map('Zoom changed', data: {
+                              'from': currentZoom,
+                              'to': newZoom,
+                            });
+                            setState(() {}); // Refresh to update zoom display
+                          },
+                          child: const Icon(Icons.add),
+                        ),
+                        const SizedBox(height: 2),
+
+                        // Zoom level display
+                        if (_isMapReady)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              _mapController.camera.zoom.toStringAsFixed(1),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : Colors.blue,
+                              ),
+                            ),
+                          ),
+                        if (_isMapReady)
+                          const SizedBox(height: 2),
+
+                        // Zoom out button
+                        FloatingActionButton(
+                          mini: true,
+                          heroTag: 'zoom_out',
+                          backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                          foregroundColor: isDark ? Colors.white : Colors.blue,
+                          onPressed: () {
+                            AppLogger.map('Zoom out pressed');
+                            final currentZoom = _mapController.camera.zoom;
+                            // Use floor to get integer zoom: 17.6 -> 17
+                            final newZoom = currentZoom.floor() - 1.0;
+                            _mapController.move(
+                              _mapController.camera.center,
+                              newZoom,
+                            );
+                            AppLogger.map('Zoom changed', data: {
+                              'from': currentZoom,
+                              'to': newZoom,
+                            });
+
+                            // Auto-turn OFF all POI toggles if zooming to <= 12
+                            if (newZoom <= 12.0) {
+                              final mapState = ref.read(mapProvider);
+                              if (mapState.showOSMPOIs) {
+                                ref.read(mapProvider.notifier).toggleOSMPOIs();
+                              }
+                              if (mapState.showPOIs) {
+                                ref.read(mapProvider.notifier).togglePOIs();
+                              }
+                              if (mapState.showWarnings) {
+                                ref.read(mapProvider.notifier).toggleWarnings();
+                              }
+                              AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
+                            }
+
+                            setState(() {}); // Refresh to update zoom display and toggles
+                          },
+                          child: const Icon(Icons.remove),
+                        ),
+                      ],
                     );
-                    AppLogger.map('Zoom changed', data: {
-                      'from': currentZoom,
-                      'to': newZoom,
-                    });
-                    setState(() {}); // Refresh to update zoom display
                   },
-                  child: const Icon(Icons.add),
-                ),
-                const SizedBox(height: 2),
-
-                // Zoom level display
-                if (_isMapReady)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      _mapController.camera.zoom.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : Colors.blue,
-                      ),
-                    ),
-                  ),
-                if (_isMapReady)
-                  const SizedBox(height: 2),
-
-                // Zoom out button
-                FloatingActionButton(
-                  mini: true,
-                  heroTag: 'zoom_out',
-                  backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                  foregroundColor: isDark ? Colors.white : Colors.blue,
-                  onPressed: () {
-                    AppLogger.map('Zoom out pressed');
-                    final currentZoom = _mapController.camera.zoom;
-                    // Use floor to get integer zoom: 17.6 -> 17
-                    final newZoom = currentZoom.floor() - 1.0;
-                    _mapController.move(
-                      _mapController.camera.center,
-                      newZoom,
-                    );
-                    AppLogger.map('Zoom changed', data: {
-                      'from': currentZoom,
-                      'to': newZoom,
-                    });
-
-                    // Auto-turn OFF all POI toggles if zooming to <= 12
-                    if (newZoom <= 12.0) {
-                      final mapState = ref.read(mapProvider);
-                      if (mapState.showOSMPOIs) {
-                        ref.read(mapProvider.notifier).toggleOSMPOIs();
-                      }
-                      if (mapState.showPOIs) {
-                        ref.read(mapProvider.notifier).togglePOIs();
-                      }
-                      if (mapState.showWarnings) {
-                        ref.read(mapProvider.notifier).toggleWarnings();
-                      }
-                      AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
-                    }
-
-                    setState(() {}); // Refresh to update zoom display and toggles
-                  },
-                  child: const Icon(Icons.remove),
                 ),
                 // Conditional spacing before Profile (hidden when navigating)
                 Consumer(
