@@ -353,6 +353,12 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
   }
 
   Widget _buildExpandSearchTile(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.grey[850] : Colors.grey[100];
+    final borderColor = isDark ? Colors.grey[700]! : Colors.grey[300]!;
+    final iconColor = isDark ? Colors.lightBlue[300] : Colors.blue[700];
+    final textColor = isDark ? Colors.lightBlue[200] : Colors.blue[700];
+
     return InkWell(
       onTap: () {
         ref.read(searchProvider.notifier).expandSearch(widget.mapCenter);
@@ -360,16 +366,16 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: bgColor,
           border: Border(
-            top: BorderSide(color: Colors.grey[300]!, width: 1),
+            top: BorderSide(color: borderColor, width: 1),
           ),
         ),
         child: Row(
           children: [
             Icon(
               Icons.expand_circle_down_outlined,
-              color: Colors.blue[700],
+              color: iconColor,
               size: 20,
             ),
             const SizedBox(width: 12),
@@ -378,7 +384,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
                 'Not finding your location? Extend the search',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.blue[700],
+                  color: textColor,
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w500,
                 ),
@@ -386,7 +392,7 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.blue[700],
+              color: iconColor,
               size: 14,
             ),
           ],

@@ -14,6 +14,14 @@ class SearchResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : Colors.black87;
+    final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
+    final borderColor = isDark ? Colors.grey.withValues(alpha: 0.3) : Colors.grey.withValues(alpha: 0.2);
+    final distanceBgColor = isDark ? Colors.grey[800] : Colors.grey[200];
+    final distanceTextColor = isDark ? Colors.grey[300] : Colors.grey[700];
+    final iconColor = isDark ? Colors.grey[400] : Colors.grey[600];
+
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -21,7 +29,7 @@ class SearchResultTile extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: Colors.grey.withValues(alpha: 0.2),
+              color: borderColor,
               width: 1,
             ),
           ),
@@ -29,7 +37,7 @@ class SearchResultTile extends StatelessWidget {
         child: Row(
           children: [
             // Icon based on result type or LocationIQ icon
-            _buildIcon(),
+            _buildIcon(iconColor),
             const SizedBox(width: 12),
 
             // Title and subtitle
@@ -39,10 +47,10 @@ class SearchResultTile extends StatelessWidget {
                 children: [
                   Text(
                     result.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+                      color: titleColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -53,7 +61,7 @@ class SearchResultTile extends StatelessWidget {
                       result.subtitle!,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: subtitleColor,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -69,14 +77,14 @@ class SearchResultTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: distanceBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   result.distanceText,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[700],
+                    color: distanceTextColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -88,14 +96,14 @@ class SearchResultTile extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(Color? iconColor) {
     // Map LocationIQ icon URL to Material icon
     // LocationIQ icons are blocked by CORS, so we use Material icons based on the icon type
     if (result.iconUrl != null && result.iconUrl!.isNotEmpty) {
       final icon = _getIconFromUrl(result.iconUrl!);
       return Icon(
         icon,
-        color: Colors.grey[600],
+        color: iconColor,
         size: 20,
       );
     }
@@ -105,7 +113,7 @@ class SearchResultTile extends StatelessWidget {
       result.type == SearchResultType.coordinates
           ? Icons.my_location
           : Icons.location_on,
-      color: Colors.grey[600],
+      color: iconColor,
       size: 20,
     );
   }

@@ -2257,6 +2257,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // Auto-zoom toggle button (only show in navigation mode)
                 Consumer(
                   builder: (context, ref, child) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+                    final inactiveFgColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
                     final navState = ref.watch(navigationModeProvider);
                     final isNavigationMode = navState.mode == NavMode.navigation;
                     final mapState = ref.watch(mapProvider);
@@ -2284,8 +2287,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           }
                         }
                       },
-                      backgroundColor: mapState.autoZoomEnabled ? Colors.blue : Colors.grey.shade300,
-                      foregroundColor: mapState.autoZoomEnabled ? Colors.white : Colors.grey.shade600,
+                      backgroundColor: mapState.autoZoomEnabled ? Colors.blue : inactiveColor,
+                      foregroundColor: mapState.autoZoomEnabled ? Colors.white : inactiveFgColor,
                       tooltip: mapState.autoZoomEnabled ? 'Disable Auto-Zoom' : 'Enable Auto-Zoom',
                       child: Icon(mapState.autoZoomEnabled ? Icons.zoom_out_map : Icons.zoom_out_map_outlined),
                     );
@@ -2300,46 +2303,61 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 // Compass rotation toggle button (Native only)
                 if (!kIsWeb)
-                  FloatingActionButton(
-                    mini: true, // Match zoom button size
-                    heroTag: 'compass_rotation_toggle_2d',
-                    onPressed: () {
-                      setState(() {
-                        _compassRotationEnabled = !_compassRotationEnabled;
-                        if (!_compassRotationEnabled) {
-                          // Reset map to north when disabling
-                          _mapController.rotate(0);
-                          _lastBearing = null;
-                        }
-                      });
-                      AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"} (2D)');
+                  Builder(
+                    builder: (context) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+                      final inactiveFgColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
+
+                      return FloatingActionButton(
+                        mini: true, // Match zoom button size
+                        heroTag: 'compass_rotation_toggle_2d',
+                        onPressed: () {
+                          setState(() {
+                            _compassRotationEnabled = !_compassRotationEnabled;
+                            if (!_compassRotationEnabled) {
+                              // Reset map to north when disabling
+                              _mapController.rotate(0);
+                              _lastBearing = null;
+                            }
+                          });
+                          AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"} (2D)');
+                        },
+                        backgroundColor: _compassRotationEnabled ? Colors.purple : inactiveColor,
+                        foregroundColor: _compassRotationEnabled ? Colors.white : inactiveFgColor,
+                        tooltip: 'Toggle Compass Rotation',
+                        child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
+                      );
                     },
-                    backgroundColor: _compassRotationEnabled ? Colors.purple : Colors.grey.shade300,
-                    foregroundColor: _compassRotationEnabled ? Colors.white : Colors.grey.shade600,
-                    tooltip: 'Toggle Compass Rotation',
-                    child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
                   ),
                 // Spacing after Compass (only on Native)
                 if (!kIsWeb)
                   const SizedBox(height: 6),
                 // GPS center button
-                FloatingActionButton(
-                  mini: true, // Match zoom button size
-                  heroTag: 'my_location',
-                  onPressed: () {
-                    AppLogger.map('My location button pressed');
-                    locationAsync.whenData((location) {
-                      if (location != null) {
-                        AppLogger.map('Centering on GPS location');
-                        _mapController.move(LatLng(location.latitude, location.longitude), 15);
-                        _loadAllMapDataWithBounds();
-                      }
-                    });
+                Builder(
+                  builder: (context) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final buttonColor = isDark ? Colors.grey.shade700 : Colors.white;
+
+                    return FloatingActionButton(
+                      mini: true, // Match zoom button size
+                      heroTag: 'my_location',
+                      onPressed: () {
+                        AppLogger.map('My location button pressed');
+                        locationAsync.whenData((location) {
+                          if (location != null) {
+                            AppLogger.map('Centering on GPS location');
+                            _mapController.move(LatLng(location.latitude, location.longitude), 15);
+                            _loadAllMapDataWithBounds();
+                          }
+                        });
+                      },
+                      backgroundColor: buttonColor,
+                      foregroundColor: AppColors.urbanBlue,
+                      tooltip: 'Center on Location',
+                      child: const Icon(Icons.my_location),
+                    );
                   },
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.urbanBlue,
-                  tooltip: 'Center on Location',
-                  child: const Icon(Icons.my_location),
                 ),
                 // Spacing after GPS center (only visible when NOT navigating - for Reload POIs)
                 Consumer(
@@ -2372,14 +2390,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // Debug toggle button
                 Builder(
                   builder: (context) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
                     final debugState = ref.watch(debugProvider);
+
                     return FloatingActionButton(
                       mini: true,
                       heroTag: 'debug_toggle_2d',
                       onPressed: () {
                         ref.read(debugProvider.notifier).toggleVisibility();
                       },
-                      backgroundColor: debugState.isVisible ? Colors.red : Colors.grey.shade300,
+                      backgroundColor: debugState.isVisible ? Colors.red : inactiveColor,
                       foregroundColor: Colors.white,
                       tooltip: 'Debug Tracking',
                       child: const Icon(Icons.bug_report),
