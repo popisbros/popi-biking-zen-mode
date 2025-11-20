@@ -332,36 +332,35 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
               ),
             if (isReporter && _warning.status == 'active')
               const SizedBox(height: 8),
-            // Edit button (only show if user is logged in)
+            // Edit and Delete buttons on same line (only show if user is logged in)
             if (authUser != null)
-              CommonDialog.buildBorderedTextButton(
-                label: 'EDIT',
-                textColor: Colors.blue,
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.onEdit();
-                },
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: CommonDialog.buildBorderedTextButton(
+                      label: 'EDIT',
+                      textColor: Colors.blue,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onEdit();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: CommonDialog.buildBorderedTextButton(
+                      label: 'DELETE',
+                      textColor: Colors.red,
+                      borderColor: Colors.red.withValues(alpha: 0.5),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onDelete();
+                      },
+                    ),
+                  ),
+                ],
               ),
-            if (authUser != null)
-              const SizedBox(height: 8),
-            // Delete button (only show if user is logged in)
-            if (authUser != null)
-              CommonDialog.buildBorderedTextButton(
-                label: 'DELETE',
-                textColor: Colors.red,
-                borderColor: Colors.red.withValues(alpha: 0.5),
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.onDelete();
-                },
-              ),
-            if (authUser != null)
-              const SizedBox(height: 8),
-            // Close button
-            CommonDialog.buildBorderedTextButton(
-              label: 'CLOSE',
-              onPressed: () => Navigator.pop(context),
-            ),
           ],
         ),
       ],

@@ -173,12 +173,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final credentials = await showDialog<Map<String, String>>(
       context: context,
       barrierColor: CommonDialog.barrierColor,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-        titlePadding: CommonDialog.titlePadding,
-        contentPadding: CommonDialog.contentPadding,
-        actionsPadding: CommonDialog.actionsPadding,
-        title: const Text('Sign in with Email'),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final dialogBgColor = isDark
+            ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+            : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
+        return AlertDialog(
+          backgroundColor: dialogBgColor,
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
+          title: const Text('Sign in with Email'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -228,7 +234,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: const Text('Sign In'),
           ),
         ],
-      ),
+        );
+      },
     );
 
     emailController.dispose();

@@ -652,13 +652,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              CommonDialog.buildBorderedTextButton(
+                label: 'CANCEL',
+                onPressed: () => Navigator.pop(context),
+              ),
+              const SizedBox(width: 8),
+              CommonDialog.buildBorderedTextButton(
+                label: 'SAVE',
+                textColor: Colors.blue,
+                onPressed: () => Navigator.pop(context, controller.text),
+              ),
+            ],
           ),
         ],
       ),
@@ -687,14 +694,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('Delete Destination'),
         content: const Text('Are you sure you want to remove this destination?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              CommonDialog.buildBorderedTextButton(
+                label: 'CANCEL',
+                onPressed: () => Navigator.pop(context, false),
+              ),
+              const SizedBox(width: 8),
+              CommonDialog.buildBorderedTextButton(
+                label: 'DELETE',
+                textColor: Colors.red,
+                borderColor: Colors.red.withValues(alpha: 0.5),
+                onPressed: () => Navigator.pop(context, true),
+              ),
+            ],
           ),
         ],
       ),
@@ -726,13 +740,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           autofocus: true,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              CommonDialog.buildBorderedTextButton(
+                label: 'CANCEL',
+                onPressed: () => Navigator.pop(context),
+              ),
+              const SizedBox(width: 8),
+              CommonDialog.buildBorderedTextButton(
+                label: 'SAVE',
+                textColor: Colors.blue,
+                onPressed: () => Navigator.pop(context, controller.text),
+              ),
+            ],
           ),
         ],
       ),
@@ -761,14 +782,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('Delete Favorite'),
         content: const Text('Are you sure you want to remove this favorite?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              CommonDialog.buildBorderedTextButton(
+                label: 'CANCEL',
+                onPressed: () => Navigator.pop(context, false),
+              ),
+              const SizedBox(width: 8),
+              CommonDialog.buildBorderedTextButton(
+                label: 'DELETE',
+                textColor: Colors.red,
+                borderColor: Colors.red.withValues(alpha: 0.5),
+                onPressed: () => Navigator.pop(context, true),
+              ),
+            ],
           ),
         ],
       ),

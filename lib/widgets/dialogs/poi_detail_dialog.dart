@@ -185,12 +185,6 @@ class POIDetailDialog extends ConsumerWidget {
                   }
                 },
               ),
-            const SizedBox(height: 8),
-            // Close button
-            CommonDialog.buildBorderedTextButton(
-              label: 'CLOSE',
-              onPressed: () => Navigator.pop(context),
-            ),
           ],
         ),
       ],
