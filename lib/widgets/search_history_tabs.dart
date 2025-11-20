@@ -99,6 +99,8 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
   }
 
   Widget _buildRecentSearches(List<String> searches) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (searches.isEmpty) {
       return Center(
         child: Padding(
@@ -162,6 +164,8 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
   }
 
   Widget _buildRecentDestinations(List<SavedLocation> destinations) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (destinations.isEmpty) {
       return Center(
         child: Padding(
@@ -240,6 +244,8 @@ class _SearchHistoryTabsState extends ConsumerState<SearchHistoryTabs>
   }
 
   Widget _buildFavorites(List<SavedLocation> favorites) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (favorites.isEmpty) {
       return Center(
         child: Padding(

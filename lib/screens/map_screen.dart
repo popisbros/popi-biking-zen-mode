@@ -1200,7 +1200,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget build(BuildContext context) {
     AppLogger.debug('Building widget', tag: 'MapScreen');
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final locationAsync = ref.watch(locationNotifierProvider);
     final poisAsync = ref.watch(osmPOIsNotifierProvider);
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
@@ -1895,6 +1894,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // Check zoom level - disable toggles if zoom <= 12
                 Builder(
                   builder: (context) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
                     final currentZoom = _isMapReady ? _mapController.camera.zoom : 15.0;
                     final togglesEnabled = currentZoom > 12.0;
 
