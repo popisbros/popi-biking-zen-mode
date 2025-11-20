@@ -1200,6 +1200,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget build(BuildContext context) {
     AppLogger.debug('Building widget', tag: 'MapScreen');
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final locationAsync = ref.watch(locationNotifierProvider);
     final poisAsync = ref.watch(osmPOIsNotifierProvider);
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
@@ -1990,8 +1991,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 FloatingActionButton(
                   mini: true,
                   heroTag: 'zoom_in',
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue,
+                  backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                  foregroundColor: isDark ? Colors.white : Colors.blue,
                   onPressed: () {
                     AppLogger.map('Zoom in pressed');
                     final currentZoom = _mapController.camera.zoom;
@@ -2016,15 +2017,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       _mapController.camera.zoom.toStringAsFixed(1),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.blue,
+                        color: isDark ? Colors.white : Colors.blue,
                       ),
                     ),
                   ),
@@ -2035,8 +2036,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 FloatingActionButton(
                   mini: true,
                   heroTag: 'zoom_out',
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue,
+                  backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                  foregroundColor: isDark ? Colors.white : Colors.blue,
                   onPressed: () {
                     AppLogger.map('Zoom out pressed');
                     final currentZoom = _mapController.camera.zoom;
