@@ -31,10 +31,6 @@ class MarkerConfig {
   static const Color osmPoiFillColor = Color(0xE6BBDEFB); // blue.shade100 with ~90% opacity
   static const Color osmPoiBorderColor = Colors.blue;
 
-  /// Community POI colors (user-created points of interest)
-  static const Color communityPoiFillColor = Color(0xE6C8E6C9); // green.shade100 with ~90% opacity
-  static const Color communityPoiBorderColor = Colors.green;
-
   /// Warning/Hazard colors (reported dangers, road closures, etc.)
   static const Color warningFillColor = Color(0xE6FFCDD2); // red.shade100 with ~90% opacity
   static const Color warningBorderColor = Colors.red;
@@ -55,8 +51,6 @@ class MarkerConfig {
     switch (type) {
       case POIMarkerType.osmPOI:
         return osmPoiFillColor;
-      case POIMarkerType.communityPOI:
-        return communityPoiFillColor;
       case POIMarkerType.warning:
         return warningFillColor;
       case POIMarkerType.userLocation:
@@ -69,8 +63,6 @@ class MarkerConfig {
     switch (type) {
       case POIMarkerType.osmPOI:
         return osmPoiBorderColor;
-      case POIMarkerType.communityPOI:
-        return communityPoiBorderColor;
       case POIMarkerType.warning:
         return warningBorderColor;
       case POIMarkerType.userLocation:
@@ -108,7 +100,6 @@ class MarkerConfig {
 /// POI Marker Types
 enum POIMarkerType {
   osmPOI,
-  communityPOI,
   warning,
   userLocation,
 }
@@ -132,14 +123,14 @@ enum POIMarkerType {
 // ```dart
 // Marker(
 //   point: LatLng(lat, lng),
-//   width: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2,
-//   height: MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2,
+//   width: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI) * 2,
+//   height: MarkerConfig.getRadiusForType(POIMarkerType.osmPOI) * 2,
 //   child: Container(
 //     decoration: BoxDecoration(
-//       color: MarkerConfig.getFillColorForType(POIMarkerType.communityPOI),
+//       color: MarkerConfig.getFillColorForType(POIMarkerType.osmPOI),
 //       shape: BoxShape.circle,
 //       border: Border.all(
-//         color: MarkerConfig.getBorderColorForType(POIMarkerType.communityPOI),
+//         color: MarkerConfig.getBorderColorForType(POIMarkerType.osmPOI),
 //         width: MarkerConfig.circleStrokeWidth,
 //       ),
 //     ),

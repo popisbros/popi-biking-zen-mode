@@ -47,7 +47,6 @@ import '../widgets/common_dialog.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import 'map_screen.dart';
-import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 
 /// Simplified Mapbox 3D Map Screen
@@ -133,7 +132,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   // Store POI data for tap handling
   final Map<String, OSMPOI> _osmPoiById = {};
-  final Map<String, CyclingPOI> _communityPoiById = {};
   final Map<String, CommunityWarning> _warningById = {};
   final Map<String, ({double lat, double lng, String name})> _destinationsById = {};
   final Map<String, ({double lat, double lng, String name})> _favoritesById = {};
@@ -451,7 +449,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _showContextMenu(coordinates);
   }
 
-  /// Show context menu for adding Community POI or reporting hazard
+  /// Show context menu for reporting hazard or calculating route
   Future<void> _showContextMenu(Point coordinates) async {
     final lat = coordinates.coordinates.lat.toDouble();
     final lng = coordinates.coordinates.lng.toDouble();
@@ -478,18 +476,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (authUser != null)
-                        CommonDialog.buildListTileButton(
-                          leading: Icon(Icons.add_location, color: Colors.green[700]),
-                          title: const Text(
-                            'Add Community here',
-                            style: TextStyle(fontSize: CommonDialog.bodyFontSize),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _showAddPOIDialog(lat, lng);
-                          },
-                        ),
                       if (authUser != null)
                         CommonDialog.buildListTileButton(
                           leading: Icon(Icons.warning, color: Colors.orange[700]),
@@ -609,32 +595,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         );
       },
     );
-  }
-
-  /// Navigate to Community POI management screen
-  void _showAddPOIDialog(double latitude, double longitude) async {
-    AppLogger.map('Opening Add POI screen', data: {
-      'lat': latitude,
-      'lng': longitude,
-    });
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => POIManagementScreenWithLocation(
-          initialLatitude: latitude,
-          initialLongitude: longitude,
-        ),
-      ),
-    );
-
-    AppLogger.map('Returned from POI screen, reloading data and refreshing markers');
-    if (mounted && _isMapReady) {
-      // Reload POI data from Firebase
-      await _loadAllPOIData();
-      // Refresh markers on map
-      _addMarkers();
-    }
   }
 
   /// Navigate to Hazard report screen
@@ -975,17 +935,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   void _handleMarkerTap(double lat, double lng) {
     AppLogger.map('Handling marker tap', data: {'lat': lat, 'lng': lng});
 
-    // Try all five types of IDs
+    // Try all four types of IDs
     final osmId = 'osm_${lat}_$lng';
-    final communityId = 'community_${lat}_$lng';
     final warningId = 'warning_${lat}_$lng';
     final destinationId = 'destination_${lat}_$lng';
     final favoriteId = 'favorite_${lat}_$lng';
 
     if (_osmPoiById.containsKey(osmId)) {
       _showPOIDetails(_osmPoiById[osmId]!);
-    } else if (_communityPoiById.containsKey(communityId)) {
-      _showCommunityPOIDetails(_communityPoiById[communityId]!);
     } else if (_warningById.containsKey(warningId)) {
       _showWarningDetails(_warningById[warningId]!);
     } else if (_destinationsById.containsKey(destinationId)) {
@@ -999,7 +956,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         'lat': lat,
         'lng': lng,
         'osmId': osmId,
-        'communityId': communityId,
         'warningId': warningId,
         'destinationId': destinationId,
         'favoriteId': favoriteId,
@@ -1023,23 +979,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       ref: ref,
       warning: warning,
-      onDataChanged: () {
-        if (mounted && _isMapReady) {
-          _loadAllPOIData();
-          _addMarkers();
-        }
-      },
-      compact: true,
-    );
-  }
-
-  /// Show Community POI details dialog
-  void _showCommunityPOIDetails(CyclingPOI poi) {
-    POIDialogHandler.showCommunityPOIDetails(
-      context: context,
-      ref: ref,
-      poi: poi,
-      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
       onDataChanged: () {
         if (mounted && _isMapReady) {
           _loadAllPOIData();
@@ -1141,12 +1080,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       }
     });
 
-    ref.listen<AsyncValue<List<dynamic>>>(cyclingPOIsBoundsNotifierProvider, (previous, next) {
-      if (_isMapReady && _pointAnnotationManager != null) {
-        _addMarkers();
-      }
-    });
-
     // Listen for favorites visibility changes and refresh markers
     ref.listen<bool>(favoritesVisibilityProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
@@ -1167,7 +1100,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         // Check if visibility toggles changed OR if selected types changed
         // Type changes trigger marker refresh to filter client-side (no API reload)
         if (previous?.showOSMPOIs != next.showOSMPOIs ||
-            previous?.showPOIs != next.showPOIs ||
             previous?.showWarnings != next.showWarnings ||
             previous?.selectedOSMPOITypes != next.selectedOSMPOITypes) {
           _addMarkers(); // This is already instant - no delay, filters client-side
@@ -1365,39 +1297,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                                 : 0,
                             enabled: togglesEnabled,
                           ),
-                          // Conditional spacing after OSM POI (hidden when navigating)
-                          Consumer(
-                            builder: (context, ref, child) {
-                              final navState = ref.watch(navigationProvider);
-                              if (navState.isNavigating) return const SizedBox.shrink();
-                              return const SizedBox(height: 6);
-                            },
-                          ),
-
-                          // Community POI toggle (hidden in navigation mode)
-                          Consumer(
-                            builder: (context, ref, child) {
-                              final navState = ref.watch(navigationProvider);
-                              if (navState.isNavigating) return const SizedBox.shrink();
-
-                              return MapToggleButton(
-                                isActive: mapState.showPOIs,
-                                icon: Icons.location_on,
-                                activeColor: Colors.green,
-                                count: ref.watch(cyclingPOIsBoundsNotifierProvider).value?.length ?? 0,
-                                enabled: togglesEnabled,
-                                onPressed: () {
-                                  AppLogger.map('Community POI toggle pressed');
-                                  final wasOff = !mapState.showPOIs;
-                                  ref.read(mapProvider.notifier).togglePOIs();
-                                  if (wasOff) {
-                                    _loadCommunityPOIsIfNeeded();
-                                  }
-                                },
-                                tooltip: 'Toggle Community POIs',
-                              );
-                            },
-                          ),
                           const SizedBox(height: 6),
                           // Warning toggle
                           MapToggleButton(
@@ -1527,9 +1426,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           final mapState = ref.read(mapProvider);
                           if (mapState.showOSMPOIs) {
                             ref.read(mapProvider.notifier).toggleOSMPOIs();
-                          }
-                          if (mapState.showPOIs) {
-                            ref.read(mapProvider.notifier).togglePOIs();
                           }
                           if (mapState.showWarnings) {
                             ref.read(mapProvider.notifier).toggleWarnings();
@@ -1999,7 +1895,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     AppLogger.success('Mapbox map ready with camera monitoring', tag: 'MAP');
   }
 
-  /// Load all POI data (OSM POIs, Community POIs, Warnings)
+  /// Load all POI data (OSM POIs, Warnings)
   Future<void> _loadAllPOIData() async {
     AppLogger.separator('Loading POI Data for 3D Map');
 
@@ -2069,13 +1965,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
         loadTypes.add('OSM POIs');
       }
 
-      // Only load Community POIs if toggle is ON
-      if (mapState.showPOIs) {
-        final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-        await communityPOIsNotifier.loadPOIsWithBounds(bounds);
-        loadTypes.add('Community POIs');
-      }
-
       // Only load Community Warnings if toggle is ON
       if (mapState.showWarnings) {
         final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
@@ -2132,48 +2021,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       );
     } catch (e) {
       AppLogger.error('Failed to load OSM POIs', error: e);
-    }
-  }
-
-  /// Load Community POIs only if needed (cache empty)
-  void _loadCommunityPOIsIfNeeded() async {
-    try {
-      final cameraState = await _mapboxMap?.getCameraState();
-      if (cameraState == null) return;
-
-      final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
-        CameraOptions(
-          center: cameraState.center,
-          zoom: cameraState.zoom,
-          pitch: cameraState.pitch,
-          bearing: cameraState.bearing,
-        )
-      );
-
-      if (coordinateBounds == null) return;
-
-      final south = coordinateBounds.southwest.coordinates.lat.toDouble();
-      final west = coordinateBounds.southwest.coordinates.lng.toDouble();
-      final north = coordinateBounds.northeast.coordinates.lat.toDouble();
-      final east = coordinateBounds.northeast.coordinates.lng.toDouble();
-
-      final latDiff = north - south;
-      final lngDiff = east - west;
-
-      final bounds = BoundingBox(
-        south: south - latDiff,
-        west: west - lngDiff,
-        north: north + latDiff,
-        east: east + lngDiff,
-      );
-
-      await ConditionalPOILoader.loadCommunityPOIsIfNeeded(
-        ref: ref,
-        extendedBounds: bounds,
-        onComplete: _addMarkers,
-      );
-    } catch (e) {
-      AppLogger.error('Failed to load Community POIs', error: e);
     }
   }
 
@@ -2355,7 +2202,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Clear POI maps
     _osmPoiById.clear();
-    _communityPoiById.clear();
     _warningById.clear();
     _destinationsById.clear();
     _favoritesById.clear();
@@ -2368,12 +2214,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       ref: ref,
       pointAnnotationManager: _pointAnnotationManager!,
       osmPoiById: _osmPoiById,
-      mapState: mapState,
-    );
-    await MapboxAnnotationHelper.addCommunityPOIsAsIcons(
-      ref: ref,
-      pointAnnotationManager: _pointAnnotationManager!,
-      communityPoiById: _communityPoiById,
       mapState: mapState,
     );
     await MapboxAnnotationHelper.addWarningsAsIcons(
@@ -2842,7 +2682,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             ),
           ),
           image: await MapboxMarkerUtils.createRoadSignImage(marker.surfaceType),
-          iconSize: 1.5, // Match community POI/warning size
+          iconSize: 1.5, // Match warning size
           iconAnchor: IconAnchor.CENTER,
         );
 

@@ -71,7 +71,31 @@ class MapboxMarkerUtils {
       ..strokeWidth = 3.0;
     canvas.drawCircle(Offset(size / 2, size / 2), size / 2 - 1.5, borderPaint);
 
-    // Draw emoji text
+    // Draw emoji text with dark stroke for better visibility
+    // First draw the stroke (outline)
+    final strokePainter = TextPainter(
+      text: TextSpan(
+        text: emoji,
+        style: TextStyle(
+          fontSize: size * 0.6,
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5
+            ..color = Colors.black.withValues(alpha: 0.8),
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    strokePainter.layout();
+    strokePainter.paint(
+      canvas,
+      Offset(
+        (size - strokePainter.width) / 2,
+        (size - strokePainter.height) / 2,
+      ),
+    );
+
+    // Then draw the filled emoji on top
     final textPainter = TextPainter(
       text: TextSpan(
         text: emoji,

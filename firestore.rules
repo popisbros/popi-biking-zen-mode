@@ -69,19 +69,6 @@ service cloud.firestore {
         && request.auth.uid == resource.data.reportedBy;
     }
 
-    // Cycling POIs collection
-    match /cyclingPOIs/{poiId} {
-      // Anyone can read POIs
-      allow read: if true;
-
-      // Authenticated users can create POIs
-      allow create: if isSignedIn();
-
-      // Only the creator can update/delete
-      allow update, delete: if isSignedIn()
-        && request.auth.uid == resource.data.createdBy;
-    }
-
     // API logs collection
     match /apiLogs/{logId} {
       // Anyone can write logs
@@ -102,11 +89,6 @@ service cloud.firestore {
 
     // Legacy collection names (for backward compatibility)
     match /community_warnings/{document} {
-      allow read: if true;
-      allow write: if isSignedIn();
-    }
-
-    match /cycling_pois/{document} {
       allow read: if true;
       allow write: if isSignedIn();
     }

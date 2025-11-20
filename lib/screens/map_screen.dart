@@ -51,7 +51,6 @@ import '../utils/poi_utils.dart';
 // Conditional import for 3D map button - use stub on Web
 import 'mapbox_map_screen_simple.dart'
     if (dart.library.html) 'mapbox_map_screen_simple_stub.dart';
-import 'community/poi_management_screen.dart';
 import 'community/hazard_report_screen.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -277,14 +276,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       loadTypes.add('OSM POIs');
     }
 
-    // Only load Community POIs if toggle is ON
-    if (mapState.showPOIs) {
-      final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-      AppLogger.debug('Calling community POIs background load', tag: 'MAP');
-      communityPOIsNotifier.loadPOIsInBackground(extendedBounds);
-      loadTypes.add('Community POIs');
-    }
-
     // Only load Warnings if toggle is ON
     if (mapState.showWarnings) {
       final warningsNotifier = ref.read(communityWarningsBoundsNotifierProvider.notifier);
@@ -296,17 +287,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     AppLogger.success('Background loading calls completed', tag: 'MAP', data: {
       'types': loadTypes.isEmpty ? 'None (all toggles OFF)' : loadTypes.join(', '),
     });
-  }
-
-  /// Load OSM POIs only if data doesn't exist or bounds changed significantly
-  /// Load Community POIs only if data doesn't exist
-  void _loadCommunityPOIsIfNeeded() {
-    final camera = _mapController.camera;
-    final bounds = _calculateExtendedBounds(camera.visibleBounds);
-    ConditionalPOILoader.loadCommunityPOIsIfNeeded(
-      ref: ref,
-      extendedBounds: bounds,
-    );
   }
 
   /// Load Warnings only if data doesn't exist
@@ -565,7 +545,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _showContextMenu(tapPosition, point);
   }
 
-  /// Show context menu for adding Community POI or reporting hazard
+  /// Show context menu for reporting hazard
   void _showContextMenu(TapPosition tapPosition, LatLng point) {
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final authUser = ref.read(authStateProvider).value;
@@ -579,18 +559,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (authUser != null)
-            CommonDialog.buildListTileButton(
-              leading: Icon(Icons.add_location, color: Colors.green[700]),
-              title: const Text(
-                'Add Community here',
-                style: TextStyle(fontSize: CommonDialog.bodyFontSize),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _showAddPOIDialog(point);
-              },
-            ),
           if (authUser != null)
             CommonDialog.buildListTileButton(
               leading: Icon(Icons.warning, color: Colors.orange[700]),
@@ -769,30 +737,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       ],
     );
-  }
-
-  /// Navigate to Community POI management screen
-  void _showAddPOIDialog(LatLng point) async {
-    AppLogger.map('Opening Add POI screen', data: {
-      'lat': point.latitude,
-      'lng': point.longitude,
-    });
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => POIManagementScreenWithLocation(
-          initialLatitude: point.latitude,
-          initialLongitude: point.longitude,
-        ),
-      ),
-    );
-
-    // After returning from POI screen, force reload of map data
-    AppLogger.map('Returned from POI screen, reloading map data');
-    if (mounted && _isMapReady) {
-      _loadAllMapDataWithBounds(forceReload: true);
-    }
   }
 
   /// Navigate to Hazard report screen
@@ -1087,38 +1031,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Marker _buildCommunityPOIMarker(CyclingPOI poi) {
-    final size = MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2;
-    final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
-
-    return Marker(
-      point: LatLng(poi.latitude, poi.longitude),
-      width: size,
-      height: size,
-      child: GestureDetector(
-        onTap: () {
-          AppLogger.map('Community POI tapped', data: {'name': poi.name});
-          _showCommunityPOIDetails(poi);
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            color: MarkerConfig.getFillColorForType(POIMarkerType.communityPOI),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: MarkerConfig.getBorderColorForType(POIMarkerType.communityPOI),
-              width: MarkerConfig.circleStrokeWidth,
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            emoji,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: size * 0.5, height: 1.0),
-          ),
-        ),
-      ),
-    );
-  }
 
   Marker _buildSearchResultMarker(double latitude, double longitude) {
     // Match user location marker size (12.0 radius = 24.0 diameter)
@@ -1149,7 +1061,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Build destination marker (teardrop icon)
   Marker _buildDestinationMarker(double latitude, double longitude, String name) {
-    final size = MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2;
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.osmPOI) * 2;
 
     return Marker(
       point: LatLng(latitude, longitude),
@@ -1185,7 +1097,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   /// Build favorite marker (star icon)
   Marker _buildFavoriteMarker(double latitude, double longitude, String name) {
-    final size = MarkerConfig.getRadiusForType(POIMarkerType.communityPOI) * 2;
+    final size = MarkerConfig.getRadiusForType(POIMarkerType.osmPOI) * 2;
 
     return Marker(
       point: LatLng(latitude, longitude),
@@ -1283,20 +1195,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  void _showCommunityPOIDetails(CyclingPOI poi) {
-    POIDialogHandler.showCommunityPOIDetails(
-      context: context,
-      ref: ref,
-      poi: poi,
-      onRouteTo: () => _calculateRouteTo(poi.latitude, poi.longitude, destinationName: poi.name),
-      onDataChanged: () {
-        if (mounted && _isMapReady) {
-          _loadAllMapDataWithBounds(forceReload: true);
-        }
-      },
-      compact: false,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1304,7 +1202,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final locationAsync = ref.watch(locationNotifierProvider);
     final poisAsync = ref.watch(osmPOIsNotifierProvider);
-    final communityPOIsAsync = ref.watch(cyclingPOIsBoundsNotifierProvider);
     final warningsAsync = ref.watch(communityWarningsBoundsNotifierProvider);
     final mapState = ref.watch(mapProvider);
     final compassHeading = kIsWeb ? null : ref.watch(compassNotifierProvider);
@@ -1557,31 +1454,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       AppLogger.debug('OSM POIs hidden by toggle', tag: 'MAP');
     }
 
-    // Add Community POI markers (only if showPOIs is true)
-    if (mapState.showPOIs) {
-      communityPOIsAsync.when(
-        data: (allCommunityPOIs) {
-          // Filter out deleted POIs
-          final communityPOIs = allCommunityPOIs.where((poi) => !poi.isDeleted).toList();
-
-          AppLogger.map('Adding Community POI markers', data: {
-            'total': allCommunityPOIs.length,
-            'visible': communityPOIs.length,
-            'deleted': allCommunityPOIs.length - communityPOIs.length,
-          });
-          markers.addAll(communityPOIs.map((poi) => _buildCommunityPOIMarker(poi)));
-        },
-        loading: () {
-          AppLogger.debug('Community POIs still loading', tag: 'MAP');
-        },
-        error: (error, stackTrace) {
-          AppLogger.error('Community POIs error', tag: 'MAP', error: error, stackTrace: stackTrace);
-        },
-      );
-    } else {
-      AppLogger.debug('Community POIs hidden by toggle', tag: 'MAP');
-    }
-
     // Add warning markers (only if showWarnings is true)
     if (mapState.showWarnings) {
       warningsAsync.whenData((allWarnings) {
@@ -1699,7 +1571,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 Expanded(
                   child: Stack(
-                    children: _buildMapAndControls(context, locationAsync, poisAsync, communityPOIsAsync, warningsAsync, mapState, markers, mapCenter),
+                    children: _buildMapAndControls(context, locationAsync, poisAsync, warningsAsync, mapState, markers, mapCenter),
                   ),
                 ),
               ],
@@ -1711,7 +1583,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 if (isNavigating) const NavigationCard(),
                 Expanded(
                   child: Stack(
-                    children: _buildMapAndControls(context, locationAsync, poisAsync, communityPOIsAsync, warningsAsync, mapState, markers, mapCenter),
+                    children: _buildMapAndControls(context, locationAsync, poisAsync, warningsAsync, mapState, markers, mapCenter),
                   ),
                 ),
               ],
@@ -1728,7 +1600,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     BuildContext context,
     AsyncValue<LocationData?> locationAsync,
     AsyncValue<List<dynamic>> poisAsync,
-    AsyncValue<List<dynamic>> communityPOIsAsync,
     AsyncValue<List<dynamic>> warningsAsync,
     MapState mapState,
     List<Marker> markers,
@@ -2047,33 +1918,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             return const SizedBox(height: 6);
                           },
                         ),
-
-                        // Community POI toggle with count (hidden in navigation mode)
-                        Consumer(
-                          builder: (context, ref, child) {
-                            final navState = ref.watch(navigationProvider);
-                            if (navState.isNavigating) return const SizedBox.shrink();
-
-                            return MapToggleButton(
-                              isActive: mapState.showPOIs,
-                              icon: Icons.location_on,
-                              activeColor: Colors.green,
-                              count: communityPOIsAsync.value?.length ?? 0,
-                              enabled: togglesEnabled,
-                              onPressed: () {
-                                AppLogger.map('Community POI toggle pressed');
-                                final wasOff = !mapState.showPOIs;
-                                ref.read(mapProvider.notifier).togglePOIs();
-                                // If turning ON, load only this feature if needed
-                                if (wasOff) {
-                                  _loadCommunityPOIsIfNeeded();
-                                }
-                              },
-                              tooltip: 'Toggle Community POIs',
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 6),
 
                         // Warning toggle with count
                         MapToggleButton(

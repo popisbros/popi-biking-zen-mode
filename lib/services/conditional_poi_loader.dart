@@ -27,25 +27,6 @@ class ConditionalPOILoader {
     }
   }
 
-  /// Load Community POIs only if data doesn't exist
-  static Future<void> loadCommunityPOIsIfNeeded({
-    required WidgetRef ref,
-    required BoundingBox extendedBounds,
-    VoidCallback? onComplete,
-  }) async {
-    final communityPOIsNotifier = ref.read(cyclingPOIsBoundsNotifierProvider.notifier);
-    final currentData = ref.read(cyclingPOIsBoundsNotifierProvider).value;
-
-    if (currentData == null || currentData.isEmpty) {
-      AppLogger.map('Community POIs: No data, loading...');
-      await communityPOIsNotifier.loadPOIsInBackground(extendedBounds);
-      onComplete?.call();
-    } else {
-      AppLogger.map('Community POIs: Data exists (${currentData.length} items), showing without reload');
-      onComplete?.call();
-    }
-  }
-
   /// Load Warnings only if data doesn't exist
   static Future<void> loadWarningsIfNeeded({
     required WidgetRef ref,

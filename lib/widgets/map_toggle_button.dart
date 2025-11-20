@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 ///
 /// Used for toggling:
 /// - OSM POIs (blue)
-/// - Community POIs (green)
 /// - Warnings/Hazards (orange)
 class MapToggleButton extends StatelessWidget {
   /// Whether the toggle is currently active

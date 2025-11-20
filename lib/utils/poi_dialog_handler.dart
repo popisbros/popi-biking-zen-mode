@@ -4,7 +4,6 @@ import '../models/cycling_poi.dart';
 import '../models/community_warning.dart';
 import '../widgets/dialogs/poi_detail_dialog.dart';
 import '../widgets/dialogs/warning_detail_dialog.dart';
-import '../widgets/dialogs/community_poi_detail_dialog.dart';
 import '../providers/community_provider.dart';
 import '../screens/community/hazard_report_screen.dart';
 import 'app_logger.dart';
@@ -60,25 +59,6 @@ class POIDialogHandler {
           onDataChanged();
         }
       },
-    );
-  }
-
-  /// Show Community POI details dialog
-  static void showCommunityPOIDetails({
-    required BuildContext context,
-    required WidgetRef ref,
-    required CyclingPOI poi,
-    required VoidCallback onRouteTo,
-    required VoidCallback onDataChanged,
-    bool compact = false,
-  }) {
-    CommunityPOIDetailDialog.show(
-      context: context,
-      ref: ref,
-      poi: poi,
-      onRouteTo: onRouteTo,
-      onDataChanged: onDataChanged,
-      compact: compact,
     );
   }
 }

@@ -63,55 +63,6 @@ class MapboxAnnotationHelper {
     }
   }
 
-  /// Add Community POIs as emoji icon markers
-  static Future<void> addCommunityPOIsAsIcons({
-    required WidgetRef ref,
-    required PointAnnotationManager pointAnnotationManager,
-    required Map<String, CyclingPOI> communityPoiById,
-    required dynamic mapState,
-  }) async {
-    if (!mapState.showPOIs) return;
-
-    final allCommunityPOIs = ref.read(cyclingPOIsBoundsNotifierProvider).value ?? [];
-
-    // Filter out deleted POIs
-    final communityPOIs = allCommunityPOIs.where((poi) => !poi.isDeleted).toList();
-
-    List<PointAnnotationOptions> pointOptions = [];
-
-    AppLogger.debug('Adding Community POIs as icons', tag: 'MAP', data: {
-      'total': allCommunityPOIs.length,
-      'visible': communityPOIs.length,
-      'deleted': allCommunityPOIs.length - communityPOIs.length,
-    });
-
-    for (var poi in communityPOIs) {
-      final id = 'community_${poi.latitude}_${poi.longitude}';
-      communityPoiById[id] = poi;
-
-      // Get emoji for this POI type
-      final emoji = POITypeConfig.getCommunityPOIEmoji(poi.type);
-
-      // Create icon image from emoji with proper colors
-      final iconImage = await MapboxMarkerUtils.createEmojiIcon(emoji, POIMarkerType.communityPOI);
-
-      pointOptions.add(
-        PointAnnotationOptions(
-          geometry: Point(coordinates: Position(poi.longitude, poi.latitude)),
-          image: iconImage,
-          iconSize: 1.5, // Optimized icon size
-        ),
-      );
-    }
-
-    if (pointOptions.isNotEmpty) {
-      await pointAnnotationManager.createMulti(pointOptions);
-      AppLogger.success('Added Community POI icons', tag: 'MAP', data: {'count': pointOptions.length});
-    } else {
-      AppLogger.warning('No Community POI icons to add', tag: 'MAP');
-    }
-  }
-
   /// Add Warnings as emoji icon markers
   static Future<void> addWarningsAsIcons({
     required WidgetRef ref,

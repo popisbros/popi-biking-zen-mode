@@ -2,20 +2,8 @@
 /// POI Type Configuration with Emojis and Labels
 ///
 /// This class provides a centralized place to define POI types with their
-/// associated emojis and display labels for both Community POIs and OSM POIs.
+/// associated emojis and display labels for OSM POIs and Warnings.
 class POITypeConfig {
-  // ============================================================================
-  // COMMUNITY POI TYPES
-  // ============================================================================
-
-  static const List<Map<String, String>> communityPOITypes = [
-    {'value': 'bike_shop', 'label': 'Bike Shop', 'emoji': '🚲'},
-    {'value': 'parking', 'label': 'Bike Parking', 'emoji': '🅿️'},
-    {'value': 'repair_station', 'label': 'Repair Station', 'emoji': '🔧'},
-    {'value': 'water_fountain', 'label': 'Water Fountain', 'emoji': '💧'},
-    {'value': 'rest_area', 'label': 'Rest Area', 'emoji': '🪑'},
-  ];
-
   // ============================================================================
   // OSM POI TYPES
   // ============================================================================
@@ -51,24 +39,6 @@ class POITypeConfig {
   // ============================================================================
   // HELPER METHODS
   // ============================================================================
-
-  /// Get emoji for Community POI type
-  static String getCommunityPOIEmoji(String type) {
-    final poiType = communityPOITypes.firstWhere(
-      (t) => t['value'] == type,
-      orElse: () => {'emoji': '📍'},
-    );
-    return poiType['emoji'] ?? '📍';
-  }
-
-  /// Get label for Community POI type
-  static String getCommunityPOILabel(String type) {
-    final poiType = communityPOITypes.firstWhere(
-      (t) => t['value'] == type,
-      orElse: () => {'label': type},
-    );
-    return poiType['label'] ?? type;
-  }
 
   /// Get emoji for OSM POI type
   static String getOSMPOIEmoji(String type) {
