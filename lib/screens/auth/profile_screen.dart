@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_profile.dart';
+import '../../services/audio_announcement_service.dart';
 import '../../widgets/common_dialog.dart';
+import '../../constants/app_colors.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -264,6 +266,126 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const Divider(),
                       const SizedBox(height: 16),
 
+                      // Preferences Section
+                      const Text(
+                        'Preferences',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.urbanBlue,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Default Route Profile Selector
+                      _buildPreferenceCard(
+                        'Default Route Profile',
+                        'Your preferred transport mode',
+                        Icons.directions_bike,
+                        DropdownButton<String>(
+                          value: profile.defaultRouteProfile,
+                          isExpanded: false,
+                          items: const [
+                            DropdownMenuItem(value: 'bike', child: Text('🚴 Bike')),
+                            DropdownMenuItem(value: 'car', child: Text('🚗 Car')),
+                            DropdownMenuItem(value: 'foot', child: Text('🚶 Foot')),
+                          ],
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await ref.read(authNotifierProvider.notifier).updateProfile(
+                                defaultRouteProfile: value,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Appearance Mode Selector
+                      _buildPreferenceCard(
+                        'Appearance',
+                        'Choose your theme preference',
+                        Icons.brightness_6,
+                        DropdownButton<String>(
+                          value: profile.appearanceMode,
+                          isExpanded: false,
+                          items: const [
+                            DropdownMenuItem(value: 'system', child: Text('🔄 System Default')),
+                            DropdownMenuItem(value: 'light', child: Text('☀️ Light Mode')),
+                            DropdownMenuItem(value: 'dark', child: Text('🌙 Dark Mode')),
+                          ],
+                          onChanged: (value) async {
+                            if (value != null) {
+                              await ref.read(authNotifierProvider.notifier).updateProfile(
+                                appearanceMode: value,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Audio Alerts Toggle
+                      _buildPreferenceCard(
+                        'Audio Alerts',
+                        'Hear hazard warnings during navigation',
+                        Icons.volume_up,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Switch(
+                              value: profile.audioAlertsEnabled,
+                              activeColor: AppColors.urbanBlue,
+                              onChanged: (value) async {
+                                await ref.read(authNotifierProvider.notifier).updateProfile(
+                                  audioAlertsEnabled: value,
+                                );
+                                // Update audio service state
+                                AudioAnnouncementService().setEnabled(value);
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            if (profile.audioAlertsEnabled)
+                              IconButton(
+                                icon: const Icon(Icons.play_arrow, size: 20),
+                                tooltip: 'Test audio',
+                                onPressed: () async {
+                                  await AudioAnnouncementService().testAnnouncement();
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Playing test announcement...'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Last Used Profile Display
+                      if (profile.lastUsedRouteProfile != null)
+                        _buildPreferenceCard(
+                          'Last Used Profile',
+                          'Recently selected in route selection',
+                          Icons.history,
+                          Text(
+                            _getProfileLabel(profile.lastUsedRouteProfile!),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.urbanBlue,
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 16),
+
                       // Stats and Lists
                       _buildStatCard('Default Route', profile.defaultRouteProfile, null),
                       const SizedBox(height: 16),
@@ -428,6 +550,76 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         return Icons.email;
       default:
         return Icons.person;
+    }
+  }
+
+  /// Build preference card
+  Widget _buildPreferenceCard(String title, String subtitle, IconData icon, Widget trailing) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.lightGrey),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.urbanBlue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppColors.urbanBlue, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          trailing,
+        ],
+      ),
+    );
+  }
+
+  /// Get display label for profile
+  String _getProfileLabel(String profile) {
+    switch (profile) {
+      case 'car':
+        return '🚗 Car';
+      case 'bike':
+        return '🚴 Bike';
+      case 'foot':
+        return '🚶 Foot';
+      default:
+        return profile;
     }
   }
 

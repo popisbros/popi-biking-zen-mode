@@ -13,6 +13,9 @@ class UserProfile {
 
   // User preferences
   final String defaultRouteProfile; // 'bike', 'car', 'foot'
+  final String? lastUsedRouteProfile; // Last selected profile in multi-route view
+  final String appearanceMode; // 'system', 'light', 'dark'
+  final bool audioAlertsEnabled; // Enable/disable audio hazard alerts
   final List<String> recentSearches; // Last 20 search queries
   final List<SavedLocation> recentDestinations; // Last 20 destinations
   final List<SavedLocation> favoriteLocations; // Up to 20 favorites
@@ -31,6 +34,9 @@ class UserProfile {
     this.country,
     required this.authProvider,
     this.defaultRouteProfile = 'bike',
+    this.lastUsedRouteProfile,
+    this.appearanceMode = 'system',
+    this.audioAlertsEnabled = true,
     this.recentSearches = const [],
     this.recentDestinations = const [],
     this.favoriteLocations = const [],
@@ -90,6 +96,9 @@ class UserProfile {
       phoneNumber: phoneNumber,
       photoURL: photoURL,
       authProvider: authProvider,
+      defaultRouteProfile: 'bike',
+      appearanceMode: 'system',
+      audioAlertsEnabled: true,
       createdAt: now,
       updatedAt: now,
     );
@@ -125,6 +134,9 @@ class UserProfile {
       country: data['country'],
       authProvider: data['authProvider'] ?? 'email',
       defaultRouteProfile: data['defaultRouteProfile'] ?? 'bike',
+      lastUsedRouteProfile: data['lastUsedRouteProfile'],
+      appearanceMode: data['appearanceMode'] ?? 'system',
+      audioAlertsEnabled: data['audioAlertsEnabled'] ?? true,
       recentSearches: List<String>.from(data['recentSearches'] ?? []),
       recentDestinations: (data['recentDestinations'] as List<dynamic>?)
               ?.map((e) => SavedLocation.fromMap(e))
@@ -150,6 +162,9 @@ class UserProfile {
       'country': country,
       'authProvider': authProvider,
       'defaultRouteProfile': defaultRouteProfile,
+      'lastUsedRouteProfile': lastUsedRouteProfile,
+      'appearanceMode': appearanceMode,
+      'audioAlertsEnabled': audioAlertsEnabled,
       'recentSearches': recentSearches,
       'recentDestinations': recentDestinations.map((e) => e.toMap()).toList(),
       'favoriteLocations': favoriteLocations.map((e) => e.toMap()).toList(),
@@ -167,6 +182,9 @@ class UserProfile {
     String? photoURL,
     String? country,
     String? defaultRouteProfile,
+    String? lastUsedRouteProfile,
+    String? appearanceMode,
+    bool? audioAlertsEnabled,
     List<String>? recentSearches,
     List<SavedLocation>? recentDestinations,
     List<SavedLocation>? favoriteLocations,
@@ -181,6 +199,9 @@ class UserProfile {
       country: country ?? this.country,
       authProvider: authProvider,
       defaultRouteProfile: defaultRouteProfile ?? this.defaultRouteProfile,
+      lastUsedRouteProfile: lastUsedRouteProfile ?? this.lastUsedRouteProfile,
+      appearanceMode: appearanceMode ?? this.appearanceMode,
+      audioAlertsEnabled: audioAlertsEnabled ?? this.audioAlertsEnabled,
       recentSearches: recentSearches ?? this.recentSearches,
       recentDestinations: recentDestinations ?? this.recentDestinations,
       favoriteLocations: favoriteLocations ?? this.favoriteLocations,

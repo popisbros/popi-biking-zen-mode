@@ -43,8 +43,8 @@ class UserInteraction {
 /// Community warning/hazard model
 class CommunityWarning {
   final String? id; // Optional - will be set by Firestore when created
-  final String type; // hazard, alert, construction, etc.
-  final String severity; // low, medium, high, critical
+  final String type; // pothole, construction, dangerous_intersection, poor_surface, debris, traffic_hazard, steep, flooding, other
+  final String severity; // low, medium, high
   final String title;
   final String description;
   final double latitude;
@@ -58,6 +58,15 @@ class CommunityWarning {
   final List<UserInteraction> userInteractions; // Last 5 interactions
   final bool isDeleted; // Soft deletion flag
   final DateTime? deletedAt;
+
+  // NEW: Voting & Verification system
+  final int upvotes;
+  final int downvotes;
+  final List<String> verifiedBy; // List of user IDs who verified
+  final Map<String, String> userVotes; // userId -> 'up' or 'down'
+
+  // NEW: Status management
+  final String status; // active, resolved, disputed, expired
 
   const CommunityWarning({
     this.id,
@@ -76,6 +85,11 @@ class CommunityWarning {
     this.userInteractions = const [],
     this.isDeleted = false,
     this.deletedAt,
+    this.upvotes = 0,
+    this.downvotes = 0,
+    this.verifiedBy = const [],
+    this.userVotes = const {},
+    this.status = 'active',
   });
 
   factory CommunityWarning.fromMap(Map<String, dynamic> map) {
@@ -95,6 +109,14 @@ class CommunityWarning {
         ?.map((e) => UserInteraction.fromMap(e as Map<String, dynamic>))
         .toList() ?? [];
 
+    // Parse verified by list
+    final verifiedByList = (map['verifiedBy'] as List?)?.cast<String>() ?? [];
+
+    // Parse user votes map
+    final userVotesMap = (map['userVotes'] as Map<String, dynamic>?)?.map(
+      (key, value) => MapEntry(key, value.toString()),
+    ) ?? {};
+
     return CommunityWarning(
       id: map['id']?.toString().isNotEmpty == true ? map['id'] : null,
       type: map['type'] ?? '',
@@ -112,6 +134,11 @@ class CommunityWarning {
       userInteractions: interactionsList,
       isDeleted: map['isDeleted'] ?? false,
       deletedAt: map['deletedAt'] != null ? parseTimestamp(map['deletedAt']) : null,
+      upvotes: map['upvotes'] ?? 0,
+      downvotes: map['downvotes'] ?? 0,
+      verifiedBy: verifiedByList,
+      userVotes: userVotesMap,
+      status: map['status'] ?? 'active',
     );
   }
 
@@ -131,6 +158,11 @@ class CommunityWarning {
       'metadata': metadata,
       'userInteractions': userInteractions.map((e) => e.toMap()).toList(),
       'isDeleted': isDeleted,
+      'upvotes': upvotes,
+      'downvotes': downvotes,
+      'verifiedBy': verifiedBy,
+      'userVotes': userVotes,
+      'status': status,
     };
 
     // Only include ID if it's not null (for existing warnings)
@@ -163,6 +195,11 @@ class CommunityWarning {
     List<UserInteraction>? userInteractions,
     bool? isDeleted,
     DateTime? deletedAt,
+    int? upvotes,
+    int? downvotes,
+    List<String>? verifiedBy,
+    Map<String, String>? userVotes,
+    String? status,
   }) {
     return CommunityWarning(
       id: id ?? this.id,
@@ -181,12 +218,37 @@ class CommunityWarning {
       userInteractions: userInteractions ?? this.userInteractions,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
+      upvotes: upvotes ?? this.upvotes,
+      downvotes: downvotes ?? this.downvotes,
+      verifiedBy: verifiedBy ?? this.verifiedBy,
+      userVotes: userVotes ?? this.userVotes,
+      status: status ?? this.status,
     );
+  }
+
+  // Computed properties for voting and verification
+  int get voteScore => upvotes - downvotes;
+  bool get isVerified => verifiedBy.length >= 3;
+
+  /// Get time since report in human-readable format
+  String get timeSinceReport {
+    final now = DateTime.now();
+    final difference = now.difference(reportedAt);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} min${difference.inMinutes > 1 ? 's' : ''} ago';
+    } else {
+      return 'just now';
+    }
   }
 
   @override
   String toString() {
-    return 'CommunityWarning(id: ${id ?? 'new'}, type: $type, severity: $severity, title: $title)';
+    return 'CommunityWarning(id: ${id ?? 'new'}, type: $type, severity: $severity, title: $title, status: $status, voteScore: $voteScore)';
   }
 }
 

@@ -1,7 +1,7 @@
 # Popi Biking Zen Mode - Complete Feature Inventory
 
-**Last Updated:** 2025-01-22
-**App Version:** Flutter Cycling Navigation App with User Authentication
+**Last Updated:** 2025-11-20
+**App Version:** v4.1.0 - Enhanced Hazard System & Multi-Profile Routing
 
 ---
 
@@ -51,6 +51,11 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
   - Wike 3D (Custom cycling style)
 - **3D Buildings & Terrain**
 - **Seamless 2D/3D Switching** - Preserves map bounds between views
+- **Dual-Marker Navigation System** (v4.0.0):
+  - Mapbox location puck (blue) shows real GPS position with bearing arrow
+  - Purple dot marker shows snapped position on route
+  - Both markers visible simultaneously during navigation
+  - Simplified configuration with standard puck bearing display
 - **Same Navigation Features** as 2D map
 - **Platform Detection** - Automatically disabled on Web
 
@@ -82,17 +87,24 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - `lib/widgets/dialogs/route_selection_dialog.dart`
 
 **Features:**
-- **Multi-route Calculation** - Calculates 3 routes simultaneously:
-  - **Fastest Route** (Car profile - red line)
-  - **Safest Route** (Bike profile - green line)
-  - **Shortest Route** (Foot/walking profile - blue line)
-- **Route Preview** - Shows all 3 routes on map before selection
-- **Route Selection Dialog** - Displays distance, duration, and route type
+- **Multi-Profile Routing** (v4.1.0) - Calculates routes for all 3 transport profiles simultaneously:
+  - **Car Route** (GraphHopper 'car' profile - red card with 🚗 icon)
+  - **Bike Route** (GraphHopper 'bike' profile - green card with 🚴 icon)
+  - **Foot Route** (GraphHopper 'foot' profile - blue card with 🚶 icon)
+  - Parallel API calls for faster results
+  - Hazard detection for each route
+- **Route Selection Carousel** (v4.1.0):
+  - Horizontal swipeable PageView with route cards
+  - Each card shows: profile icon, distance, duration, hazard count
+  - Page indicators (dots) at bottom
+  - Auto-select last used profile on load
+  - "START NAVIGATION" button starts selected route
 - **Route Metadata**:
   - Distance (km)
   - Duration (minutes)
   - Turn-by-turn instructions (GraphHopper)
   - Path details (street names, lanes, road class, max speed, surface)
+  - Community hazards on route
 - **Route Polylines** - Rendered below markers with white borders
 - **GraphHopper API Integration** - Powered by GraphHopper Routing API
 
@@ -274,7 +286,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 
 ## 4. HAZARD & WARNING SYSTEM
 
-### 4.1 Community Hazards
+### 4.1 Community Hazards (Enhanced v4.1.0)
 **Availability:** Both maps
 **Key Files:**
 - `lib/providers/community_provider.dart`
@@ -282,28 +294,69 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - `lib/screens/community/hazard_report_screen.dart`
 - `lib/widgets/dialogs/warning_detail_dialog.dart`
 - `lib/models/community_warning.dart`
+- `lib/services/audio_announcement_service.dart` (v4.1.0)
+- `lib/config/poi_type_config.dart` (v4.1.0)
 
 **Features:**
-- **Hazard Types**:
-  - Road Hazard (pothole, debris, etc.)
-  - Construction/Road Work
-  - Traffic Alert
-  - Weather Condition
-  - Other
-- **Severity Levels**: Low, Medium, High, Critical
+- **Enhanced Hazard Types** (v4.1.0 - 9 total):
+  - 🕳️ Pothole (30 day expiration)
+  - 🚧 Construction (60 day expiration)
+  - ⚠️ Dangerous Intersection (90 day expiration)
+  - 🛤️ Poor Surface (30 day expiration)
+  - 🪨 Debris (7 day expiration)
+  - 🚗 Traffic Hazard (14 day expiration)
+  - ⛰️ Steep Section (90 day expiration)
+  - 💧 Flooding (7 day expiration)
+  - ❓ Other (30 day expiration)
+- **Severity Levels** (v4.1.0): Low, Medium, High (Critical removed)
+- **Community Voting System** (v4.1.0):
+  - Upvote/downvote hazards (one vote per user)
+  - Vote score calculation (upvotes - downvotes)
+  - Color-coded score display (green for positive, red for negative)
+  - Transaction-safe voting to prevent duplicates
+- **Verification System** (v4.1.0):
+  - Users can verify hazards
+  - 3-verification threshold for "verified" badge
+  - Green checkmark badge on verified hazards
+  - Verification counter (X/3) display
+- **Status Management** (v4.1.0):
+  - Active, Resolved, Disputed, Expired
+  - Reporter-only "Mark as Resolved" button
+  - Status badge with color coding
+  - Confirmation dialog for status changes
+- **Type-Based Auto-Expiration** (v4.1.0):
+  - Automatic expiration based on hazard type (7-90 days)
+  - Expiration date auto-calculated on creation
+  - Migration utility for existing hazards
 - **Report Hazard Screen**:
   - Title and description
-  - Type and severity selection
+  - Type selection with emojis (from POITypeConfig)
+  - Severity selection
   - GPS coordinates (auto-filled from long-press)
-  - Expiration date (optional)
-  - Reported by (optional)
+  - Auto-calculated expiration date
+  - Reported by (user ID)
+- **Enhanced Warning Detail Dialog** (v4.1.0):
+  - Voting buttons (upvote/downvote) with counts
+  - Vote score display with color
+  - Verification button and counter
+  - Verified badge (green checkmark)
+  - Status badge display
+  - "Mark as Resolved" button (reporter only)
+  - Time since report display
+  - Optimistic UI updates
 - **Edit Hazard** - Update existing warnings
-- **Delete Hazard** - Remove warnings
+- **Delete Hazard** - Reporter-only deletion
 - **Warning Markers** - Orange circular markers with emoji icons
-- **Warning Detail Dialog** - Shows full warning details with edit/delete
 - **Toggle Visibility** - Orange button on right side
 - **Bounds-Based Loading** - Only loads warnings in visible area
-- **Expiration Support** - Warnings can auto-expire
+- **Audio Announcements** (v4.1.0):
+  - TTS hazard warnings at 100m threshold
+  - Severity-based messaging
+  - Verified status in announcement
+  - Hazard title inclusion
+  - Enable/disable toggle in profile settings
+  - Test audio button
+  - Prevents duplicate announcements
 
 ### 4.2 Route Hazard Detection
 **Availability:** Both maps (during navigation)
@@ -586,11 +639,20 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
   - Limit enforcement with user-facing warning toast
   - Success/info toasts for add/remove actions
 
-- **Default Route Profile**:
-  - Auto-saves preferred route type (car/bike/foot)
-  - Saved when user selects a route
-  - Visual indicator in route selection dialog (underline + star icon)
-  - Helps predict future route preferences
+- **User Preferences** (v4.1.0):
+  - **Default Route Profile** - Preferred transport mode (car/bike/foot)
+    - Dropdown selector in profile settings
+    - Visual indicator in route carousel (star icon)
+  - **Last Used Route Profile** - Auto-saved when starting navigation
+    - Determines initial carousel page
+    - Read-only display in profile settings
+  - **Appearance Mode** - Theme preference (system/light/dark)
+    - Dropdown selector in profile settings
+    - Auto-applies system theme by default
+  - **Audio Alerts Toggle** - Enable/disable hazard announcements
+    - Switch in profile settings
+    - Test audio button when enabled
+    - Syncs with AudioAnnouncementService
 
 ### 9.3 Profile Screen
 **Availability:** Both maps (authenticated users only)
@@ -702,7 +764,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 **Availability:** Both maps (during navigation)
 **Features:**
 - **Expandable/Collapsible** - Tap header to toggle
-- **Auto-Collapse** - Collapses after 10s
+- **Auto-Collapse** - Collapses after 3s (v4.0.0 optimization)
 - **Merged Warnings** - Community + surface warnings
 - **Color-Coded Cards**:
   - Red: Community hazards
@@ -797,13 +859,14 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - `lib/config/api_keys.dart`
 
 **Services:**
-- **GraphHopper** - Routing & turn-by-turn navigation
+- **GraphHopper** - Routing & turn-by-turn navigation (API key required)
 - **Nominatim** - Geocoding (free)
+- **LocationIQ** - Geocoding and reverse geocoding (API key required)
 - **Photon** - Geocoding fallback (free)
 - **Overpass API** - OSM POI queries (free)
 - **Thunderforest** - Cycling map tiles (API key required)
 - **MapTiler** - Satellite & terrain tiles (API key required)
-- **Mapbox** - 3D maps (API key required)
+- **Mapbox** - 3D maps and location services (API key required)
 
 ### 13.2 Firebase Integration
 **Key Files:**
@@ -836,9 +899,69 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 
 ---
 
-## 14. CONFIGURATION & CONSTANTS
+## 14. TECHNICAL STACK & DEPENDENCIES
 
-### 14.1 Marker Configuration
+### 14.1 Core Framework
+**Flutter SDK:** >=3.0.0 <4.0.0
+**Dart:** Latest stable with Flutter
+**App Version:** 1.3.10+3 (App Store version v4.0.0)
+
+### 14.2 State Management
+- **flutter_riverpod** ^3.0.1 - State management and dependency injection
+- **riverpod** any - Core Riverpod package
+
+### 14.3 Mapping Libraries
+
+**2D Maps:**
+- **flutter_map** ^8.2.2 - 2D tile-based maps (OSM, Thunderforest, MapTiler)
+- **latlong2** ^0.9.1 - Latitude/longitude coordinates
+
+**3D Maps (Native only):**
+- **mapbox_maps_flutter** ^2.6.0 - Mapbox Maps SDK for Flutter
+  - 3D terrain and buildings
+  - LocationPuck2D for user location display
+  - PointAnnotationManager for custom markers
+  - Style and camera control APIs
+
+### 14.4 Location Services
+- **geolocator** ^14.0.2 - GPS location tracking (iOS CoreLocation, Android FusedLocationProvider)
+- **flutter_compass** ^0.8.0 - Compass/heading data
+- **wakelock_plus** ^1.3.3 - Keep screen on during navigation
+
+### 14.5 Firebase Services
+- **firebase_core** ^4.2.0 - Firebase initialization
+- **firebase_auth** ^6.1.1 - User authentication (Email/Password, Google Sign-In)
+- **cloud_firestore** ^6.0.3 - NoSQL database for POIs, warnings, user data
+- **firebase_crashlytics** ^5.0.3 - Crash reporting
+- **google_sign_in** ^6.2.2 - Google OAuth authentication
+
+### 14.6 HTTP & External APIs
+- **http** ^1.2.2 - HTTP client for REST API calls
+- **flutter_dotenv** ^6.0.0 - Environment variable management for API keys
+
+### 14.7 UI Libraries
+- **cupertino_icons** ^1.0.8 - iOS-style icons
+- **google_fonts** ^6.2.1 - Custom typography
+
+### 14.8 External API Services (Requires API Keys)
+1. **GraphHopper API** - Cycling route calculation and turn-by-turn navigation
+2. **Mapbox API** - 3D maps, terrain, location puck services
+3. **MapTiler API** - Satellite and terrain tiles for 2D maps
+4. **Thunderforest API** - Premium cycling map tiles (OpenCycleMap, Cycle, Outdoors)
+5. **LocationIQ API** - Geocoding and reverse geocoding
+
+### 14.9 Free Open Source Services
+1. **OpenStreetMap (OSM)** - Base map data and free tile layer
+2. **Nominatim** - Free geocoding service (OSM-based)
+3. **Photon** - Free geocoding fallback service
+4. **Overpass API** - OSM POI data queries
+5. **CyclOSM** - Community cycling map tiles
+
+---
+
+## 15. CONFIGURATION & CONSTANTS
+
+### 15.1 Marker Configuration
 **Key Files:**
 - `lib/config/marker_config.dart`
 
@@ -861,7 +984,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
   - Favorite: Yellow (#FFD54F)
 - **Stroke Width** - 2px for all markers
 
-### 14.2 POI Type Configuration
+### 15.2 POI Type Configuration
 **Key Files:**
 - `lib/config/poi_type_config.dart`
 
@@ -872,7 +995,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **POI Names** - Human-readable labels
 - **Type Mapping** - OSM tags to internal types
 
-### 14.3 App Theme
+### 15.3 App Theme
 **Key Files:**
 - `lib/constants/app_theme.dart`
 - `lib/constants/app_colors.dart`
@@ -939,7 +1062,7 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 - **POI Types**: 8
 - **Hazard Types**: 5
 - **Route Types**: 3 (Fastest, Safest, Shortest)
-- **External APIs**: 7
+- **External APIs**: 8
 - **Firebase Collections**: 5 (cyclingPOIs, communityWarnings, apiLogs, debugActions, users)
 - **Authentication Methods**: 2 (Email/Password, Google Sign-In)
 - **User Data Collections**: 3 (Search History, Destinations, Favorites)
@@ -972,6 +1095,12 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
   - Reload POIs, map layer/style selectors, 2D/3D switchers hidden
   - Community POIs and Favorites toggles hidden
   - Cleaner interface focused on turn-by-turn guidance
+- **v4.0.0 Dual-Marker System (3D Navigation)**:
+  - Replaced rotating arrow with simple purple dot marker
+  - Show both Mapbox puck (real GPS) and purple dot (snapped position) simultaneously
+  - Removed complex bearing/rotation logic that caused issues
+  - Simplified LocationComponentSettings to standard puck with bearing
+  - Clean, reliable navigation experience with no marker flickering
 
 ### User Experience Improvements
 - **Multi-Choice POI Selector** - Replace toggle with dropdown menu:
@@ -1061,4 +1190,86 @@ This is a comprehensive Flutter-based cycling navigation app with both 2D and 3D
 
 ---
 
-This comprehensive cycling navigation app provides safe, efficient cycling with community-driven safety features, extensive POI coverage, intelligent turn-by-turn navigation, and flexible 2D/3D visualization. 🚴‍♂️
+## VERSION HISTORY
+
+### v4.1.0 (2025-11-20) - Enhanced Hazard System & Multi-Profile Routing
+
+**Major Features:**
+- **Multi-Profile Routing**: Calculate Car/Bike/Foot routes simultaneously with horizontal carousel UI
+- **Enhanced Hazard System**: Community voting, verification, status management, and type-based expiration
+- **Audio Announcements**: TTS hazard warnings at 100m during navigation
+- **User Preferences**: Appearance mode, audio alerts toggle, default profile, and last used profile
+
+**Hazard System Enhancements:**
+- Added 4 new hazard types: Dangerous Intersection, Debris, Steep Section, Flooding
+- Community voting system (upvote/downvote) with transaction safety
+- 3-user verification system with verified badge
+- Status management (Active/Resolved/Disputed/Expired)
+- Type-based auto-expiration (7-90 days based on hazard type)
+- Enhanced warning detail dialog with voting/verification UI
+- Reporter-only status updates and deletion
+- Removed "Critical" severity level
+
+**Routing Improvements:**
+- Parallel route calculation for all 3 transport profiles
+- Horizontal swipeable carousel for route selection
+- Profile-specific icons and colors (🚗 🚴 🚶)
+- Auto-select last used profile
+- Hazard count display on each route card
+- Page indicators for carousel navigation
+
+**User Profile Enhancements:**
+- Appearance mode selector (System/Light/Dark)
+- Audio alerts toggle with test button
+- Default route profile selector
+- Last used route profile tracking
+- Preference cards UI with icons
+
+**Technical Improvements:**
+- New `MultiProfileRouteResult` model
+- `TransportProfile` enum for type safety
+- `AudioAnnouncementService` with TTS integration
+- Centralized `POITypeConfig` for hazard types
+- Migration utility for existing hazard data
+- Updated Firestore security rules for voting/verification
+- Optimistic UI updates for better UX
+
+**Dependencies Added:**
+- flutter_tts ^4.2.0 for audio announcements
+
+**Files Modified:**
+- `lib/models/community_warning.dart` - Added voting/verification fields
+- `lib/models/user_profile.dart` - Added preference fields
+- `lib/services/firebase_service.dart` - Added voting/verification methods
+- `lib/services/routing_service.dart` - Added multi-profile routing
+- `lib/widgets/dialogs/route_selection_dialog.dart` - Carousel UI
+- `lib/widgets/dialogs/warning_detail_dialog.dart` - Enhanced UI
+- `lib/screens/community/hazard_report_screen.dart` - New hazard types
+- `lib/screens/auth/profile_screen.dart` - Preferences UI
+- `lib/config/poi_type_config.dart` - Centralized hazard types
+
+**Files Created:**
+- `lib/models/multi_profile_route_result.dart` - Multi-profile data model
+- `lib/services/audio_announcement_service.dart` - TTS service
+- `lib/utils/firebase_migration.dart` - Migration utility
+- `MIGRATION_GUIDE.md` - Database migration instructions
+- `UPGRADE_SUMMARY.md` - Implementation progress tracker
+
+### v4.0.0 (2025-11-07) - User Authentication & Profiles
+- Firebase Auth integration (Email/Password, Google Sign-In)
+- User profiles with preferences
+- Recent searches, destinations, and favorites
+- Profile screen with edit functionality
+- Authentication flow and persistent login
+
+### v3.x (Previous)
+- 3D navigation with dual-marker system
+- Turn-by-turn navigation
+- Community POIs and hazards
+- 2D/3D map switching
+- OSM POI integration
+- Route calculation and preview
+
+---
+
+This comprehensive cycling navigation app provides safe, efficient cycling with community-driven safety features, extensive POI coverage, intelligent turn-by-turn navigation, flexible 2D/3D visualization, and enhanced hazard management with community engagement. 🚴‍♂️

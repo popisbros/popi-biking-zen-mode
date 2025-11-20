@@ -37,12 +37,15 @@ class POITypeConfig {
   // ============================================================================
 
   static const List<Map<String, String>> warningTypes = [
-    {'value': 'hazard', 'label': 'Hazard', 'emoji': '⚠️'},
+    {'value': 'pothole', 'label': 'Pothole', 'emoji': '🕳️'},
     {'value': 'construction', 'label': 'Construction', 'emoji': '🚧'},
-    {'value': 'road_closure', 'label': 'Road Closure', 'emoji': '🚫'},
-    {'value': 'poor_condition', 'label': 'Poor Condition', 'emoji': '🕳️'},
-    {'value': 'traffic', 'label': 'Heavy Traffic', 'emoji': '🚗'},
-    {'value': 'weather', 'label': 'Weather', 'emoji': '🌧️'},
+    {'value': 'dangerous_intersection', 'label': 'Dangerous Intersection', 'emoji': '⚠️'},
+    {'value': 'poor_surface', 'label': 'Poor Surface', 'emoji': '🛤️'},
+    {'value': 'debris', 'label': 'Debris', 'emoji': '🪨'},
+    {'value': 'traffic_hazard', 'label': 'Traffic Hazard', 'emoji': '🚗'},
+    {'value': 'steep', 'label': 'Steep Section', 'emoji': '⛰️'},
+    {'value': 'flooding', 'label': 'Flooding', 'emoji': '💧'},
+    {'value': 'other', 'label': 'Other', 'emoji': '❓'},
   ];
 
   // ============================================================================

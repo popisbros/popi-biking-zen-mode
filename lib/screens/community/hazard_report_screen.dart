@@ -5,6 +5,7 @@ import '../../providers/community_provider.dart';
 import '../../models/community_warning.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/common_dialog.dart';
+import '../../config/poi_type_config.dart';
 
 class HazardReportScreenWithLocation extends ConsumerStatefulWidget {
   final double initialLatitude;
@@ -27,27 +28,20 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String _selectedType = 'hazard';
+  String _selectedType = 'pothole';
   String _selectedSeverity = 'medium';
   bool _isLoading = false;
 
   String? _editingWarningId;
   bool get _isEditing => _editingWarningId != null;
 
-  final List<Map<String, String>> _warningTypes = [
-    {'value': 'hazard', 'label': 'Hazard', 'icon': '⚠️'},
-    {'value': 'construction', 'label': 'Construction', 'icon': '🚧'},
-    {'value': 'road_closure', 'label': 'Road Closure', 'icon': '🚫'},
-    {'value': 'poor_condition', 'label': 'Poor Condition', 'icon': '🕳️'},
-    {'value': 'traffic', 'label': 'Heavy Traffic', 'icon': '🚗'},
-    {'value': 'weather', 'label': 'Weather', 'icon': '🌧️'},
-  ];
+  // Use centralized warning types from POITypeConfig
+  List<Map<String, String>> get _warningTypes => POITypeConfig.warningTypes;
 
   final List<Map<String, dynamic>> _severityLevels = [
     {'value': 'low', 'label': 'Low', 'color': AppColors.successGreen},
     {'value': 'medium', 'label': 'Medium', 'color': Colors.yellow[700]},
     {'value': 'high', 'label': 'High', 'color': Colors.orange[700]},
-    {'value': 'critical', 'label': 'Critical', 'color': AppColors.dangerRed},
   ];
 
   @override
@@ -123,8 +117,39 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
   void _clearForm() {
     _titleController.clear();
     _descriptionController.clear();
-    _selectedType = 'hazard';
+    _selectedType = 'pothole';
     _selectedSeverity = 'medium';
+  }
+
+  /// Get expiration days for a hazard type
+  int _getExpirationDays(String type) {
+    switch (type) {
+      case 'construction':
+        return 60; // Construction sites last months
+      case 'traffic_hazard':
+        return 14; // Traffic issues usually temporary
+      case 'flooding':
+        return 7; // Weather-related, short-term
+      case 'steep':
+        return 90; // Permanent terrain feature
+      case 'poor_surface':
+        return 30; // Surface degradation is gradual
+      case 'debris':
+        return 7; // Usually cleaned up quickly
+      case 'pothole':
+        return 30; // Takes time to fix
+      case 'dangerous_intersection':
+        return 90; // Permanent infrastructure issue
+      case 'other':
+      default:
+        return 30; // Default
+    }
+  }
+
+  /// Calculate expiration date based on hazard type
+  DateTime _calculateExpirationDate(String type, DateTime reportedAt) {
+    final expirationDays = _getExpirationDays(type);
+    return reportedAt.add(Duration(days: expirationDays));
   }
 
   Future<void> _deleteWarning(String? warningId) async {
@@ -204,6 +229,9 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
     setState(() => _isLoading = true);
 
     try {
+      final reportedAt = DateTime.now();
+      final expiresAt = _calculateExpirationDate(_selectedType, reportedAt);
+
       final warning = CommunityWarning(
         id: _isEditing ? _editingWarningId : null,
         type: _selectedType,
@@ -213,9 +241,16 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
         latitude: widget.initialLatitude,
         longitude: widget.initialLongitude,
         reportedBy: 'anonymous',
-        reportedAt: DateTime.now(),
+        reportedAt: reportedAt,
         isActive: true,
         tags: [_selectedType, _selectedSeverity],
+        // New fields for enhanced hazard system
+        upvotes: 0,
+        downvotes: 0,
+        verifiedBy: [],
+        userVotes: {},
+        status: 'active',
+        expiresAt: expiresAt,
       );
 
       final warningsNotifier = ref.read(communityWarningsNotifierProvider.notifier);
@@ -370,7 +405,7 @@ class _HazardReportScreenWithLocationState extends ConsumerState<HazardReportScr
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(type['icon']!, style: const TextStyle(fontSize: 16)),
+                          Text(type['emoji']!, style: const TextStyle(fontSize: 16)),
                           const SizedBox(width: 4),
                           Text(
                             type['label']!,

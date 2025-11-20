@@ -1,32 +1,100 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to community_warnings collection
-    match /community_warnings/{document} {
-      allow read, write: if true; // Open for development - restrict in production
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // Allow read/write access to cycling_pois collection
-    match /cycling_pois/{document} {
-      allow read, write: if true; // Open for development - restrict in production
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Allow read/write access to users collection (requires auth)
+    // Users collection - users can only read/write their own profile
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
-    // Allow write access to logs collection (API & debug logs)
-    // Auto-delete logs older than 7 days via Cloud Function or manual cleanup
-    match /logs/{logId} {
-      // Anyone can write logs (authenticated or anonymous)
+    // Community Warnings (Hazards) collection
+    match /communityWarnings/{warningId} {
+      // Anyone can read warnings (even unauthenticated users for map display)
+      allow read: if true;
+
+      // Authenticated users can create warnings
+      allow create: if isSignedIn()
+        && request.resource.data.reportedBy == request.auth.uid;
+
+      // Allow updates for:
+      // 1. The original reporter (full update including status='resolved')
+      // 2. Any authenticated user (voting/verification only)
+      allow update: if isSignedIn() && (
+        // Original reporter can update their own warning
+        request.auth.uid == resource.data.reportedBy
+        ||
+        // Any authenticated user can vote/verify
+        // Only allowed to modify: upvotes, downvotes, verifiedBy, userVotes
+        // Cannot modify status (except reporter)
+        (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['upvotes', 'downvotes', 'verifiedBy', 'userVotes'])
+        )
+      );
+
+      // Only the reporter can delete their warning
+      allow delete: if isSignedIn()
+        && request.auth.uid == resource.data.reportedBy;
+    }
+
+    // Cycling POIs collection
+    match /cyclingPOIs/{poiId} {
+      // Anyone can read POIs
+      allow read: if true;
+
+      // Authenticated users can create POIs
+      allow create: if isSignedIn();
+
+      // Only the creator can update/delete
+      allow update, delete: if isSignedIn()
+        && request.auth.uid == resource.data.createdBy;
+    }
+
+    // API logs collection
+    match /apiLogs/{logId} {
+      // Anyone can write logs
       allow create: if true;
 
-      // Only users can read their own logs
-      allow read: if request.auth != null &&
-                     request.auth.uid == resource.data.userId;
+      // Only authenticated users can read logs
+      allow read: if isSignedIn();
 
-      // No updates or deletes from clients (only via Cloud Function)
+      // No updates or deletes from clients
+      allow update, delete: if false;
+    }
+
+    // Debug actions collection
+    match /debugActions/{actionId} {
+      // Authenticated users can read/write debug actions
+      allow read, write: if isSignedIn();
+    }
+
+    // Legacy collection names (for backward compatibility)
+    match /community_warnings/{document} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /cycling_pois/{document} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    match /logs/{logId} {
+      allow create: if true;
+      allow read: if isSignedIn() &&
+                     request.auth.uid == resource.data.userId;
       allow update, delete: if false;
     }
   }

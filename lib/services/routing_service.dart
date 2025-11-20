@@ -5,6 +5,7 @@ import '../config/api_keys.dart';
 import '../utils/app_logger.dart';
 import '../utils/api_logger.dart';
 import 'route_hazard_detector.dart';
+import '../models/multi_profile_route_result.dart';
 
 /// Route type enumeration
 enum RouteType {
@@ -89,6 +90,220 @@ class RouteInstruction {
 /// Service for calculating cycling routes using Graphhopper API
 class RoutingService {
   static const String _graphhopperBaseUrl = 'https://graphhopper.com/api/1';
+
+  /// Calculate routes for all transport profiles (Car, Bike, Foot)
+  ///
+  /// Returns a MultiProfileRouteResult containing routes for all 3 profiles
+  Future<MultiProfileRouteResult> calculateMultiProfileRoutes({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+  }) async {
+    if (ApiKeys.graphhopperApiKey.isEmpty) {
+      AppLogger.error('Graphhopper API key not configured', tag: 'ROUTING');
+      return MultiProfileRouteResult();
+    }
+
+    AppLogger.api('Calculating multi-profile routes (Car, Bike, Foot)', data: {
+      'from': '$startLat,$startLon',
+      'to': '$endLat,$endLon',
+    });
+
+    // Calculate all three profiles in parallel
+    final results = await Future.wait([
+      _calculateRouteForProfile(
+        startLat: startLat,
+        startLon: startLon,
+        endLat: endLat,
+        endLon: endLon,
+        profile: TransportProfile.car,
+      ),
+      _calculateRouteForProfile(
+        startLat: startLat,
+        startLon: startLon,
+        endLat: endLat,
+        endLon: endLon,
+        profile: TransportProfile.bike,
+      ),
+      _calculateRouteForProfile(
+        startLat: startLat,
+        startLon: startLon,
+        endLat: endLat,
+        endLon: endLon,
+        profile: TransportProfile.foot,
+      ),
+    ]);
+
+    final multiResult = MultiProfileRouteResult(
+      carRoute: results[0],
+      bikeRoute: results[1],
+      footRoute: results[2],
+    );
+
+    AppLogger.success('Calculated ${multiResult.availableCount}/3 profile route(s)', tag: 'ROUTING', data: {
+      'car': results[0] != null ? '✓' : '✗',
+      'bike': results[1] != null ? '✓' : '✗',
+      'foot': results[2] != null ? '✓' : '✗',
+    });
+
+    return multiResult;
+  }
+
+  /// Calculate route for a specific transport profile
+  Future<RouteResult?> _calculateRouteForProfile({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+    required TransportProfile profile,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final response = await _calculateProfileRoute(
+        startLat: startLat,
+        startLon: startLon,
+        endLat: endLat,
+        endLon: endLon,
+        profile: profile,
+      );
+
+      stopwatch.stop();
+
+      // Log API call to Firestore (production + debug)
+      await ApiLogger.logApiCall(
+        endpoint: 'graphhopper/route',
+        method: 'POST',
+        url: '$_graphhopperBaseUrl/route',
+        parameters: {
+          'start': '$startLat,$startLon',
+          'end': '$endLat,$endLon',
+          'profile': profile.graphhopperProfile,
+        },
+        statusCode: response.statusCode,
+        responseBody: response.body,
+        error: response.statusCode != 200 ? 'HTTP ${response.statusCode}' : null,
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+
+      if (response.statusCode != 200) {
+        AppLogger.error('Graphhopper API error for ${profile.label} route', tag: 'ROUTING', data: {
+          'statusCode': response.statusCode,
+          'body': response.body,
+        });
+        return null;
+      }
+
+      final data = json.decode(response.body) as Map<String, dynamic>;
+
+      if (data['paths'] == null || (data['paths'] as List).isEmpty) {
+        AppLogger.warning('No ${profile.label} route found', tag: 'ROUTING');
+        return null;
+      }
+
+      final path = (data['paths'] as List)[0] as Map<String, dynamic>;
+      final points = path['points'] as Map<String, dynamic>;
+      final coordinates = points['coordinates'] as List;
+
+      final routePoints = coordinates.map((coord) {
+        final coordList = coord as List;
+        return LatLng(
+          coordList[1] as double, // latitude
+          coordList[0] as double, // longitude
+        );
+      }).toList();
+
+      final distance = (path['distance'] as num).toDouble();
+      final duration = (path['time'] as num).toInt();
+
+      // Parse instructions if available
+      List<RouteInstruction>? instructions;
+      if (path['instructions'] != null) {
+        final instructionsList = path['instructions'] as List;
+        instructions = instructionsList.map((inst) => RouteInstruction.fromJson(inst as Map<String, dynamic>)).toList();
+        AppLogger.debug('Parsed ${instructions.length} instructions for ${profile.label}', tag: 'ROUTING');
+      }
+
+      // Extract path details if available
+      Map<String, dynamic>? pathDetails;
+      if (path['details'] != null) {
+        pathDetails = path['details'] as Map<String, dynamic>;
+        AppLogger.debug('Path details available for ${profile.label}: ${pathDetails.keys.join(", ")}', tag: 'ROUTING');
+      }
+
+      AppLogger.success('${profile.label} route calculated', tag: 'ROUTING', data: {
+        'points': routePoints.length,
+        'distance': '${(distance / 1000).toStringAsFixed(2)} km',
+        'duration': '${(duration / 60000).toStringAsFixed(0)} min',
+        'instructions': instructions?.length ?? 0,
+        'details': pathDetails?.keys.length ?? 0,
+      });
+
+      // Use RouteType based on profile for compatibility with existing system
+      RouteType routeType;
+      switch (profile) {
+        case TransportProfile.car:
+          routeType = RouteType.fastest;
+          break;
+        case TransportProfile.bike:
+          routeType = RouteType.safest;
+          break;
+        case TransportProfile.foot:
+          routeType = RouteType.shortest;
+          break;
+      }
+
+      return RouteResult(
+        type: routeType,
+        points: routePoints,
+        distanceMeters: distance,
+        durationMillis: duration,
+        instructions: instructions,
+        pathDetails: pathDetails,
+      );
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+
+      AppLogger.error('Failed to calculate ${profile.label} route', tag: 'ROUTING', error: e, stackTrace: stackTrace);
+      return null;
+    }
+  }
+
+  /// Calculate route using specific GraphHopper profile
+  Future<http.Response> _calculateProfileRoute({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+    required TransportProfile profile,
+  }) async {
+    final uri = Uri.parse('$_graphhopperBaseUrl/route?key=${ApiKeys.graphhopperApiKey}');
+
+    final requestBody = jsonEncode({
+      "points": [
+        [startLon, startLat],
+        [endLon, endLat],
+      ],
+      "profile": profile.graphhopperProfile,
+      "locale": "en",
+      "points_encoded": false,
+      "elevation": false,
+      "instructions": true,
+      "details": ["street_name", "street_ref", "street_destination", "lanes", "road_class", "max_speed", "surface"],
+    });
+
+    return await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: requestBody,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        throw Exception('Request timed out after 10 seconds');
+      },
+    );
+  }
 
   /// Calculate multiple routes with different profiles (fastest, safest, shortest)
   ///

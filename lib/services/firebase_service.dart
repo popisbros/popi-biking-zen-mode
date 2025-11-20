@@ -112,6 +112,241 @@ class FirebaseService {
     }
   }
 
+  // ========== VOTING & VERIFICATION METHODS ==========
+
+  /// Upvote a warning
+  /// Returns true if vote was successful, false if user already voted
+  Future<bool> upvoteWarning(String warningId, String userId) async {
+    try {
+      final docRef = _firestoreInstance.collection(_warningsCollection).doc(warningId);
+
+      return await _firestoreInstance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) {
+          throw Exception('Warning not found');
+        }
+
+        final data = snapshot.data()!;
+        final userVotes = Map<String, String>.from(data['userVotes'] ?? {});
+        final currentVote = userVotes[userId];
+
+        // Check if user already upvoted
+        if (currentVote == 'up') {
+          AppLogger.warning('User already upvoted this warning');
+          return false;
+        }
+
+        int upvotes = data['upvotes'] ?? 0;
+        int downvotes = data['downvotes'] ?? 0;
+
+        // If user previously downvoted, remove downvote
+        if (currentVote == 'down') {
+          downvotes = (downvotes - 1).clamp(0, double.infinity).toInt();
+        }
+
+        // Add upvote
+        upvotes++;
+        userVotes[userId] = 'up';
+
+        transaction.update(docRef, {
+          'upvotes': upvotes,
+          'downvotes': downvotes,
+          'userVotes': userVotes,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        AppLogger.success('Warning upvoted successfully');
+        return true;
+      });
+    } catch (e) {
+      AppLogger.firebase('Error upvoting warning', error: e);
+      rethrow;
+    }
+  }
+
+  /// Downvote a warning
+  /// Returns true if vote was successful, false if user already voted
+  Future<bool> downvoteWarning(String warningId, String userId) async {
+    try {
+      final docRef = _firestoreInstance.collection(_warningsCollection).doc(warningId);
+
+      return await _firestoreInstance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) {
+          throw Exception('Warning not found');
+        }
+
+        final data = snapshot.data()!;
+        final userVotes = Map<String, String>.from(data['userVotes'] ?? {});
+        final currentVote = userVotes[userId];
+
+        // Check if user already downvoted
+        if (currentVote == 'down') {
+          AppLogger.warning('User already downvoted this warning');
+          return false;
+        }
+
+        int upvotes = data['upvotes'] ?? 0;
+        int downvotes = data['downvotes'] ?? 0;
+
+        // If user previously upvoted, remove upvote
+        if (currentVote == 'up') {
+          upvotes = (upvotes - 1).clamp(0, double.infinity).toInt();
+        }
+
+        // Add downvote
+        downvotes++;
+        userVotes[userId] = 'down';
+
+        transaction.update(docRef, {
+          'upvotes': upvotes,
+          'downvotes': downvotes,
+          'userVotes': userVotes,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        AppLogger.success('Warning downvoted successfully');
+        return true;
+      });
+    } catch (e) {
+      AppLogger.firebase('Error downvoting warning', error: e);
+      rethrow;
+    }
+  }
+
+  /// Verify a warning (requires 3 verifications to be marked as verified)
+  /// Returns true if verification was added, false if user already verified
+  Future<bool> verifyWarning(String warningId, String userId) async {
+    try {
+      final docRef = _firestoreInstance.collection(_warningsCollection).doc(warningId);
+
+      return await _firestoreInstance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) {
+          throw Exception('Warning not found');
+        }
+
+        final data = snapshot.data()!;
+        final verifiedBy = List<String>.from(data['verifiedBy'] ?? []);
+
+        // Check if user already verified
+        if (verifiedBy.contains(userId)) {
+          AppLogger.warning('User already verified this warning');
+          return false;
+        }
+
+        // Add user to verifiedBy list
+        verifiedBy.add(userId);
+
+        transaction.update(docRef, {
+          'verifiedBy': verifiedBy,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        AppLogger.success('Warning verified successfully (${verifiedBy.length}/3 verifications)');
+        return true;
+      });
+    } catch (e) {
+      AppLogger.firebase('Error verifying warning', error: e);
+      rethrow;
+    }
+  }
+
+  // ========== STATUS MANAGEMENT METHODS ==========
+
+  /// Update warning status (active, resolved, disputed, expired)
+  /// Only the reporter can update status
+  Future<void> updateWarningStatus(String warningId, String status, String userId) async {
+    try {
+      final docRef = _firestoreInstance.collection(_warningsCollection).doc(warningId);
+      final snapshot = await docRef.get();
+
+      if (!snapshot.exists) {
+        throw Exception('Warning not found');
+      }
+
+      final data = snapshot.data()!;
+      final reportedBy = data['reportedBy'] as String?;
+
+      // Only the reporter can update status
+      if (reportedBy != userId) {
+        throw Exception('Only the reporter can update warning status');
+      }
+
+      // Validate status
+      if (!['active', 'resolved', 'disputed', 'expired'].contains(status)) {
+        throw Exception('Invalid status: $status');
+      }
+
+      await docRef.update({
+        'status': status,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      AppLogger.success('Warning status updated to: $status');
+    } catch (e) {
+      AppLogger.firebase('Error updating warning status', error: e);
+      rethrow;
+    }
+  }
+
+  /// Mark warning as resolved (convenience method)
+  Future<void> resolveWarning(String warningId, String userId) async {
+    return updateWarningStatus(warningId, 'resolved', userId);
+  }
+
+  /// Get expired warnings (for cleanup)
+  Future<List<CommunityWarning>> getExpiredWarnings() async {
+    try {
+      final now = Timestamp.now();
+      final snapshot = await _firestoreInstance
+          .collection(_warningsCollection)
+          .where('expiresAt', isLessThan: now)
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      final warnings = snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return CommunityWarning.fromMap({...data, 'id': doc.id});
+          })
+          .toList();
+
+      AppLogger.firebase('Found ${warnings.length} expired warnings');
+      return warnings;
+    } catch (e) {
+      AppLogger.firebase('Error getting expired warnings', error: e);
+      return [];
+    }
+  }
+
+  /// Auto-expire warnings (mark as expired)
+  Future<int> autoExpireWarnings() async {
+    try {
+      final expiredWarnings = await getExpiredWarnings();
+
+      int count = 0;
+      for (final warning in expiredWarnings) {
+        if (warning.id != null) {
+          await _firestoreInstance
+              .collection(_warningsCollection)
+              .doc(warning.id)
+              .update({
+            'status': 'expired',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          count++;
+        }
+      }
+
+      AppLogger.success('Auto-expired $count warnings');
+      return count;
+    } catch (e) {
+      AppLogger.firebase('Error auto-expiring warnings', error: e);
+      return 0;
+    }
+  }
+
   // ========== POI METHODS ==========
 
   /// Get all cycling POIs as a stream
