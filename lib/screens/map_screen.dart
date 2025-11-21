@@ -2214,19 +2214,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
-                // Spacing after GPS center (only visible when NOT navigating - for Reload POIs)
+                // Spacing after GPS center (only visible when NOT navigating AND debug mode is ON - for Reload POIs)
                 Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationProvider);
-                    if (navState.isNavigating) return const SizedBox.shrink();
+                    final debugState = ref.watch(debugProvider);
+                    if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
                     return const SizedBox(height: 6);
                   },
                 ),
-                // Reload POIs button (hidden in navigation mode)
+                // Reload POIs button (only visible when NOT navigating AND debug tracking is ON)
                 Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationProvider);
-                    if (navState.isNavigating) return const SizedBox.shrink();
+                    final debugState = ref.watch(debugProvider);
+                    if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
 
                     return FloatingActionButton(
                       mini: true, // Match zoom button size
