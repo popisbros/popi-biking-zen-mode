@@ -2187,11 +2187,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // Spacing after Compass (only on Native)
                 if (!kIsWeb)
                   const SizedBox(height: 6),
-                // GPS center button
-                Builder(
-                  builder: (context) {
+                // GPS center button (hidden during navigation)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final navState = ref.watch(navigationProvider);
                     final isDark = Theme.of(context).brightness == Brightness.dark;
                     final buttonColor = isDark ? Colors.grey.shade700 : Colors.white;
+
+                    // Hide button during navigation
+                    if (navState.isNavigating) {
+                      return const SizedBox.shrink();
+                    }
 
                     return FloatingActionButton(
                       mini: true, // Match zoom button size

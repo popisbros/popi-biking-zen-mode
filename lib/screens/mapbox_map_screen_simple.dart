@@ -461,8 +461,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       barrierColor: CommonDialog.barrierColor,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
-          backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+          backgroundColor: isDark
+              ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+              : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
           titlePadding: CommonDialog.titlePadding,
           contentPadding: CommonDialog.contentPadding,
           actionsPadding: CommonDialog.actionsPadding,
@@ -540,8 +543,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       context: context,
       barrierColor: CommonDialog.barrierColor,
       builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
-          backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+          backgroundColor: isDark
+              ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+              : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
           titlePadding: CommonDialog.titlePadding,
           contentPadding: CommonDialog.contentPadding,
           actionsPadding: CommonDialog.actionsPadding,
@@ -1493,6 +1499,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
                       if (!isNavigationMode) return const SizedBox.shrink();
 
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
                       return FloatingActionButton(
                         mini: true,
                         heroTag: 'auto_zoom_toggle_3d',
@@ -1521,8 +1528,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             }
                           }
                         },
-                        backgroundColor: mapState.autoZoomEnabled ? Colors.blue : Colors.grey.shade300,
-                        foregroundColor: mapState.autoZoomEnabled ? Colors.white : Colors.grey.shade600,
+                        backgroundColor: mapState.autoZoomEnabled
+                            ? Colors.blue
+                            : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300),
+                        foregroundColor: mapState.autoZoomEnabled
+                            ? Colors.white
+                            : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                         tooltip: mapState.autoZoomEnabled ? 'Disable Auto-Zoom' : 'Enable Auto-Zoom',
                         child: Icon(mapState.autoZoomEnabled ? Icons.zoom_out_map : Icons.zoom_out_map_outlined),
                       );
@@ -1535,15 +1546,27 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       return navState.mode == NavMode.navigation ? const SizedBox(height: 6) : const SizedBox.shrink();
                     },
                   ),
-                  // GPS center button
-                  FloatingActionButton(
-                    mini: true, // Match zoom button size
-                    heroTag: 'gps_center_button_3d',
-                    onPressed: _centerOnUserLocation,
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.urbanBlue,
-                    tooltip: 'Center on Location',
-                    child: const Icon(Icons.my_location),
+                  // GPS center button (hidden during navigation)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+                      // Hide button during navigation
+                      if (navState.isNavigating) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return FloatingActionButton(
+                        mini: true, // Match zoom button size
+                        heroTag: 'gps_center_button_3d',
+                        onPressed: _centerOnUserLocation,
+                        backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                        foregroundColor: isDark ? Colors.white : AppColors.urbanBlue,
+                        tooltip: 'Center on Location',
+                        child: const Icon(Icons.my_location),
+                      );
+                    },
                   ),
                   // Spacing after GPS center (only visible when NOT navigating AND debug mode is ON - for Reload POIs)
                   Consumer(
@@ -1581,14 +1604,19 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   Builder(
                     builder: (context) {
                       final debugState = ref.watch(debugProvider);
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
                       return FloatingActionButton(
                         mini: true,
                         heroTag: 'debug_toggle_3d',
                         onPressed: () {
                           ref.read(debugProvider.notifier).toggleVisibility();
                         },
-                        backgroundColor: debugState.isVisible ? Colors.red : Colors.grey.shade300,
-                        foregroundColor: Colors.white,
+                        backgroundColor: debugState.isVisible
+                            ? Colors.red
+                            : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300),
+                        foregroundColor: debugState.isVisible
+                            ? Colors.white
+                            : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                         tooltip: 'Debug Tracking',
                         child: const Icon(Icons.bug_report),
                       );
@@ -1779,6 +1807,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       });
     } catch (e) {
       AppLogger.error('Failed to enable 3D location component', error: e);
+    }
+
+    // Hide compass ornament
+    try {
+      await mapboxMap.compass.updateSettings(CompassSettings(
+        enabled: false,
+      ));
+      AppLogger.success('Compass ornament hidden', tag: 'MAP');
+    } catch (e) {
+      AppLogger.error('Failed to hide compass ornament', error: e);
     }
 
     // Initialize annotation managers

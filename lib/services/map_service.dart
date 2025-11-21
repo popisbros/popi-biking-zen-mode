@@ -158,13 +158,13 @@ class MapService {
   String getStyleName(MapboxStyleType style) {
     switch (style) {
       case MapboxStyleType.streets:
-        return 'Streets 3D';
+        return 'Streets (Mapbox)';
       case MapboxStyleType.outdoors:
-        return 'Outdoors 3D';
+        return 'Outdoors (Mapbox)';
       case MapboxStyleType.wike3D:
-        return 'Wike 3D';
+        return '3D Map (Wike)';
       case MapboxStyleType.wike3DNavigation:
-        return 'Wike 3D - Navigation';
+        return 'Navigation Map (Wike)';
     }
   }
 
