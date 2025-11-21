@@ -103,17 +103,28 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
     super.initState();
 
     // Determine initial page based on default profile
-    int initialPage = 1; // Default to bike (middle)
+    int initialPage = 0; // Default to first available route
 
     if (widget.multiProfileRoutes != null) {
       // Get user's preferred profile to set initial page
       final userProfileAsync = ref.read(userProfileProvider);
       final defaultProfile = userProfileAsync.value?.defaultRouteProfile;
 
-      if (defaultProfile == 'car' && widget.multiProfileRoutes!.carRoute != null) {
-        initialPage = 0;
-      } else if (defaultProfile == 'foot' && widget.multiProfileRoutes!.footRoute != null) {
-        initialPage = 2;
+      // Find the index of the preferred route in availableRoutes
+      // availableRoutes returns routes in order: [car, bike, foot] (only those available)
+      final routes = _availableRoutes;
+      for (int i = 0; i < routes.length; i++) {
+        final route = routes[i];
+        if (defaultProfile == 'car' && route == widget.multiProfileRoutes!.carRoute) {
+          initialPage = i;
+          break;
+        } else if (defaultProfile == 'bike' && route == widget.multiProfileRoutes!.bikeRoute) {
+          initialPage = i;
+          break;
+        } else if (defaultProfile == 'foot' && route == widget.multiProfileRoutes!.footRoute) {
+          initialPage = i;
+          break;
+        }
       }
     }
 

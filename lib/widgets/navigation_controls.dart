@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/search_provider.dart';
+import '../utils/route_calculation_helper.dart';
 import 'common_dialog.dart';
 
 /// Navigation control FAB (End Navigation)
@@ -71,6 +72,9 @@ class NavigationControls extends ConsumerWidget {
 
                 // Exit navigation mode (return to exploration)
                 ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+
+                // Restore POI visibility to pre-route-selection state
+                RouteCalculationHelper.restorePOIStateAfterNavigation(ref);
 
                 // Call callback to clear route from map
                 onNavigationEnded?.call();
