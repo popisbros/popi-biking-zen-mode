@@ -1122,6 +1122,20 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Listen for compass changes to rotate the map (with toggle + threshold)
     // Compass listener removed - navigation mode uses GPS-based rotation instead
 
+    // Listen for selected preview route index changes to update z-order
+    ref.listen<SearchState>(searchProvider, (previous, next) {
+      // Only re-render if selectedPreviewRouteIndex changed AND preview routes exist
+      if (previous?.selectedPreviewRouteIndex != next.selectedPreviewRouteIndex &&
+          next.previewFastestRoute != null &&
+          (next.previewSafestRoute != null || next.previewShortestRoute != null)) {
+        AppLogger.debug('Selected route index changed, re-rendering routes', tag: 'MAP', data: {
+          'previousIndex': previous?.selectedPreviewRouteIndex,
+          'newIndex': next.selectedPreviewRouteIndex,
+        });
+        _addRoutePolyline();
+      }
+    });
+
     // Listen for location changes to update user marker
     ref.listen(locationNotifierProvider, (previous, next) {
       if (_isMapReady && _pointAnnotationManager != null) {
