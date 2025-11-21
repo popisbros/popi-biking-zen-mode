@@ -30,6 +30,9 @@ enum MapboxStyleType {
   /// Mapbox Outdoors - Great for cycling with terrain
   outdoors,
 
+  /// Wike Basic - Basic map style
+  wikeBasic,
+
   /// Wike 3D - Custom cycling style
   wike3D,
 
@@ -100,6 +103,8 @@ class MapService {
         return 'mapbox://styles/mapbox/streets-v12';
       case MapboxStyleType.outdoors:
         return 'mapbox://styles/mapbox/outdoors-v12';
+      case MapboxStyleType.wikeBasic:
+        return 'mapbox://styles/sylvainbrosset/cmhypfxgw002l01r0aaqj9jxd';
       case MapboxStyleType.wike3D:
         return 'mapbox://styles/sylvainbrosset/cmgclfgn400f001pd72ofcdg9';
       case MapboxStyleType.wike3DNavigation:
@@ -161,6 +166,8 @@ class MapService {
         return 'Streets (Mapbox)';
       case MapboxStyleType.outdoors:
         return 'Outdoors (Mapbox)';
+      case MapboxStyleType.wikeBasic:
+        return 'Basic Map (Wike)';
       case MapboxStyleType.wike3D:
         return '3D Map (Wike)';
       case MapboxStyleType.wike3DNavigation:
