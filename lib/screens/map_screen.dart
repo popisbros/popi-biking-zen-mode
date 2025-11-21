@@ -315,6 +315,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // End navigation first
     ref.read(navigationProvider.notifier).stopNavigation();
     ref.read(searchProvider.notifier).clearRoute();
+
+    // Restore POI visibility to pre-route-selection state
+    RouteCalculationHelper.restorePOIStateAfterNavigation(ref);
+
     AppLogger.info('Navigation ended to search for parking', tag: 'PARKING');
 
     // Calculate 500m bounds around destination

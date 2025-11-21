@@ -3532,6 +3532,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Exit navigation mode (return to exploration)
     ref.read(navigationModeProvider.notifier).stopRouteNavigation();
 
+    // Restore POI visibility to pre-route-selection state
+    RouteCalculationHelper.restorePOIStateAfterNavigation(ref);
+
     // Keep current map rotation (don't reset to north)
 
     // Clear breadcrumbs

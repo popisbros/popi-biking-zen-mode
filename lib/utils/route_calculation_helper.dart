@@ -18,6 +18,8 @@ import 'app_logger.dart';
 ///
 /// Consolidates duplicate route calculation workflow from map screens
 class RouteCalculationHelper {
+  // Static variable to store POI state for restoration after navigation ends
+  static POIVisibilityState? _savedPOIStateForNavigation;
   /// Calculate multiple routes and show selection dialog
   ///
   /// Returns true if calculation succeeded, false otherwise
@@ -97,8 +99,11 @@ class RouteCalculationHelper {
       fitBoundsCallback(allPoints);
     }
 
-    // Save current POI visibility state before showing dialog
+    // Save current POI visibility state before showing dialog (for cancel restoration)
     final savedPOIState = ref.read(mapProvider.notifier).savePOIState();
+
+    // Also save to static variable for restoration after navigation ends
+    _savedPOIStateForNavigation = savedPOIState;
 
     // Turn off POIs/Favorites to make map lighter during route selection
     ref.read(mapProvider.notifier).setPOIVisibility(
@@ -176,6 +181,18 @@ class RouteCalculationHelper {
       'distance': route.distanceKm,
       'duration': route.durationMin,
     });
+  }
+
+  /// Restore POI visibility state after navigation ends
+  ///
+  /// Call this when navigation is stopped to restore POI toggles to their
+  /// pre-route-selection state
+  static void restorePOIStateAfterNavigation(WidgetRef ref) {
+    if (_savedPOIStateForNavigation != null) {
+      ref.read(mapProvider.notifier).restorePOIState(_savedPOIStateForNavigation!);
+      _savedPOIStateForNavigation = null; // Clear after restoring
+      AppLogger.info('Restored POI visibility state after navigation', tag: 'POI');
+    }
   }
 
   /// Helper to get user location from provider
