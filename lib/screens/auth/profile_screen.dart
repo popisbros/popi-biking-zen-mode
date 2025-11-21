@@ -279,23 +279,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Default Route Profile Selector
+                      // Route Profile Selector (shows last used or default)
                       _buildPreferenceCard(
-                        'Default Route Profile',
-                        'Your preferred transport mode',
+                        'Route Profile',
+                        profile.lastUsedRouteProfile != null
+                            ? 'Last selected: ${_getProfileLabel(profile.lastUsedRouteProfile!)}'
+                            : 'Your preferred transport mode',
                         Icons.directions_bike,
                         DropdownButton<String>(
-                          value: profile.defaultRouteProfile,
+                          value: profile.lastUsedRouteProfile ?? profile.defaultRouteProfile,
                           isExpanded: false,
                           items: const [
-                            DropdownMenuItem(value: 'bike', child: Text('🚴 Bike')),
-                            DropdownMenuItem(value: 'car', child: Text('🚗 Car')),
-                            DropdownMenuItem(value: 'foot', child: Text('🚶 Foot')),
+                            DropdownMenuItem(value: 'car', child: Text('🚗 CAR')),
+                            DropdownMenuItem(value: 'bike', child: Text('🚴 BIKE')),
+                            DropdownMenuItem(value: 'foot', child: Text('🚶 FOOT')),
                           ],
                           onChanged: (value) async {
                             if (value != null) {
                               await ref.read(authNotifierProvider.notifier).updateProfile(
                                 defaultRouteProfile: value,
+                                lastUsedRouteProfile: value,
                               );
                             }
                           },
@@ -366,23 +369,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-
-                      // Last Used Profile Display
-                      if (profile.lastUsedRouteProfile != null)
-                        _buildPreferenceCard(
-                          'Last Used Profile',
-                          'Recently selected in route selection',
-                          Icons.history,
-                          Text(
-                            _getProfileLabel(profile.lastUsedRouteProfile!),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.urbanBlue,
-                            ),
-                          ),
-                        ),
 
                       const SizedBox(height: 24),
                       const Divider(),

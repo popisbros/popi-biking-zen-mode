@@ -44,7 +44,7 @@ class MapService {
   MapService._internal();
 
   /// Current active 2D layer
-  MapLayerType _current2DLayer = MapLayerType.openStreetMap;
+  MapLayerType _current2DLayer = MapLayerType.openCycleMap;
 
   /// Current active 3D style
   MapboxStyleType _current3DStyle = MapboxStyleType.wike3D;
