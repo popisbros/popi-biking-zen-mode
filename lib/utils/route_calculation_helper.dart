@@ -100,7 +100,8 @@ class RouteCalculationHelper {
     }
 
     // Save current POI visibility state before showing dialog (for cancel restoration)
-    final savedPOIState = ref.read(mapProvider.notifier).savePOIState();
+    final currentFavoritesVisible = ref.read(favoritesVisibilityProvider);
+    final savedPOIState = ref.read(mapProvider.notifier).savePOIState(currentFavoritesVisible);
 
     // Also save to static variable for restoration after navigation ends
     _savedPOIStateForNavigation = savedPOIState;
@@ -138,6 +139,7 @@ class RouteCalculationHelper {
         onCancel: () {
           // Restore previous POI visibility state when canceling
           ref.read(mapProvider.notifier).restorePOIState(savedPOIState);
+          ref.read(favoritesVisibilityProvider.notifier).setVisible(savedPOIState.showFavorites);
           ref.read(searchProvider.notifier).clearPreviewRoutes();
           onCancel?.call();
         },
@@ -190,8 +192,9 @@ class RouteCalculationHelper {
   static void restorePOIStateAfterNavigation(WidgetRef ref) {
     if (_savedPOIStateForNavigation != null) {
       ref.read(mapProvider.notifier).restorePOIState(_savedPOIStateForNavigation!);
+      ref.read(favoritesVisibilityProvider.notifier).setVisible(_savedPOIStateForNavigation!.showFavorites);
+      AppLogger.info('Restored POI visibility state after navigation (favorites: ${_savedPOIStateForNavigation!.showFavorites})', tag: 'POI');
       _savedPOIStateForNavigation = null; // Clear after restoring
-      AppLogger.info('Restored POI visibility state after navigation', tag: 'POI');
     }
   }
 

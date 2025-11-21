@@ -78,11 +78,13 @@ class MapNotifier extends Notifier<MapState> {
   }
 
   /// Save current POI visibility states (for route selection)
-  POIVisibilityState savePOIState() {
+  /// Note: This only saves map POI states. Favorites visibility is handled separately.
+  POIVisibilityState savePOIState(bool favoritesVisible) {
     return POIVisibilityState(
       showOSMPOIs: state.showOSMPOIs,
       showPOIs: state.showPOIs,
       showWarnings: state.showWarnings,
+      showFavorites: favoritesVisible,
     );
   }
 
@@ -93,6 +95,7 @@ class MapNotifier extends Notifier<MapState> {
       showPOIs: savedState.showPOIs,
       showWarnings: savedState.showWarnings,
     );
+    // Note: Favorites visibility is restored separately by the caller
   }
 
   /// Toggle auto-zoom in navigation mode
@@ -235,10 +238,12 @@ class POIVisibilityState {
   final bool showOSMPOIs;
   final bool showPOIs;
   final bool showWarnings;
+  final bool showFavorites;
 
   const POIVisibilityState({
     required this.showOSMPOIs,
     required this.showPOIs,
     required this.showWarnings,
+    required this.showFavorites,
   });
 }
