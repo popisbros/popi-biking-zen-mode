@@ -2,9 +2,15 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/community_warning.dart';
+import '../models/user_profile.dart';
 import '../utils/app_logger.dart';
 
-/// Service for audio announcements of hazards during navigation
+/// Service for audio announcements during navigation
+///
+/// Supports three modes:
+/// - Information & Alerts: Turn-by-turn + milestones + hazards + off-route
+/// - Just Alerts: Hazards + off-route only
+/// - No: No audio announcements
 class AudioAnnouncementService {
   static final AudioAnnouncementService _instance = AudioAnnouncementService._internal();
   factory AudioAnnouncementService() => _instance;
@@ -12,10 +18,14 @@ class AudioAnnouncementService {
 
   final FlutterTts _tts = FlutterTts();
   final Set<String> _announcedHazards = {};
-  bool _isEnabled = true;
+  final Set<String> _announcedTurns = {}; // Track announced turn instructions
+  AudioMode _audioMode = AudioMode.informationAndAlerts;
 
-  // Distance threshold for audio announcements (in meters)
-  static const double _audioAnnouncementDistance = 100.0;
+  // Distance thresholds (in meters)
+  static const double _hazardAnnouncementDistance = 100.0;
+  static const double _turnAnnouncementDistance1 = 200.0; // First announcement
+  static const double _turnAnnouncementDistance2 = 50.0; // Second announcement
+  static const double _arrivalDistance = 20.0;
 
   /// Initialize TTS settings
   Future<void> initialize() async {
@@ -38,19 +48,35 @@ class AudioAnnouncementService {
     }
   }
 
-  /// Enable or disable audio announcements
-  void setEnabled(bool enabled) {
-    _isEnabled = enabled;
-    AppLogger.info('Audio announcements ${enabled ? 'enabled' : 'disabled'}');
+  /// Set audio announcement mode
+  void setAudioMode(AudioMode mode) {
+    _audioMode = mode;
+    AppLogger.info('Audio mode set to: ${mode.label}');
   }
 
-  /// Check if audio announcements are enabled
-  bool get isEnabled => _isEnabled;
+  /// Get current audio mode
+  AudioMode get audioMode => _audioMode;
 
-  /// Clear announced hazards (e.g., when starting a new route)
-  void clearAnnouncedHazards() {
+  /// Check if any audio is enabled
+  bool get isEnabled => _audioMode != AudioMode.none;
+
+  /// Check if information announcements are enabled (turn-by-turn, milestones)
+  bool get _informationEnabled => _audioMode == AudioMode.informationAndAlerts;
+
+  /// Check if alert announcements are enabled (hazards, off-route)
+  bool get _alertsEnabled => _audioMode != AudioMode.none;
+
+  /// Clear announced items (e.g., when starting a new route)
+  void clearAnnouncedItems() {
     _announcedHazards.clear();
-    AppLogger.info('Cleared announced hazards list');
+    _announcedTurns.clear();
+    AppLogger.info('Cleared announced hazards and turns');
+  }
+
+  /// Clear announced hazards (backward compatibility)
+  @Deprecated('Use clearAnnouncedItems() instead')
+  void clearAnnouncedHazards() {
+    clearAnnouncedItems();
   }
 
   /// Check hazards proximity and announce if necessary
@@ -59,7 +85,7 @@ class AudioAnnouncementService {
     Position currentPosition,
     List<CommunityWarning> hazards,
   ) async {
-    if (!_isEnabled) {
+    if (!_alertsEnabled) {
       return [];
     }
 
@@ -82,7 +108,7 @@ class AudioAnnouncementService {
       final distance = _calculateDistance(currentLatLng, hazardLatLng);
 
       // Announce if within threshold
-      if (distance <= _audioAnnouncementDistance) {
+      if (distance <= _hazardAnnouncementDistance) {
         await _announceHazard(hazard);
         _announcedHazards.add(hazard.id!);
         newlyAnnounced.add(hazard.id!);
@@ -176,6 +202,94 @@ class AudioAnnouncementService {
     );
   }
 
+  // ========== INFORMATION ANNOUNCEMENTS (turn-by-turn, milestones) ==========
+
+  /// Announce navigation start
+  Future<void> announceNavigationStart({
+    required double distanceKm,
+    required int durationMin,
+  }) async {
+    if (!_informationEnabled) return;
+
+    try {
+      final message = 'Starting navigation. '
+          'Distance: ${distanceKm.toStringAsFixed(1)} kilometers. '
+          'Estimated time: $durationMin minutes.';
+      AppLogger.info('Announcing: $message', tag: 'AUDIO');
+      await _tts.speak(message);
+    } catch (e) {
+      AppLogger.error('Failed to announce navigation start', error: e);
+    }
+  }
+
+  /// Announce turn instruction with distance
+  Future<void> announceTurnInstruction({
+    required String instruction,
+    required double distanceMeters,
+    required String turnId, // Unique ID to prevent duplicate announcements
+  }) async {
+    if (!_informationEnabled) return;
+    if (_announcedTurns.contains(turnId)) return;
+
+    try {
+      String message;
+      if (distanceMeters >= _turnAnnouncementDistance1) {
+        message = 'In ${distanceMeters.round()} meters, $instruction';
+      } else if (distanceMeters >= _turnAnnouncementDistance2) {
+        message = 'In ${distanceMeters.round()} meters, $instruction';
+      } else {
+        message = instruction;
+      }
+
+      AppLogger.info('Announcing turn: $message', tag: 'AUDIO');
+      await _tts.speak(message);
+      _announcedTurns.add(turnId);
+    } catch (e) {
+      AppLogger.error('Failed to announce turn instruction', error: e);
+    }
+  }
+
+  /// Announce arrival at destination
+  Future<void> announceArrival() async {
+    if (!_informationEnabled) return;
+
+    try {
+      const message = 'You have arrived at your destination.';
+      AppLogger.info('Announcing: $message', tag: 'AUDIO');
+      await _tts.speak(message);
+    } catch (e) {
+      AppLogger.error('Failed to announce arrival', error: e);
+    }
+  }
+
+  /// Announce rerouting
+  Future<void> announceRerouting() async {
+    if (!_informationEnabled) return;
+
+    try {
+      const message = 'Recalculating route.';
+      AppLogger.info('Announcing: $message', tag: 'AUDIO');
+      await _tts.speak(message);
+    } catch (e) {
+      AppLogger.error('Failed to announce rerouting', error: e);
+    }
+  }
+
+  // ========== ALERT ANNOUNCEMENTS (hazards, off-route) ==========
+
+  /// Announce off-route alert
+  Future<void> announceOffRoute() async {
+    if (!_alertsEnabled) return;
+
+    try {
+      const message = 'You are off route. Please return to the route or recalculate.';
+      AppLogger.info('Announcing: $message', tag: 'AUDIO');
+      await _tts.speak(message);
+    } catch (e) {
+      AppLogger.error('Failed to announce off-route', error: e);
+    }
+  }
+
   /// Stop any ongoing speech
   Future<void> stop() async {
     try {
@@ -194,5 +308,6 @@ class AudioAnnouncementService {
   Future<void> dispose() async {
     await stop();
     _announcedHazards.clear();
+    _announcedTurns.clear();
   }
 }

@@ -233,7 +233,7 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
     String? country,
     String? defaultRouteProfile,
     String? appearanceMode,
-    bool? audioAlertsEnabled,
+    AudioMode? audioMode,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -270,9 +270,9 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
         updates['appearanceMode'] = appearanceMode;
         AppLogger.debug('Updating appearanceMode: $appearanceMode', tag: 'AUTH');
       }
-      if (audioAlertsEnabled != null) {
-        updates['audioAlertsEnabled'] = audioAlertsEnabled;
-        AppLogger.debug('Updating audioAlertsEnabled: $audioAlertsEnabled', tag: 'AUTH');
+      if (audioMode != null) {
+        updates['audioMode'] = audioMode.value;
+        AppLogger.debug('Updating audioMode: ${audioMode.value}', tag: 'AUTH');
       }
 
       // Also update Firebase Auth displayName if firstName or lastName changed

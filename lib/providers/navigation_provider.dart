@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/location_data.dart';
@@ -7,15 +8,18 @@ import '../models/navigation_state.dart';
 import '../models/maneuver_instruction.dart';
 import '../models/community_warning.dart';
 import '../models/route_warning.dart';
+import '../models/user_profile.dart';
 import '../services/routing_service.dart';
 import '../services/navigation_engine.dart';
 import '../services/location_service.dart';
 import '../services/toast_service.dart';
 import '../services/route_hazard_detector.dart';
 import '../services/road_surface_analyzer.dart';
+import '../services/audio_announcement_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/geo_utils.dart';
 import 'community_provider.dart';
+import 'auth_provider.dart';
 
 /// Provider for navigation state
 final navigationProvider = NotifierProvider<NavigationNotifier, NavigationState>(
@@ -27,6 +31,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
   StreamSubscription<LocationData>? _locationSubscription;
   List<ManeuverInstruction> _detectedManeuvers = [];
   DateTime? _lastUpdateTime;
+  final AudioAnnouncementService _audioService = AudioAnnouncementService();
 
   // Rerouting state
   DateTime? _lastRerouteTime;
@@ -169,6 +174,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Notify ToastService that navigation is active (adjust toast positioning)
     ToastService.setNavigationActive(true);
 
+    // Initialize and configure audio announcements
+    _initializeAudioService(route);
+
     // Start listening to location updates (fire and forget, don't block navigation start)
     _startLocationTracking().catchError((error) {
       AppLogger.error('Failed to start location tracking', tag: 'LOCATION', error: error);
@@ -186,6 +194,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
 
     // Notify ToastService that navigation is no longer active
     ToastService.setNavigationActive(false);
+
+    // Stop audio announcements
+    _audioService.stop();
 
     _locationSubscription?.cancel();
     _locationSubscription = null;
@@ -301,6 +312,24 @@ class NavigationNotifier extends Notifier<NavigationState> {
             nextManeuver,
           )
         : 0;
+
+    // Announce turn instructions at appropriate distances
+    if (nextManeuver != null && distanceToManeuver > 0) {
+      final turnId = 'turn_${nextManeuver.routePointIndex}_${(distanceToManeuver / 50).floor()}';
+
+      // Announce at 200m, 50m, and at turn (< 20m)
+      if ((distanceToManeuver >= 180 && distanceToManeuver <= 220) ||
+          (distanceToManeuver >= 40 && distanceToManeuver <= 60) ||
+          (distanceToManeuver < 20)) {
+        _audioService.announceTurnInstruction(
+          instruction: nextManeuver.voiceInstruction,
+          distanceMeters: distanceToManeuver.toDouble(),
+          turnId: turnId,
+        ).catchError((error) {
+          AppLogger.error('Failed to announce turn', error: error);
+        });
+      }
+    }
 
     // Estimate time remaining (speed already calculated above)
     final timeRemaining = NavigationEngine.estimateTimeRemaining(
@@ -435,6 +464,11 @@ class NavigationNotifier extends Notifier<NavigationState> {
       warningsExpandedAt: warningsExpandedAt,
     );
 
+    // Check for hazards near current position (fire and forget)
+    _checkHazardsProximity(locationData).catchError((error) {
+      AppLogger.error('Failed to check hazard proximity', error: error);
+    });
+
     // Handle arrival
     if (hasArrived && !state.hasArrived) {
       // First time arrival detected
@@ -447,10 +481,11 @@ class NavigationNotifier extends Notifier<NavigationState> {
         'distance': '${offRouteDistance.toStringAsFixed(1)}m',
       });
 
-      // Show toast notification when going off-route
+      // Show toast notification and audio when going off-route
       if (!state.isOffRoute) {
         // First time going off route
         ToastService.warning('Off route: ${offRouteDistance.toStringAsFixed(0)}m from path');
+        _audioService.announceOffRoute();
       }
 
       AppLogger.debug('Initiating automatic rerouting', tag: 'REROUTE');
@@ -468,8 +503,8 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Show toast notification
     ToastService.success('You have arrived at your destination!');
 
-    // TODO: Add voice announcement if voice guidance is enabled
-    // This would require integration with a TTS (Text-to-Speech) service
+    // Voice announcement of arrival
+    _audioService.announceArrival();
   }
 
   /// Handle automatic rerouting when off route
@@ -569,8 +604,9 @@ class NavigationNotifier extends Notifier<NavigationState> {
         orElse: () => routes.first,
       );
 
-      // Show success toast
+      // Show success toast and announce rerouting
       ToastService.success('Route recalculated');
+      _audioService.announceRerouting();
 
       // Record successful reroute position and time
       _lastReroutePosition = currentPos;
@@ -586,7 +622,8 @@ class NavigationNotifier extends Notifier<NavigationState> {
       startNavigation(newRoute);
 
       AppLogger.separator();
-    } catch (e, stackTrace) {
+    } catch (e) {
+      AppLogger.error('Rerouting failed', error: e);
       ToastService.error('Rerouting failed');
 
       // Update cooldown even on failure
@@ -596,6 +633,64 @@ class NavigationNotifier extends Notifier<NavigationState> {
     }
   }
 
+  /// Initialize audio announcement service for navigation
+  void _initializeAudioService(RouteResult route) {
+    // Get user's audio mode preference from auth profile
+    final userProfile = ref.read(userProfileProvider).value;
+
+    if (userProfile != null) {
+      _audioService.setAudioMode(userProfile.audioMode);
+      AppLogger.info('Audio mode set to: ${userProfile.audioMode.label}', tag: 'AUDIO');
+    } else {
+      // Default to information and alerts if no profile
+      _audioService.setAudioMode(AudioMode.informationAndAlerts);
+      AppLogger.info('Audio mode set to default (Information & Alerts)', tag: 'AUDIO');
+    }
+
+    // Clear any previously announced items
+    _audioService.clearAnnouncedItems();
+
+    // Announce navigation start
+    _audioService.announceNavigationStart(
+      distanceKm: route.distanceMeters / 1000, // Convert meters to km
+      durationMin: (route.durationMillis / 60000).round(), // Convert milliseconds to minutes
+    );
+  }
+
+  /// Check for hazards near current position and announce them
+  Future<void> _checkHazardsProximity(LocationData locationData) async {
+    if (!state.isNavigating || state.activeRoute == null) return;
+
+    // Get all community warnings
+    final boundsWarnings = ref.read(communityWarningsBoundsNotifierProvider);
+    final allWarnings = ref.read(communityWarningsNotifierProvider);
+
+    List<CommunityWarning> warnings = [];
+    if (allWarnings.hasValue && allWarnings.value != null) {
+      warnings = allWarnings.value!;
+    } else if (boundsWarnings.hasValue && boundsWarnings.value != null) {
+      warnings = boundsWarnings.value!;
+    }
+
+    if (warnings.isEmpty) return;
+
+    // Convert LocationData to Position for audio service
+    final position = Position(
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      timestamp: DateTime.now(),
+      accuracy: locationData.accuracy ?? 0,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: locationData.heading ?? 0,
+      headingAccuracy: 0,
+      speed: locationData.speed ?? 0,
+      speedAccuracy: 0,
+    );
+
+    // Check and announce hazards
+    await _audioService.checkHazardsProximity(position, warnings);
+  }
 
   /// Get formatted instruction for voice guidance
   String? getVoiceInstruction() {

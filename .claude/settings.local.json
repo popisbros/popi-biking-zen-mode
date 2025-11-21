@@ -6,7 +6,8 @@
       "Bash(pkill:*)",
       "Bash(git tag:*)",
       "Bash(flutter build:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(flutter pub outdated:*)"
     ],
     "deny": [],
     "ask": []

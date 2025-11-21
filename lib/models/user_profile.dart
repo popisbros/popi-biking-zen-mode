@@ -1,5 +1,40 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Audio mode for navigation announcements
+enum AudioMode {
+  /// Information (turn-by-turn, milestones) + Alerts (hazards, off-route)
+  informationAndAlerts('information_and_alerts', 'Information & Alerts'),
+
+  /// Only Alerts (hazards, off-route warnings)
+  justAlerts('just_alerts', 'Just Alerts'),
+
+  /// No audio announcements
+  none('none', 'No');
+
+  final String value;
+  final String label;
+
+  const AudioMode(this.value, this.label);
+
+  static AudioMode fromString(String? value) {
+    switch (value) {
+      case 'information_and_alerts':
+        return AudioMode.informationAndAlerts;
+      case 'just_alerts':
+        return AudioMode.justAlerts;
+      case 'none':
+        return AudioMode.none;
+      default:
+        return AudioMode.informationAndAlerts; // Default
+    }
+  }
+
+  /// Migrate from old boolean audioAlertsEnabled
+  static AudioMode fromLegacyBoolean(bool enabled) {
+    return enabled ? AudioMode.informationAndAlerts : AudioMode.none;
+  }
+}
+
 /// User profile model with authentication and preferences
 class UserProfile {
   final String uid; // Firebase Auth UID
@@ -14,7 +49,7 @@ class UserProfile {
   // User preferences
   final String defaultRouteProfile; // 'bike', 'car', 'foot'
   final String appearanceMode; // 'system', 'light', 'dark'
-  final bool audioAlertsEnabled; // Enable/disable audio hazard alerts
+  final AudioMode audioMode; // Audio announcements mode (information+alerts, just alerts, none)
   final List<String> recentSearches; // Last 20 search queries
   final List<SavedLocation> recentDestinations; // Last 20 destinations
   final List<SavedLocation> favoriteLocations; // Up to 20 favorites
@@ -34,7 +69,7 @@ class UserProfile {
     required this.authProvider,
     this.defaultRouteProfile = 'bike',
     this.appearanceMode = 'system',
-    this.audioAlertsEnabled = true,
+    this.audioMode = AudioMode.informationAndAlerts,
     this.recentSearches = const [],
     this.recentDestinations = const [],
     this.favoriteLocations = const [],
@@ -96,7 +131,7 @@ class UserProfile {
       authProvider: authProvider,
       defaultRouteProfile: 'bike',
       appearanceMode: 'system',
-      audioAlertsEnabled: true,
+      audioMode: AudioMode.informationAndAlerts,
       createdAt: now,
       updatedAt: now,
     );
@@ -122,6 +157,17 @@ class UserProfile {
       }
     }
 
+    // Migration: support old audioAlertsEnabled boolean field
+    AudioMode audioMode;
+    if (data['audioMode'] != null) {
+      audioMode = AudioMode.fromString(data['audioMode']);
+    } else if (data['audioAlertsEnabled'] != null) {
+      // Migrate from old boolean field
+      audioMode = AudioMode.fromLegacyBoolean(data['audioAlertsEnabled']);
+    } else {
+      audioMode = AudioMode.informationAndAlerts; // Default
+    }
+
     return UserProfile(
       uid: doc.id,
       email: data['email'],
@@ -133,7 +179,7 @@ class UserProfile {
       authProvider: data['authProvider'] ?? 'email',
       defaultRouteProfile: data['defaultRouteProfile'] ?? data['lastUsedRouteProfile'] ?? 'bike',
       appearanceMode: data['appearanceMode'] ?? 'system',
-      audioAlertsEnabled: data['audioAlertsEnabled'] ?? true,
+      audioMode: audioMode,
       recentSearches: List<String>.from(data['recentSearches'] ?? []),
       recentDestinations: (data['recentDestinations'] as List<dynamic>?)
               ?.map((e) => SavedLocation.fromMap(e))
@@ -160,7 +206,7 @@ class UserProfile {
       'authProvider': authProvider,
       'defaultRouteProfile': defaultRouteProfile,
       'appearanceMode': appearanceMode,
-      'audioAlertsEnabled': audioAlertsEnabled,
+      'audioMode': audioMode.value,
       'recentSearches': recentSearches,
       'recentDestinations': recentDestinations.map((e) => e.toMap()).toList(),
       'favoriteLocations': favoriteLocations.map((e) => e.toMap()).toList(),
@@ -179,7 +225,7 @@ class UserProfile {
     String? country,
     String? defaultRouteProfile,
     String? appearanceMode,
-    bool? audioAlertsEnabled,
+    AudioMode? audioMode,
     List<String>? recentSearches,
     List<SavedLocation>? recentDestinations,
     List<SavedLocation>? favoriteLocations,
@@ -195,7 +241,7 @@ class UserProfile {
       authProvider: authProvider,
       defaultRouteProfile: defaultRouteProfile ?? this.defaultRouteProfile,
       appearanceMode: appearanceMode ?? this.appearanceMode,
-      audioAlertsEnabled: audioAlertsEnabled ?? this.audioAlertsEnabled,
+      audioMode: audioMode ?? this.audioMode,
       recentSearches: recentSearches ?? this.recentSearches,
       recentDestinations: recentDestinations ?? this.recentDestinations,
       favoriteLocations: favoriteLocations ?? this.favoriteLocations,

@@ -327,27 +327,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Audio Alerts Toggle
+                      // Audio Mode Selector
                       _buildPreferenceCard(
-                        'Audio Alerts',
-                        'Hear hazard warnings during navigation',
+                        'Audio',
+                        'Control navigation voice announcements',
                         Icons.volume_up,
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Switch(
-                              value: profile.audioAlertsEnabled,
-                              activeColor: AppColors.urbanBlue,
-                              onChanged: (value) async {
-                                await ref.read(authNotifierProvider.notifier).updateProfile(
-                                  audioAlertsEnabled: value,
+                            DropdownButton<AudioMode>(
+                              value: profile.audioMode,
+                              underline: Container(),
+                              items: AudioMode.values.map((mode) {
+                                return DropdownMenuItem(
+                                  value: mode,
+                                  child: Text(
+                                    mode.label,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
                                 );
-                                // Update audio service state
-                                AudioAnnouncementService().setEnabled(value);
+                              }).toList(),
+                              onChanged: (AudioMode? newMode) async {
+                                if (newMode != null) {
+                                  await ref.read(authNotifierProvider.notifier).updateProfile(
+                                    audioMode: newMode,
+                                  );
+                                  // Update audio service state
+                                  AudioAnnouncementService().setAudioMode(newMode);
+                                }
                               },
                             ),
                             const SizedBox(width: 8),
-                            if (profile.audioAlertsEnabled)
+                            if (profile.audioMode != AudioMode.none)
                               IconButton(
                                 icon: const Icon(Icons.play_arrow, size: 20),
                                 tooltip: 'Test audio',
