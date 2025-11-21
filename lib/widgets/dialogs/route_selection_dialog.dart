@@ -451,9 +451,9 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                 // Description
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: isDark ? Colors.grey[400] : Colors.black54,
                   ),
                 ),
                 const SizedBox(height: 8),
