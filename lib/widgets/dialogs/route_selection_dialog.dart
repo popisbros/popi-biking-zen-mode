@@ -109,32 +109,48 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
     if (widget.multiProfileRoutes != null) {
       // Get user's preferred profile to set initial page
       final userProfileAsync = ref.read(userProfileProvider);
-      final defaultProfile = userProfileAsync.value?.defaultRouteProfile;
 
-      AppLogger.debug('Route dialog init - defaultProfile: $defaultProfile, hasValue: ${userProfileAsync.hasValue}, value: ${userProfileAsync.value?.defaultRouteProfile}', tag: 'ROUTE_DIALOG');
+      AppLogger.debug('Route dialog init - hasValue: ${userProfileAsync.hasValue}, hasError: ${userProfileAsync.hasError}, isLoading: ${userProfileAsync.isLoading}', tag: 'ROUTE_DIALOG');
+
+      // Try to get the profile value - may be null if still loading
+      final defaultProfile = userProfileAsync.whenData((profile) => profile?.defaultRouteProfile).value;
+
+      AppLogger.debug('Route dialog init - defaultProfile from whenData: $defaultProfile', tag: 'ROUTE_DIALOG');
 
       // Find the index of the preferred route in availableRoutes
       // availableRoutes returns routes in order: [car, bike, foot] (only those available)
       if (defaultProfile != null) {
         final routes = _availableRoutes;
+        AppLogger.debug('Available routes count: ${routes.length}', tag: 'ROUTE_DIALOG');
+        AppLogger.debug('Car route available: ${widget.multiProfileRoutes!.carRoute != null}', tag: 'ROUTE_DIALOG');
+        AppLogger.debug('Bike route available: ${widget.multiProfileRoutes!.bikeRoute != null}', tag: 'ROUTE_DIALOG');
+        AppLogger.debug('Foot route available: ${widget.multiProfileRoutes!.footRoute != null}', tag: 'ROUTE_DIALOG');
+
         for (int i = 0; i < routes.length; i++) {
           final route = routes[i];
-          if (defaultProfile == 'car' && route == widget.multiProfileRoutes!.carRoute) {
+          final isCarMatch = route == widget.multiProfileRoutes!.carRoute;
+          final isBikeMatch = route == widget.multiProfileRoutes!.bikeRoute;
+          final isFootMatch = route == widget.multiProfileRoutes!.footRoute;
+
+          AppLogger.debug('Route $i - isCarMatch: $isCarMatch, isBikeMatch: $isBikeMatch, isFootMatch: $isFootMatch', tag: 'ROUTE_DIALOG');
+
+          if (defaultProfile == 'car' && isCarMatch) {
             initialPage = i;
             AppLogger.debug('Setting initial page to $i (car)', tag: 'ROUTE_DIALOG');
             break;
-          } else if (defaultProfile == 'bike' && route == widget.multiProfileRoutes!.bikeRoute) {
+          } else if (defaultProfile == 'bike' && isBikeMatch) {
             initialPage = i;
             AppLogger.debug('Setting initial page to $i (bike)', tag: 'ROUTE_DIALOG');
             break;
-          } else if (defaultProfile == 'foot' && route == widget.multiProfileRoutes!.footRoute) {
+          } else if (defaultProfile == 'foot' && isFootMatch) {
             initialPage = i;
             AppLogger.debug('Setting initial page to $i (foot)', tag: 'ROUTE_DIALOG');
             break;
           }
         }
+        AppLogger.debug('Final initialPage: $initialPage', tag: 'ROUTE_DIALOG');
       } else {
-        AppLogger.warning('defaultProfile is null in route dialog init', tag: 'ROUTE_DIALOG');
+        AppLogger.warning('defaultProfile is null in route dialog init - profile may still be loading', tag: 'ROUTE_DIALOG');
       }
     }
 
