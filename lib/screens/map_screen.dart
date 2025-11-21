@@ -1560,14 +1560,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             // Landscape layout: Navigation card on left (50%), map on right (50%)
             final isDark = Theme.of(context).brightness == Brightness.dark;
             return Row(
-              crossAxisAlignment: CrossAxisAlignment.start, // Align children to top
+              crossAxisAlignment: CrossAxisAlignment.stretch, // Stretch to full height
               children: [
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.5,
-                  color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-                  child: const NavigationCard(),
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                    child: const NavigationCard(),
+                  ),
                 ),
                 Expanded(
+                  flex: 1,
                   child: Stack(
                     children: _buildMapAndControls(context, locationAsync, poisAsync, warningsAsync, mapState, markers, mapCenter),
                   ),

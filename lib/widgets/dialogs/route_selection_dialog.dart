@@ -102,13 +102,14 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
   void initState() {
     super.initState();
 
-    // Get user's preferred profile to set initial page
-    final userProfile = ref.read(userProfileProvider).value;
-    final defaultProfile = userProfile?.defaultRouteProfile;
-
     // Determine initial page based on default profile
     int initialPage = 1; // Default to bike (middle)
+
     if (widget.multiProfileRoutes != null) {
+      // Get user's preferred profile to set initial page
+      final userProfileAsync = ref.read(userProfileProvider);
+      final defaultProfile = userProfileAsync.value?.defaultRouteProfile;
+
       if (defaultProfile == 'car' && widget.multiProfileRoutes!.carRoute != null) {
         initialPage = 0;
       } else if (defaultProfile == 'foot' && widget.multiProfileRoutes!.footRoute != null) {
