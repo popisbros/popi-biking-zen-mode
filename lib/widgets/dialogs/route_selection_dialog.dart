@@ -4,6 +4,7 @@ import '../../services/routing_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/multi_profile_route_result.dart';
 import '../../constants/app_colors.dart';
+import '../../utils/app_logger.dart';
 import '../common_dialog.dart';
 
 /// Route selection dialog widget
@@ -108,23 +109,32 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
     if (widget.multiProfileRoutes != null) {
       // Get user's preferred profile to set initial page
       final userProfileAsync = ref.read(userProfileProvider);
-      final defaultProfile = userProfileAsync.value?.defaultRouteProfile;
+      final defaultProfile = userProfileAsync.valueOrNull?.defaultRouteProfile;
+
+      AppLogger.debug('Route dialog init - defaultProfile: $defaultProfile, hasValue: ${userProfileAsync.hasValue}, value: ${userProfileAsync.valueOrNull?.defaultRouteProfile}', tag: 'ROUTE_DIALOG');
 
       // Find the index of the preferred route in availableRoutes
       // availableRoutes returns routes in order: [car, bike, foot] (only those available)
-      final routes = _availableRoutes;
-      for (int i = 0; i < routes.length; i++) {
-        final route = routes[i];
-        if (defaultProfile == 'car' && route == widget.multiProfileRoutes!.carRoute) {
-          initialPage = i;
-          break;
-        } else if (defaultProfile == 'bike' && route == widget.multiProfileRoutes!.bikeRoute) {
-          initialPage = i;
-          break;
-        } else if (defaultProfile == 'foot' && route == widget.multiProfileRoutes!.footRoute) {
-          initialPage = i;
-          break;
+      if (defaultProfile != null) {
+        final routes = _availableRoutes;
+        for (int i = 0; i < routes.length; i++) {
+          final route = routes[i];
+          if (defaultProfile == 'car' && route == widget.multiProfileRoutes!.carRoute) {
+            initialPage = i;
+            AppLogger.debug('Setting initial page to $i (car)', tag: 'ROUTE_DIALOG');
+            break;
+          } else if (defaultProfile == 'bike' && route == widget.multiProfileRoutes!.bikeRoute) {
+            initialPage = i;
+            AppLogger.debug('Setting initial page to $i (bike)', tag: 'ROUTE_DIALOG');
+            break;
+          } else if (defaultProfile == 'foot' && route == widget.multiProfileRoutes!.footRoute) {
+            initialPage = i;
+            AppLogger.debug('Setting initial page to $i (foot)', tag: 'ROUTE_DIALOG');
+            break;
+          }
         }
+      } else {
+        AppLogger.warning('defaultProfile is null in route dialog init', tag: 'ROUTE_DIALOG');
       }
     }
 
