@@ -13,7 +13,6 @@ class UserProfile {
 
   // User preferences
   final String defaultRouteProfile; // 'bike', 'car', 'foot'
-  final String? lastUsedRouteProfile; // Last selected profile in multi-route view
   final String appearanceMode; // 'system', 'light', 'dark'
   final bool audioAlertsEnabled; // Enable/disable audio hazard alerts
   final List<String> recentSearches; // Last 20 search queries
@@ -34,7 +33,6 @@ class UserProfile {
     this.country,
     required this.authProvider,
     this.defaultRouteProfile = 'bike',
-    this.lastUsedRouteProfile,
     this.appearanceMode = 'system',
     this.audioAlertsEnabled = true,
     this.recentSearches = const [],
@@ -133,8 +131,7 @@ class UserProfile {
       photoURL: data['photoURL'],
       country: data['country'],
       authProvider: data['authProvider'] ?? 'email',
-      defaultRouteProfile: data['defaultRouteProfile'] ?? 'bike',
-      lastUsedRouteProfile: data['lastUsedRouteProfile'],
+      defaultRouteProfile: data['defaultRouteProfile'] ?? data['lastUsedRouteProfile'] ?? 'bike',
       appearanceMode: data['appearanceMode'] ?? 'system',
       audioAlertsEnabled: data['audioAlertsEnabled'] ?? true,
       recentSearches: List<String>.from(data['recentSearches'] ?? []),
@@ -162,7 +159,6 @@ class UserProfile {
       'country': country,
       'authProvider': authProvider,
       'defaultRouteProfile': defaultRouteProfile,
-      'lastUsedRouteProfile': lastUsedRouteProfile,
       'appearanceMode': appearanceMode,
       'audioAlertsEnabled': audioAlertsEnabled,
       'recentSearches': recentSearches,
@@ -182,7 +178,6 @@ class UserProfile {
     String? photoURL,
     String? country,
     String? defaultRouteProfile,
-    String? lastUsedRouteProfile,
     String? appearanceMode,
     bool? audioAlertsEnabled,
     List<String>? recentSearches,
@@ -199,7 +194,6 @@ class UserProfile {
       country: country ?? this.country,
       authProvider: authProvider,
       defaultRouteProfile: defaultRouteProfile ?? this.defaultRouteProfile,
-      lastUsedRouteProfile: lastUsedRouteProfile ?? this.lastUsedRouteProfile,
       appearanceMode: appearanceMode ?? this.appearanceMode,
       audioAlertsEnabled: audioAlertsEnabled ?? this.audioAlertsEnabled,
       recentSearches: recentSearches ?? this.recentSearches,

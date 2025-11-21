@@ -231,7 +231,6 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
     String? lastName,
     String? phoneNumber,
     String? country,
-    String? lastUsedRouteProfile,
     String? defaultRouteProfile,
     String? appearanceMode,
     bool? audioAlertsEnabled,
@@ -262,10 +261,6 @@ class AuthNotifier extends Notifier<AsyncValue<User?>> {
       if (country != null) {
         updates['country'] = country;
         AppLogger.debug('Updating country: $country', tag: 'AUTH');
-      }
-      if (lastUsedRouteProfile != null) {
-        updates['lastUsedRouteProfile'] = lastUsedRouteProfile;
-        AppLogger.debug('Updating lastUsedRouteProfile: $lastUsedRouteProfile', tag: 'AUTH');
       }
       if (defaultRouteProfile != null) {
         updates['defaultRouteProfile'] = defaultRouteProfile;

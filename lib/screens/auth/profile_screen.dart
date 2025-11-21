@@ -279,15 +279,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Route Profile Selector (shows last used or default)
+                      // Route Profile Selector
                       _buildPreferenceCard(
                         'Route Profile',
-                        profile.lastUsedRouteProfile != null
-                            ? 'Last selected: ${_getProfileLabel(profile.lastUsedRouteProfile!)}'
-                            : 'Your preferred transport mode',
+                        'Your preferred transport mode',
                         Icons.directions_bike,
                         DropdownButton<String>(
-                          value: profile.lastUsedRouteProfile ?? profile.defaultRouteProfile,
+                          value: profile.defaultRouteProfile,
                           isExpanded: false,
                           items: const [
                             DropdownMenuItem(value: 'car', child: Text('🚗 CAR')),
@@ -298,7 +296,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             if (value != null) {
                               await ref.read(authNotifierProvider.notifier).updateProfile(
                                 defaultRouteProfile: value,
-                                lastUsedRouteProfile: value,
                               );
                             }
                           },

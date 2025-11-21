@@ -104,14 +104,14 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
 
     // Get user's preferred profile to set initial page
     final userProfile = ref.read(userProfileProvider).value;
-    final lastUsedProfile = userProfile?.lastUsedRouteProfile;
+    final defaultProfile = userProfile?.defaultRouteProfile;
 
-    // Determine initial page based on last used profile
+    // Determine initial page based on default profile
     int initialPage = 1; // Default to bike (middle)
     if (widget.multiProfileRoutes != null) {
-      if (lastUsedProfile == 'car' && widget.multiProfileRoutes!.carRoute != null) {
+      if (defaultProfile == 'car' && widget.multiProfileRoutes!.carRoute != null) {
         initialPage = 0;
-      } else if (lastUsedProfile == 'foot' && widget.multiProfileRoutes!.footRoute != null) {
+      } else if (defaultProfile == 'foot' && widget.multiProfileRoutes!.footRoute != null) {
         initialPage = 2;
       }
     }
@@ -249,11 +249,11 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                           final selectedRoute = routes[_currentPage];
                           final profile = _getProfileForIndex(_currentPage);
 
-                          // Save last used profile if in multi-profile mode
+                          // Update default profile if in multi-profile mode
                           if (profile != null) {
                             final profileName = profile.name; // 'car', 'bike', or 'foot'
                             await ref.read(authNotifierProvider.notifier).updateProfile(
-                              lastUsedRouteProfile: profileName,
+                              defaultRouteProfile: profileName,
                             );
                           }
 
