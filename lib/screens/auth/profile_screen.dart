@@ -572,6 +572,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -593,7 +594,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -601,11 +602,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     color: subtitleColor,
                   ),
                 ),
+                const SizedBox(height: 8),
+                trailing,
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          trailing,
         ],
       ),
     );
