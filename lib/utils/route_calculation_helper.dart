@@ -156,6 +156,9 @@ class RouteCalculationHelper {
       showHazards: true, // Keep hazards visible
     );
 
+    // Turn off Favorites toggle
+    ref.read(favoritesVisibilityProvider.notifier).setVisible(false);
+
     // Show route selection dialog with multi-profile routes
     if (context.mounted) {
       RouteSelectionDialog.showMultiProfile(
