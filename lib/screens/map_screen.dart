@@ -91,6 +91,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // Active route for persistent navigation sheet
   RouteResult? _activeRoute;
 
+  // Track displayed marker counts for toggle badges
+  int _displayedOSMPOICount = 0;
+  int _displayedWarningCount = 0;
+  int _displayedFavoritesCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -1445,6 +1450,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'selectedTypes': mapState.selectedOSMPOITypes?.join(', ') ?? 'all',
         });
         markers.addAll(filteredPOIs.map((poi) => _buildPOIMarker(poi)));
+        _displayedOSMPOICount = filteredPOIs.length;
       });
     } else {
       AppLogger.debug('OSM POIs hidden by toggle', tag: 'MAP');
@@ -1462,6 +1468,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'deleted': allWarnings.length - warnings.length,
         });
         markers.addAll(warnings.map((warning) => _buildWarningMarker(warning)));
+        _displayedWarningCount = warnings.length;
       });
     } else {
       AppLogger.debug('Warnings hidden by toggle', tag: 'MAP');
@@ -1535,6 +1542,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ));
       }
       AppLogger.debug('Added ${userProfile.favoriteLocations.length} favorite markers', tag: 'MAP');
+
+      // Track displayed count
+      _displayedFavoritesCount = userProfile.recentDestinations.length + userProfile.favoriteLocations.length;
     }
 
     AppLogger.map('Total markers on map', data: {'count': markers.length});
@@ -1910,12 +1920,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       children: [
                         // OSM POI selector (multi-choice dropdown)
                         OSMPOISelectorButton(
-                          count: poisAsync.value != null
-                              ? POIUtils.filterPOIsByType(
-                                  poisAsync.value!.cast<OSMPOI>(),
-                                  mapState.selectedOSMPOITypes,
-                                ).length
-                              : 0,
+                          count: _displayedOSMPOICount,
                           enabled: togglesEnabled,
                         ),
                         const SizedBox(height: 6),
@@ -1924,7 +1929,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           isActive: mapState.showWarnings,
                           icon: Icons.warning,
                           activeColor: Colors.orange,
-                          count: warningsAsync.value?.length ?? 0,
+                          count: _displayedWarningCount,
                           enabled: togglesEnabled,
                           onPressed: () {
                             AppLogger.map('Warning toggle pressed');
@@ -1965,16 +1970,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     }
 
                     final favoritesVisible = ref.watch(favoritesVisibilityProvider);
-                    final userProfile = ref.watch(userProfileProvider).value;
-                    final destinationsCount = userProfile?.recentDestinations.length ?? 0;
-                    final favoritesCount = userProfile?.favoriteLocations.length ?? 0;
-                    final totalCount = destinationsCount + favoritesCount;
 
                     return MapToggleButton(
                       isActive: favoritesVisible,
                       icon: Icons.star,
                       activeColor: Colors.yellow.shade600,
-                      count: totalCount,
+                      count: _displayedFavoritesCount,
                       enabled: true, // Always enabled (not zoom-dependent)
                       onPressed: () {
                         AppLogger.map('Favorites/destinations toggle pressed');

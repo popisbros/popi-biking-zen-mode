@@ -136,6 +136,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   final Map<String, ({double lat, double lng, String name})> _destinationsById = {};
   final Map<String, ({double lat, double lng, String name})> _favoritesById = {};
 
+  // Track displayed marker counts for toggle badges
+  int _displayedOSMPOICount = 0;
+  int _displayedWarningCount = 0;
+  int _displayedFavoritesCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -1301,12 +1306,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         children: [
                           // OSM POI selector (multi-choice dropdown)
                           OSMPOISelectorButton(
-                            count: ref.watch(osmPOIsNotifierProvider).value != null
-                                ? POIUtils.filterPOIsByType(
-                                    ref.watch(osmPOIsNotifierProvider).value!.cast<OSMPOI>(),
-                                    mapState.selectedOSMPOITypes,
-                                  ).length
-                                : 0,
+                            count: _displayedOSMPOICount,
                             enabled: togglesEnabled,
                           ),
                           const SizedBox(height: 6),
@@ -1315,7 +1315,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                             isActive: mapState.showWarnings,
                             icon: Icons.warning,
                             activeColor: Colors.orange,
-                            count: ref.watch(communityWarningsBoundsNotifierProvider).value?.length ?? 0,
+                            count: _displayedWarningCount,
                             enabled: togglesEnabled,
                             onPressed: () {
                               AppLogger.map('Warning toggle pressed');
@@ -1355,16 +1355,12 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       }
 
                       final favoritesVisible = ref.watch(favoritesVisibilityProvider);
-                      final userProfile = ref.watch(userProfileProvider).value;
-                      final destinationsCount = userProfile?.recentDestinations.length ?? 0;
-                      final favoritesCount = userProfile?.favoriteLocations.length ?? 0;
-                      final totalCount = destinationsCount + favoritesCount;
 
                       return MapToggleButton(
                         isActive: favoritesVisible,
                         icon: Icons.star,
                         activeColor: Colors.yellow.shade600,
-                        count: totalCount,
+                        count: _displayedFavoritesCount,
                         enabled: true, // Always enabled (not zoom-dependent)
                         onPressed: () {
                           AppLogger.map('Favorites/destinations toggle pressed');
@@ -1385,7 +1381,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           FloatingActionButton(
                             mini: true,
                             heroTag: 'zoom_in_3d',
-                            backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                            backgroundColor: isDark ? Colors.grey.shade700 : Colors.white,
                             foregroundColor: isDark ? Colors.white : Colors.blue,
                             onPressed: () async {
                               final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
@@ -1409,7 +1405,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                              color: isDark ? Colors.grey.shade700 : Colors.white,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -1427,7 +1423,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           FloatingActionButton(
                             mini: true,
                             heroTag: 'zoom_out_3d',
-                            backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                            backgroundColor: isDark ? Colors.grey.shade700 : Colors.white,
                             foregroundColor: isDark ? Colors.white : Colors.blue,
                             onPressed: () async {
                               final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
@@ -1530,7 +1526,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                         backgroundColor: mapState.autoZoomEnabled
                             ? Colors.blue
-                            : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300),
+                            : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                         foregroundColor: mapState.autoZoomEnabled
                             ? Colors.white
                             : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
@@ -1561,7 +1557,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         mini: true, // Match zoom button size
                         heroTag: 'gps_center_button_3d',
                         onPressed: _centerOnUserLocation,
-                        backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                        backgroundColor: isDark ? Colors.grey.shade700 : Colors.white,
                         foregroundColor: isDark ? Colors.white : AppColors.urbanBlue,
                         tooltip: 'Center on Location',
                         child: const Icon(Icons.my_location),
@@ -1613,7 +1609,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         },
                         backgroundColor: debugState.isVisible
                             ? Colors.red
-                            : (isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300),
+                            : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                         foregroundColor: debugState.isVisible
                             ? Colors.white
                             : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
@@ -1652,6 +1648,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             Consumer(
               builder: (context, ref, child) {
                 final navState = ref.watch(navigationProvider);
+                final debugState = ref.watch(debugProvider);
                 if (navState.isNavigating) return const SizedBox.shrink();
 
                 return Positioned(
@@ -1679,16 +1676,18 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         tooltip: 'Change Pitch: ${_currentPitch.toInt()}°',
                         child: Text('${_currentPitch.toInt()}°', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
-                      const SizedBox(height: 6),
-                      // Switch to 2D button
-                      FloatingActionButton(
-                        mini: true, // Match zoom button size
-                        heroTag: 'switch_to_2d_button',
-                        onPressed: _switchTo2DMap,
-                        backgroundColor: Colors.green,
-                        tooltip: 'Switch to 2D Map',
-                        child: const Icon(Icons.map),
-                      ),
+                      // Switch to 2D button (only visible in debug mode)
+                      if (debugState.isVisible) ...[
+                        const SizedBox(height: 6),
+                        FloatingActionButton(
+                          mini: true, // Match zoom button size
+                          heroTag: 'switch_to_2d_button',
+                          onPressed: _switchTo2DMap,
+                          backgroundColor: Colors.green,
+                          tooltip: 'Switch to 2D Map (Debug)',
+                          child: const Icon(Icons.map),
+                        ),
+                      ],
                     ],
                   ),
                 );
@@ -1817,6 +1816,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       AppLogger.success('Compass ornament hidden', tag: 'MAP');
     } catch (e) {
       AppLogger.error('Failed to hide compass ornament', error: e);
+    }
+
+    // Hide scale bar ornament
+    try {
+      await mapboxMap.scaleBar.updateSettings(ScaleBarSettings(
+        enabled: false,
+      ));
+      AppLogger.success('Scale bar ornament hidden', tag: 'MAP');
+    } catch (e) {
+      AppLogger.error('Failed to hide scale bar ornament', error: e);
     }
 
     // Initialize annotation managers
@@ -2302,6 +2311,15 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     // Add surface warning markers if navigation is active
     await _addSurfaceWarningMarkers();
+
+    // Update displayed counts for toggle badges (reflects actual visible markers)
+    if (mounted) {
+      setState(() {
+        _displayedOSMPOICount = _osmPoiById.length;
+        _displayedWarningCount = _warningById.length;
+        _displayedFavoritesCount = _destinationsById.length + _favoritesById.length;
+      });
+    }
   }
 
   /// Add search result marker (grey circle with + symbol)

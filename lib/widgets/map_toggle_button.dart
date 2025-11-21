@@ -52,8 +52,8 @@ class MapToggleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final inactiveColor = isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade300;
-    final disabledColor = isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200;
+    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    final disabledColor = isDark ? Colors.grey.shade700 : Colors.grey.shade200;
     final disabledForeground = isDark ? Colors.grey.shade600 : Colors.grey.shade400;
 
     return Tooltip(
