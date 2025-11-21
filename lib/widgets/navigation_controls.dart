@@ -54,42 +54,45 @@ class NavigationControls extends ConsumerWidget {
           title: const Text('End Navigation?'),
           content: const Text('Are you sure you want to stop navigation?'),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CommonDialog.buildBorderedTextButton(
+                  label: 'Cancel',
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                CommonDialog.buildBorderedTextButton(
+                  label: 'End',
+                  textColor: Colors.red,
+                  onPressed: () {
+                    Navigator.of(context).pop();
 
-                // Clear route from provider
-                ref.read(searchProvider.notifier).clearRoute();
+                    // Clear route from provider
+                    ref.read(searchProvider.notifier).clearRoute();
 
-                // Stop turn-by-turn navigation
-                ref.read(navigationProvider.notifier).stopNavigation();
+                    // Stop turn-by-turn navigation
+                    ref.read(navigationProvider.notifier).stopNavigation();
 
-                // Exit navigation mode (return to exploration)
-                ref.read(navigationModeProvider.notifier).stopRouteNavigation();
+                    // Exit navigation mode (return to exploration)
+                    ref.read(navigationModeProvider.notifier).stopRouteNavigation();
 
-                // Restore POI visibility to pre-route-selection state
-                RouteCalculationHelper.restorePOIStateAfterNavigation(ref);
+                    // Restore POI visibility to pre-route-selection state
+                    RouteCalculationHelper.restorePOIStateAfterNavigation(ref);
 
-                // Call callback to clear route from map
-                onNavigationEnded?.call();
+                    // Call callback to clear route from map
+                    onNavigationEnded?.call();
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Navigation ended'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text(
-                'End',
-                style: TextStyle(color: Colors.red),
-              ),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Navigation ended'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         );

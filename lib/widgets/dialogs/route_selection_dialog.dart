@@ -52,8 +52,8 @@ class RouteSelectionDialog extends ConsumerStatefulWidget {
   }) {
     return showDialog(
       context: context,
-      barrierDismissible: false,
-      barrierColor: CommonDialog.barrierColor,
+      barrierDismissible: true,
+      barrierColor: Colors.transparent, // No dark overlay
       builder: (context) => RouteSelectionDialog(
         routes: routes,
         onRouteSelected: onRouteSelected,
@@ -85,8 +85,8 @@ class RouteSelectionDialog extends ConsumerStatefulWidget {
   }) {
     return showDialog(
       context: context,
-      barrierDismissible: false,
-      barrierColor: CommonDialog.barrierColor,
+      barrierDismissible: true,
+      barrierColor: Colors.transparent, // No dark overlay
       builder: (context) => RouteSelectionDialog(
         multiProfileRoutes: multiProfileRoutes,
         onRouteSelected: onRouteSelected,
@@ -203,6 +203,11 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
       return _buildEmptyState();
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+        : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: Material(
@@ -213,7 +218,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
           ),
           margin: const EdgeInsets.fromLTRB(20, 20, 20, 20),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.7), // More transparent to see routes
+            color: backgroundColor, // Match CommonDialog transparency (0.8) with dark mode support
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -338,6 +343,10 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
 
   Widget _buildRouteCard(RouteResult route, int index) {
     final profile = _getProfileForIndex(index);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBackgroundColor = isDark
+        ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+        : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
 
     // Determine card properties
     final IconData icon;
@@ -398,7 +407,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85), // Semi-transparent to see routes behind
+        color: cardBackgroundColor, // Match CommonDialog transparency (0.8) with dark mode support
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 2),
         boxShadow: [
