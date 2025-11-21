@@ -1,9 +1,14 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:ui' as ui;
 import '../models/community_warning.dart';
 import '../models/user_profile.dart';
 import '../utils/app_logger.dart';
+
+// Web-specific imports
+import 'dart:html' as html show window, SpeechSynthesisUtterance;
 
 /// Service for audio announcements during navigation
 ///
@@ -32,9 +37,35 @@ class AudioAnnouncementService {
     try {
       AppLogger.info('Initializing TTS engine...', tag: 'AUDIO');
 
-      // Set language
-      final langResult = await _tts.setLanguage("en-US");
-      AppLogger.debug('TTS language set to en-US: $langResult', tag: 'AUDIO');
+      if (kIsWeb) {
+        // Web platform - use Web Speech API (no initialization needed)
+        AppLogger.info('Using Web Speech API (browser TTS)', tag: 'AUDIO');
+        AppLogger.success('Audio announcement service initialized successfully for web', tag: 'AUDIO');
+        return;
+      }
+
+      // Mobile platforms (iOS/Android) - use flutter_tts
+
+      // Auto-detect device language
+      final deviceLocale = ui.PlatformDispatcher.instance.locale;
+      final languageCode = deviceLocale.languageCode; // e.g., 'en', 'fr', 'es'
+      final countryCode = deviceLocale.countryCode; // e.g., 'US', 'FR', 'ES'
+      final ttsLanguage = countryCode != null ? '$languageCode-$countryCode' : languageCode;
+
+      AppLogger.info('Detected device language: $ttsLanguage', tag: 'AUDIO');
+
+      // Try to set device language, fallback to en-US if not available
+      var langResult = await _tts.setLanguage(ttsLanguage);
+      if (langResult != 1) {
+        AppLogger.warning('Device language $ttsLanguage not available, trying base language $languageCode', tag: 'AUDIO');
+        langResult = await _tts.setLanguage(languageCode);
+
+        if (langResult != 1) {
+          AppLogger.warning('Base language $languageCode not available, falling back to en-US', tag: 'AUDIO');
+          langResult = await _tts.setLanguage("en-US");
+        }
+      }
+      AppLogger.debug('TTS language set: $langResult', tag: 'AUDIO');
 
       // Set speech rate (0.0 to 1.0, where 0.5 is normal)
       await _tts.setSpeechRate(0.5);
@@ -156,7 +187,7 @@ class AudioAnnouncementService {
       final message = _buildAnnouncementMessage(hazard);
 
       AppLogger.info('Announcing hazard: $message');
-      await _tts.speak(message);
+      await _speak(message);
     } catch (e) {
       AppLogger.error('Failed to announce hazard', error: e);
     }
@@ -233,6 +264,36 @@ class AudioAnnouncementService {
     );
   }
 
+  /// Platform-agnostic speak method
+  /// Works on both web (using Web Speech API) and mobile (using flutter_tts)
+  Future<dynamic> _speak(String message) async {
+    if (kIsWeb) {
+      // Web platform - use Web Speech API
+      try {
+        final utterance = html.SpeechSynthesisUtterance(message);
+
+        // Auto-detect device language for web
+        final deviceLocale = ui.PlatformDispatcher.instance.locale;
+        final languageCode = deviceLocale.languageCode;
+        final countryCode = deviceLocale.countryCode;
+        utterance.lang = countryCode != null ? '$languageCode-$countryCode' : languageCode;
+
+        utterance.rate = 0.9; // Slightly slower than normal
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        html.window.speechSynthesis!.speak(utterance);
+        return 1; // Success
+      } catch (e) {
+        AppLogger.error('Web Speech API error', tag: 'AUDIO', error: e);
+        return 0; // Failure
+      }
+    } else {
+      // Mobile platform - use flutter_tts
+      return await _tts.speak(message);
+    }
+  }
+
   // ========== INFORMATION ANNOUNCEMENTS (turn-by-turn, milestones) ==========
 
   /// Announce navigation start
@@ -253,7 +314,7 @@ class AudioAnnouncementService {
           'Estimated time: $durationMin minutes.';
       AppLogger.info('About to speak: "$message"', tag: 'AUDIO');
 
-      final result = await _tts.speak(message);
+      final result = await _speak(message);
       AppLogger.info('TTS speak() returned: $result', tag: 'AUDIO');
     } catch (e, stackTrace) {
       AppLogger.error('Failed to announce navigation start', tag: 'AUDIO', error: e);
@@ -281,7 +342,7 @@ class AudioAnnouncementService {
       }
 
       AppLogger.info('Announcing turn: $message', tag: 'AUDIO');
-      await _tts.speak(message);
+      await _speak(message);
       _announcedTurns.add(turnId);
     } catch (e) {
       AppLogger.error('Failed to announce turn instruction', error: e);
@@ -295,7 +356,7 @@ class AudioAnnouncementService {
     try {
       const message = 'You have arrived at your destination.';
       AppLogger.info('Announcing: $message', tag: 'AUDIO');
-      await _tts.speak(message);
+      await _speak(message);
     } catch (e) {
       AppLogger.error('Failed to announce arrival', error: e);
     }
@@ -308,7 +369,7 @@ class AudioAnnouncementService {
     try {
       const message = 'Recalculating route.';
       AppLogger.info('Announcing: $message', tag: 'AUDIO');
-      await _tts.speak(message);
+      await _speak(message);
     } catch (e) {
       AppLogger.error('Failed to announce rerouting', error: e);
     }
@@ -323,7 +384,7 @@ class AudioAnnouncementService {
     try {
       const message = 'You are off route. Please return to the route or recalculate.';
       AppLogger.info('Announcing: $message', tag: 'AUDIO');
-      await _tts.speak(message);
+      await _speak(message);
     } catch (e) {
       AppLogger.error('Failed to announce off-route', error: e);
     }
@@ -332,7 +393,13 @@ class AudioAnnouncementService {
   /// Stop any ongoing speech
   Future<void> stop() async {
     try {
-      await _tts.stop();
+      if (kIsWeb) {
+        // Web platform - cancel speech synthesis
+        html.window.speechSynthesis!.cancel();
+      } else {
+        // Mobile platform - stop flutter_tts
+        await _tts.stop();
+      }
     } catch (e) {
       AppLogger.error('Failed to stop TTS', error: e);
     }
@@ -344,7 +411,7 @@ class AudioAnnouncementService {
       AppLogger.info('Testing TTS...', tag: 'AUDIO');
       await initialize();
       AppLogger.info('About to speak test message', tag: 'AUDIO');
-      final result = await _tts.speak('Audio announcements are working correctly.');
+      final result = await _speak('Audio announcements are working correctly.');
       AppLogger.info('Test TTS speak() returned: $result', tag: 'AUDIO');
     } catch (e, stackTrace) {
       AppLogger.error('Test announcement failed', tag: 'AUDIO', error: e);
