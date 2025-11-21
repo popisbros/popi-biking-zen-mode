@@ -13,7 +13,7 @@ import '../providers/navigation_provider.dart';
 import '../providers/location_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorites_visibility_provider.dart';
-import '../providers/community_warnings_provider.dart';
+import '../providers/community_provider.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
 import 'app_logger.dart';
 
