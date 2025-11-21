@@ -84,18 +84,43 @@ class RouteCalculationHelper {
       'totalWarnings': allWarnings.length,
     });
 
-    final routesWithHazards = multiProfileRoutes.copyWithHazards(allWarnings);
+    // Detect hazards on each route individually
+    RouteResult? carRouteWithHazards;
+    RouteResult? bikeRouteWithHazards;
+    RouteResult? footRouteWithHazards;
 
-    // Log hazard counts
-    if (routesWithHazards.carRoute != null) {
-      AppLogger.debug('Car route: ${routesWithHazards.carRoute!.routeHazards?.length ?? 0} hazards', tag: 'ROUTING');
+    if (multiProfileRoutes.carRoute != null) {
+      final hazards = RouteHazardDetector.detectHazardsOnRoute(
+        routePoints: multiProfileRoutes.carRoute!.points,
+        allHazards: allWarnings,
+      );
+      carRouteWithHazards = multiProfileRoutes.carRoute!.copyWithHazards(hazards);
+      AppLogger.debug('Car route: ${hazards.length} hazards', tag: 'ROUTING');
     }
-    if (routesWithHazards.bikeRoute != null) {
-      AppLogger.debug('Bike route: ${routesWithHazards.bikeRoute!.routeHazards?.length ?? 0} hazards', tag: 'ROUTING');
+
+    if (multiProfileRoutes.bikeRoute != null) {
+      final hazards = RouteHazardDetector.detectHazardsOnRoute(
+        routePoints: multiProfileRoutes.bikeRoute!.points,
+        allHazards: allWarnings,
+      );
+      bikeRouteWithHazards = multiProfileRoutes.bikeRoute!.copyWithHazards(hazards);
+      AppLogger.debug('Bike route: ${hazards.length} hazards', tag: 'ROUTING');
     }
-    if (routesWithHazards.footRoute != null) {
-      AppLogger.debug('Foot route: ${routesWithHazards.footRoute!.routeHazards?.length ?? 0} hazards', tag: 'ROUTING');
+
+    if (multiProfileRoutes.footRoute != null) {
+      final hazards = RouteHazardDetector.detectHazardsOnRoute(
+        routePoints: multiProfileRoutes.footRoute!.points,
+        allHazards: allWarnings,
+      );
+      footRouteWithHazards = multiProfileRoutes.footRoute!.copyWithHazards(hazards);
+      AppLogger.debug('Foot route: ${hazards.length} hazards', tag: 'ROUTING');
     }
+
+    final routesWithHazards = MultiProfileRouteResult(
+      carRoute: carRouteWithHazards,
+      bikeRoute: bikeRouteWithHazards,
+      footRoute: footRouteWithHazards,
+    );
 
     // Dismiss loading toast on success
     ToastService.dismiss();
