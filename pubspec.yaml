@@ -22,7 +22,7 @@ dependencies:
   # Maps
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
-  mapbox_maps_flutter: ^2.6.0
+  mapbox_maps_flutter: ^2.12.0
 
   # Location
   geolocator: ^14.0.2
