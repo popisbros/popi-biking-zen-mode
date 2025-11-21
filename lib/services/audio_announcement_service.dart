@@ -30,21 +30,52 @@ class AudioAnnouncementService {
   /// Initialize TTS settings
   Future<void> initialize() async {
     try {
+      AppLogger.info('Initializing TTS engine...', tag: 'AUDIO');
+
       // Set language
-      await _tts.setLanguage("en-US");
+      final langResult = await _tts.setLanguage("en-US");
+      AppLogger.debug('TTS language set to en-US: $langResult', tag: 'AUDIO');
 
       // Set speech rate (0.0 to 1.0, where 0.5 is normal)
       await _tts.setSpeechRate(0.5);
+      AppLogger.debug('TTS speech rate set to 0.5', tag: 'AUDIO');
 
       // Set volume (0.0 to 1.0)
       await _tts.setVolume(1.0);
+      AppLogger.debug('TTS volume set to 1.0', tag: 'AUDIO');
 
       // Set pitch (0.5 to 2.0, where 1.0 is normal)
       await _tts.setPitch(1.0);
+      AppLogger.debug('TTS pitch set to 1.0', tag: 'AUDIO');
 
-      AppLogger.success('Audio announcement service initialized');
-    } catch (e) {
-      AppLogger.error('Failed to initialize TTS', error: e);
+      // iOS-specific: Configure audio session to allow speech during navigation
+      await _tts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.playback,
+        [
+          IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+          IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+          IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+          IosTextToSpeechAudioCategoryOptions.duckOthers,
+        ],
+        IosTextToSpeechAudioMode.voicePrompt,
+      );
+      AppLogger.debug('iOS audio category configured', tag: 'AUDIO');
+
+      // Set completion handler to log when speech finishes
+      _tts.setCompletionHandler(() {
+        AppLogger.debug('TTS speech completed', tag: 'AUDIO');
+      });
+
+      // Set error handler
+      _tts.setErrorHandler((msg) {
+        AppLogger.error('TTS error: $msg', tag: 'AUDIO');
+      });
+
+      AppLogger.success('Audio announcement service initialized successfully', tag: 'AUDIO');
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to initialize TTS', tag: 'AUDIO', error: e);
+      AppLogger.debug('Stack trace: $stackTrace', tag: 'AUDIO');
+      rethrow;
     }
   }
 
@@ -209,16 +240,24 @@ class AudioAnnouncementService {
     required double distanceKm,
     required int durationMin,
   }) async {
-    if (!_informationEnabled) return;
+    AppLogger.info('announceNavigationStart called - mode: ${_audioMode.label}, informationEnabled: $_informationEnabled', tag: 'AUDIO');
+
+    if (!_informationEnabled) {
+      AppLogger.warning('Information announcements disabled, skipping navigation start announcement', tag: 'AUDIO');
+      return;
+    }
 
     try {
       final message = 'Starting navigation. '
           'Distance: ${distanceKm.toStringAsFixed(1)} kilometers. '
           'Estimated time: $durationMin minutes.';
-      AppLogger.info('Announcing: $message', tag: 'AUDIO');
-      await _tts.speak(message);
-    } catch (e) {
-      AppLogger.error('Failed to announce navigation start', error: e);
+      AppLogger.info('About to speak: "$message"', tag: 'AUDIO');
+
+      final result = await _tts.speak(message);
+      AppLogger.info('TTS speak() returned: $result', tag: 'AUDIO');
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to announce navigation start', tag: 'AUDIO', error: e);
+      AppLogger.debug('Stack trace: $stackTrace', tag: 'AUDIO');
     }
   }
 
@@ -301,7 +340,16 @@ class AudioAnnouncementService {
 
   /// Test audio announcement
   Future<void> testAnnouncement() async {
-    await _tts.speak('Audio announcements are working correctly.');
+    try {
+      AppLogger.info('Testing TTS...', tag: 'AUDIO');
+      await initialize();
+      AppLogger.info('About to speak test message', tag: 'AUDIO');
+      final result = await _tts.speak('Audio announcements are working correctly.');
+      AppLogger.info('Test TTS speak() returned: $result', tag: 'AUDIO');
+    } catch (e, stackTrace) {
+      AppLogger.error('Test announcement failed', tag: 'AUDIO', error: e);
+      AppLogger.debug('Stack trace: $stackTrace', tag: 'AUDIO');
+    }
   }
 
   /// Dispose resources

@@ -1474,6 +1474,38 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
+                  // Conditional spacing before User Location (hidden when navigating)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      if (navState.isNavigating) return const SizedBox.shrink();
+                      return const SizedBox(height: 6);
+                    },
+                  ),
+
+                  // User Location button (hidden during navigation)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+
+                      // Hide button during navigation
+                      if (navState.isNavigating) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return FloatingActionButton(
+                        mini: true, // Match zoom button size
+                        heroTag: 'gps_center_button_3d',
+                        onPressed: _centerOnUserLocation,
+                        backgroundColor: isDark ? Colors.grey.shade700 : Colors.white,
+                        foregroundColor: isDark ? Colors.white : AppColors.urbanBlue,
+                        tooltip: 'Center on Location',
+                        child: const Icon(Icons.my_location),
+                      );
+                    },
+                  ),
+
                   // Conditional spacing before Profile (hidden when navigating)
                   Consumer(
                     builder: (context, ref, child) {
@@ -1495,13 +1527,93 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               ),
             ),
 
-            // Bottom-left controls: compass, center, reload
+            // Bottom-left controls: debug tracking, auto-zoom, reload
             Positioned(
               bottom: kIsWeb ? 10 : 30,
               left: 10,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  // Debug toggle button (always at the top)
+                  Builder(
+                    builder: (context) {
+                      final debugState = ref.watch(debugProvider);
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      return FloatingActionButton(
+                        mini: true,
+                        heroTag: 'debug_toggle_3d',
+                        onPressed: () {
+                          ref.read(debugProvider.notifier).toggleVisibility();
+                        },
+                        backgroundColor: debugState.isVisible
+                            ? Colors.red
+                            : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
+                        foregroundColor: debugState.isVisible
+                            ? Colors.white
+                            : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                        tooltip: 'Debug Tracking',
+                        child: const Icon(Icons.bug_report),
+                      );
+                    },
+                  ),
+                  // Spacing after debug button (only when NOT navigating AND debug mode is ON - for Reload POIs)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      final debugState = ref.watch(debugProvider);
+                      if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
+                      return const SizedBox(height: 6);
+                    },
+                  ),
+                  // Reload POIs button (only visible when NOT navigating AND debug tracking is ON)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      final debugState = ref.watch(debugProvider);
+                      if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
+
+                      return FloatingActionButton(
+                        mini: true, // Match zoom button size
+                        heroTag: 'reload_pois_button',
+                        onPressed: () async {
+                          AppLogger.map('Manual POI reload requested - clearing caches');
+
+                          // Clear all annotation managers and POI data
+                          await _clearAnnotationManagers();
+
+                          // Reload map style to force fresh tile downloads
+                          final mapService = MapService();
+                          final currentStyle = mapService.current3DStyle;
+                          final styleUri = mapService.getMapboxStyleUri(currentStyle);
+                          AppLogger.map('Reloading map style to clear tile cache', data: {'style': currentStyle.toString()});
+                          await _mapboxMap?.loadStyleURI(styleUri);
+
+                          // Wait for style to load before recreating annotation manager
+                          await Future.delayed(const Duration(milliseconds: 500));
+
+                          // Recreate point annotation manager
+                          _pointAnnotationManager = await _mapboxMap?.annotations.createPointAnnotationManager();
+
+                          // Reload POI data and markers
+                          await _loadAllPOIData();
+                          _addMarkers();
+                          _lastPOILoadTime = DateTime.now();
+
+                          AppLogger.success('Cache cleared and map reloaded', tag: 'CACHE');
+                        },
+                        backgroundColor: Colors.orange,
+                        tooltip: 'Reload POIs & Clear Cache',
+                        child: const Icon(Icons.refresh),
+                      );
+                    },
+                  ),
+                  // Spacing after reload button (only in navigation mode)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationModeProvider);
+                      return navState.mode == NavMode.navigation ? const SizedBox(height: 6) : const SizedBox.shrink();
+                    },
+                  ),
                   // Auto-zoom toggle button (only show in navigation mode)
                   Consumer(
                     builder: (context, ref, child) {
@@ -1551,126 +1663,31 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       );
                     },
                   ),
-                  // Spacing after auto-zoom button (only in navigation mode)
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final navState = ref.watch(navigationModeProvider);
-                      return navState.mode == NavMode.navigation ? const SizedBox(height: 6) : const SizedBox.shrink();
-                    },
-                  ),
-                  // GPS center button (hidden during navigation)
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final navState = ref.watch(navigationProvider);
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
-
-                      // Hide button during navigation
-                      if (navState.isNavigating) {
-                        return const SizedBox.shrink();
-                      }
-
-                      return FloatingActionButton(
-                        mini: true, // Match zoom button size
-                        heroTag: 'gps_center_button_3d',
-                        onPressed: _centerOnUserLocation,
-                        backgroundColor: isDark ? Colors.grey.shade700 : Colors.white,
-                        foregroundColor: isDark ? Colors.white : AppColors.urbanBlue,
-                        tooltip: 'Center on Location',
-                        child: const Icon(Icons.my_location),
-                      );
-                    },
-                  ),
-                  // Spacing after GPS center (only visible when NOT navigating AND debug mode is ON - for Reload POIs)
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final navState = ref.watch(navigationProvider);
-                      final debugState = ref.watch(debugProvider);
-                      if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
-                      return const SizedBox(height: 6);
-                    },
-                  ),
-                  // Reload POIs button (only visible when NOT navigating AND debug tracking is ON)
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final navState = ref.watch(navigationProvider);
-                      final debugState = ref.watch(debugProvider);
-                      if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
-
-                      return FloatingActionButton(
-                        mini: true, // Match zoom button size
-                        heroTag: 'reload_pois_button',
-                        onPressed: () async {
-                          AppLogger.map('Manual POI reload requested');
-                          await _loadAllPOIData();
-                          _addMarkers();
-                          _lastPOILoadTime = DateTime.now();
-                        },
-                        backgroundColor: Colors.orange,
-                        tooltip: 'Reload POIs',
-                        child: const Icon(Icons.refresh),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 6),
-                  // Debug toggle button
-                  Builder(
-                    builder: (context) {
-                      final debugState = ref.watch(debugProvider);
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
-                      return FloatingActionButton(
-                        mini: true,
-                        heroTag: 'debug_toggle_3d',
-                        onPressed: () {
-                          ref.read(debugProvider.notifier).toggleVisibility();
-                        },
-                        backgroundColor: debugState.isVisible
-                            ? Colors.red
-                            : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-                        foregroundColor: debugState.isVisible
-                            ? Colors.white
-                            : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-                        tooltip: 'Debug Tracking',
-                        child: const Icon(Icons.bug_report),
-                      );
-                    },
-                  ),
-                  // Spacing before Nav Controls (only when navigating)
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final navState = ref.watch(navigationProvider);
-                      if (!navState.isNavigating) return const SizedBox.shrink();
-                      return const SizedBox(height: 6);
-                    },
-                  ),
-                  // Navigation controls (End + Mute buttons) - only when navigating
-                  Consumer(
-                    builder: (context, ref, child) {
-                      final navState = ref.watch(navigationProvider);
-                      if (!navState.isNavigating) return const SizedBox.shrink();
-
-                      return NavigationControls(
-                    onNavigationEnded: () async {
-                      // Use comprehensive cleanup method
-                      await _stopNavigationComplete();
-                    },
-                  );
-                    },
-                  ),
                 ],
               ),
             ),
 
-            // Bottom-right controls: tiles selector, pitch selector, 2D/3D switch (hidden in navigation mode)
-            Consumer(
-              builder: (context, ref, child) {
-                final navState = ref.watch(navigationProvider);
-                final debugState = ref.watch(debugProvider);
-                if (navState.isNavigating) return const SizedBox.shrink();
+            // Bottom-right controls: navigation controls (when navigating) OR tiles/pitch selectors (when not navigating)
+            Positioned(
+              bottom: kIsWeb ? 10 : 30,
+              right: 10,
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final navState = ref.watch(navigationProvider);
+                  final debugState = ref.watch(debugProvider);
 
-                return Positioned(
-                  bottom: kIsWeb ? 10 : 30,
-                  right: 10,
-                  child: Column(
+                  // Show Navigation Controls when navigating
+                  if (navState.isNavigating) {
+                    return NavigationControls(
+                      onNavigationEnded: () async {
+                        // Use comprehensive cleanup method
+                        await _stopNavigationComplete();
+                      },
+                    );
+                  }
+
+                  // Show map controls when not navigating
+                  return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       // Style picker button (tiles selector)
@@ -1705,9 +1722,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                         ),
                       ],
                     ],
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ],
 
@@ -1974,6 +1991,24 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     });
 
     AppLogger.success('Mapbox map ready with camera monitoring', tag: 'MAP');
+  }
+
+  /// Clear all annotation managers and their data
+  Future<void> _clearAnnotationManagers() async {
+    try {
+      // Clear all annotations from the point annotation manager
+      if (_pointAnnotationManager != null) {
+        await _pointAnnotationManager?.deleteAll();
+        AppLogger.debug('Cleared all point annotations', tag: 'CACHE');
+      }
+
+      // Set managers to null so they will be recreated
+      _pointAnnotationManager = null;
+
+      AppLogger.success('Annotation managers cleared', tag: 'CACHE');
+    } catch (e) {
+      AppLogger.error('Failed to clear annotation managers', tag: 'CACHE', error: e);
+    }
   }
 
   /// Load all POI data (OSM POIs, Warnings)
