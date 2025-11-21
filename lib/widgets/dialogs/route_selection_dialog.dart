@@ -234,6 +234,9 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: const Text('CANCEL', style: TextStyle(fontSize: 14)),
                       ),
@@ -263,6 +266,9 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                           backgroundColor: AppColors.urbanBlue,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: const Text(
                           'START NAVIGATION',
@@ -475,6 +481,11 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                   Navigator.pop(context);
                   widget.onCancel();
                 },
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 child: const Text('CLOSE'),
               ),
             ],

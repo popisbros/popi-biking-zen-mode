@@ -415,6 +415,9 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
             : inactiveBgColor,
         foregroundColor: isActive ? Colors.white : inactiveFgColor,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -546,10 +549,20 @@ class _WarningDetailDialogState extends ConsumerState<WarningDetailDialog> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               child: const Text('CANCEL'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               child: const Text('CONFIRM'),
             ),
           ],
