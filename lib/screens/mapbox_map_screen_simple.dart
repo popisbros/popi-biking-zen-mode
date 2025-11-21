@@ -2356,9 +2356,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     final searchState = ref.read(searchProvider);
     final routePoints = searchState.routePoints;
-    final previewFastest = searchState.previewFastestRoute;
-    final previewSafest = searchState.previewSafestRoute;
-    final previewShortest = searchState.previewShortestRoute;
+    final previewFastest = searchState.previewFastestRoute; // Car route (red)
+    final previewSafest = searchState.previewSafestRoute; // Bike route (green)
+    final previewShortest = searchState.previewShortestRoute; // Foot route (blue)
+    final selectedRouteIndex = searchState.selectedPreviewRouteIndex;
 
     // Clear all route layers and sources
     // CRITICAL: Must remove layers BEFORE sources (Mapbox requirement)
@@ -2423,71 +2424,78 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       });
 
       try {
-        // Add fastest route (blue)
-        final fastestPositions = previewFastest.map((point) =>
-          Position(point.longitude, point.latitude)
-        ).toList();
-        final fastestLineString = LineString(coordinates: fastestPositions);
-        final fastestSource = GeoJsonSource(
-          id: 'preview-fastest-source',
-          data: jsonEncode(fastestLineString.toJson()),
-        );
-        await _mapboxMap?.style.addSource(fastestSource);
-        final fastestLayer = LineLayer(
-          id: 'preview-fastest-layer',
-          sourceId: 'preview-fastest-source',
-          lineColor: 0xFFF44336, // Red (car)
-          lineWidth: 8.0,
-          lineCap: LineCap.ROUND,
-          lineJoin: LineJoin.ROUND,
-        );
-        await _mapboxMap?.style.addLayer(fastestLayer);
+        // Determine rendering order: selected route should be added last (drawn on top)
+        // Routes: 0=car (red), 1=bike (green), 2=foot (blue)
+        final routesToRender = <int>[];
 
-        // Add safest route (green) if exists
-        if (previewSafest != null) {
-          final safestPositions = previewSafest.map((point) =>
+        // Add non-selected routes first
+        for (int i = 0; i < 3; i++) {
+          if (i != selectedRouteIndex) {
+            routesToRender.add(i);
+          }
+        }
+        // Add selected route last (on top)
+        routesToRender.add(selectedRouteIndex);
+
+        // Render routes in the determined order
+        for (final routeIndex in routesToRender) {
+          List<latlong.LatLng>? routePoints;
+          String sourceId;
+          String layerId;
+          int color;
+
+          switch (routeIndex) {
+            case 0: // Car route (red)
+              if (previewFastest == null) continue;
+              routePoints = previewFastest;
+              sourceId = 'preview-fastest-source';
+              layerId = 'preview-fastest-layer';
+              color = 0xFFC62828; // Darker red to match Colors.red[700]
+              break;
+            case 1: // Bike route (green)
+              if (previewSafest == null) continue;
+              routePoints = previewSafest;
+              sourceId = 'preview-safest-source';
+              layerId = 'preview-safest-layer';
+              color = 0xFF388E3C; // Darker green to match Colors.green[700]
+              break;
+            case 2: // Foot route (blue)
+              if (previewShortest == null) continue;
+              routePoints = previewShortest;
+              sourceId = 'preview-shortest-source';
+              layerId = 'preview-shortest-layer';
+              color = 0xFF1976D2; // Darker blue to match Colors.blue[700]
+              break;
+            default:
+              continue;
+          }
+
+          if (routePoints == null) continue; // Additional safety check
+
+          final positions = routePoints.map((point) =>
             Position(point.longitude, point.latitude)
           ).toList();
-          final safestLineString = LineString(coordinates: safestPositions);
-          final safestSource = GeoJsonSource(
-            id: 'preview-safest-source',
-            data: jsonEncode(safestLineString.toJson()),
+          final lineString = LineString(coordinates: positions);
+          final source = GeoJsonSource(
+            id: sourceId,
+            data: jsonEncode(lineString.toJson()),
           );
-          await _mapboxMap?.style.addSource(safestSource);
-          final safestLayer = LineLayer(
-            id: 'preview-safest-layer',
-            sourceId: 'preview-safest-source',
-            lineColor: 0xFF4CAF50, // Green
+          await _mapboxMap?.style.addSource(source);
+          final layer = LineLayer(
+            id: layerId,
+            sourceId: sourceId,
+            lineColor: color,
             lineWidth: 8.0,
             lineCap: LineCap.ROUND,
             lineJoin: LineJoin.ROUND,
           );
-          await _mapboxMap?.style.addLayer(safestLayer);
+          await _mapboxMap?.style.addLayer(layer);
         }
 
-        // Add shortest route (red) if exists
-        if (previewShortest != null) {
-          final shortestPositions = previewShortest.map((point) =>
-            Position(point.longitude, point.latitude)
-          ).toList();
-          final shortestLineString = LineString(coordinates: shortestPositions);
-          final shortestSource = GeoJsonSource(
-            id: 'preview-shortest-source',
-            data: jsonEncode(shortestLineString.toJson()),
-          );
-          await _mapboxMap?.style.addSource(shortestSource);
-          final shortestLayer = LineLayer(
-            id: 'preview-shortest-layer',
-            sourceId: 'preview-shortest-source',
-            lineColor: 0xFF2196F3, // Blue (foot/walking)
-            lineWidth: 8.0,
-            lineCap: LineCap.ROUND,
-            lineJoin: LineJoin.ROUND,
-          );
-          await _mapboxMap?.style.addLayer(shortestLayer);
-        }
-
-        AppLogger.success('Preview route polylines added', tag: 'MAP');
+        AppLogger.success('Preview route polylines added in z-order', tag: 'MAP', data: {
+          'selectedRouteIndex': selectedRouteIndex,
+          'renderOrder': routesToRender.toString(),
+        });
       } catch (e, stackTrace) {
         AppLogger.error('Failed to add preview route polylines', tag: 'MAP', error: e, stackTrace: stackTrace);
       }

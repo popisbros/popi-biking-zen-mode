@@ -271,55 +271,22 @@ class SearchNotifier extends Notifier<SearchState> {
     state = state.copyWith(clearPreviewRoutes: true);
   }
 
-  /// Reorder preview routes to bring selected route to top (drawn last)
-  ///
-  /// Routes are stored as: fastest (route 0), safest (route 1), shortest (route 2)
-  /// When selectedIndex changes, we swap routes so the selected one is drawn last
-  void reorderPreviewRoutes(int selectedIndex) {
-    if (state.previewFastestRoute == null || state.previewSafestRoute == null) {
-      return; // Need at least 2 routes
-    }
-
-    final route0 = state.previewFastestRoute!;
-    final route1 = state.previewSafestRoute!;
-    final route2 = state.previewShortestRoute;
-
-    List<LatLng> newFastest;
-    List<LatLng> newSafest;
-    List<LatLng>? newShortest;
-
-    // Reorder so selectedIndex route is in position 2 (drawn last/on top)
-    switch (selectedIndex) {
-      case 0:
-        // Route 0 selected - move it to end: [1, 2, 0]
-        newFastest = route1;
-        newSafest = route2 ?? route0;
-        newShortest = route2 != null ? route0 : null;
-        break;
-      case 1:
-        // Route 1 selected - move it to end: [0, 2, 1]
-        newFastest = route0;
-        newSafest = route2 ?? route1;
-        newShortest = route2 != null ? route1 : null;
-        break;
-      case 2:
-      default:
-        // Route 2 selected (or default) - it's already last: [0, 1, 2]
-        newFastest = route0;
-        newSafest = route1;
-        newShortest = route2;
-        break;
-    }
-
-    state = state.copyWith(
-      previewFastestRoute: newFastest,
-      previewSafestRoute: newSafest,
-      previewShortestRoute: newShortest,
-    );
-
-    AppLogger.debug('Reordered preview routes', tag: 'SEARCH', data: {
+  /// Set the selected preview route index (for z-order rendering)
+  /// This allows the map to render the selected route on top without shuffling data
+  void setSelectedPreviewRouteIndex(int selectedIndex) {
+    state = state.copyWith(selectedPreviewRouteIndex: selectedIndex);
+    AppLogger.debug('Selected preview route index updated', tag: 'SEARCH', data: {
       'selectedIndex': selectedIndex,
     });
+  }
+
+  /// Reorder preview routes to bring selected route to top (drawn last)
+  /// DEPRECATED: This method is no longer needed. Use setSelectedPreviewRouteIndex instead.
+  /// Routes should maintain their original profile-based order (car, bike, foot)
+  @Deprecated('Use setSelectedPreviewRouteIndex instead to avoid color mismatch')
+  void reorderPreviewRoutes(int selectedIndex) {
+    // Simply update the selected index instead of shuffling routes
+    setSelectedPreviewRouteIndex(selectedIndex);
   }
 }
 
@@ -343,9 +310,10 @@ class SearchState {
   final AsyncValue<List<SearchResult>> results;
   final SearchResultLocation? selectedLocation; // Track selected search result
   final List<LatLng>? routePoints; // Track calculated route
-  final List<LatLng>? previewFastestRoute; // Preview route for fastest option
-  final List<LatLng>? previewSafestRoute; // Preview route for safest option
-  final List<LatLng>? previewShortestRoute; // Preview route for shortest option
+  final List<LatLng>? previewFastestRoute; // Preview route for car (route 0)
+  final List<LatLng>? previewSafestRoute; // Preview route for bike (route 1)
+  final List<LatLng>? previewShortestRoute; // Preview route for foot (route 2)
+  final int selectedPreviewRouteIndex; // Which preview route is selected (0=car, 1=bike, 2=foot)
   final bool hasBoundedResults; // Track if initial bounded search returned results
   final bool isExpandedSearch; // Track if we've already expanded the search
 
@@ -358,6 +326,7 @@ class SearchState {
     this.previewFastestRoute,
     this.previewSafestRoute,
     this.previewShortestRoute,
+    this.selectedPreviewRouteIndex = 0,
     this.hasBoundedResults = false,
     this.isExpandedSearch = false,
   });
@@ -384,6 +353,7 @@ class SearchState {
     List<LatLng>? previewSafestRoute,
     List<LatLng>? previewShortestRoute,
     bool clearPreviewRoutes = false,
+    int? selectedPreviewRouteIndex,
     bool? hasBoundedResults,
     bool? isExpandedSearch,
   }) {
@@ -396,6 +366,7 @@ class SearchState {
       previewFastestRoute: clearPreviewRoutes ? null : (previewFastestRoute ?? this.previewFastestRoute),
       previewSafestRoute: clearPreviewRoutes ? null : (previewSafestRoute ?? this.previewSafestRoute),
       previewShortestRoute: clearPreviewRoutes ? null : (previewShortestRoute ?? this.previewShortestRoute),
+      selectedPreviewRouteIndex: clearPreviewRoutes ? 0 : (selectedPreviewRouteIndex ?? this.selectedPreviewRouteIndex),
       hasBoundedResults: hasBoundedResults ?? this.hasBoundedResults,
       isExpandedSearch: isExpandedSearch ?? this.isExpandedSearch,
     );
