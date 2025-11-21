@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/location_data.dart';
+import '../models/multi_profile_route_result.dart';
 import '../services/routing_service.dart';
+import '../services/route_hazard_detector.dart';
 import '../services/toast_service.dart';
 import '../providers/search_provider.dart';
 import '../providers/map_provider.dart';
@@ -11,6 +13,7 @@ import '../providers/navigation_provider.dart';
 import '../providers/location_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorites_visibility_provider.dart';
+import '../providers/community_warnings_provider.dart';
 import '../widgets/dialogs/route_selection_dialog.dart';
 import 'app_logger.dart';
 
@@ -44,7 +47,7 @@ class RouteCalculationHelper {
       return false;
     }
 
-    AppLogger.map('Calculating multiple routes', data: {
+    AppLogger.map('Calculating multi-profile routes (Car, Bike, Foot)', data: {
       'from': '${location.latitude},${location.longitude}',
       'to': '$destLat,$destLon',
     });
@@ -53,49 +56,64 @@ class RouteCalculationHelper {
     ToastService.loading('Calculating routes...');
 
     final routingService = RoutingService();
-    final routes = await routingService.calculateMultipleRoutes(
+    final multiProfileRoutes = await routingService.calculateMultiProfileRoutes(
       startLat: location.latitude,
       startLon: location.longitude,
       endLat: destLat,
       endLon: destLon,
     );
 
-    if (routes == null || routes.isEmpty) {
-      AppLogger.warning('Route calculation failed', tag: 'ROUTING');
+    if (!multiProfileRoutes.hasAnyRoute) {
+      AppLogger.warning('Route calculation failed - no routes available', tag: 'ROUTING');
       ToastService.dismiss();
       ToastService.error('Unable to calculate routes');
       return false;
     }
 
+    AppLogger.success('Calculated ${multiProfileRoutes.availableCount}/3 profile routes', tag: 'ROUTING', data: {
+      'car': multiProfileRoutes.carRoute != null ? '✓' : '✗',
+      'bike': multiProfileRoutes.bikeRoute != null ? '✓' : '✗',
+      'foot': multiProfileRoutes.footRoute != null ? '✓' : '✗',
+    });
+
+    // Detect hazards on all routes
+    final warningsAsync = ref.read(communityWarningsBoundsNotifierProvider);
+    final allWarnings = warningsAsync.value ?? [];
+
+    AppLogger.debug('Detecting hazards on routes', tag: 'ROUTING', data: {
+      'totalWarnings': allWarnings.length,
+    });
+
+    final routesWithHazards = multiProfileRoutes.copyWithHazards(allWarnings);
+
+    // Log hazard counts
+    if (routesWithHazards.carRoute != null) {
+      AppLogger.debug('Car route: ${routesWithHazards.carRoute!.routeHazards?.length ?? 0} hazards', tag: 'ROUTING');
+    }
+    if (routesWithHazards.bikeRoute != null) {
+      AppLogger.debug('Bike route: ${routesWithHazards.bikeRoute!.routeHazards?.length ?? 0} hazards', tag: 'ROUTING');
+    }
+    if (routesWithHazards.footRoute != null) {
+      AppLogger.debug('Foot route: ${routesWithHazards.footRoute!.routeHazards?.length ?? 0} hazards', tag: 'ROUTING');
+    }
+
     // Dismiss loading toast on success
     ToastService.dismiss();
-
-    AppLogger.debug('Routes received', tag: 'ROUTING', data: {
-      'count': routes.length,
-      'types': routes.map((r) => r.type.name).join(', '),
-    });
 
     // Allow screen to prepare for routes (e.g., adjust pitch)
     onPreRoutesCalculated?.call();
 
     // Set preview routes in state (to display on map)
-    if (routes.length >= 2) {
-      final fastest = routes.firstWhere((r) => r.type == RouteType.fastest);
-      final safest = routes.where((r) => r.type == RouteType.safest).firstOrNull;
-      final shortest = routes.where((r) => r.type == RouteType.shortest).firstOrNull;
-
+    final availableRoutes = routesWithHazards.availableRoutes;
+    if (availableRoutes.length >= 2) {
       ref.read(searchProvider.notifier).setPreviewRoutes(
-        fastest.points,
-        safest?.points ?? shortest!.points,
-        routes.length == 3 ? shortest?.points : null,
+        availableRoutes[0].points,
+        availableRoutes[1].points,
+        availableRoutes.length == 3 ? availableRoutes[2].points : null,
       );
 
       // Auto-zoom to fit all routes on screen
-      final allPoints = [
-        ...fastest.points,
-        if (safest != null) ...safest.points,
-        if (shortest != null) ...shortest.points,
-      ];
+      final allPoints = availableRoutes.expand((r) => r.points).toList();
       fitBoundsCallback(allPoints);
     }
 
@@ -113,24 +131,21 @@ class RouteCalculationHelper {
       showHazards: true, // Keep hazards visible
     );
 
-    // Show route selection dialog
+    // Show route selection dialog with multi-profile routes
     if (context.mounted) {
-      RouteSelectionDialog.show(
+      RouteSelectionDialog.showMultiProfile(
         context: context,
-        routes: routes,
+        multiProfileRoutes: routesWithHazards,
         onRouteSelected: (route) {
           // Save destination to recent destinations (if user is logged in and name is provided)
           final authUser = ref.read(authStateProvider).value;
           if (authUser != null) {
             final name = destinationName ?? '$destLat, $destLon';
             ref.read(authNotifierProvider.notifier).addRecentDestination(name, destLat, destLon);
-
-            // Save route profile preference
-            final profileName = route.type == RouteType.fastest ? 'car'
-                              : route.type == RouteType.safest ? 'bike'
-                              : 'foot';
-            ref.read(authNotifierProvider.notifier).updateDefaultRouteProfile(profileName);
           }
+
+          // Note: Profile preference is now saved in the dialog's onRouteSelected handler
+          // when user taps "START NAVIGATION" button
 
           ref.read(searchProvider.notifier).clearPreviewRoutes();
           // POI state will be managed by displaySelectedRoute (keeps them off during navigation)
