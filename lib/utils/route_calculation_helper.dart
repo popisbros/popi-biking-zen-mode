@@ -97,6 +97,16 @@ class RouteCalculationHelper {
       fitBoundsCallback(allPoints);
     }
 
+    // Save current POI visibility state before showing dialog
+    final savedPOIState = ref.read(mapProvider.notifier).savePOIState();
+
+    // Turn off POIs/Favorites to make map lighter during route selection
+    ref.read(mapProvider.notifier).setPOIVisibility(
+      showOSM: false,
+      showCommunity: false,
+      showHazards: true, // Keep hazards visible
+    );
+
     // Show route selection dialog
     if (context.mounted) {
       RouteSelectionDialog.show(
@@ -117,9 +127,12 @@ class RouteCalculationHelper {
           }
 
           ref.read(searchProvider.notifier).clearPreviewRoutes();
+          // POI state will be managed by displaySelectedRoute (keeps them off during navigation)
           onRouteSelected(route);
         },
         onCancel: () {
+          // Restore previous POI visibility state when canceling
+          ref.read(mapProvider.notifier).restorePOIState(savedPOIState);
           ref.read(searchProvider.notifier).clearPreviewRoutes();
           onCancel?.call();
         },

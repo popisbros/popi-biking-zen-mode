@@ -77,6 +77,24 @@ class MapNotifier extends Notifier<MapState> {
     );
   }
 
+  /// Save current POI visibility states (for route selection)
+  POIVisibilityState savePOIState() {
+    return POIVisibilityState(
+      showOSMPOIs: state.showOSMPOIs,
+      showPOIs: state.showPOIs,
+      showWarnings: state.showWarnings,
+    );
+  }
+
+  /// Restore saved POI visibility states
+  void restorePOIState(POIVisibilityState savedState) {
+    state = state.copyWith(
+      showOSMPOIs: savedState.showOSMPOIs,
+      showPOIs: savedState.showPOIs,
+      showWarnings: savedState.showWarnings,
+    );
+  }
+
   /// Toggle auto-zoom in navigation mode
   void toggleAutoZoom() {
     state = state.copyWith(autoZoomEnabled: !state.autoZoomEnabled);
@@ -211,3 +229,16 @@ final mapServiceProvider = Provider<MapService>((ref) {
 
 /// Provider for map state
 final mapProvider = NotifierProvider<MapNotifier, MapState>(MapNotifier.new);
+
+/// POI visibility state for saving/restoring during route selection
+class POIVisibilityState {
+  final bool showOSMPOIs;
+  final bool showPOIs;
+  final bool showWarnings;
+
+  const POIVisibilityState({
+    required this.showOSMPOIs,
+    required this.showPOIs,
+    required this.showWarnings,
+  });
+}
