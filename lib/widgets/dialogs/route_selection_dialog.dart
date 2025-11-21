@@ -167,7 +167,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
           ),
           margin: const EdgeInsets.fromLTRB(20, 20, 20, 40),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+            color: Colors.white.withValues(alpha: 0.7), // More transparent to see routes
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -180,7 +180,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: 16),
+              const SizedBox(height: 12), // Reduced from 16
 
               // Horizontal carousel
               SizedBox(
@@ -199,7 +199,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
 
               // Page indicators
               if (routes.length > 1) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: 12), // Reduced from 16
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
@@ -219,7 +219,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                 ),
               ],
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16), // Reduced from 20
 
               // Action buttons
               Padding(
@@ -350,7 +350,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.85), // Semi-transparent to see routes behind
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color, width: 2),
         boxShadow: [
@@ -401,7 +401,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                 ),
                 const SizedBox(height: 8),
 
-                // Stats in compact row
+                // Stats: Distance and Duration in compact row
                 Row(
                   children: [
                     Icon(Icons.straighten, size: 14, color: AppColors.urbanBlue),
@@ -425,12 +425,18 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                         color: AppColors.urbanBlue,
                       ),
                     ),
-                    if (hazardsCount > 0) ...[
-                      const SizedBox(width: 12),
+                  ],
+                ),
+
+                // Hazards on separate line (only if hazards exist)
+                if (hazardsCount > 0) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
                       Icon(Icons.warning_amber_rounded, size: 14, color: Colors.orange[700]),
                       const SizedBox(width: 4),
                       Text(
-                        '$hazardsCount',
+                        'Hazards: $hazardsCount on this route',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -438,8 +444,8 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                         ),
                       ),
                     ],
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
