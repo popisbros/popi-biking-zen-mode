@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/routing_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/search_provider.dart';
 import '../../models/multi_profile_route_result.dart';
 import '../../constants/app_colors.dart';
 import '../../utils/app_logger.dart';
@@ -156,6 +157,13 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
 
     _pageController = PageController(initialPage: initialPage);
     _currentPage = initialPage;
+
+    // Set initial route order so the preferred route is on top
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(searchProvider.notifier).reorderPreviewRoutes(initialPage);
+      }
+    });
   }
 
   @override
@@ -203,7 +211,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
           constraints: const BoxConstraints(
             maxWidth: 450,
           ),
-          margin: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+          margin: const EdgeInsets.fromLTRB(20, 20, 20, 20),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.7), // More transparent to see routes
             borderRadius: BorderRadius.circular(16),
@@ -227,6 +235,8 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
                   controller: _pageController,
                   onPageChanged: (index) {
                     setState(() => _currentPage = index);
+                    // Reorder preview routes so the selected route is drawn on top
+                    ref.read(searchProvider.notifier).reorderPreviewRoutes(index);
                   },
                   itemCount: routes.length,
                   itemBuilder: (context, index) {
