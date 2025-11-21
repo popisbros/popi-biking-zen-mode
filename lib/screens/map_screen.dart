@@ -44,6 +44,9 @@ import '../widgets/map_toggle_button.dart';
 import '../widgets/common_dialog.dart';
 import '../widgets/osm_poi_selector_button.dart';
 import '../widgets/profile_button.dart';
+import '../widgets/map_controls/top_right_controls.dart';
+import '../widgets/map_controls/bottom_left_controls.dart';
+import '../widgets/map_controls/bottom_right_controls.dart';
 import '../providers/debug_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../services/route_surface_helper.dart';
@@ -1875,442 +1878,105 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             },
           ),
 
-          // Toggle buttons on the right side
+          // Top-right controls
           Positioned(
             top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
             right: 10,
-            child: Column(
-              children: [
-                // POI and Warning toggles (hidden during navigation)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
+            child: TopRightControls(
+              onZoomIn: () {
+                AppLogger.map('Zoom in pressed');
+                final currentZoom = _mapController.camera.zoom;
+                final newZoom = currentZoom.floor() + 1.0;
+                _mapController.move(_mapController.camera.center, newZoom);
+                AppLogger.map('Zoom changed', data: {'from': currentZoom, 'to': newZoom});
+                setState(() {});
+              },
+              onZoomOut: () {
+                AppLogger.map('Zoom out pressed');
+                final currentZoom = _mapController.camera.zoom;
+                final newZoom = currentZoom.floor() - 1.0;
+                _mapController.move(_mapController.camera.center, newZoom);
+                AppLogger.map('Zoom changed', data: {'from': currentZoom, 'to': newZoom});
 
-                    // Hide during navigation mode
-                    if (navState.isNavigating) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final currentZoom = _isMapReady ? _mapController.camera.zoom : 15.0;
-                    final togglesEnabled = currentZoom > 12.0;
-
-                    return Column(
-                      children: [
-                        // OSM POI selector (multi-choice dropdown)
-                        OSMPOISelectorButton(
-                          count: _displayedOSMPOICount,
-                          enabled: togglesEnabled,
-                        ),
-                        const SizedBox(height: 6),
-                        // Warning toggle with count
-                        MapToggleButton(
-                          isActive: mapState.showWarnings,
-                          icon: Icons.warning,
-                          activeColor: Colors.orange,
-                          count: _displayedWarningCount,
-                          enabled: togglesEnabled,
-                          onPressed: () {
-                            AppLogger.map('Warning toggle pressed');
-                            final wasOff = !mapState.showWarnings;
-                            ref.read(mapProvider.notifier).toggleWarnings();
-                            // If turning ON, load only this feature if needed
-                            if (wasOff) {
-                              _loadWarningsIfNeeded();
-                            }
-                          },
-                          tooltip: 'Toggle Warnings',
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                // Conditional spacing before Favorites (hidden if navigating or not logged in)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    final authUser = ref.watch(authStateProvider).value;
-                    if (navState.isNavigating || authUser == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return const SizedBox(height: 6);
-                  },
-                ),
-
-                // Favorites and destinations toggle (hidden in navigation mode or when user not logged in)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    final authUser = ref.watch(authStateProvider).value;
-
-                    // Hide if in navigation mode or user not logged in
-                    if (navState.isNavigating || authUser == null) {
-                      return const SizedBox.shrink();
-                    }
-
-                    final favoritesVisible = ref.watch(favoritesVisibilityProvider);
-
-                    return MapToggleButton(
-                      isActive: favoritesVisible,
-                      icon: Icons.star,
-                      activeColor: Colors.yellow.shade600,
-                      count: _displayedFavoritesCount,
-                      enabled: true, // Always enabled (not zoom-dependent)
-                      onPressed: () {
-                        AppLogger.map('Favorites/destinations toggle pressed');
-                        ref.read(favoritesVisibilityProvider.notifier).toggle();
-                      },
-                      tooltip: 'Toggle Favorites & Destinations',
-                    );
-                  },
-                ),
-                const SizedBox(height: 6),
-
-                // Zoom controls
-                Builder(
-                  builder: (context) {
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final buttonColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
-                    return Column(
-                      children: [
-                        FloatingActionButton(
-                          mini: true,
-                          heroTag: 'zoom_in',
-                          backgroundColor: buttonColor,
-                          foregroundColor: Colors.white,
-                          onPressed: () {
-                            AppLogger.map('Zoom in pressed');
-                            final currentZoom = _mapController.camera.zoom;
-                            // Use floor to get integer zoom: 17.6 -> 18
-                            final newZoom = currentZoom.floor() + 1.0;
-                            _mapController.move(
-                              _mapController.camera.center,
-                              newZoom,
-                            );
-                            AppLogger.map('Zoom changed', data: {
-                              'from': currentZoom,
-                              'to': newZoom,
-                            });
-                            setState(() {}); // Refresh to update zoom display
-                          },
-                          child: const Icon(Icons.add),
-                        ),
-                        const SizedBox(height: 2),
-
-                        // Zoom level display
-                        if (_isMapReady)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: buttonColor,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              _mapController.camera.zoom.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        if (_isMapReady)
-                          const SizedBox(height: 2),
-
-                        // Zoom out button
-                        FloatingActionButton(
-                          mini: true,
-                          heroTag: 'zoom_out',
-                          backgroundColor: buttonColor,
-                          foregroundColor: Colors.white,
-                          onPressed: () {
-                            AppLogger.map('Zoom out pressed');
-                            final currentZoom = _mapController.camera.zoom;
-                            // Use floor to get integer zoom: 17.6 -> 17
-                            final newZoom = currentZoom.floor() - 1.0;
-                            _mapController.move(
-                              _mapController.camera.center,
-                              newZoom,
-                            );
-                            AppLogger.map('Zoom changed', data: {
-                              'from': currentZoom,
-                              'to': newZoom,
-                            });
-
-                            // Auto-turn OFF all POI toggles if zooming to <= 12
-                            if (newZoom <= 12.0) {
-                              final mapState = ref.read(mapProvider);
-                              if (mapState.showOSMPOIs) {
-                                ref.read(mapProvider.notifier).toggleOSMPOIs();
-                              }
-                              if (mapState.showPOIs) {
-                                ref.read(mapProvider.notifier).togglePOIs();
-                              }
-                              if (mapState.showWarnings) {
-                                ref.read(mapProvider.notifier).toggleWarnings();
-                              }
-                              AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
-                            }
-
-                            setState(() {}); // Refresh to update zoom display and toggles
-                          },
-                          child: const Icon(Icons.remove),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 6),
-
-                // GPS center button (hidden during navigation)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final buttonColor = isDark ? Colors.grey.shade700 : Colors.white;
-
-                    // Hide button during navigation
-                    if (navState.isNavigating) {
-                      return const SizedBox.shrink();
-                    }
-
-                    return FloatingActionButton(
-                      mini: true, // Match zoom button size
-                      heroTag: 'my_location',
-                      onPressed: () {
-                        AppLogger.map('My location button pressed');
-                        locationAsync.whenData((location) {
-                          if (location != null) {
-                            AppLogger.map('Centering on GPS location');
-                            _mapController.move(LatLng(location.latitude, location.longitude), 15);
-                            _loadAllMapDataWithBounds();
-                          }
-                        });
-                      },
-                      backgroundColor: buttonColor,
-                      foregroundColor: AppColors.urbanBlue,
-                      tooltip: 'Center on Location',
-                      child: const Icon(Icons.my_location),
-                    );
-                  },
-                ),
-                // Conditional spacing before Profile (hidden when navigating)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    if (navState.isNavigating) return const SizedBox.shrink();
-                    return const SizedBox(height: 6);
-                  },
-                ),
-
-                // Profile button (hidden in navigation mode)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    if (navState.isNavigating) return const SizedBox.shrink();
-                    return const ProfileButton();
-                  },
-                ),
-              ],
+                // Auto-disable POI toggles at zoom <= 12
+                if (newZoom <= 12.0) {
+                  final mapState = ref.read(mapProvider);
+                  if (mapState.showOSMPOIs) ref.read(mapProvider.notifier).toggleOSMPOIs();
+                  if (mapState.showPOIs) ref.read(mapProvider.notifier).togglePOIs();
+                  if (mapState.showWarnings) ref.read(mapProvider.notifier).toggleWarnings();
+                  AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
+                }
+                setState(() {});
+              },
+              onCenterLocation: () {
+                AppLogger.map('My location button pressed');
+                final locationAsync = ref.read(locationNotifierProvider);
+                locationAsync.whenData((location) {
+                  if (location != null) {
+                    AppLogger.map('Centering on GPS location');
+                    _mapController.move(LatLng(location.latitude, location.longitude), 15);
+                    _loadAllMapDataWithBounds();
+                  }
+                });
+              },
+              currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
+              isZoomVisible: _isMapReady,
             ),
           ),
 
-          // Bottom-left controls: debug, auto-zoom, compass, reload
+          // Bottom-left controls
           Positioned(
             bottom: kIsWeb ? 10 : 30,
             left: 10,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // Debug toggle button (always at the top)
-                Builder(
-                  builder: (context) {
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
-                    final debugState = ref.watch(debugProvider);
+            child: BottomLeftControls(
+              onAutoZoomToggle: () {
+                final wasEnabled = ref.read(mapProvider).autoZoomEnabled;
+                ref.read(mapProvider.notifier).toggleAutoZoom();
+                AppLogger.map('Auto-zoom ${wasEnabled ? "disabled" : "enabled"} (2D)');
 
-                    return FloatingActionButton(
-                      mini: true,
-                      heroTag: 'debug_toggle_2d',
-                      onPressed: () {
-                        ref.read(debugProvider.notifier).toggleVisibility();
-                      },
-                      backgroundColor: debugState.isVisible ? Colors.red : inactiveColor,
-                      foregroundColor: Colors.white,
-                      tooltip: 'Debug Tracking',
-                      child: const Icon(Icons.bug_report),
-                    );
-                  },
-                ),
-                const SizedBox(height: 6),
-                // Auto-zoom toggle button (only show in navigation mode)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
-                    final inactiveFgColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-                    final navState = ref.watch(navigationModeProvider);
-                    final isNavigationMode = navState.mode == NavMode.navigation;
-                    final mapState = ref.watch(mapProvider);
-
-                    if (!isNavigationMode) return const SizedBox.shrink();
-
-                    return FloatingActionButton(
-                      mini: true,
-                      heroTag: 'auto_zoom_toggle_2d',
-                      onPressed: () {
-                        final wasEnabled = mapState.autoZoomEnabled;
-                        ref.read(mapProvider.notifier).toggleAutoZoom();
-                        AppLogger.map('Auto-zoom ${wasEnabled ? "disabled" : "enabled"} (2D)');
-
-                        // If we just enabled auto-zoom, immediately re-center on user position
-                        if (!wasEnabled) {
-                          final location = ref.read(locationNotifierProvider).value;
-                          if (location != null && _isMapReady) {
-                            final newPosition = LatLng(location.latitude, location.longitude);
-                            final logicalZoom = NavigationUtils.calculateNavigationZoom(location.speed);
-                            final targetZoom = NavigationUtils.toFlutterMapZoom(logicalZoom);
-                            _mapController.move(newPosition, targetZoom);
-                            _originalGPSReference = newPosition;
-                            AppLogger.map('Auto-zoom re-enabled, immediately re-centered on user');
-                          }
-                        }
-                      },
-                      backgroundColor: mapState.autoZoomEnabled ? Colors.blue : inactiveColor,
-                      foregroundColor: mapState.autoZoomEnabled ? Colors.white : inactiveFgColor,
-                      tooltip: mapState.autoZoomEnabled ? 'Disable Auto-Zoom' : 'Enable Auto-Zoom',
-                      child: Icon(mapState.autoZoomEnabled ? Icons.zoom_out_map : Icons.zoom_out_map_outlined),
-                    );
-                  },
-                ),
-                // Spacing after auto-zoom button (only in navigation mode)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationModeProvider);
-                    return navState.mode == NavMode.navigation ? const SizedBox(height: 6) : const SizedBox.shrink();
-                  },
-                ),
-                // Compass rotation toggle button (Native only)
-                if (!kIsWeb)
-                  Builder(
-                    builder: (context) {
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
-                      final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
-                      final inactiveFgColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-
-                      return FloatingActionButton(
-                        mini: true, // Match zoom button size
-                        heroTag: 'compass_rotation_toggle_2d',
-                        onPressed: () {
-                          setState(() {
-                            _compassRotationEnabled = !_compassRotationEnabled;
-                            if (!_compassRotationEnabled) {
-                              // Reset map to north when disabling
-                              _mapController.rotate(0);
-                              _lastBearing = null;
-                            }
-                          });
-                          AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"} (2D)');
-                        },
-                        backgroundColor: _compassRotationEnabled ? Colors.purple : inactiveColor,
-                        foregroundColor: _compassRotationEnabled ? Colors.white : inactiveFgColor,
-                        tooltip: 'Toggle Compass Rotation',
-                        child: Icon(_compassRotationEnabled ? Icons.explore : Icons.explore_off),
-                      );
-                    },
-                  ),
-                // Spacing after Compass (only on Native and visible when NOT navigating OR debug mode is ON)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    final debugState = ref.watch(debugProvider);
-                    if (!kIsWeb && (!navState.isNavigating || debugState.isVisible)) {
-                      return const SizedBox(height: 6);
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-                // Spacing for Reload POIs (only visible when NOT navigating AND debug mode is ON)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    final debugState = ref.watch(debugProvider);
-                    if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
-                    return const SizedBox(height: 6);
-                  },
-                ),
-                // Reload POIs button (only visible when NOT navigating AND debug tracking is ON)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    final debugState = ref.watch(debugProvider);
-                    if (navState.isNavigating || !debugState.isVisible) return const SizedBox.shrink();
-
-                    return FloatingActionButton(
-                      mini: true, // Match zoom button size
-                      heroTag: 'reload_pois_2d',
-                      onPressed: () {
-                        AppLogger.map('Manual POI reload requested (2D)');
-                        _loadAllMapDataWithBounds(forceReload: true);
-                      },
-                      backgroundColor: Colors.orange,
-                      tooltip: 'Reload POIs',
-                      child: const Icon(Icons.refresh),
-                    );
-                  },
-                ),
-              ],
+                // If we just enabled auto-zoom, immediately re-center on user position
+                if (!wasEnabled) {
+                  final location = ref.read(locationNotifierProvider).value;
+                  if (location != null && _isMapReady) {
+                    final newPosition = LatLng(location.latitude, location.longitude);
+                    final logicalZoom = NavigationUtils.calculateNavigationZoom(location.speed);
+                    final targetZoom = NavigationUtils.toFlutterMapZoom(logicalZoom);
+                    _mapController.move(newPosition, targetZoom);
+                    _originalGPSReference = newPosition;
+                    AppLogger.map('Auto-zoom re-enabled, immediately re-centered on user');
+                  }
+                }
+              },
+              onCompassToggle: () {
+                setState(() {
+                  _compassRotationEnabled = !_compassRotationEnabled;
+                  if (!_compassRotationEnabled) {
+                    _mapController.rotate(0);
+                    _lastBearing = null;
+                  }
+                });
+                AppLogger.map('Compass rotation ${_compassRotationEnabled ? "enabled" : "disabled"} (2D)');
+              },
+              onReloadPOIs: () {
+                AppLogger.map('Manual POI reload requested (2D)');
+                _loadAllMapDataWithBounds(forceReload: true);
+              },
+              compassEnabled: _compassRotationEnabled,
             ),
           ),
-          // Bottom-right controls: navigation controls (when navigating) OR tiles/3D selectors (when not navigating)
+          // Bottom-right controls
           Positioned(
             bottom: kIsWeb ? 10 : 30,
             right: 10,
-            child: Consumer(
-              builder: (context, ref, child) {
-                final navState = ref.watch(navigationProvider);
-
-                // Show Navigation Controls when navigating
-                if (navState.isNavigating) {
-                  return NavigationControls(
-                    onNavigationEnded: () {
-                      setState(() {
-                        _activeRoute = null;
-                      });
-                      // Reset rotation to North-up after ending navigation
-                      _mapController.rotate(0.0);
-                    },
-                  );
-                }
-
-                // Show map controls when not navigating
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Layer picker button (tiles selector)
-                    FloatingActionButton(
-                      mini: true, // Match zoom button size
-                      heroTag: 'layer_picker',
-                      onPressed: _showLayerPicker,
-                      backgroundColor: Colors.blue,
-                      tooltip: 'Change Map Layer',
-                      child: const Icon(Icons.layers),
-                    ),
-                    // 3D Map button - only show on Native (not on web/PWA)
-                    if (!kIsWeb) ...[
-                      const SizedBox(height: 6),
-                      FloatingActionButton(
-                        mini: true, // Match zoom button size
-                        heroTag: '3d_map',
-                        onPressed: _open3DMap,
-                        backgroundColor: Colors.green,
-                        tooltip: 'Switch to 3D Map',
-                        child: const Icon(Icons.terrain),
-                      ),
-                    ],
-                  ],
-                );
+            child: BottomRightControls(
+              onNavigationEnded: () {
+                setState(() {
+                  _activeRoute = null;
+                });
+                _mapController.rotate(0.0);
               },
+              onLayerPicker: _showLayerPicker,
+              on3DSwitch: _open3DMap,
             ),
           ),
 
