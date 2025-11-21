@@ -685,53 +685,45 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
       actions: [
         Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // First row: Route To and Close
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CommonDialog.buildActionButton(
-                  label: 'ROUTE TO',
-                  icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _calculateRouteTo(latitude, longitude, destinationName: name);
-                  },
-                ),
-                CommonDialog.buildActionButton(
-                  label: 'CLOSE',
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
+            // Route To button with border
+            CommonDialog.buildBorderedTextButton(
+              label: 'ROUTE TO',
+              icon: const Text('🚴‍♂️', style: TextStyle(fontSize: 18)),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _calculateRouteTo(latitude, longitude, destinationName: name);
+              },
             ),
-            // Second row: Remove button (left-aligned)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: CommonDialog.buildDestructiveButton(
-                label: isDestination ? 'REMOVE FROM DESTINATIONS' : 'REMOVE FROM FAVORITES',
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Find and remove the destination or favorite
-                  final userProfile = ref.read(userProfileProvider).value;
-                  if (userProfile != null) {
-                    if (isDestination) {
-                      final index = userProfile.recentDestinations.indexWhere(
-                        (dest) => dest.latitude == latitude && dest.longitude == longitude,
-                      );
-                      if (index != -1) {
-                        ref.read(authNotifierProvider.notifier).deleteDestination(index);
-                      }
-                    } else {
-                      final index = userProfile.favoriteLocations.indexWhere(
-                        (fav) => fav.latitude == latitude && fav.longitude == longitude,
-                      );
-                      if (index != -1) {
-                        ref.read(authNotifierProvider.notifier).deleteFavorite(index);
-                      }
+            const SizedBox(height: 8),
+            // Remove button with border
+            CommonDialog.buildBorderedTextButton(
+              label: isDestination ? 'REMOVE FROM DESTINATIONS' : 'REMOVE FROM FAVORITES',
+              icon: const Icon(Icons.delete, color: Colors.red, size: 18),
+              textColor: Colors.red,
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Find and remove the destination or favorite
+                final userProfile = ref.read(userProfileProvider).value;
+                if (userProfile != null) {
+                  if (isDestination) {
+                    final index = userProfile.recentDestinations.indexWhere(
+                      (dest) => dest.latitude == latitude && dest.longitude == longitude,
+                    );
+                    if (index != -1) {
+                      ref.read(authNotifierProvider.notifier).deleteDestination(index);
+                    }
+                  } else {
+                    final index = userProfile.favoriteLocations.indexWhere(
+                      (fav) => fav.latitude == latitude && fav.longitude == longitude,
+                    );
+                    if (index != -1) {
+                      ref.read(authNotifierProvider.notifier).deleteFavorite(index);
                     }
                   }
-                },
-              ),
+                }
+              },
             ),
           ],
         ),
