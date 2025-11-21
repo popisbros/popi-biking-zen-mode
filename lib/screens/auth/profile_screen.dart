@@ -637,38 +637,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final result = await showDialog<String>(
       context: context,
       barrierColor: CommonDialog.barrierColor,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-        titlePadding: CommonDialog.titlePadding,
-        contentPadding: CommonDialog.contentPadding,
-        actionsPadding: CommonDialog.actionsPadding,
-        title: const Text('Edit Destination Name'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Name',
-            hintText: 'Enter destination name',
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final backgroundColor = isDark
+            ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+            : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
+        return AlertDialog(
+          backgroundColor: backgroundColor,
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
+          title: const Text('Edit Destination Name'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              hintText: 'Enter destination name',
+            ),
+            autofocus: true,
           ),
-          autofocus: true,
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              CommonDialog.buildBorderedTextButton(
-                label: 'CANCEL',
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(width: 8),
-              CommonDialog.buildBorderedTextButton(
-                label: 'SAVE',
-                textColor: Colors.blue,
-                onPressed: () => Navigator.pop(context, controller.text),
-              ),
-            ],
-          ),
-        ],
-      ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CommonDialog.buildBorderedTextButton(
+                  label: 'CANCEL',
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 8),
+                CommonDialog.buildBorderedTextButton(
+                  label: 'SAVE',
+                  textColor: Colors.blue,
+                  onPressed: () => Navigator.pop(context, controller.text),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
 
     if (result != null && result.trim().isNotEmpty) {
@@ -686,32 +693,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierColor: CommonDialog.barrierColor,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-        titlePadding: CommonDialog.titlePadding,
-        contentPadding: CommonDialog.contentPadding,
-        actionsPadding: CommonDialog.actionsPadding,
-        title: const Text('Delete Destination'),
-        content: const Text('Are you sure you want to remove this destination?'),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              CommonDialog.buildBorderedTextButton(
-                label: 'CANCEL',
-                onPressed: () => Navigator.pop(context, false),
-              ),
-              const SizedBox(width: 8),
-              CommonDialog.buildBorderedTextButton(
-                label: 'DELETE',
-                textColor: Colors.red,
-                borderColor: Colors.red.withValues(alpha: 0.5),
-                onPressed: () => Navigator.pop(context, true),
-              ),
-            ],
-          ),
-        ],
-      ),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final backgroundColor = isDark
+            ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+            : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
+        return AlertDialog(
+          backgroundColor: backgroundColor,
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
+          title: const Text('Delete Destination'),
+          content: const Text('Are you sure you want to remove this destination?'),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CommonDialog.buildBorderedTextButton(
+                  label: 'CANCEL',
+                  onPressed: () => Navigator.pop(context, false),
+                ),
+                const SizedBox(width: 8),
+                CommonDialog.buildBorderedTextButton(
+                  label: 'DELETE',
+                  textColor: Colors.red,
+                  borderColor: Colors.red.withValues(alpha: 0.5),
+                  onPressed: () => Navigator.pop(context, true),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -725,38 +739,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final result = await showDialog<String>(
       context: context,
       barrierColor: CommonDialog.barrierColor,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-        titlePadding: CommonDialog.titlePadding,
-        contentPadding: CommonDialog.contentPadding,
-        actionsPadding: CommonDialog.actionsPadding,
-        title: const Text('Edit Favorite Name'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Name',
-            hintText: 'Enter favorite name',
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final backgroundColor = isDark
+            ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+            : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
+        return AlertDialog(
+          backgroundColor: backgroundColor,
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
+          title: const Text('Edit Favorite Name'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              hintText: 'Enter favorite name',
+            ),
+            autofocus: true,
           ),
-          autofocus: true,
-        ),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              CommonDialog.buildBorderedTextButton(
-                label: 'CANCEL',
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(width: 8),
-              CommonDialog.buildBorderedTextButton(
-                label: 'SAVE',
-                textColor: Colors.blue,
-                onPressed: () => Navigator.pop(context, controller.text),
-              ),
-            ],
-          ),
-        ],
-      ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CommonDialog.buildBorderedTextButton(
+                  label: 'CANCEL',
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 8),
+                CommonDialog.buildBorderedTextButton(
+                  label: 'SAVE',
+                  textColor: Colors.blue,
+                  onPressed: () => Navigator.pop(context, controller.text),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
 
     if (result != null && result.trim().isNotEmpty) {
@@ -774,32 +795,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierColor: CommonDialog.barrierColor,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
-        titlePadding: CommonDialog.titlePadding,
-        contentPadding: CommonDialog.contentPadding,
-        actionsPadding: CommonDialog.actionsPadding,
-        title: const Text('Delete Favorite'),
-        content: const Text('Are you sure you want to remove this favorite?'),
-        actions: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              CommonDialog.buildBorderedTextButton(
-                label: 'CANCEL',
-                onPressed: () => Navigator.pop(context, false),
-              ),
-              const SizedBox(width: 8),
-              CommonDialog.buildBorderedTextButton(
-                label: 'DELETE',
-                textColor: Colors.red,
-                borderColor: Colors.red.withValues(alpha: 0.5),
-                onPressed: () => Navigator.pop(context, true),
-              ),
-            ],
-          ),
-        ],
-      ),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final backgroundColor = isDark
+            ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+            : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
+        return AlertDialog(
+          backgroundColor: backgroundColor,
+          titlePadding: CommonDialog.titlePadding,
+          contentPadding: CommonDialog.contentPadding,
+          actionsPadding: CommonDialog.actionsPadding,
+          title: const Text('Delete Favorite'),
+          content: const Text('Are you sure you want to remove this favorite?'),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CommonDialog.buildBorderedTextButton(
+                  label: 'CANCEL',
+                  onPressed: () => Navigator.pop(context, false),
+                ),
+                const SizedBox(width: 8),
+                CommonDialog.buildBorderedTextButton(
+                  label: 'DELETE',
+                  textColor: Colors.red,
+                  borderColor: Colors.red.withValues(alpha: 0.5),
+                  onPressed: () => Navigator.pop(context, true),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
