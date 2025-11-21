@@ -50,15 +50,18 @@ class RouteSelectionDialog extends ConsumerStatefulWidget {
     required Function(RouteResult) onRouteSelected,
     required VoidCallback onCancel,
   }) {
-    return showDialog(
+    return showGeneralDialog(
       context: context,
-      barrierDismissible: false, // Don't dismiss on tap outside - user must use Cancel button
-      barrierColor: Colors.transparent, // No dark overlay - allows seeing map
-      builder: (context) => RouteSelectionDialog(
-        routes: routes,
-        onRouteSelected: onRouteSelected,
-        onCancel: onCancel,
-      ),
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      barrierLabel: '',
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return RouteSelectionDialog(
+          routes: routes,
+          onRouteSelected: onRouteSelected,
+          onCancel: onCancel,
+        );
+      },
     );
   }
 
@@ -83,15 +86,18 @@ class RouteSelectionDialog extends ConsumerStatefulWidget {
     required Function(RouteResult) onRouteSelected,
     required VoidCallback onCancel,
   }) {
-    return showDialog(
+    return showGeneralDialog(
       context: context,
-      barrierDismissible: false, // Don't dismiss on tap outside - user must use Cancel button
-      barrierColor: Colors.transparent, // No dark overlay - allows seeing map
-      builder: (context) => RouteSelectionDialog(
-        multiProfileRoutes: multiProfileRoutes,
-        onRouteSelected: onRouteSelected,
-        onCancel: onCancel,
-      ),
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      barrierLabel: '',
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return RouteSelectionDialog(
+          multiProfileRoutes: multiProfileRoutes,
+          onRouteSelected: onRouteSelected,
+          onCancel: onCancel,
+        );
+      },
     );
   }
 }
@@ -208,6 +214,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
         ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
         : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
 
+    // Use Align to position dialog at bottom, allowing touches to pass through to map elsewhere
     return Align(
       alignment: Alignment.bottomCenter,
       child: Material(
