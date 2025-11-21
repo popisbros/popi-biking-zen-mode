@@ -52,8 +52,8 @@ class RouteSelectionDialog extends ConsumerStatefulWidget {
   }) {
     return showDialog(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.transparent, // No dark overlay
+      barrierDismissible: false, // Don't dismiss on tap outside - user must use Cancel button
+      barrierColor: Colors.transparent, // No dark overlay - allows seeing map
       builder: (context) => RouteSelectionDialog(
         routes: routes,
         onRouteSelected: onRouteSelected,
@@ -85,8 +85,8 @@ class RouteSelectionDialog extends ConsumerStatefulWidget {
   }) {
     return showDialog(
       context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.transparent, // No dark overlay
+      barrierDismissible: false, // Don't dismiss on tap outside - user must use Cancel button
+      barrierColor: Colors.transparent, // No dark overlay - allows seeing map
       builder: (context) => RouteSelectionDialog(
         multiProfileRoutes: multiProfileRoutes,
         onRouteSelected: onRouteSelected,
