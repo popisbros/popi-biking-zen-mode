@@ -2060,6 +2060,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
+                const SizedBox(height: 6),
+
+                // GPS center button (hidden during navigation)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final navState = ref.watch(navigationProvider);
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final buttonColor = isDark ? Colors.grey.shade700 : Colors.white;
+
+                    // Hide button during navigation
+                    if (navState.isNavigating) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return FloatingActionButton(
+                      mini: true, // Match zoom button size
+                      heroTag: 'my_location',
+                      onPressed: () {
+                        AppLogger.map('My location button pressed');
+                        locationAsync.whenData((location) {
+                          if (location != null) {
+                            AppLogger.map('Centering on GPS location');
+                            _mapController.move(LatLng(location.latitude, location.longitude), 15);
+                            _loadAllMapDataWithBounds();
+                          }
+                        });
+                      },
+                      backgroundColor: buttonColor,
+                      foregroundColor: AppColors.urbanBlue,
+                      tooltip: 'Center on Location',
+                      child: const Icon(Icons.my_location),
+                    );
+                  },
+                ),
                 // Conditional spacing before Profile (hidden when navigating)
                 Consumer(
                   builder: (context, ref, child) {
@@ -2081,13 +2115,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // Bottom-left controls: navigation mode, compass, center, reload
+          // Bottom-left controls: debug, auto-zoom, compass, reload
           Positioned(
             bottom: kIsWeb ? 10 : 30,
             left: 10,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                // Debug toggle button (always at the top)
+                Builder(
+                  builder: (context) {
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+                    final debugState = ref.watch(debugProvider);
+
+                    return FloatingActionButton(
+                      mini: true,
+                      heroTag: 'debug_toggle_2d',
+                      onPressed: () {
+                        ref.read(debugProvider.notifier).toggleVisibility();
+                      },
+                      backgroundColor: debugState.isVisible ? Colors.red : inactiveColor,
+                      foregroundColor: Colors.white,
+                      tooltip: 'Debug Tracking',
+                      child: const Icon(Icons.bug_report),
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
                 // Auto-zoom toggle button (only show in navigation mode)
                 Consumer(
                   builder: (context, ref, child) {
@@ -2164,42 +2219,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       );
                     },
                   ),
-                // Spacing after Compass (only on Native)
-                if (!kIsWeb)
-                  const SizedBox(height: 6),
-                // GPS center button (hidden during navigation)
+                // Spacing after Compass (only on Native and visible when NOT navigating OR debug mode is ON)
                 Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationProvider);
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final buttonColor = isDark ? Colors.grey.shade700 : Colors.white;
-
-                    // Hide button during navigation
-                    if (navState.isNavigating) {
-                      return const SizedBox.shrink();
+                    final debugState = ref.watch(debugProvider);
+                    if (!kIsWeb && (!navState.isNavigating || debugState.isVisible)) {
+                      return const SizedBox(height: 6);
                     }
-
-                    return FloatingActionButton(
-                      mini: true, // Match zoom button size
-                      heroTag: 'my_location',
-                      onPressed: () {
-                        AppLogger.map('My location button pressed');
-                        locationAsync.whenData((location) {
-                          if (location != null) {
-                            AppLogger.map('Centering on GPS location');
-                            _mapController.move(LatLng(location.latitude, location.longitude), 15);
-                            _loadAllMapDataWithBounds();
-                          }
-                        });
-                      },
-                      backgroundColor: buttonColor,
-                      foregroundColor: AppColors.urbanBlue,
-                      tooltip: 'Center on Location',
-                      child: const Icon(Icons.my_location),
-                    );
+                    return const SizedBox.shrink();
                   },
                 ),
-                // Spacing after GPS center (only visible when NOT navigating AND debug mode is ON - for Reload POIs)
+                // Spacing for Reload POIs (only visible when NOT navigating AND debug mode is ON)
                 Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationProvider);
@@ -2228,65 +2259,32 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 6),
-                // Debug toggle button
-                Builder(
-                  builder: (context) {
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
-                    final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
-                    final debugState = ref.watch(debugProvider);
-
-                    return FloatingActionButton(
-                      mini: true,
-                      heroTag: 'debug_toggle_2d',
-                      onPressed: () {
-                        ref.read(debugProvider.notifier).toggleVisibility();
-                      },
-                      backgroundColor: debugState.isVisible ? Colors.red : inactiveColor,
-                      foregroundColor: Colors.white,
-                      tooltip: 'Debug Tracking',
-                      child: const Icon(Icons.bug_report),
-                    );
-                  },
-                ),
-                // Spacing before Nav Controls (only when navigating)
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    if (!navState.isNavigating) return const SizedBox.shrink();
-                    return const SizedBox(height: 6);
-                  },
-                ),
-                // Navigation controls (End + Mute buttons) - only when navigating
-                Consumer(
-                  builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    if (!navState.isNavigating) return const SizedBox.shrink();
-
-                    return NavigationControls(
-                          onNavigationEnded: () {
-                            setState(() {
-                              _activeRoute = null;
-                            });
-                            // Reset rotation to North-up after ending navigation
-                            _mapController.rotate(0.0);
-                          },
-                        );
-                  },
-                ),
               ],
             ),
           ),
-          // Bottom-right controls: tiles selector, 3D switch (hidden in navigation mode)
-          Consumer(
-            builder: (context, ref, child) {
-              final navState = ref.watch(navigationProvider);
-              if (navState.isNavigating) return const SizedBox.shrink();
+          // Bottom-right controls: navigation controls (when navigating) OR tiles/3D selectors (when not navigating)
+          Positioned(
+            bottom: kIsWeb ? 10 : 30,
+            right: 10,
+            child: Consumer(
+              builder: (context, ref, child) {
+                final navState = ref.watch(navigationProvider);
 
-              return Positioned(
-                bottom: kIsWeb ? 10 : 30,
-                right: 10,
-                child: Column(
+                // Show Navigation Controls when navigating
+                if (navState.isNavigating) {
+                  return NavigationControls(
+                    onNavigationEnded: () {
+                      setState(() {
+                        _activeRoute = null;
+                      });
+                      // Reset rotation to North-up after ending navigation
+                      _mapController.rotate(0.0);
+                    },
+                  );
+                }
+
+                // Show map controls when not navigating
+                return Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     // Layer picker button (tiles selector)
@@ -2311,9 +2309,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ),
                     ],
                   ],
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
 
           // Search button (top-left, yellow) - hidden in navigation mode
