@@ -1892,9 +1892,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             right: 10,
             child: Column(
               children: [
-                // Check zoom level - disable toggles if zoom <= 12
-                Builder(
-                  builder: (context) {
+                // POI and Warning toggles (hidden during navigation)
+                Consumer(
+                  builder: (context, ref, child) {
+                    final navState = ref.watch(navigationProvider);
+
+                    // Hide during navigation mode
+                    if (navState.isNavigating) {
+                      return const SizedBox.shrink();
+                    }
+
                     final isDark = Theme.of(context).brightness == Brightness.dark;
                     final currentZoom = _isMapReady ? _mapController.camera.zoom : 15.0;
                     final togglesEnabled = currentZoom > 12.0;
@@ -1911,16 +1918,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               : 0,
                           enabled: togglesEnabled,
                         ),
-
-                        // Conditional spacing after OSM POI (hidden when navigating)
-                        Consumer(
-                          builder: (context, ref, child) {
-                            final navState = ref.watch(navigationProvider);
-                            if (navState.isNavigating) return const SizedBox.shrink();
-                            return const SizedBox(height: 6);
-                          },
-                        ),
-
+                        const SizedBox(height: 6),
                         // Warning toggle with count
                         MapToggleButton(
                           isActive: mapState.showWarnings,

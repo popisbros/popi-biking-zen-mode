@@ -1279,9 +1279,16 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
               right: 10,
               child: Column(
                 children: [
-                  // Check zoom level - disable toggles if zoom <= 12
-                  Builder(
-                    builder: (context) {
+                  // POI and Warning toggles (hidden during navigation)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+
+                      // Hide during navigation mode
+                      if (navState.isNavigating) {
+                        return const SizedBox.shrink();
+                      }
+
                       final togglesEnabled = _currentZoom > 12.0;
 
                       return Column(
