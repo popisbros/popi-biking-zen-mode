@@ -1694,36 +1694,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     },
                   ),
                   // Preview routes layer (shown during route selection)
+                  // Render in z-order: selected route last (on top)
                   if (searchState.previewFastestRoute != null && (searchState.previewSafestRoute != null || searchState.previewShortestRoute != null))
                     PolylineLayer(
-                      polylines: [
-                        // Fastest route in red (car)
-                        Polyline(
-                          points: searchState.previewFastestRoute!,
-                          strokeWidth: 8.0,
-                          color: Colors.red,
-                          borderStrokeWidth: 3.0,
-                          borderColor: Colors.white,
-                        ),
-                        // Safest route in green (bike - if exists)
-                        if (searchState.previewSafestRoute != null)
-                          Polyline(
-                            points: searchState.previewSafestRoute!,
-                            strokeWidth: 8.0,
-                            color: Colors.green,
-                            borderStrokeWidth: 3.0,
-                            borderColor: Colors.white,
-                          ),
-                        // Shortest route in blue (foot/walking - if exists)
-                        if (searchState.previewShortestRoute != null)
-                          Polyline(
-                            points: searchState.previewShortestRoute!,
-                            strokeWidth: 8.0,
-                            color: Colors.blue,
-                            borderStrokeWidth: 3.0,
-                            borderColor: Colors.white,
-                          ),
-                      ],
+                      polylines: _buildPreviewPolylinesInZOrder(
+                        searchState.previewFastestRoute!,
+                        searchState.previewSafestRoute,
+                        searchState.previewShortestRoute,
+                        searchState.selectedPreviewRouteIndex,
+                      ),
                     ),
                   // Selected route polyline layer (below markers)
                   if (routePoints != null && routePoints.isNotEmpty && searchState.previewFastestRoute == null)
@@ -2429,5 +2408,64 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       lighterG,
       lighterB,
     );
+  }
+
+  /// Build preview polylines in z-order (selected route on top)
+  /// Routes: 0=car (red), 1=bike (green), 2=foot (blue)
+  List<Polyline> _buildPreviewPolylinesInZOrder(
+    List<LatLng> carRoute,
+    List<LatLng>? bikeRoute,
+    List<LatLng>? footRoute,
+    int selectedIndex,
+  ) {
+    final polylines = <Polyline>[];
+
+    // Determine rendering order: selected route last (drawn on top)
+    final routesToRender = <int>[];
+    for (int i = 0; i < 3; i++) {
+      if (i != selectedIndex) {
+        routesToRender.add(i);
+      }
+    }
+    routesToRender.add(selectedIndex);
+
+    // Build polylines in the determined order
+    for (final routeIndex in routesToRender) {
+      switch (routeIndex) {
+        case 0: // Car route (red)
+          polylines.add(Polyline(
+            points: carRoute,
+            strokeWidth: 8.0,
+            color: Colors.red[700]!,
+            borderStrokeWidth: 3.0,
+            borderColor: Colors.white,
+          ));
+          break;
+        case 1: // Bike route (green)
+          if (bikeRoute != null) {
+            polylines.add(Polyline(
+              points: bikeRoute,
+              strokeWidth: 8.0,
+              color: Colors.green[700]!,
+              borderStrokeWidth: 3.0,
+              borderColor: Colors.white,
+            ));
+          }
+          break;
+        case 2: // Foot route (blue)
+          if (footRoute != null) {
+            polylines.add(Polyline(
+              points: footRoute,
+              strokeWidth: 8.0,
+              color: Colors.blue[700]!,
+              borderStrokeWidth: 3.0,
+              borderColor: Colors.white,
+            ));
+          }
+          break;
+      }
+    }
+
+    return polylines;
   }
 }
