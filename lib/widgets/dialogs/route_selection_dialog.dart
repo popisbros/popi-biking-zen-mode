@@ -157,15 +157,15 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
       return _buildEmptyState();
     }
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: Material(
         color: Colors.transparent,
         child: Container(
           constraints: const BoxConstraints(
             maxWidth: 450,
-            maxHeight: 500,
           ),
-          margin: const EdgeInsets.all(20),
+          margin: const EdgeInsets.fromLTRB(20, 20, 20, 40),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
             borderRadius: BorderRadius.circular(16),
@@ -180,25 +180,11 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Title
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  widget.multiProfileRoutes != null
-                      ? 'Choose Your Transport Profile'
-                      : 'Choose Your Route',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.urbanBlue,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+              const SizedBox(height: 16),
 
               // Horizontal carousel
               SizedBox(
-                height: 280,
+                height: 140,
                 child: PageView.builder(
                   controller: _pageController,
                   onPageChanged: (index) {
@@ -356,7 +342,7 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -369,92 +355,90 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          // Icon
-          Icon(icon, size: 64, color: color),
-          const SizedBox(height: 16),
-
-          // Label
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-
-          // Description
-          Text(
-            description,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.black54,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-
-          // Stats
+          // Icon on the left (smaller)
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGrey.withValues(alpha: 0.3),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
+            child: Icon(icon, size: 32, color: color),
+          ),
+          const SizedBox(width: 12),
+
+          // Content on the right
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Label
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // Description
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Stats in compact row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStat(Icons.straighten, '${route.distanceKm} km', 'Distance'),
-                    _buildStat(Icons.access_time, '${route.durationMin} min', 'Duration'),
+                    Icon(Icons.straighten, size: 14, color: AppColors.urbanBlue),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${route.distanceKm} km',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.urbanBlue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(Icons.access_time, size: 14, color: AppColors.urbanBlue),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${route.durationMin} min',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.urbanBlue,
+                      ),
+                    ),
+                    if (hazardsCount > 0) ...[
+                      const SizedBox(width: 12),
+                      Icon(Icons.warning_amber_rounded, size: 14, color: Colors.orange[700]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$hazardsCount',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange[700],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-                if (hazardsCount > 0) ...[
-                  const SizedBox(height: 12),
-                  _buildStat(
-                    Icons.warning_amber_rounded,
-                    '$hazardsCount hazard${hazardsCount > 1 ? 's' : ''}',
-                    'On route',
-                    color: Colors.orange[700]!,
-                  ),
-                ],
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStat(IconData icon, String value, String label, {Color? color}) {
-    final statColor = color ?? AppColors.urbanBlue;
-
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: statColor),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: statColor,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Colors.black54,
-          ),
-        ),
-      ],
     );
   }
 
