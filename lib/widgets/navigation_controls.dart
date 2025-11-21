@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/search_provider.dart';
+import '../providers/auth_provider.dart';
+import '../models/user_profile.dart';
+import '../services/audio_announcement_service.dart';
 import '../utils/route_calculation_helper.dart';
 import 'common_dialog.dart';
 
-/// Navigation control FAB (End Navigation)
-/// This appears alongside existing FABs when navigation is active
+/// Navigation control FABs (Audio Toggle + End Navigation)
+/// These appear alongside existing FABs when navigation is active
 class NavigationControls extends ConsumerWidget {
   final VoidCallback? onNavigationEnded;
 
@@ -22,17 +25,86 @@ class NavigationControls extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return FloatingActionButton(
-      mini: true,
-      heroTag: 'nav_end',
-      onPressed: () {
-        _showEndNavigationDialog(context, ref, onNavigationEnded);
-      },
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-      tooltip: 'End navigation',
-      child: const Icon(Icons.close),
+    // Get current audio mode from user profile
+    final userProfile = ref.watch(userProfileProvider).value;
+    final currentAudioMode = userProfile?.audioMode ?? AudioMode.informationAndAlerts;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Audio toggle button
+        FloatingActionButton(
+          mini: true,
+          heroTag: 'nav_audio',
+          onPressed: () {
+            _cycleAudioMode(ref, currentAudioMode);
+          },
+          backgroundColor: _getAudioButtonColor(currentAudioMode),
+          foregroundColor: Colors.white,
+          tooltip: 'Audio: ${currentAudioMode.label}',
+          child: Icon(_getAudioIcon(currentAudioMode)),
+        ),
+        const SizedBox(height: 6),
+        // End navigation button
+        FloatingActionButton(
+          mini: true,
+          heroTag: 'nav_end',
+          onPressed: () {
+            _showEndNavigationDialog(context, ref, onNavigationEnded);
+          },
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          tooltip: 'End navigation',
+          child: const Icon(Icons.close),
+        ),
+      ],
     );
+  }
+
+  /// Get icon for current audio mode
+  IconData _getAudioIcon(AudioMode mode) {
+    switch (mode) {
+      case AudioMode.informationAndAlerts:
+        return Icons.volume_up;
+      case AudioMode.justAlerts:
+        return Icons.volume_down;
+      case AudioMode.none:
+        return Icons.volume_off;
+    }
+  }
+
+  /// Get button color for current audio mode
+  Color _getAudioButtonColor(AudioMode mode) {
+    switch (mode) {
+      case AudioMode.informationAndAlerts:
+        return Colors.blue[700]!;
+      case AudioMode.justAlerts:
+        return Colors.orange[700]!;
+      case AudioMode.none:
+        return Colors.grey[600]!;
+    }
+  }
+
+  /// Cycle through audio modes: Information & Alerts → Just Alerts → No → Information & Alerts
+  void _cycleAudioMode(WidgetRef ref, AudioMode currentMode) {
+    AudioMode nextMode;
+    switch (currentMode) {
+      case AudioMode.informationAndAlerts:
+        nextMode = AudioMode.justAlerts;
+        break;
+      case AudioMode.justAlerts:
+        nextMode = AudioMode.none;
+        break;
+      case AudioMode.none:
+        nextMode = AudioMode.informationAndAlerts;
+        break;
+    }
+
+    // Update user profile
+    ref.read(authNotifierProvider.notifier).updateProfile(audioMode: nextMode);
+
+    // Update audio service immediately
+    AudioAnnouncementService().setAudioMode(nextMode);
   }
 
   /// Show confirmation dialog before ending navigation
