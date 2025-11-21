@@ -142,6 +142,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
   @override
   Widget build(BuildContext context) {
     final navState = ref.watch(navigationProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Only show if navigation is active
     if (!navState.isNavigating) {
@@ -174,7 +175,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
 
     return Container(
       width: double.infinity,
-      color: Colors.white,
+      color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
       padding: EdgeInsets.only(
         left: 6,
         right: 6,
@@ -219,10 +220,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                         children: [
                           Text(
                             nextGHInstruction.text,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -232,7 +233,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                             'in ${_formatDistance(distanceToNextGH)}',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade700,
+                              color: isDark ? Colors.grey[400]! : Colors.grey.shade700,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -269,7 +270,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   Icon(
                     Icons.straighten,
                     size: 16,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey[400]! : Colors.grey.shade600,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -277,7 +278,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
+                      color: isDark ? Colors.grey[300]! : Colors.grey.shade800,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -285,7 +286,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   Icon(
                     Icons.access_time,
                     size: 16,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey[400]! : Colors.grey.shade600,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -293,7 +294,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
+                      color: isDark ? Colors.grey[300]! : Colors.grey.shade800,
                     ),
                   ),
                   // Off-route distance (DEBUG) with countdown timer until next check - only shown when debug enabled
@@ -385,14 +386,14 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                   Icon(
                     Icons.speed,
                     size: 16,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.grey[400]! : Colors.grey.shade600,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     navState.speedText,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: isDark ? Colors.grey[400]! : Colors.grey.shade600,
                     ),
                   ),
                   const Spacer(),
@@ -527,7 +528,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
             'Then:',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400]! : Colors.grey.shade700,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -557,7 +558,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                       compactText,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade800,
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[300]! : Colors.grey.shade800,
                       ),
                     ),
                   ),
@@ -565,7 +566,7 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                     _formatDistance(distance),
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400]! : Colors.grey.shade600,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1013,13 +1014,13 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
               style: TextStyle(fontSize: 18),
             ),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Clear road ahead - Enjoy your ride safely',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87,
                 ),
               ),
             ),
@@ -1073,10 +1074,10 @@ class _NavigationCardState extends ConsumerState<NavigationCard> {
                 Expanded(
                   child: Text(
                     warning.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[900]! : Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

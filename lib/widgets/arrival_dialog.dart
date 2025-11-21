@@ -64,8 +64,13 @@ class _ArrivalDialogState extends ConsumerState<ArrivalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+        : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
     return AlertDialog(
-      backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+      backgroundColor: backgroundColor,
       titlePadding: EdgeInsets.zero,
       contentPadding: CommonDialog.contentPadding,
       actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
@@ -107,9 +112,10 @@ class _ArrivalDialogState extends ConsumerState<ArrivalDialog> {
           // Destination name
           Text(
             widget.destinationName,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: CommonDialog.titleFontSize,
               fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black,
             ),
             textAlign: TextAlign.center,
           ),
@@ -119,6 +125,7 @@ class _ArrivalDialogState extends ConsumerState<ArrivalDialog> {
           // Final distance
           CommonDialog.buildCaptionText(
             'Final distance: ${widget.finalDistance.toStringAsFixed(0)}m',
+            context: context,
           ),
 
           const SizedBox(height: 8),
@@ -126,9 +133,9 @@ class _ArrivalDialogState extends ConsumerState<ArrivalDialog> {
           // Countdown timer
           Text(
             'Auto-closing in ${_remainingSeconds}s',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: CommonDialog.smallFontSize,
-              color: Colors.grey,
+              color: isDark ? Colors.grey[400]! : Colors.grey,
               fontStyle: FontStyle.italic,
             ),
           ),

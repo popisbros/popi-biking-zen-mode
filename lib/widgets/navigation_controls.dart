@@ -36,12 +36,17 @@ class NavigationControls extends ConsumerWidget {
 
   /// Show confirmation dialog before ending navigation
   static void _showEndNavigationDialog(BuildContext context, WidgetRef ref, VoidCallback? onNavigationEnded) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? const Color(0xFF2C2C2C).withValues(alpha: CommonDialog.backgroundOpacity)
+        : Colors.white.withValues(alpha: CommonDialog.backgroundOpacity);
+
     showDialog(
       context: context,
       barrierColor: CommonDialog.barrierColor,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white.withValues(alpha: CommonDialog.backgroundOpacity),
+          backgroundColor: backgroundColor,
           titlePadding: CommonDialog.titlePadding,
           contentPadding: CommonDialog.contentPadding,
           actionsPadding: CommonDialog.actionsPadding,
