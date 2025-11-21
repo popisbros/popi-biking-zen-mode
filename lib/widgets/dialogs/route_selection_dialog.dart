@@ -109,9 +109,9 @@ class _RouteSelectionDialogState extends ConsumerState<RouteSelectionDialog> {
     if (widget.multiProfileRoutes != null) {
       // Get user's preferred profile to set initial page
       final userProfileAsync = ref.read(userProfileProvider);
-      final defaultProfile = userProfileAsync.valueOrNull?.defaultRouteProfile;
+      final defaultProfile = userProfileAsync.value?.defaultRouteProfile;
 
-      AppLogger.debug('Route dialog init - defaultProfile: $defaultProfile, hasValue: ${userProfileAsync.hasValue}, value: ${userProfileAsync.valueOrNull?.defaultRouteProfile}', tag: 'ROUTE_DIALOG');
+      AppLogger.debug('Route dialog init - defaultProfile: $defaultProfile, hasValue: ${userProfileAsync.hasValue}, value: ${userProfileAsync.value?.defaultRouteProfile}', tag: 'ROUTE_DIALOG');
 
       // Find the index of the preferred route in availableRoutes
       // availableRoutes returns routes in order: [car, bike, foot] (only those available)
