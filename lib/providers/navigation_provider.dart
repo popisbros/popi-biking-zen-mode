@@ -174,8 +174,10 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Notify ToastService that navigation is active (adjust toast positioning)
     ToastService.setNavigationActive(true);
 
-    // Initialize and configure audio announcements
-    _initializeAudioService(route);
+    // Initialize and configure audio announcements (fire and forget)
+    _initializeAudioService(route).catchError((error) {
+      AppLogger.error('Failed to initialize audio service', tag: 'AUDIO', error: error);
+    });
 
     // Start listening to location updates (fire and forget, don't block navigation start)
     _startLocationTracking().catchError((error) {
@@ -634,7 +636,10 @@ class NavigationNotifier extends Notifier<NavigationState> {
   }
 
   /// Initialize audio announcement service for navigation
-  void _initializeAudioService(RouteResult route) {
+  Future<void> _initializeAudioService(RouteResult route) async {
+    // Initialize TTS engine
+    await _audioService.initialize();
+
     // Get user's audio mode preference from auth profile
     final userProfile = ref.read(userProfileProvider).value;
 
@@ -651,7 +656,7 @@ class NavigationNotifier extends Notifier<NavigationState> {
     _audioService.clearAnnouncedItems();
 
     // Announce navigation start
-    _audioService.announceNavigationStart(
+    await _audioService.announceNavigationStart(
       distanceKm: route.distanceMeters / 1000, // Convert meters to km
       durationMin: (route.durationMillis / 60000).round(), // Convert milliseconds to minutes
     );
