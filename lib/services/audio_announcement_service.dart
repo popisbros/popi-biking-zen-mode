@@ -7,8 +7,9 @@ import '../models/community_warning.dart';
 import '../models/user_profile.dart';
 import '../utils/app_logger.dart';
 
-// Web-specific imports
-import 'dart:html' as html show window, SpeechSynthesisUtterance;
+// Conditional import for web platform
+import 'audio_announcement_service_web.dart'
+    if (dart.library.io) 'audio_announcement_service_stub.dart' as web;
 
 /// Service for audio announcements during navigation
 ///
@@ -269,25 +270,7 @@ class AudioAnnouncementService {
   Future<dynamic> _speak(String message) async {
     if (kIsWeb) {
       // Web platform - use Web Speech API
-      try {
-        final utterance = html.SpeechSynthesisUtterance(message);
-
-        // Auto-detect device language for web
-        final deviceLocale = ui.PlatformDispatcher.instance.locale;
-        final languageCode = deviceLocale.languageCode;
-        final countryCode = deviceLocale.countryCode;
-        utterance.lang = countryCode != null ? '$languageCode-$countryCode' : languageCode;
-
-        utterance.rate = 0.9; // Slightly slower than normal
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-
-        html.window.speechSynthesis!.speak(utterance);
-        return 1; // Success
-      } catch (e) {
-        AppLogger.error('Web Speech API error', tag: 'AUDIO', error: e);
-        return 0; // Failure
-      }
+      return await web.speakWeb(message);
     } else {
       // Mobile platform - use flutter_tts
       return await _tts.speak(message);
@@ -395,7 +378,7 @@ class AudioAnnouncementService {
     try {
       if (kIsWeb) {
         // Web platform - cancel speech synthesis
-        html.window.speechSynthesis!.cancel();
+        web.stopWeb();
       } else {
         // Mobile platform - stop flutter_tts
         await _tts.stop();

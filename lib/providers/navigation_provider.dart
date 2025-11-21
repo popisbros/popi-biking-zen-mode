@@ -655,10 +655,12 @@ class NavigationNotifier extends Notifier<NavigationState> {
     // Clear any previously announced items
     _audioService.clearAnnouncedItems();
 
-    // Announce navigation start
+    // Announce navigation start with route's planned duration
+    // Note: Use same calculation as NavigationState.estimatedTimeRemaining initialization
+    final durationSeconds = route.durationMillis ~/ 1000; // Integer division, same as NavigationState
     await _audioService.announceNavigationStart(
       distanceKm: route.distanceMeters / 1000, // Convert meters to km
-      durationMin: (route.durationMillis / 60000).round(), // Convert milliseconds to minutes
+      durationMin: (durationSeconds / 60).round(), // Convert seconds to minutes (same as remainingTimeText)
     );
   }
 
@@ -666,18 +668,14 @@ class NavigationNotifier extends Notifier<NavigationState> {
   Future<void> _checkHazardsProximity(LocationData locationData) async {
     if (!state.isNavigating || state.activeRoute == null) return;
 
-    // Get all community warnings
-    final boundsWarnings = ref.read(communityWarningsBoundsNotifierProvider);
-    final allWarnings = ref.read(communityWarningsNotifierProvider);
+    // Use sorted routeWarnings from navigation state (same order as displayed in navigation card)
+    // Filter for community warnings only (audio service only announces community hazards)
+    final communityWarnings = state.routeWarnings
+        .where((w) => w.type == RouteWarningType.community && w.communityWarning != null)
+        .map((w) => w.communityWarning!)
+        .toList();
 
-    List<CommunityWarning> warnings = [];
-    if (allWarnings.hasValue && allWarnings.value != null) {
-      warnings = allWarnings.value!;
-    } else if (boundsWarnings.hasValue && boundsWarnings.value != null) {
-      warnings = boundsWarnings.value!;
-    }
-
-    if (warnings.isEmpty) return;
+    if (communityWarnings.isEmpty) return;
 
     // Convert LocationData to Position for audio service
     final position = Position(
@@ -693,8 +691,8 @@ class NavigationNotifier extends Notifier<NavigationState> {
       speedAccuracy: 0,
     );
 
-    // Check and announce hazards
-    await _audioService.checkHazardsProximity(position, warnings);
+    // Check and announce hazards (now in same order as navigation card)
+    await _audioService.checkHazardsProximity(position, communityWarnings);
   }
 
   /// Get formatted instruction for voice guidance
