@@ -1312,7 +1312,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   // Detect landscape phone mode (not tablet/desktop)
                   final orientation = MediaQuery.of(context).orientation;
                   final screenWidth = MediaQuery.of(context).size.width;
-                  final isLandscapePhone = orientation == Orientation.landscape && screenWidth < 800;
+                  // Threshold: iPads start at ~1024px, large phones (iPhone Pro Max) are ~932px
+                  final isLandscapePhone = orientation == Orientation.landscape && screenWidth < 1000;
 
                   // Debug logging
                   print('🔍 3D MAP LAYOUT: orientation=$orientation, screenWidth=$screenWidth, isLandscapePhone=$isLandscapePhone');
