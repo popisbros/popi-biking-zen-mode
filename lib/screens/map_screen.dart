@@ -1453,7 +1453,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'selectedTypes': mapState.selectedOSMPOITypes?.join(', ') ?? 'all',
         });
         markers.addAll(filteredPOIs.map((poi) => _buildPOIMarker(poi)));
-        _displayedOSMPOICount = filteredPOIs.length;
+
+        // Count only visible markers (filter by current map bounds)
+        if (_isMapReady) {
+          final bounds = _mapController.camera.visibleBounds;
+          final visiblePOIs = filteredPOIs.where((poi) {
+            return poi.latitude >= bounds.south &&
+                   poi.latitude <= bounds.north &&
+                   poi.longitude >= bounds.west &&
+                   poi.longitude <= bounds.east;
+          }).length;
+          _displayedOSMPOICount = visiblePOIs;
+        } else {
+          _displayedOSMPOICount = filteredPOIs.length;
+        }
       });
     } else {
       AppLogger.debug('OSM POIs hidden by toggle', tag: 'MAP');
@@ -1471,7 +1484,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           'deleted': allWarnings.length - warnings.length,
         });
         markers.addAll(warnings.map((warning) => _buildWarningMarker(warning)));
-        _displayedWarningCount = warnings.length;
+
+        // Count only visible markers (filter by current map bounds)
+        if (_isMapReady) {
+          final bounds = _mapController.camera.visibleBounds;
+          final visibleWarnings = warnings.where((warning) {
+            return warning.latitude >= bounds.south &&
+                   warning.latitude <= bounds.north &&
+                   warning.longitude >= bounds.west &&
+                   warning.longitude <= bounds.east;
+          }).length;
+          _displayedWarningCount = visibleWarnings;
+        } else {
+          _displayedWarningCount = warnings.length;
+        }
       });
     } else {
       AppLogger.debug('Warnings hidden by toggle', tag: 'MAP');
@@ -1546,8 +1572,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
       AppLogger.debug('Added ${userProfile.favoriteLocations.length} favorite markers', tag: 'MAP');
 
-      // Track displayed count
-      _displayedFavoritesCount = userProfile.recentDestinations.length + userProfile.favoriteLocations.length;
+      // Count only visible markers (filter by current map bounds)
+      if (_isMapReady) {
+        final bounds = _mapController.camera.visibleBounds;
+        final visibleDestinations = userProfile.recentDestinations.where((dest) {
+          return dest.latitude >= bounds.south &&
+                 dest.latitude <= bounds.north &&
+                 dest.longitude >= bounds.west &&
+                 dest.longitude <= bounds.east;
+        }).length;
+        final visibleFavorites = userProfile.favoriteLocations.where((fav) {
+          return fav.latitude >= bounds.south &&
+                 fav.latitude <= bounds.north &&
+                 fav.longitude >= bounds.west &&
+                 fav.longitude <= bounds.east;
+        }).length;
+        _displayedFavoritesCount = visibleDestinations + visibleFavorites;
+      } else {
+        _displayedFavoritesCount = userProfile.recentDestinations.length + userProfile.favoriteLocations.length;
+      }
     }
 
     AppLogger.map('Total markers on map', data: {'count': markers.length});
