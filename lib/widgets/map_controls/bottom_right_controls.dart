@@ -25,6 +25,7 @@ class BottomRightControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final navState = ref.watch(navigationProvider);
+    final debugState = ref.watch(debugProvider);
 
     // Show Navigation Controls when navigating
     if (navState.isNavigating) {
@@ -74,8 +75,8 @@ class BottomRightControls extends ConsumerWidget {
           ),
         ],
 
-        // 2D/3D switch (3D map only)
-        if (on3DSwitch != null && customStylePicker != null && !kIsWeb) ...[
+        // 2D/3D switch (3D map only - only show when debug tracking is enabled)
+        if (on3DSwitch != null && customStylePicker != null && !kIsWeb && debugState.isVisible) ...[
           const SizedBox(height: 4),
           FloatingActionButton(
             mini: true,

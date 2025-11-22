@@ -1925,10 +1925,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
             right: 10,
-            child: Column(
-              children: [
-                // POI toggles (separate from shared controls)
-                Consumer(
+            child: Builder(
+              builder: (context) {
+                // Detect landscape phone mode (not tablet/desktop)
+                final orientation = MediaQuery.of(context).orientation;
+                final screenWidth = MediaQuery.of(context).size.width;
+                final isLandscapePhone = orientation == Orientation.landscape && screenWidth < 800;
+
+                // POI toggles widget
+                final poiToggles = Consumer(
                   builder: (context, ref, child) {
                     final navState = ref.watch(navigationProvider);
                     if (navState.isNavigating || !_isMapReady) return const SizedBox.shrink();
@@ -1981,9 +1986,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ],
                     );
                   },
-                ),
-                // Shared controls (zoom, location, profile)
-                TopRightControls(
+                );
+
+                // Shared controls widget
+                final sharedControls = TopRightControls(
                   onZoomIn: () {
                     AppLogger.map('Zoom in pressed');
                     final currentZoom = _mapController.camera.zoom;
@@ -2029,8 +2035,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   },
                   currentZoom: _isMapReady ? _mapController.camera.zoom : 13.0,
                   isZoomVisible: _isMapReady,
-                ),
-              ],
+                );
+
+                // Use two-column layout in landscape phone mode
+                if (isLandscapePhone) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      poiToggles,
+                      const SizedBox(width: 4),
+                      sharedControls,
+                    ],
+                  );
+                } else {
+                  // Single column layout for portrait or tablet/desktop
+                  return Column(
+                    children: [
+                      poiToggles,
+                      sharedControls,
+                    ],
+                  );
+                }
+              },
             ),
           ),
 

@@ -81,8 +81,8 @@ class BottomLeftControls extends ConsumerWidget {
             child: Icon((compassEnabled ?? false) ? Icons.explore : Icons.explore_off),
           ),
 
-        // Spacing after Compass (only on Native and visible when NOT navigating OR debug mode is ON)
-        if (!kIsWeb && showCompass && onCompassToggle != null && (!navState.isNavigating || debugState.isVisible))
+        // Spacing after Compass (only show when reload button below is visible)
+        if (!kIsWeb && showCompass && onCompassToggle != null && !navState.isNavigating && debugState.isVisible && onReloadPOIs != null)
           const SizedBox(height: 4),
 
         // Reload POIs button (only visible when NOT navigating AND debug tracking is ON)
