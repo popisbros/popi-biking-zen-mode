@@ -117,6 +117,40 @@ class MapNotifier extends Notifier<MapState> {
   void updateBounds(LatLng southWest, LatLng northEast) {
     state = state.copyWith(southWest: southWest, northEast: northEast);
   }
+
+  /// Save current toggle states and disable them (for low zoom)
+  void saveAndDisableToggles() {
+    state = state.copyWith(
+      savedShowOSMPOIs: state.showOSMPOIs,
+      savedShowWarnings: state.showWarnings,
+      showOSMPOIs: false,
+      showWarnings: false,
+    );
+  }
+
+  /// Restore previously saved toggle states (when zooming back in)
+  void restoreSavedToggles() {
+    if (state.savedShowOSMPOIs != null || state.savedShowWarnings != null) {
+      state = MapState(
+        current2DLayer: state.current2DLayer,
+        tileUrl: state.tileUrl,
+        attribution: state.attribution,
+        current3DStyle: state.current3DStyle,
+        mapboxStyleUri: state.mapboxStyleUri,
+        showPOIs: state.showPOIs,
+        showOSMPOIs: state.savedShowOSMPOIs ?? state.showOSMPOIs,
+        showWarnings: state.savedShowWarnings ?? state.showWarnings,
+        selectedOSMPOITypes: state.selectedOSMPOITypes,
+        autoZoomEnabled: state.autoZoomEnabled,
+        center: state.center,
+        zoom: state.zoom,
+        southWest: state.southWest,
+        northEast: state.northEast,
+        savedShowOSMPOIs: null, // Clear saved state
+        savedShowWarnings: null, // Clear saved state
+      );
+    }
+  }
 }
 
 /// Map state class
@@ -149,6 +183,10 @@ class MapState {
   final LatLng? southWest;
   final LatLng? northEast;
 
+  // Saved toggle states (for auto-disable/restore at low zoom)
+  final bool? savedShowOSMPOIs;
+  final bool? savedShowWarnings;
+
   const MapState({
     required this.current2DLayer,
     required this.tileUrl,
@@ -164,6 +202,8 @@ class MapState {
     required this.zoom,
     this.southWest,
     this.northEast,
+    this.savedShowOSMPOIs,
+    this.savedShowWarnings,
   });
 
   factory MapState.initial() {
@@ -205,6 +245,8 @@ class MapState {
     double? zoom,
     LatLng? southWest,
     LatLng? northEast,
+    bool? savedShowOSMPOIs,
+    bool? savedShowWarnings,
   }) {
     return MapState(
       current2DLayer: current2DLayer ?? this.current2DLayer,
@@ -221,6 +263,8 @@ class MapState {
       zoom: zoom ?? this.zoom,
       southWest: southWest ?? this.southWest,
       northEast: northEast ?? this.northEast,
+      savedShowOSMPOIs: savedShowOSMPOIs ?? this.savedShowOSMPOIs,
+      savedShowWarnings: savedShowWarnings ?? this.savedShowWarnings,
     );
   }
 }

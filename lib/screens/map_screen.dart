@@ -1934,7 +1934,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     if (navState.isNavigating || !_isMapReady) return const SizedBox.shrink();
 
                     final currentZoom = _mapController.camera.zoom;
-                    final togglesEnabled = currentZoom > 12.0;
+                    final togglesEnabled = currentZoom > 13.0;
 
                     return Column(
                       children: [
@@ -1991,6 +1991,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     final newZoom = currentZoom.floor() + 1.0;
                     _mapController.move(_mapController.camera.center, newZoom);
                     AppLogger.map('Zoom changed', data: {'from': currentZoom, 'to': newZoom});
+
+                    // Auto-restore POI toggles when zooming above threshold
+                    if (currentZoom <= 13.0 && newZoom > 13.0) {
+                      ref.read(mapProvider.notifier).restoreSavedToggles();
+                      AppLogger.map('Auto-restored POI toggles at zoom > 13');
+                    }
                     setState(() {});
                   },
                   onZoomOut: () {
@@ -2000,13 +2006,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     _mapController.move(_mapController.camera.center, newZoom);
                     AppLogger.map('Zoom changed', data: {'from': currentZoom, 'to': newZoom});
 
-                    // Auto-disable POI toggles at zoom <= 12
-                    if (newZoom <= 12.0) {
+                    // Auto-save and disable POI toggles at zoom <= 13
+                    if (currentZoom > 13.0 && newZoom <= 13.0) {
                       final mapState = ref.read(mapProvider);
-                      if (mapState.showOSMPOIs) ref.read(mapProvider.notifier).toggleOSMPOIs();
-                      if (mapState.showPOIs) ref.read(mapProvider.notifier).togglePOIs();
-                      if (mapState.showWarnings) ref.read(mapProvider.notifier).toggleWarnings();
-                      AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
+                      // Only save and disable if any toggles are currently on
+                      if (mapState.showOSMPOIs || mapState.showWarnings) {
+                        ref.read(mapProvider.notifier).saveAndDisableToggles();
+                        AppLogger.map('Auto-saved and disabled POI toggles at zoom <= 13');
+                      }
                     }
                     setState(() {});
                   },

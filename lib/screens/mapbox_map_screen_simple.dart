@@ -1315,7 +1315,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                       final navState = ref.watch(navigationProvider);
                       if (navState.isNavigating) return const SizedBox.shrink();
 
-                      final togglesEnabled = _currentZoom > 12.0;
+                      final togglesEnabled = _currentZoom > 13.0;
 
                       return Column(
                         children: [
@@ -1374,6 +1374,13 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           zoom: newZoom,
                           pitch: _currentPitch,
                         ));
+
+                        // Auto-restore POI toggles when zooming above threshold
+                        if (currentZoom <= 13.0 && newZoom > 13.0) {
+                          ref.read(mapProvider.notifier).restoreSavedToggles();
+                          AppLogger.map('Auto-restored POI toggles at zoom > 13');
+                        }
+
                         setState(() {
                           _currentZoom = newZoom;
                         });
@@ -1388,12 +1395,14 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                           pitch: _currentPitch,
                         ));
 
-                        // Auto-disable POI toggles at zoom <= 12
-                        if (newZoom <= 12.0) {
+                        // Auto-save and disable POI toggles at zoom <= 13
+                        if (currentZoom > 13.0 && newZoom <= 13.0) {
                           final mapState = ref.read(mapProvider);
-                          if (mapState.showOSMPOIs) ref.read(mapProvider.notifier).toggleOSMPOIs();
-                          if (mapState.showWarnings) ref.read(mapProvider.notifier).toggleWarnings();
-                          AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
+                          // Only save and disable if any toggles are currently on
+                          if (mapState.showOSMPOIs || mapState.showWarnings) {
+                            ref.read(mapProvider.notifier).saveAndDisableToggles();
+                            AppLogger.map('Auto-saved and disabled POI toggles at zoom <= 13');
+                          }
                         }
 
                         setState(() {
@@ -2119,13 +2128,54 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Add surface warning markers if navigation is active
     await _addSurfaceWarningMarkers();
 
-    // Update displayed counts for toggle badges (reflects actual visible markers)
+    // Update displayed counts for toggle badges (only count visible markers)
     if (mounted) {
-      setState(() {
-        _displayedOSMPOICount = _osmPoiById.length;
-        _displayedWarningCount = _warningById.length;
-        _displayedFavoritesCount = _destinationsById.length + _favoritesById.length;
-      });
+      // Get current visible bounds to filter counts
+      final cameraState = await _mapboxMap?.getCameraState();
+      if (cameraState != null) {
+        final coordinateBounds = await _mapboxMap?.coordinateBoundsForCamera(
+          CameraOptions(
+            center: cameraState.center,
+            zoom: cameraState.zoom,
+            pitch: cameraState.pitch,
+            bearing: cameraState.bearing,
+          )
+        );
+
+        if (coordinateBounds != null) {
+          final south = coordinateBounds.southwest.coordinates.lat.toDouble();
+          final west = coordinateBounds.southwest.coordinates.lng.toDouble();
+          final north = coordinateBounds.northeast.coordinates.lat.toDouble();
+          final east = coordinateBounds.northeast.coordinates.lng.toDouble();
+
+          // Count only markers within visible bounds
+          final visibleOSMPOIs = _osmPoiById.values.where((poi) =>
+            poi.latitude >= south && poi.latitude <= north &&
+            poi.longitude >= west && poi.longitude <= east
+          ).length;
+
+          final visibleWarnings = _warningById.values.where((warning) =>
+            warning.latitude >= south && warning.latitude <= north &&
+            warning.longitude >= west && warning.longitude <= east
+          ).length;
+
+          final visibleDestinations = _destinationsById.values.where((dest) =>
+            dest.lat >= south && dest.lat <= north &&
+            dest.lng >= west && dest.lng <= east
+          ).length;
+
+          final visibleFavorites = _favoritesById.values.where((fav) =>
+            fav.lat >= south && fav.lat <= north &&
+            fav.lng >= west && fav.lng <= east
+          ).length;
+
+          setState(() {
+            _displayedOSMPOICount = visibleOSMPOIs;
+            _displayedWarningCount = visibleWarnings;
+            _displayedFavoritesCount = visibleDestinations + visibleFavorites;
+          });
+        }
+      }
     }
   }
 
