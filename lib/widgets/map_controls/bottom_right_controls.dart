@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/navigation_provider.dart';
+import '../../providers/debug_provider.dart';
 import '../navigation_controls.dart';
 
 /// Bottom-right map controls: navigation controls OR map style/3D pickers
