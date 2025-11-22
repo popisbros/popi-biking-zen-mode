@@ -1315,9 +1315,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   // Threshold: iPads start at ~1024px, large phones (iPhone Pro Max) are ~932px
                   final isLandscapePhone = orientation == Orientation.landscape && screenWidth < 1000;
 
-                  // Debug logging
-                  print('🔍 3D MAP LAYOUT: orientation=$orientation, screenWidth=$screenWidth, isLandscapePhone=$isLandscapePhone');
-
                   // POI toggles widget
                   final poiToggles = Consumer(
                     builder: (context, ref, child) {
