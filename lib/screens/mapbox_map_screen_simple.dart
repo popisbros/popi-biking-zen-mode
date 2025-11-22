@@ -1315,11 +1315,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   final isLandscapePhone = orientation == Orientation.landscape && screenWidth < 800;
 
                   // Debug logging
-                  AppLogger.map('Top-right controls layout (3D)', data: {
-                    'orientation': orientation.toString(),
-                    'screenWidth': screenWidth,
-                    'isLandscapePhone': isLandscapePhone,
-                  });
+                  print('🔍 3D MAP LAYOUT: orientation=$orientation, screenWidth=$screenWidth, isLandscapePhone=$isLandscapePhone');
 
                   // POI toggles widget
                   final poiToggles = Consumer(

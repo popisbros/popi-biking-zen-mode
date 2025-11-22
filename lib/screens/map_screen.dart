@@ -1933,11 +1933,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 final isLandscapePhone = orientation == Orientation.landscape && screenWidth < 800;
 
                 // Debug logging
-                AppLogger.map('Top-right controls layout', data: {
-                  'orientation': orientation.toString(),
-                  'screenWidth': screenWidth,
-                  'isLandscapePhone': isLandscapePhone,
-                });
+                print('🔍 2D MAP LAYOUT: orientation=$orientation, screenWidth=$screenWidth, isLandscapePhone=$isLandscapePhone');
 
                 // POI toggles widget
                 final poiToggles = Consumer(
