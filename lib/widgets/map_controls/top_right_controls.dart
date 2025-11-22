@@ -2,19 +2,19 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/navigation_provider.dart';
-import '../../providers/map_provider.dart';
-import '../../config/app_colors.dart';
-import '../map_toggle_button.dart';
+import '../../constants/app_colors.dart';
 import '../profile_button.dart';
 
-/// Top-right map controls: POI toggles, zoom, user location, profile
+/// Top-right map controls: zoom, user location, profile
 /// Shared between 2D and 3D map screens
+/// Note: POI toggles are handled separately by each map screen
 class TopRightControls extends ConsumerWidget {
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
   final VoidCallback onCenterLocation;
   final double currentZoom;
   final bool isZoomVisible;
+  final Widget? poiToggles; // Optional POI toggles widget
 
   const TopRightControls({
     super.key,
@@ -23,6 +23,7 @@ class TopRightControls extends ConsumerWidget {
     required this.onCenterLocation,
     required this.currentZoom,
     this.isZoomVisible = true,
+    this.poiToggles,
   });
 
   @override
@@ -33,89 +34,11 @@ class TopRightControls extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        // POI Toggles (when zoom > 12 and not navigating)
-        Consumer(
-          builder: (context, ref, child) {
-            final mapState = ref.watch(mapProvider);
-            final zoom = currentZoom;
-
-            // Hide POI toggles during navigation or at low zoom
-            if (navState.isNavigating || zoom <= 12) {
-              return const SizedBox.shrink();
-            }
-
-            return Column(
-              children: [
-                // OSM POIs toggle
-                MapToggleButton(
-                  isActive: mapState.showOSMPOIs,
-                  icon: Icons.business,
-                  activeColor: Colors.purple,
-                  onPressed: () {
-                    ref.read(mapProvider.notifier).toggleOSMPOIs();
-                  },
-                  tooltip: 'Toggle OSM POIs',
-                  enabled: zoom > 12,
-                ),
-                const SizedBox(height: 6),
-                // Wike POIs toggle
-                Consumer(
-                  builder: (context, ref, child) {
-                    final wikePoisVisible = ref.watch(poiVisibilityProvider);
-                    return MapToggleButton(
-                      isActive: wikePoisVisible,
-                      icon: Icons.location_on,
-                      activeColor: Colors.green.shade600,
-                      count: ref.watch(displayedPoisCountProvider),
-                      onPressed: () {
-                        ref.read(poiVisibilityProvider.notifier).toggle();
-                      },
-                      tooltip: 'Toggle Wike POIs',
-                      enabled: zoom > 12,
-                    );
-                  },
-                ),
-                const SizedBox(height: 6),
-                // Warnings toggle
-                Consumer(
-                  builder: (context, ref, child) {
-                    final warningsVisible = ref.watch(warningsVisibilityProvider);
-                    return MapToggleButton(
-                      isActive: warningsVisible,
-                      icon: Icons.warning,
-                      activeColor: Colors.red.shade600,
-                      count: ref.watch(displayedWarningsCountProvider),
-                      onPressed: () {
-                        ref.read(warningsVisibilityProvider.notifier).toggle();
-                      },
-                      tooltip: 'Toggle Hazard Warnings',
-                      enabled: zoom > 12,
-                    );
-                  },
-                ),
-                const SizedBox(height: 6),
-                // Favorites/Destinations toggle
-                Consumer(
-                  builder: (context, ref, child) {
-                    final favoritesVisible = ref.watch(favoritesVisibilityProvider);
-                    return MapToggleButton(
-                      isActive: favoritesVisible,
-                      icon: Icons.star,
-                      activeColor: Colors.yellow.shade600,
-                      count: ref.watch(displayedFavoritesCountProvider),
-                      enabled: true, // Always enabled
-                      onPressed: () {
-                        ref.read(favoritesVisibilityProvider.notifier).toggle();
-                      },
-                      tooltip: 'Toggle Favorites & Destinations',
-                    );
-                  },
-                ),
-                const SizedBox(height: 6),
-              ],
-            );
-          },
-        ),
+        // POI Toggles (provided by parent screen)
+        if (poiToggles != null) ...[
+          poiToggles!,
+          const SizedBox(height: 6),
+        ],
 
         // Zoom controls
         if (isZoomVisible)
