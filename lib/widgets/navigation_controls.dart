@@ -44,7 +44,7 @@ class NavigationControls extends ConsumerWidget {
           tooltip: 'Audio: ${currentAudioMode.label}',
           child: Icon(_getAudioIcon(currentAudioMode)),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         // End navigation button
         FloatingActionButton(
           mini: true,

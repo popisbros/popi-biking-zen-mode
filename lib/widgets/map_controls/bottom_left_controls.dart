@@ -50,7 +50,7 @@ class BottomLeftControls extends ConsumerWidget {
           tooltip: 'Debug Tracking',
           child: const Icon(Icons.bug_report),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
 
         // Auto-zoom toggle button (only show in navigation mode)
         if (isNavigationMode && onAutoZoomToggle != null)
@@ -66,7 +66,7 @@ class BottomLeftControls extends ConsumerWidget {
 
         // Spacing after auto-zoom button (only in navigation mode)
         if (isNavigationMode && onAutoZoomToggle != null)
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
 
         // Compass rotation toggle button (Native only)
         if (!kIsWeb && showCompass && onCompassToggle != null)
@@ -82,7 +82,7 @@ class BottomLeftControls extends ConsumerWidget {
 
         // Spacing after Compass (only on Native and visible when NOT navigating OR debug mode is ON)
         if (!kIsWeb && showCompass && onCompassToggle != null && (!navState.isNavigating || debugState.isVisible))
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
 
         // Reload POIs button (only visible when NOT navigating AND debug tracking is ON)
         if (!navState.isNavigating && debugState.isVisible && onReloadPOIs != null)

@@ -52,7 +52,7 @@ class BottomRightControls extends ConsumerWidget {
 
         // Pitch picker (3D map only) OR 3D Map switch (2D map only)
         if (onPitchPicker != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           FloatingActionButton(
             mini: true,
             heroTag: 'pitch_picker',
@@ -62,7 +62,7 @@ class BottomRightControls extends ConsumerWidget {
             child: const Icon(Icons.threesixty),
           ),
         ] else if (on3DSwitch != null && !kIsWeb) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           FloatingActionButton(
             mini: true,
             heroTag: '3d_map',
@@ -75,7 +75,7 @@ class BottomRightControls extends ConsumerWidget {
 
         // 2D/3D switch (3D map only)
         if (on3DSwitch != null && customStylePicker != null && !kIsWeb) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           FloatingActionButton(
             mini: true,
             heroTag: '2d_3d_switch',

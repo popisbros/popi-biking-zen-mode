@@ -37,7 +37,7 @@ class TopRightControls extends ConsumerWidget {
         // POI Toggles (provided by parent screen)
         if (poiToggles != null) ...[
           poiToggles!,
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
         ],
 
         // Zoom controls
@@ -87,7 +87,7 @@ class TopRightControls extends ConsumerWidget {
               );
             },
           ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
 
         // User Location button (hidden during navigation)
         Consumer(
@@ -116,7 +116,7 @@ class TopRightControls extends ConsumerWidget {
           builder: (context, ref, child) {
             final navState = ref.watch(navigationProvider);
             if (navState.isNavigating) return const SizedBox.shrink();
-            return const SizedBox(height: 6);
+            return const SizedBox(height: 4);
           },
         ),
 

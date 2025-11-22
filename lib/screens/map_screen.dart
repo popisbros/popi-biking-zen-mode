@@ -1942,7 +1942,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           count: _displayedOSMPOICount,
                           enabled: togglesEnabled,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         MapToggleButton(
                           isActive: mapState.showWarnings,
                           icon: Icons.warning,
@@ -1957,7 +1957,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           },
                           tooltip: 'Toggle Warnings',
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Consumer(
                           builder: (context, ref, child) {
                             final authUser = ref.watch(authStateProvider).value;
