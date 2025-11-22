@@ -36,6 +36,7 @@ class BottomLeftControls extends ConsumerWidget {
     final isNavigationMode = navModeState.mode == NavMode.navigation;
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         // Debug toggle button (always at the top)

@@ -35,6 +35,7 @@ class BottomRightControls extends ConsumerWidget {
 
     // Show map controls when not navigating
     return Column(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         // Custom style picker (for 3D map) OR Layer picker (for 2D map)
