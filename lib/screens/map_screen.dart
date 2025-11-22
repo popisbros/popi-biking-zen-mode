@@ -1923,7 +1923,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Top-right controls
           Positioned(
-            top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
+            top: MediaQuery.of(context).padding.top + 10,
             right: 10,
             child: Column(
               children: [
@@ -2097,7 +2097,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               if (!_isMapReady || navState.isNavigating) return const SizedBox.shrink();
 
               return Positioned(
-                top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
+                top: MediaQuery.of(context).padding.top + 10,
                 left: 10,
                 child: FloatingActionButton(
                   mini: true,
