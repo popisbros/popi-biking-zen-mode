@@ -51,7 +51,10 @@ class BottomLeftControls extends ConsumerWidget {
           tooltip: 'Debug Tracking',
           child: const Icon(Icons.bug_report),
         ),
-        const SizedBox(height: 4),
+
+        // Spacing after debug button (only show when there's a button below it)
+        if ((isNavigationMode && onAutoZoomToggle != null) || (!kIsWeb && showCompass && onCompassToggle != null))
+          const SizedBox(height: 4),
 
         // Auto-zoom toggle button (only show in navigation mode)
         if (isNavigationMode && onAutoZoomToggle != null)
