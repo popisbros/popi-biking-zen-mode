@@ -1978,7 +1978,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             );
                           },
                         ),
-                        const SizedBox(height: 6),
                       ],
                     );
                   },
@@ -2037,7 +2036,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
           // Bottom-left controls
           Positioned(
-            bottom: kIsWeb ? 10 : 30,
+            bottom: 10,
             left: 10,
             child: BottomLeftControls(
               onAutoZoomToggle: () {
@@ -2077,7 +2076,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
           // Bottom-right controls
           Positioned(
-            bottom: kIsWeb ? 10 : 30,
+            bottom: 10,
             right: 10,
             child: BottomRightControls(
               onNavigationEnded: () {

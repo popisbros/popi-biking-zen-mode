@@ -1359,7 +1359,6 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                               );
                             },
                           ),
-                          const SizedBox(height: 6),
                         ],
                       );
                     },
@@ -1420,7 +1419,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
             // Bottom-left controls
             Positioned(
-              bottom: kIsWeb ? 10 : 30,
+              bottom: 10,
               left: 10,
               child: BottomLeftControls(
                 onAutoZoomToggle: () async {
@@ -1473,7 +1472,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
             // Bottom-right controls
             Positioned(
-              bottom: kIsWeb ? 10 : 30,
+              bottom: 10,
               right: 10,
               child: BottomRightControls(
                 onNavigationEnded: () async {
