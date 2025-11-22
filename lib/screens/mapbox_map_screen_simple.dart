@@ -1307,45 +1307,105 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
             Positioned(
               top: kIsWeb ? MediaQuery.of(context).padding.top + 10 : 40,
               right: 10,
-              child: TopRightControls(
-                onZoomIn: () async {
-                  final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
-                  if (currentZoom != null) {
-                    final newZoom = currentZoom.floor() + 1.0;
-                    await _mapboxMap?.setCamera(CameraOptions(
-                      zoom: newZoom,
-                      pitch: _currentPitch,
-                    ));
-                    setState(() {
-                      _currentZoom = newZoom;
-                    });
-                  }
-                },
-                onZoomOut: () async {
-                  final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
-                  if (currentZoom != null) {
-                    final newZoom = currentZoom.floor() - 1.0;
-                    await _mapboxMap?.setCamera(CameraOptions(
-                      zoom: newZoom,
-                      pitch: _currentPitch,
-                    ));
+              child: Column(
+                children: [
+                  // POI toggles (separate from shared controls)
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final navState = ref.watch(navigationProvider);
+                      if (navState.isNavigating) return const SizedBox.shrink();
 
-                    // Auto-disable POI toggles at zoom <= 12
-                    if (newZoom <= 12.0) {
-                      final mapState = ref.read(mapProvider);
-                      if (mapState.showOSMPOIs) ref.read(mapProvider.notifier).toggleOSMPOIs();
-                      if (mapState.showWarnings) ref.read(mapProvider.notifier).toggleWarnings();
-                      AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
-                    }
+                      final togglesEnabled = _currentZoom > 12.0;
 
-                    setState(() {
-                      _currentZoom = newZoom;
-                    });
-                  }
-                },
-                onCenterLocation: _centerOnUserLocation,
-                currentZoom: _currentZoom,
-                isZoomVisible: true,
+                      return Column(
+                        children: [
+                          OSMPOISelectorButton(
+                            count: _displayedOSMPOICount,
+                            enabled: togglesEnabled,
+                          ),
+                          const SizedBox(height: 6),
+                          MapToggleButton(
+                            isActive: mapState.showWarnings,
+                            icon: Icons.warning,
+                            activeColor: Colors.orange,
+                            count: _displayedWarningCount,
+                            enabled: togglesEnabled,
+                            onPressed: () {
+                              AppLogger.map('Warning toggle pressed');
+                              final wasOff = !mapState.showWarnings;
+                              ref.read(mapProvider.notifier).toggleWarnings();
+                              if (wasOff) _loadWarningsIfNeeded();
+                            },
+                            tooltip: 'Toggle Warnings',
+                          ),
+                          const SizedBox(height: 6),
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final authUser = ref.watch(authStateProvider).value;
+                              if (authUser == null) return const SizedBox.shrink();
+
+                              final favoritesVisible = ref.watch(favoritesVisibilityProvider);
+                              return MapToggleButton(
+                                isActive: favoritesVisible,
+                                icon: Icons.star,
+                                activeColor: Colors.yellow.shade600,
+                                count: _displayedFavoritesCount,
+                                enabled: true,
+                                onPressed: () {
+                                  AppLogger.map('Favorites toggle pressed');
+                                  ref.read(favoritesVisibilityProvider.notifier).toggle();
+                                },
+                                tooltip: 'Toggle Favorites & Destinations',
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                        ],
+                      );
+                    },
+                  ),
+                  // Shared controls (zoom, location, profile)
+                  TopRightControls(
+                    onZoomIn: () async {
+                      final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
+                      if (currentZoom != null) {
+                        final newZoom = currentZoom.floor() + 1.0;
+                        await _mapboxMap?.setCamera(CameraOptions(
+                          zoom: newZoom,
+                          pitch: _currentPitch,
+                        ));
+                        setState(() {
+                          _currentZoom = newZoom;
+                        });
+                      }
+                    },
+                    onZoomOut: () async {
+                      final currentZoom = await _mapboxMap?.getCameraState().then((state) => state.zoom);
+                      if (currentZoom != null) {
+                        final newZoom = currentZoom.floor() - 1.0;
+                        await _mapboxMap?.setCamera(CameraOptions(
+                          zoom: newZoom,
+                          pitch: _currentPitch,
+                        ));
+
+                        // Auto-disable POI toggles at zoom <= 12
+                        if (newZoom <= 12.0) {
+                          final mapState = ref.read(mapProvider);
+                          if (mapState.showOSMPOIs) ref.read(mapProvider.notifier).toggleOSMPOIs();
+                          if (mapState.showWarnings) ref.read(mapProvider.notifier).toggleWarnings();
+                          AppLogger.map('Auto-disabled all POI toggles at zoom <= 12');
+                        }
+
+                        setState(() {
+                          _currentZoom = newZoom;
+                        });
+                      }
+                    },
+                    onCenterLocation: _centerOnUserLocation,
+                    currentZoom: _currentZoom,
+                    isZoomVisible: true,
+                  ),
+                ],
               ),
             ),
 
