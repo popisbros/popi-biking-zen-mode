@@ -54,6 +54,10 @@ post_install do |installer|
 
       # Disable bitcode (deprecated in Xcode 14)
       config.build_settings['ENABLE_BITCODE'] = 'NO'
+
+      # Generate dSYM files for all configurations (required for App Store upload)
+      config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+      config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
     end
   end
 
