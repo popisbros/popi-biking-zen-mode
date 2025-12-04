@@ -156,7 +156,7 @@ class ApiLogger {
       // Get current user ID (or anonymous)
       final userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
 
-      await _firestore.collection('logs').add({
+      final logData = {
         'type': type,
         'level': level,
         'message': message,
@@ -167,9 +167,16 @@ class ApiLogger {
         'userId': userId,
         'platform': defaultTargetPlatform.name,
         'mode': kDebugMode ? 'debug' : (kReleaseMode ? 'release' : 'profile'),
-      });
+      };
+
+      print('📝 [FIRESTORE DEBUG] Attempting to write log to Firestore: $type/$level - $message');
+      await _firestore.collection('logs').add(logData);
+      print('✅ [FIRESTORE DEBUG] Successfully wrote log to Firestore');
     } catch (e) {
-      // Silently fail - don't break app for logging
+      // Print error to console (works in all build modes)
+      print('❌ [FIRESTORE DEBUG] Failed to log to Firestore: $e');
+
+      // Also use debugPrint in debug mode for more details
       if (kDebugMode) {
         debugPrint('❌ Failed to log to Firestore: $e');
       }

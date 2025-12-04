@@ -7,7 +7,19 @@
       "Bash(git tag:*)",
       "Bash(flutter build:*)",
       "Bash(git push:*)",
-      "Bash(flutter pub outdated:*)"
+      "Bash(flutter pub outdated:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Remove unnecessary spacing after debug button\n\n- Only show spacing after debug button when there''s actually a button below it\n- Fixes debug button appearing too high when debug tracking is OFF\n- Spacing now conditional on auto-zoom or compass button being visible\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(sed:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: Update iOS bundle identifier to com.wike.wikeFlutter\n\n- Update main app bundle ID: com.popibiking.popiBikingFresh → com.wike.wikeFlutter\n- Update test bundle ID: com.popibiking.popiBikingFresh.RunnerTests → com.wike.wikeFlutter.RunnerTests\n- Replace GoogleService-Info.plist with new Firebase configuration for com.wike.wikeFlutter\n- Update Info.plist structure (reorder CFBundleURLTypes)\n\nThis aligns the iOS bundle identifier across all configuration files\nand updates Firebase integration to use the new bundle ID.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(pod install)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: Rebrand from \"Popi Biking\" to \"Wike\"\n\nUser-facing text changes:\n- Splash screen title: \"Popi Biking\" → \"Wike\"\n- Login screen title: \"Popi Biking\" → \"Wike\"\n- Register screen: \"Sign up for Popi Biking\" → \"Sign up for Wike\"\n- App title in MaterialApp: \"Popi Biking\" → \"Wike\"\n\nTechnical identifier updates:\n- User agent: com.popibiking.fresh → com.wike.wikeFlutter\n- TileLayer userAgentPackageName: com.popibiking.popiBikingFresh → com.wike.wikeFlutter\n- Firebase iOS bundle ID: com.popibiking.zenmode → com.wike.wikeFlutter\n- Firebase iOS app ID updated to match new GoogleService-Info.plist\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nchore: Add GoogleService-Info.plist to XCode project\n\n- Add GoogleService-Info.plist as a resource in the XCode project\n- Ensures Firebase can locate the configuration file at runtime\n- Resolves \"Could not locate configuration file\" error\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: Update iOS product name from popi_biking_fresh to Wike\n\n- Change CFBundleName in Info.plist: popi_biking_fresh → Wike\n- Updates the product name displayed in XCode\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: Update product name to \"Wike Flutter\"\n\n- Change CFBundleName: Wike → Wike Flutter\n- Now matches CFBundleDisplayName for consistency\n- Product name in XCode now shows \"Wike Flutter\"\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Generate dSYM files for App Store upload\n\n- Add DEBUG_INFORMATION_FORMAT = ''dwarf-with-dsym'' to all pod targets\n- Set ONLY_ACTIVE_ARCH = ''NO'' to build all architectures\n- Fixes \"Upload Symbols Failed\" errors for MapboxCommon and MapboxCoreMaps\n- Ensures dSYM files are included in archive for TestFlight/App Store\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
