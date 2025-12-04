@@ -88,6 +88,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Real-time location subscription for smooth snapped marker updates
   StreamSubscription<LocationData>? _realtimeLocationSubscription;
 
+  // Cached location service reference for safe disposal
+  LocationService? _locationService;
+
   // Track last route point index to avoid unnecessary redraws
   int? _lastRoutePointIndex;
 
@@ -2757,10 +2760,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
   /// Start real-time location stream for smooth snapped marker updates during navigation
   void _startRealtimeLocationStream() {
-    final locationService = ref.read(locationServiceProvider);
-    locationService.startRealtimeLocationStream();
+    // Cache location service reference for safe disposal
+    _locationService = ref.read(locationServiceProvider);
+    _locationService!.startRealtimeLocationStream();
 
-    _realtimeLocationSubscription = locationService.realtimeLocationStream.listen((location) {
+    _realtimeLocationSubscription = _locationService!.realtimeLocationStream.listen((location) {
       _updateSnappedPositionMarkerRealtime(location);
     });
 
@@ -2772,8 +2776,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _realtimeLocationSubscription?.cancel();
     _realtimeLocationSubscription = null;
 
-    final locationService = ref.read(locationServiceProvider);
-    locationService.stopRealtimeLocationStream();
+    // Use cached location service reference (safe during disposal)
+    _locationService?.stopRealtimeLocationStream();
 
     AppLogger.success('Real-time location stream stopped', tag: 'MAP');
   }
