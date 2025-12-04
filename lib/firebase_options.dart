@@ -63,11 +63,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDHD5kxe_c8xUzFmOXkF7rGMs0hyfV96yU',
-    appId: '1:762853433576:ios:fc503b0f4584a736e4a95d',
+    appId: '1:762853433576:ios:41c7afc59ff30815e4a95d',
     messagingSenderId: '762853433576',
     projectId: 'popi-biking-zen-mode',
     storageBucket: 'popi-biking-zen-mode.firebasestorage.app',
-    iosBundleId: 'com.popibiking.zenmode',
+    iosBundleId: 'com.wike.wikeFlutter',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -76,7 +76,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '762853433576',
     projectId: 'popi-biking-zen-mode',
     storageBucket: 'popi-biking-zen-mode.firebasestorage.app',
-    iosBundleId: 'com.popibiking.zenmode',
+    iosBundleId: 'com.wike.wikeFlutter',
   );
 }
 

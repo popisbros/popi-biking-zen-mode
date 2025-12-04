@@ -105,7 +105,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             ),
                             SizedBox(height: 20),
                             Text(
-                              'Popi Biking',
+                              'Wike',
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,

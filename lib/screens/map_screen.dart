@@ -1726,7 +1726,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 children: [
                   TileLayer(
                     urlTemplate: mapState.tileUrl,
-                    userAgentPackageName: 'com.popibiking.popiBikingFresh',
+                    userAgentPackageName: 'com.wike.wikeFlutter',
                     // Only use subdomains for tile providers that support it (not Mapbox)
                     subdomains: mapState.tileUrl.contains('mapbox.com') ? const [] : const ['a', 'b', 'c'],
                     // Set tile size to 512 for high-res Mapbox @2x tiles, otherwise 256

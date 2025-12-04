@@ -80,7 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Icon(Icons.directions_bike, size: 80, color: Colors.blue),
                 const SizedBox(height: 16),
                 const Text(
-                  'Popi Biking',
+                  'Wike',
                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),

@@ -109,7 +109,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const Icon(Icons.person_add, size: 64, color: Colors.blue),
                 const SizedBox(height: 24),
                 const Text(
-                  'Sign up for Popi Biking',
+                  'Sign up for Wike',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),

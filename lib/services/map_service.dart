@@ -113,7 +113,7 @@ class MapService {
   }
 
   /// Get user agent for tile requests
-  String get userAgent => 'com.popibiking.fresh';
+  String get userAgent => 'com.wike.wikeFlutter';
 
   /// Get attribution text for the 2D layer
   String getAttribution(MapLayerType layer) {
