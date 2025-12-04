@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>762853433576-b381umg6j6rvabai47niv3t5b1v2fpoj.apps.googleusercontent.com</string>
+	<string>762853433576-n5vk64bamme5kgbpk2n85ff7l99ekjli.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.762853433576-b381umg6j6rvabai47niv3t5b1v2fpoj</string>
+	<string>com.googleusercontent.apps.762853433576-n5vk64bamme5kgbpk2n85ff7l99ekjli</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDHD5kxe_c8xUzFmOXkF7rGMs0hyfV96yU</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.popibiking.zenmode</string>
+	<string>com.wike.wikeFlutter</string>
 	<key>PROJECT_ID</key>
 	<string>popi-biking-zen-mode</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:762853433576:ios:fc503b0f4584a736e4a95d</string>
+	<string>1:762853433576:ios:41c7afc59ff30815e4a95d</string>
 </dict>
 </plist>
