@@ -58,6 +58,10 @@ post_install do |installer|
       # Generate dSYM files for all configurations (required for App Store upload)
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
       config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+
+      # Note: MapboxCommon and MapboxCoreMaps are XCFrameworks that don't include dSYM files.
+      # The "Upload Symbols Failed" warnings from App Store Connect can be safely ignored.
+      # These warnings don't prevent app submission or approval.
     end
   end
 
