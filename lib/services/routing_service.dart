@@ -101,10 +101,12 @@ class RoutingService {
     required double endLon,
   }) async {
     if (ApiKeys.graphhopperApiKey.isEmpty) {
+      print('🚨 [ROUTING DEBUG] Graphhopper API key not configured!');
       AppLogger.error('Graphhopper API key not configured', tag: 'ROUTING');
       return MultiProfileRouteResult();
     }
 
+    print('🌐 [ROUTING DEBUG] API key present: ${ApiKeys.graphhopperApiKey.substring(0, 8)}...');
     AppLogger.api('Calculating multi-profile routes (Car, Bike, Foot)', data: {
       'from': '$startLat,$startLon',
       'to': '$endLat,$endLon',
@@ -171,6 +173,8 @@ class RoutingService {
 
       stopwatch.stop();
 
+      print('📡 [ROUTING DEBUG] ${profile.label} API response - Status: ${response.statusCode}, Duration: ${stopwatch.elapsedMilliseconds}ms');
+
       // Log API call to Firestore (production + debug)
       await ApiLogger.logApiCall(
         endpoint: 'graphhopper/route',
@@ -188,6 +192,7 @@ class RoutingService {
       );
 
       if (response.statusCode != 200) {
+        print('🚨 [ROUTING DEBUG] ${profile.label} API error ${response.statusCode}: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
         AppLogger.error('Graphhopper API error for ${profile.label} route', tag: 'ROUTING', data: {
           'statusCode': response.statusCode,
           'body': response.body,
@@ -265,6 +270,7 @@ class RoutingService {
     } catch (e, stackTrace) {
       stopwatch.stop();
 
+      print('🚨 [ROUTING DEBUG] ${profile.label} exception: $e');
       AppLogger.error('Failed to calculate ${profile.label} route', tag: 'ROUTING', error: e, stackTrace: stackTrace);
       return null;
     }

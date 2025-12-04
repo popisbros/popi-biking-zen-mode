@@ -42,11 +42,13 @@ class RouteCalculationHelper {
     final location = userLocation ?? _getUserLocation(ref);
 
     if (location == null) {
+      print('🚨 [ROUTE DEBUG] Cannot calculate route - user location not available');
       AppLogger.warning('Cannot calculate route - user location not available', tag: 'ROUTING');
       ToastService.error('Unable to calculate route - location not available');
       return false;
     }
 
+    print('🚦 [ROUTE DEBUG] Starting route calculation from ${location.latitude},${location.longitude} to $destLat,$destLon');
     AppLogger.map('Calculating multi-profile routes (Car, Bike, Foot)', data: {
       'from': '${location.latitude},${location.longitude}',
       'to': '$destLat,$destLon',
@@ -63,7 +65,10 @@ class RouteCalculationHelper {
       endLon: destLon,
     );
 
+    print('📊 [ROUTE DEBUG] API returned - hasAnyRoute: ${multiProfileRoutes.hasAnyRoute}, availableCount: ${multiProfileRoutes.availableCount}');
+
     if (!multiProfileRoutes.hasAnyRoute) {
+      print('🚨 [ROUTE DEBUG] Route calculation failed - no routes available from API');
       AppLogger.warning('Route calculation failed - no routes available', tag: 'ROUTING');
       ToastService.dismiss();
       ToastService.error('Unable to calculate routes');
