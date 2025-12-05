@@ -26,6 +26,8 @@ class AudioAnnouncementService {
   final Set<String> _announcedHazards = {};
   final Set<String> _announcedTurns = {}; // Track announced turn instructions
   AudioMode _audioMode = AudioMode.informationAndAlerts;
+  bool _isSpeaking = false; // Guard to prevent concurrent speech
+  bool _isInitialized = false; // Track initialization state
 
   // Distance thresholds (in meters)
   static const double _hazardAnnouncementDistance = 100.0;
@@ -35,6 +37,12 @@ class AudioAnnouncementService {
 
   /// Initialize TTS settings
   Future<void> initialize() async {
+    // Skip if already initialized
+    if (_isInitialized) {
+      AppLogger.debug('TTS already initialized, skipping', tag: 'AUDIO');
+      return;
+    }
+
     try {
       AppLogger.info('Initializing TTS engine...', tag: 'AUDIO');
 
@@ -42,6 +50,7 @@ class AudioAnnouncementService {
         // Web platform - use Web Speech API (no initialization needed)
         AppLogger.info('Using Web Speech API (browser TTS)', tag: 'AUDIO');
         AppLogger.success('Audio announcement service initialized successfully for web', tag: 'AUDIO');
+        _isInitialized = true;
         return;
       }
 
@@ -103,11 +112,13 @@ class AudioAnnouncementService {
         AppLogger.error('TTS error: $msg', tag: 'AUDIO');
       });
 
+      _isInitialized = true;
       AppLogger.success('Audio announcement service initialized successfully', tag: 'AUDIO');
     } catch (e, stackTrace) {
       AppLogger.error('Failed to initialize TTS', tag: 'AUDIO', error: e);
       AppLogger.debug('Stack trace: $stackTrace', tag: 'AUDIO');
-      rethrow;
+      // Don't rethrow - allow app to continue without TTS
+      _isInitialized = false;
     }
   }
 
@@ -268,12 +279,36 @@ class AudioAnnouncementService {
   /// Platform-agnostic speak method
   /// Works on both web (using Web Speech API) and mobile (using flutter_tts)
   Future<dynamic> _speak(String message) async {
-    if (kIsWeb) {
-      // Web platform - use Web Speech API
-      return await web.speakWeb(message);
-    } else {
-      // Mobile platform - use flutter_tts
-      return await _tts.speak(message);
+    // Skip if not initialized
+    if (!_isInitialized) {
+      AppLogger.warning('TTS not initialized, skipping speech', tag: 'AUDIO');
+      return null;
+    }
+
+    // Skip if already speaking (prevent concurrent calls that cause AVAudioBuffer issues)
+    if (_isSpeaking) {
+      AppLogger.debug('TTS already speaking, skipping: $message', tag: 'AUDIO');
+      return null;
+    }
+
+    try {
+      _isSpeaking = true;
+
+      if (kIsWeb) {
+        // Web platform - use Web Speech API
+        return await web.speakWeb(message);
+      } else {
+        // Mobile platform - use flutter_tts
+        return await _tts.speak(message);
+      }
+    } catch (e) {
+      AppLogger.error('TTS speak failed: $e', tag: 'AUDIO');
+      return null;
+    } finally {
+      // Reset speaking flag after a short delay to allow audio buffer to clear
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _isSpeaking = false;
+      });
     }
   }
 
@@ -407,5 +442,7 @@ class AudioAnnouncementService {
     await stop();
     _announcedHazards.clear();
     _announcedTurns.clear();
+    _isSpeaking = false;
+    _isInitialized = false;
   }
 }

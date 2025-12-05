@@ -50,8 +50,8 @@ class ApiLogger {
       );
     }
 
-    // 3. Log to Firestore (always for API calls, even in production)
-    await _logToFirestore(
+    // 3. Log to Firestore (fire-and-forget, don't block API calls)
+    _logToFirestore(
       type: 'api',
       level: isError ? 'error' : 'info',
       message: '$method $endpoint',
@@ -76,9 +76,9 @@ class ApiLogger {
   ///
   /// In debug mode: logs to Firestore
   /// In production: only uses existing AppLogger (debugPrint)
-  static Future<void> logDebug(String message, {String? tag, Map<String, dynamic>? data}) async {
+  static void logDebug(String message, {String? tag, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      await _logToFirestore(
+      _logToFirestore(
         type: 'debug',
         level: 'debug',
         message: message,
@@ -89,9 +89,9 @@ class ApiLogger {
     }
   }
 
-  static Future<void> logInfo(String message, {String? tag, Map<String, dynamic>? data}) async {
+  static void logInfo(String message, {String? tag, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      await _logToFirestore(
+      _logToFirestore(
         type: 'info',
         level: 'info',
         message: message,
@@ -102,9 +102,9 @@ class ApiLogger {
     }
   }
 
-  static Future<void> logWarning(String message, {String? tag, Map<String, dynamic>? data}) async {
+  static void logWarning(String message, {String? tag, Map<String, dynamic>? data}) {
     if (kDebugMode) {
-      await _logToFirestore(
+      _logToFirestore(
         type: 'warning',
         level: 'warning',
         message: message,
@@ -115,10 +115,10 @@ class ApiLogger {
     }
   }
 
-  static Future<void> logError(String message, {String? tag, Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) async {
-    // Always log errors to Crashlytics
+  static void logError(String message, {String? tag, Object? error, StackTrace? stackTrace, Map<String, dynamic>? data}) {
+    // Always log errors to Crashlytics (fire-and-forget)
     if (error != null) {
-      await _crashlytics.recordError(
+      _crashlytics.recordError(
         error,
         stackTrace,
         reason: '[$tag] $message',
@@ -126,9 +126,9 @@ class ApiLogger {
       );
     }
 
-    // In debug mode, also log to Firestore
+    // In debug mode, also log to Firestore (fire-and-forget)
     if (kDebugMode) {
-      await _logToFirestore(
+      _logToFirestore(
         type: 'error',
         level: 'error',
         message: message,
@@ -144,7 +144,28 @@ class ApiLogger {
   }
 
   /// Internal method to log to Firestore
-  static Future<void> _logToFirestore({
+  /// This method is fire-and-forget to avoid blocking the main thread
+  static void _logToFirestore({
+    required String type,
+    required String level,
+    required String message,
+    String? tag,
+    Map<String, dynamic>? data,
+    required DateTime timestamp,
+  }) {
+    // Fire-and-forget: Don't await Firestore writes to avoid blocking UI
+    _writeLogAsync(
+      type: type,
+      level: level,
+      message: message,
+      tag: tag,
+      data: data,
+      timestamp: timestamp,
+    );
+  }
+
+  /// Async helper that actually writes to Firestore (non-blocking)
+  static Future<void> _writeLogAsync({
     required String type,
     required String level,
     required String message,
