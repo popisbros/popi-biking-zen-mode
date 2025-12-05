@@ -1221,6 +1221,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      // Prevent map from resizing when keyboard appears (avoids expensive redraws)
+      resizeToAvoidBottomInset: false,
       body: OrientationBuilder(
         builder: (context, orientation) {
           final isLandscape = orientation == Orientation.landscape;
