@@ -1215,9 +1215,8 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Use cached initial camera or default
     final initialCamera = _initialCamera ?? _getDefaultCamera();
 
-    // Watch navigation state to determine layout
-    final navState = ref.watch(navigationProvider);
-    final isNavigating = navState.isNavigating;
+    // Watch only isNavigating to determine layout (minimizes rebuilds)
+    final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1332,8 +1331,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   // POI toggles widget
                   final poiToggles = Consumer(
                     builder: (context, ref, child) {
-                      final navState = ref.watch(navigationProvider);
-                      if (navState.isNavigating) return const SizedBox.shrink();
+                      // Use select() to only watch isNavigating (minimizes rebuilds)
+                      final isNavMode = ref.watch(navigationProvider.select((s) => s.isNavigating));
+                      if (isNavMode) return const SizedBox.shrink();
 
                       final togglesEnabled = _currentZoom > 13.0;
 
@@ -1536,8 +1536,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
           // Search button (top-left, yellow) - hidden in navigation mode
           Consumer(
             builder: (context, ref, child) {
-              final navState = ref.watch(navigationProvider);
-              if (!_isMapReady || navState.isNavigating) return const SizedBox.shrink();
+              // Use select() to only watch isNavigating (minimizes rebuilds)
+              final isNavMode = ref.watch(navigationProvider.select((s) => s.isNavigating));
+              if (!_isMapReady || isNavMode) return const SizedBox.shrink();
 
               return Positioned(
                 top: MediaQuery.of(context).padding.top + 10,

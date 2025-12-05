@@ -29,7 +29,6 @@ class TopRightControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navState = ref.watch(navigationProvider);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -92,10 +91,11 @@ class TopRightControls extends ConsumerWidget {
         // User Location button (hidden during navigation)
         Consumer(
           builder: (context, ref, child) {
-            final navState = ref.watch(navigationProvider);
+            // Use select() to only watch isNavigating property
+            final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
             final buttonColor = isDark ? Colors.grey.shade700 : Colors.white;
 
-            if (navState.isNavigating) {
+            if (isNavigating) {
               return const SizedBox.shrink();
             }
 
@@ -114,8 +114,8 @@ class TopRightControls extends ConsumerWidget {
         // Spacing before Profile (hidden when navigating)
         Consumer(
           builder: (context, ref, child) {
-            final navState = ref.watch(navigationProvider);
-            if (navState.isNavigating) return const SizedBox.shrink();
+            final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
+            if (isNavigating) return const SizedBox.shrink();
             return const SizedBox(height: 4);
           },
         ),
@@ -123,8 +123,8 @@ class TopRightControls extends ConsumerWidget {
         // Profile button (hidden in navigation mode)
         Consumer(
           builder: (context, ref, child) {
-            final navState = ref.watch(navigationProvider);
-            if (navState.isNavigating) return const SizedBox.shrink();
+            final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
+            if (isNavigating) return const SizedBox.shrink();
             return const ProfileButton();
           },
         ),

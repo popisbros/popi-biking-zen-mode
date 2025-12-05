@@ -1602,9 +1602,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ? LatLng(locationAsync.value!.latitude, locationAsync.value!.longitude)
             : const LatLng(0, 0));
 
-    // Watch navigation state to determine layout
-    final navigationState = ref.watch(navigationProvider);
-    final isNavigating = navigationState.isNavigating;
+    // Watch only isNavigating to determine layout (minimizes rebuilds)
+    final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -1936,8 +1935,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 // POI toggles widget
                 final poiToggles = Consumer(
                   builder: (context, ref, child) {
-                    final navState = ref.watch(navigationProvider);
-                    if (navState.isNavigating || !_isMapReady) return const SizedBox.shrink();
+                    // Use select() to only watch isNavigating (minimizes rebuilds)
+                    final isNavMode = ref.watch(navigationProvider.select((s) => s.isNavigating));
+                    if (isNavMode || !_isMapReady) return const SizedBox.shrink();
 
                     final currentZoom = _mapController.camera.zoom;
                     final togglesEnabled = currentZoom > 13.0;
@@ -2120,8 +2120,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // Search button (top-left, yellow) - hidden in navigation mode
           Consumer(
             builder: (context, ref, child) {
-              final navState = ref.watch(navigationProvider);
-              if (!_isMapReady || navState.isNavigating) return const SizedBox.shrink();
+              // Use select() to only watch isNavigating (minimizes rebuilds)
+              final isNavMode = ref.watch(navigationProvider.select((s) => s.isNavigating));
+              if (!_isMapReady || isNavMode) return const SizedBox.shrink();
 
               return Positioned(
                 top: MediaQuery.of(context).padding.top + 10,

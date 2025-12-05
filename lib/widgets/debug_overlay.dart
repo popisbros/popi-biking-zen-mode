@@ -12,17 +12,7 @@ class DebugOverlay extends ConsumerStatefulWidget {
 
 class _DebugOverlayState extends ConsumerState<DebugOverlay> {
   Timer? _refreshTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    // Refresh every second to update colors
-    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {}); // Trigger rebuild to update colors
-      }
-    });
-  }
+  bool _wasVisible = false;
 
   @override
   void dispose() {
@@ -30,15 +20,43 @@ class _DebugOverlayState extends ConsumerState<DebugOverlay> {
     super.dispose();
   }
 
+  /// Start the refresh timer (only when visible)
+  void _startTimer() {
+    if (_refreshTimer != null) return; // Already running
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {}); // Trigger rebuild to update colors
+      }
+    });
+  }
+
+  /// Stop the refresh timer (when hidden)
+  void _stopTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final debugState = ref.watch(debugProvider);
+    // First check visibility to avoid unnecessary rebuilds when debug overlay is hidden
+    final isVisible = ref.watch(debugProvider.select((s) => s.isVisible));
 
-    if (!debugState.isVisible) {
+    // Start/stop timer based on visibility (optimization: no timer when hidden)
+    if (isVisible && !_wasVisible) {
+      _startTimer();
+    } else if (!isVisible && _wasVisible) {
+      _stopTimer();
+    }
+    _wasVisible = isVisible;
+
+    if (!isVisible) {
       return const SizedBox.shrink();
     }
 
-    if (debugState.logEntries.isEmpty) {
+    // Only watch log entries when visible (optimization)
+    final logEntries = ref.watch(debugProvider.select((s) => s.logEntries));
+
+    if (logEntries.isEmpty) {
       return Positioned.fill(
         child: IgnorePointer(
           child: Container(
@@ -64,8 +82,8 @@ class _DebugOverlayState extends ConsumerState<DebugOverlay> {
     final now = DateTime.now();
     final textSpans = <TextSpan>[];
 
-    for (var i = 0; i < debugState.logEntries.length; i++) {
-      final entry = debugState.logEntries[i];
+    for (var i = 0; i < logEntries.length; i++) {
+      final entry = logEntries[i];
       final ageInSeconds = now.difference(entry.timestamp).inSeconds;
 
       // Fade from black (new) to dark grey (old)
@@ -74,7 +92,7 @@ class _DebugOverlayState extends ConsumerState<DebugOverlay> {
       final color = ageInSeconds < 5 ? Colors.black : Colors.grey[700]!;
 
       textSpans.add(TextSpan(
-        text: i == debugState.logEntries.length - 1
+        text: i == logEntries.length - 1
             ? entry.message  // Last entry, no newline
             : '${entry.message}\n',
         style: TextStyle(

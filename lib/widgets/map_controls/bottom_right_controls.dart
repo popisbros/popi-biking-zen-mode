@@ -25,11 +25,12 @@ class BottomRightControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final navState = ref.watch(navigationProvider);
-    final debugState = ref.watch(debugProvider);
+    // Use select() to only watch specific properties we need
+    final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
+    final debugVisible = ref.watch(debugProvider.select((s) => s.isVisible));
 
     // Show Navigation Controls when navigating
-    if (navState.isNavigating) {
+    if (isNavigating) {
       return NavigationControls(
         onNavigationEnded: onNavigationEnded,
       );
@@ -77,7 +78,7 @@ class BottomRightControls extends ConsumerWidget {
         ],
 
         // 2D/3D switch (3D map only - only show when debug tracking is enabled)
-        if (on3DSwitch != null && customStylePicker != null && !kIsWeb && debugState.isVisible) ...[
+        if (on3DSwitch != null && customStylePicker != null && !kIsWeb && debugVisible) ...[
           const SizedBox(height: 4),
           FloatingActionButton(
             mini: true,

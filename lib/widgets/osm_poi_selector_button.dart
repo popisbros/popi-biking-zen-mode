@@ -24,12 +24,13 @@ class OSMPOISelectorButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mapState = ref.watch(mapProvider);
-    final selectedTypes = mapState.selectedOSMPOITypes;
+    // Use select() to only watch specific properties we need (minimizes rebuilds)
+    final showOSMPOIs = ref.watch(mapProvider.select((s) => s.showOSMPOIs));
+    final selectedTypes = ref.watch(mapProvider.select((s) => s.selectedOSMPOITypes));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Determine button state
-    final bool isActive = mapState.showOSMPOIs &&
+    final bool isActive = showOSMPOIs &&
                          (selectedTypes == null || selectedTypes.isNotEmpty);
     final Color activeColor = Colors.blue;
     final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;

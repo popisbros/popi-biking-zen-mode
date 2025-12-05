@@ -18,10 +18,11 @@ class NavigationControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final navState = ref.watch(navigationProvider);
+    // Use select() to only watch isNavigating (minimizes rebuilds)
+    final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
 
     // Only show if navigation is active
-    if (!navState.isNavigating) {
+    if (!isNavigating) {
       return const SizedBox.shrink();
     }
 

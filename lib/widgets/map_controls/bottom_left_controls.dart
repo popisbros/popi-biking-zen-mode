@@ -29,11 +29,12 @@ class BottomLeftControls extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final inactiveColor = isDark ? Colors.grey.shade700 : Colors.grey.shade300;
     final inactiveFgColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-    final debugState = ref.watch(debugProvider);
-    final navState = ref.watch(navigationProvider);
-    final navModeState = ref.watch(navigationModeProvider);
-    final mapState = ref.watch(mapProvider);
-    final isNavigationMode = navModeState.mode == NavMode.navigation;
+
+    // Use select() to only watch specific properties we need
+    final debugVisible = ref.watch(debugProvider.select((s) => s.isVisible));
+    final isNavigating = ref.watch(navigationProvider.select((s) => s.isNavigating));
+    final isNavigationMode = ref.watch(navigationModeProvider.select((s) => s.mode == NavMode.navigation));
+    final autoZoomEnabled = ref.watch(mapProvider.select((s) => s.autoZoomEnabled));
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -46,7 +47,7 @@ class BottomLeftControls extends ConsumerWidget {
           onPressed: () {
             ref.read(debugProvider.notifier).toggleVisibility();
           },
-          backgroundColor: debugState.isVisible ? Colors.red : inactiveColor,
+          backgroundColor: debugVisible ? Colors.red : inactiveColor,
           foregroundColor: Colors.white,
           tooltip: 'Debug Tracking',
           child: const Icon(Icons.bug_report),
@@ -62,10 +63,10 @@ class BottomLeftControls extends ConsumerWidget {
             mini: true,
             heroTag: 'auto_zoom_toggle',
             onPressed: onAutoZoomToggle,
-            backgroundColor: mapState.autoZoomEnabled ? Colors.blue : inactiveColor,
-            foregroundColor: mapState.autoZoomEnabled ? Colors.white : inactiveFgColor,
-            tooltip: mapState.autoZoomEnabled ? 'Disable Auto-Zoom' : 'Enable Auto-Zoom',
-            child: Icon(mapState.autoZoomEnabled ? Icons.zoom_out_map : Icons.zoom_out_map_outlined),
+            backgroundColor: autoZoomEnabled ? Colors.blue : inactiveColor,
+            foregroundColor: autoZoomEnabled ? Colors.white : inactiveFgColor,
+            tooltip: autoZoomEnabled ? 'Disable Auto-Zoom' : 'Enable Auto-Zoom',
+            child: Icon(autoZoomEnabled ? Icons.zoom_out_map : Icons.zoom_out_map_outlined),
           ),
 
         // Spacing after auto-zoom button (only in navigation mode)
@@ -85,11 +86,11 @@ class BottomLeftControls extends ConsumerWidget {
           ),
 
         // Spacing after Compass (only show when reload button below is visible)
-        if (!kIsWeb && showCompass && onCompassToggle != null && !navState.isNavigating && debugState.isVisible && onReloadPOIs != null)
+        if (!kIsWeb && showCompass && onCompassToggle != null && !isNavigating && debugVisible && onReloadPOIs != null)
           const SizedBox(height: 4),
 
         // Reload POIs button (only visible when NOT navigating AND debug tracking is ON)
-        if (!navState.isNavigating && debugState.isVisible && onReloadPOIs != null)
+        if (!isNavigating && debugVisible && onReloadPOIs != null)
           FloatingActionButton(
             mini: true,
             heroTag: 'reload_pois',
