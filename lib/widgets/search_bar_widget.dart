@@ -57,20 +57,28 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
 
   @override
   Widget build(BuildContext context) {
-    print('🔍 [SEARCH DEBUG] SearchBarWidget build START');
+    // Only watch isVisible to minimize rebuilds when search is closed
+    final isVisible = ref.watch(searchProvider.select((s) => s.isVisible));
+
+    // Early return if not visible - don't watch other state
+    if (!isVisible) {
+      // Still handle animation reverse if needed
+      if (_animationController.isCompleted) {
+        _animationController.reverse();
+      }
+      return const SizedBox.shrink();
+    }
+
+    // Only watch full state when visible
     final searchState = ref.watch(searchProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Trigger animation when visibility changes
-    if (searchState.isVisible && !_animationController.isCompleted) {
-      print('🔍 [SEARCH DEBUG] Starting animation forward');
+    if (!_animationController.isCompleted) {
       _animationController.forward();
       // Auto-focus input when opening
       Future.microtask(() => _focusNode.requestFocus());
-    } else if (!searchState.isVisible && _animationController.isCompleted) {
-      _animationController.reverse();
     }
-    print('🔍 [SEARCH DEBUG] SearchBarWidget build END');
 
     // Sync controller with state
     if (_controller.text != searchState.query) {
@@ -81,16 +89,12 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
     }
 
     // Keep focus on TextField after results appear (so Enter key works)
-    if (searchState.isVisible && searchState.results.hasValue) {
+    if (searchState.results.hasValue) {
       Future.microtask(() {
         if (!_focusNode.hasFocus) {
           _focusNode.requestFocus();
         }
       });
-    }
-
-    if (!searchState.isVisible) {
-      return const SizedBox.shrink();
     }
 
     return SlideTransition(
