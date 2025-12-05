@@ -15,6 +15,7 @@ import '../providers/search_provider.dart';
 import '../providers/navigation_mode_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/favorites_visibility_provider.dart';
+import '../services/location_service.dart';
 import '../services/map_service.dart';
 import '../services/routing_service.dart';
 import '../services/toast_service.dart';
