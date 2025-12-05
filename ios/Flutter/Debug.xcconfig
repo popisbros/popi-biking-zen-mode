@@ -1,2 +1,7 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+
+// Append API keys to DART_DEFINES from Generated.xcconfig
+// Format: base64 encoded comma-separated key=value pairs
+// These will be available via String.fromEnvironment() at compile time
+DART_DEFINES=$(inherited),VEhVTkRFUkZPUkVTVF9BUElfS0VZPTEyMWEwMmIwZDQ3NTRmNWNhM2QyOTZjMmNmMGQ5N2JiCk1BUFRJTEVSX0FQSV9LRVk9MG4zaElHYkhuaXBVSEpFNXBldzcKTUFQQk9YX0FDQ0VTU19UT0tFTj1way5leUoxSWpvaWMzbHNkbUZwYm1KeWIzTnpaWFFpTENKaElqb2lZMjFtZFhveFptNXdNREY1YXpKcGNYRjVaelJ6ZFRGdWJ5SjkuZWtEVFhrVzc5WGlPRk9BSnRjSFhkUQpMT0NBVElPTklRX0FQSV9LRVk9cGsuMDkyMTkwYTM2NGQxMWZiMTc3NzUyZjVmZjJkMmI4Y2EKR1JBUEhIT1BQRVJfQVBJX0tFWT1mMGEyZTc1My1lOGE4LTRjMTYtYWY5OC1iNWE3N2I1ZGMzNGUK

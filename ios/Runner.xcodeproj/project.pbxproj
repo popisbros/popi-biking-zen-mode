@@ -350,7 +350,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export DART_DEFINES=\"$(echo \"THUNDERFOREST_API_KEY=121a02b0d4754f5ca3d296c2cf0d97bb,MAPTILER_API_KEY=0n3hIGbHnipUHJE5pew7,MAPBOX_ACCESS_TOKEN=pk.eyJ1Ijoic3lsdmFpbmJyb3NzZXQiLCJhIjoiY21mdXoxZm5wMDF5azJpcXF5ZzRzdTFubyJ9.ekDTXkW79XiOFOAJtcHXdQ,LOCATIONIQ_API_KEY=pk.092190a364d11fb177752f5ff2d2b8ca,GRAPHHOPPER_API_KEY=f0a2e753-e8a8-4c16-af98-b5a77b5dc34e\" | tr ',' '\\n' | base64 | tr '\\n' ',')\"\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build\n";
 		};
 		BCF5C5E5736B6AEE4BC01FB9 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
