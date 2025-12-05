@@ -464,13 +464,11 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     final timestampName = 'Location ${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     ref.read(searchProvider.notifier).setSelectedLocation(lat, lng, timestampName);
 
-    // Wait for marker to be added before showing dialog
-    await _addMarkers();
-
-    // Small delay to ensure map has settled
-    await Future.delayed(const Duration(milliseconds: 100));
-
+    // Show context menu immediately (don't wait for markers)
     _showContextMenu(coordinates);
+
+    // Add markers in background (fire-and-forget)
+    _addMarkers();
   }
 
   /// Show context menu for reporting hazard or calculating route

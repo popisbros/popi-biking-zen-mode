@@ -57,17 +57,20 @@ class _SearchBarWidgetState extends ConsumerState<SearchBarWidget>
 
   @override
   Widget build(BuildContext context) {
+    print('🔍 [SEARCH DEBUG] SearchBarWidget build START');
     final searchState = ref.watch(searchProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Trigger animation when visibility changes
     if (searchState.isVisible && !_animationController.isCompleted) {
+      print('🔍 [SEARCH DEBUG] Starting animation forward');
       _animationController.forward();
       // Auto-focus input when opening
       Future.microtask(() => _focusNode.requestFocus());
     } else if (!searchState.isVisible && _animationController.isCompleted) {
       _animationController.reverse();
     }
+    print('🔍 [SEARCH DEBUG] SearchBarWidget build END');
 
     // Sync controller with state
     if (_controller.text != searchState.query) {

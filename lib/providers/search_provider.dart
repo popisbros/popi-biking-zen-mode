@@ -23,6 +23,7 @@ class SearchNotifier extends Notifier<SearchState> {
 
   /// Toggle search bar visibility
   void toggleSearchBar() {
+    print('🔍 [SEARCH DEBUG] toggleSearchBar START');
     AppLogger.debug('Toggling search bar', tag: 'SEARCH', data: {
       'currentState': state.isVisible ? 'visible' : 'hidden',
     });
@@ -32,6 +33,7 @@ class SearchNotifier extends Notifier<SearchState> {
       query: state.isVisible ? '' : state.query, // Clear query when closing
       results: state.isVisible ? const AsyncValue.data([]) : state.results,
     );
+    print('🔍 [SEARCH DEBUG] toggleSearchBar END');
   }
 
   /// Update search query and trigger debounced search
