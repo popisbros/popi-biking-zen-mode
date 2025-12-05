@@ -3,7 +3,8 @@
 # Crashlytics dSYM Upload Script
 # This script uploads dSYM files to Firebase Crashlytics after each build
 
-set -e
+# Don't fail the build if this script encounters errors
+# set -e
 
 # Only run for Release and Profile builds (not Debug)
 if [ "${CONFIGURATION}" == "Debug" ]; then
@@ -20,11 +21,21 @@ if [ ! -f "$CRASHLYTICS_SCRIPT" ]; then
     exit 0
 fi
 
-# Upload dSYMs
+# Check if dSYM file exists
+if [ ! -d "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}" ]; then
+    echo "Warning: dSYM file not found at ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}"
+    echo "Skipping dSYM upload"
+    exit 0
+fi
+
+# Upload dSYMs (don't fail build if upload fails)
 echo "Uploading dSYM files to Crashlytics..."
 "${CRASHLYTICS_SCRIPT}" \
     -gsp "${PROJECT_DIR}/Runner/GoogleService-Info.plist" \
     -p ios \
-    "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}"
+    "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}" || {
+    echo "Warning: dSYM upload failed, but continuing build"
+    exit 0
+}
 
 echo "dSYM upload complete"
