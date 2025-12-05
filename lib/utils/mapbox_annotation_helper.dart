@@ -111,18 +111,19 @@ class MapboxAnnotationHelper {
   }
 
   /// Add route hazards as warning markers (only during turn-by-turn navigation)
-  static Future<void> addRouteHazards({
+  /// Returns list of created markers for tracking
+  static Future<List<PointAnnotation?>?> addRouteHazards({
     required WidgetRef ref,
     required PointAnnotationManager pointAnnotationManager,
     required Map<String, CommunityWarning> warningById,
   }) async {
     final navState = ref.read(navigationProvider);
     if (!navState.isNavigating || navState.activeRoute?.routeHazards == null) {
-      return;
+      return null;
     }
 
     final routeHazards = navState.activeRoute!.routeHazards!;
-    if (routeHazards.isEmpty) return;
+    if (routeHazards.isEmpty) return null;
 
     List<PointAnnotationOptions> pointOptions = [];
 
@@ -148,9 +149,12 @@ class MapboxAnnotationHelper {
     }
 
     if (pointOptions.isNotEmpty) {
-      await pointAnnotationManager.createMulti(pointOptions);
+      final markers = await pointAnnotationManager.createMulti(pointOptions);
       AppLogger.success('Added route hazard markers', tag: 'MAP', data: {'count': pointOptions.length});
+      return markers;
     }
+
+    return null;
   }
 
   /// Add favorites and destinations markers to map

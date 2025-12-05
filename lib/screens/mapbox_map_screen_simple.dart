@@ -127,6 +127,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   // Track ALL purple marker objects to ensure complete cleanup
   final List<PointAnnotation> _purpleMarkers = [];
 
+  // Track route hazard markers for deletion during rerouting
+  final List<PointAnnotation> _routeHazardMarkers = [];
+
   // Zoom level state
   double _currentZoom = 15.0; // Default zoom
 
@@ -339,6 +342,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
                   // Old markers are from old manager and will become orphaned
                   _purpleMarkers.clear();
                   _snappedPositionMarker = null;
+
+                  // Clear route hazard marker tracking
+                  _routeHazardMarkers.clear();
 
                   _addMarkers();
                   if (!mounted) return;
@@ -1665,6 +1671,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     _purpleMarkers.clear();
     _snappedPositionMarker = null;
 
+    // Clear route hazard marker tracking
+    _routeHazardMarkers.clear();
+
     // Add click listener for tap handling
     _pointAnnotationManager!.addOnPointAnnotationClickListener(
       _OnPointClickListener(onTap: _handleMarkerTap),
@@ -2089,7 +2098,38 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
 
     if (isActiveNavigation) {
       AppLogger.debug('Active navigation detected - rendering route only (preserving markers)', tag: 'MAP');
-      // Only render route polyline (for route segments metadata), skip marker operations
+
+      // Delete existing route hazard markers to avoid duplicates during rerouting
+      if (_routeHazardMarkers.isNotEmpty) {
+        for (var marker in _routeHazardMarkers) {
+          try {
+            await _pointAnnotationManager!.delete(marker);
+          } catch (e) {
+            // Ignore deletion errors
+          }
+        }
+        _routeHazardMarkers.clear();
+      }
+
+      // Clear route hazard entries from warning map
+      final hazardKeys = _warningById.keys.where((key) => key.startsWith('route_hazard_')).toList();
+      for (final key in hazardKeys) {
+        _warningById.remove(key);
+      }
+
+      // Add/update route hazards during navigation (critical safety warnings)
+      final hazardMarkers = await MapboxAnnotationHelper.addRouteHazards(
+        ref: ref,
+        pointAnnotationManager: _pointAnnotationManager!,
+        warningById: _warningById,
+      );
+
+      // Track hazard markers for future deletion (filter out nulls)
+      if (hazardMarkers != null) {
+        _routeHazardMarkers.addAll(hazardMarkers.whereType<PointAnnotation>());
+      }
+
+      // Only render route polyline (for route segments metadata), skip other marker operations
       await _addRoutePolyline();
       return;
     }
@@ -3518,6 +3558,9 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
     // Clear purple marker tracking
     _purpleMarkers.clear();
     _snappedPositionMarker = null;
+
+    // Clear route hazard marker tracking
+    _routeHazardMarkers.clear();
 
     // Clear active route sheet
     setState(() {
