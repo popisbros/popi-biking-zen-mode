@@ -137,6 +137,10 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   DateTime? _lastZoomChangeTime;
   double? _currentAutoZoom;
   double? _targetAutoZoom;
+
+  // Debounce timer for _addMarkers to prevent rapid successive calls
+  Timer? _addMarkersDebounceTimer;
+  bool _isAddingMarkers = false;
   static const Duration _zoomChangeInterval = Duration(seconds: 3);
   static const double _minZoomChangeThreshold = 0.5;
 
@@ -2080,6 +2084,7 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
   void dispose() {
     _debounceTimer?.cancel();
     _cameraCheckTimer?.cancel();
+    _addMarkersDebounceTimer?.cancel();
     _stopRealtimeLocationStream();
     super.dispose();
   }
@@ -2092,6 +2097,26 @@ class _MapboxMapScreenSimpleState extends ConsumerState<MapboxMapScreenSimple> {
       return;
     }
 
+    // Debounce: if already adding markers, schedule another call after a delay
+    if (_isAddingMarkers) {
+      _addMarkersDebounceTimer?.cancel();
+      _addMarkersDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+        if (mounted) _addMarkers();
+      });
+      return;
+    }
+
+    _isAddingMarkers = true;
+
+    try {
+      await _addMarkersInternal();
+    } finally {
+      _isAddingMarkers = false;
+    }
+  }
+
+  /// Internal method that actually adds markers (called by debounced _addMarkers)
+  Future<void> _addMarkersInternal() async {
     // During active turn-by-turn navigation, skip marker refresh but allow route rendering
     final navState = ref.read(navigationProvider);
     final isActiveNavigation = navState.isNavigating && _realtimeLocationSubscription != null;

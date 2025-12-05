@@ -8,6 +8,12 @@ import '../config/marker_config.dart';
 /// All methods are static and return PNG image data as Uint8List
 /// Icons match the 2D map styling for consistency
 class MapboxMarkerUtils {
+  // Cache for emoji icons to avoid recreating them on every marker
+  static final Map<String, Uint8List> _emojiIconCache = {};
+
+  // Cache for favorites icons
+  static Uint8List? _favoritesIconCache;
+  static Uint8List? _destinationsIconCache;
   /// Get grey color for traveled route segments
   ///
   /// Returns a medium grey color (RGB: 150, 150, 150) with 70% opacity
@@ -46,11 +52,20 @@ class MapboxMarkerUtils {
   /// Create an image from emoji text for use as marker icon
   ///
   /// Uses proper background and border colors matching the 2D map configuration
+  /// Results are cached to avoid expensive image operations on every call
   static Future<Uint8List> createEmojiIcon(
     String emoji,
     POIMarkerType markerType, {
     double size = 48,
   }) async {
+    // Create cache key from emoji and marker type
+    final cacheKey = '${emoji}_${markerType.name}_$size';
+
+    // Return cached icon if available
+    if (_emojiIconCache.containsKey(cacheKey)) {
+      return _emojiIconCache[cacheKey]!;
+    }
+
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
@@ -115,7 +130,12 @@ class MapboxMarkerUtils {
     final picture = recorder.endRecording();
     final image = await picture.toImage(size.toInt(), size.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
+    final iconData = byteData!.buffer.asUint8List();
+
+    // Cache the result
+    _emojiIconCache[cacheKey] = iconData;
+
+    return iconData;
   }
 
   /// Create user location marker icon matching 2D map style
@@ -347,10 +367,19 @@ class MapboxMarkerUtils {
   ///
   /// Uses star emoji for favorites, pin emoji for destinations
   /// Orange/amber colors with high opacity for visibility
+  /// Results are cached to avoid expensive image operations on every call
   static Future<Uint8List> createFavoritesIcon({
     required bool isDestination,
     double size = 48,
   }) async {
+    // Return cached icon if available
+    if (isDestination && _destinationsIconCache != null) {
+      return _destinationsIconCache!;
+    }
+    if (!isDestination && _favoritesIconCache != null) {
+      return _favoritesIconCache!;
+    }
+
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
@@ -391,6 +420,22 @@ class MapboxMarkerUtils {
     final picture = recorder.endRecording();
     final image = await picture.toImage(size.toInt(), size.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    return byteData!.buffer.asUint8List();
+    final iconData = byteData!.buffer.asUint8List();
+
+    // Cache the result
+    if (isDestination) {
+      _destinationsIconCache = iconData;
+    } else {
+      _favoritesIconCache = iconData;
+    }
+
+    return iconData;
+  }
+
+  /// Clear all cached icons (useful when changing themes or cleaning up)
+  static void clearCache() {
+    _emojiIconCache.clear();
+    _favoritesIconCache = null;
+    _destinationsIconCache = null;
   }
 }
